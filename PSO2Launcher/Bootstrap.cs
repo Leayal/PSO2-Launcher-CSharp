@@ -10,6 +10,10 @@ using System.Windows.Forms;
 using Leayal.PSO2Launcher.Communication.BootstrapUpdater;
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.IO.MemoryMappedFiles;
+using System.Threading;
+using Leayal.PSO2Launcher.Communication;
 
 namespace Leayal.PSO2Launcher
 {
@@ -36,11 +40,12 @@ namespace Leayal.PSO2Launcher
 
         private async void Bootstrap_Shown(object sender, EventArgs e)
         {
-            string exename, rootDirectory;
+            string exename, rootDirectory, fullFilename;
             using (var currentProc = Process.GetCurrentProcess())
             {
-                exename = Path.GetFileName(currentProc.MainModule.FileName);
-                rootDirectory = Path.GetDirectoryName(currentProc.MainModule.FileName);
+                fullFilename = currentProc.MainModule.FileName;
+                exename = Path.GetFileName(fullFilename);
+                rootDirectory = Path.GetDirectoryName(fullFilename);
             }
 
             var bootstrapUpdater = new AssemblyLoadContext("BootstrapUpdater", true);
@@ -56,35 +61,65 @@ namespace Leayal.PSO2Launcher
             catch (Exception ex)
             {
                 bootstrapUpdater.Unload();
+                this.label1.Text = "Error occured while checking for updates. Could not load 'BootstrapUpdater.dll'.";
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.label1.Text = "Error occured while checking for updates.";
                 return; // No need to continue.
             }
 
             try
             {
                 // Invoke updater. Dynamic is slow.
-                var class_bootstrapUpdater = netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater");
-                var medthod_bootstrapUpdater_CheckForUpdates = class_bootstrapUpdater.GetType().GetMethod("CheckForUpdatesAsync");
-                var obj = medthod_bootstrapUpdater_CheckForUpdates.Invoke(class_bootstrapUpdater, new object[] { rootDirectory, exename });
-                if (obj is Task<BootstrapUpdater_CheckForUpdates> task_data)
+                // Hardcoded
+                var class_bootstrapUpdater = (IBootstrapUpdater)netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater");
+                // var medthod_bootstrapUpdater_CheckForUpdates = class_bootstrapUpdater.GetType().GetMethod("CheckForUpdatesAsync");
+                // var obj = medthod_bootstrapUpdater_CheckForUpdates.Invoke(class_bootstrapUpdater, new object[] { rootDirectory, exename });
+                if (class_bootstrapUpdater.CheckForUpdatesAsync(rootDirectory, exename) is Task<BootstrapUpdater_CheckForUpdates> task_data)
                 {
                     var data = await task_data;
 
                     // Handle downloads and overwrite files.
                     if (data.Items.Count != 0)
                     {
-                        if (data.RequireRestart)
+                        // Prompt whether the user wants to update or not.
+                        var promptResult = class_bootstrapUpdater.DisplayUpdatePrompt(this);
+                        if (promptResult.HasValue)
                         {
+                            if (promptResult.Value)
+                            {
+                                // Download here
 
-                        }
-                        else if (data.RequireReload)
-                        {
 
+                                if (data.RequireRestart)
+                                {
+                                    // Not really in use but let's support it. For future.
+                                    netasm_bootstrapUpdater = null;
+                                    bootstrapUpdater.Unload();
+                                    if (string.IsNullOrWhiteSpace(data.RestartWithExe))
+                                    {
+                                        RestartApplicationToUpdate(in fullFilename, in data);
+                                    }
+                                    else
+                                    {
+                                        RestartApplicationToUpdate(in data.RestartWithExe, in data);
+                                    }
+                                    // Expect code termination here.
+                                    return;
+                                }
+                                else if (data.RequireReload)
+                                {
+                                    // Not really in use but let's support it. For future.
+                                    Program.Reload();
+                                }
+                                else
+                                {
+                                    // Continue. So there's nothing here.
+                                }
+                            }
                         }
                         else
                         {
-
+                            this.Close();
+                            return;
                         }
                     }
                 }
@@ -108,6 +143,49 @@ namespace Leayal.PSO2Launcher
             // Lazy load the dependency
 
             // Load the Launcher's entry point and call it
+        }
+        #endregion
+
+        #region | Private Methods |
+        private void RestartApplicationToUpdate(in string processFilename, in BootstrapUpdater_CheckForUpdates data)
+        {
+            var memId = Guid.NewGuid().ToString();
+            string fullFilename;
+            using (var currentProc = Process.GetCurrentProcess())
+            {
+                fullFilename = currentProc.MainModule.FileName;
+            }
+            
+            var args = new List<string>(Environment.GetCommandLineArgs());
+            args.RemoveAt(0);
+            var newData = new RestartObj<BootstrapUpdater_CheckForUpdates>(data, fullFilename, args);
+            // var newData = new BootstrapUpdater_CheckForUpdates(data.Items, data.RequireRestart, data.RequireReload, fullFilename);
+            var memoryData = newData.SerializeJson();
+            var waithandle_id = $"{memId}-wait";
+            using (var mmf = MemoryMappedFile.CreateNew(memId, memoryData.Length, MemoryMappedFileAccess.ReadWrite))
+            using (var waithandle = new EventWaitHandle(false, EventResetMode.ManualReset, waithandle_id, out var isNew))
+            {
+                using (var writer = mmf.CreateViewStream(0, memoryData.Length))
+                {
+                    writer.Write(memoryData.Span);
+                }
+
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = processFilename;
+
+                    process.StartInfo.ArgumentList.Add("--restart-update");
+                    process.StartInfo.ArgumentList.Add(memId);
+
+                    process.StartInfo.UseShellExecute = false;
+
+                    process.Start();
+
+                    waithandle.WaitOne(TimeSpan.FromMinutes(10)); // Too long?
+                }
+            }
+
+            this.Close();
         }
         #endregion
     }

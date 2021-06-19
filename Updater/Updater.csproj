@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net5.0-windows7.0</TargetFramework>
     <RootNamespace>Leayal.PSO2Launcher.Updater</RootNamespace>
     <AssemblyName>BootstrapUpdater</AssemblyName>
     <ApplicationIcon />
@@ -19,5 +19,9 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\bin\$(TargetFileName)&quot;" />
+  </Target>
 
 </Project>

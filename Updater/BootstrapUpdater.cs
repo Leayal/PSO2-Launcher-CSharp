@@ -8,23 +8,23 @@ using System.Net;
 using System.Threading.Tasks;
 // using System.Net.Http;
 using System.Text.Json;
+using System.Windows.Forms;
 
 namespace Leayal.PSO2Launcher.Updater
 {
-    public class BootstrapUpdater
+    public class BootstrapUpdater : IBootstrapUpdater
     {
         public BootstrapUpdater()
         {
             
         }
 
-
         public async Task<BootstrapUpdater_CheckForUpdates> CheckForUpdatesAsync(string rootDirectory, string entryExecutableName)
         {
             // Fetch from internet a list then check for SHA-1.
             using (var wc = new WebClient())
             {
-                using (var jsonStream = await wc.OpenReadTaskAsync("file:///E:/All%20Content/VB_Project/visual%20studio%202019/PSO2-Launcher-CSharp/launcherupdate.json"))
+                using (var jsonStream = await wc.OpenReadTaskAsync("file:///E:/All%20Content/VB_Project/visual%20studio%202019/PSO2-Launcher-CSharp/Test/launcherupdate.json"))
                 using (var doc = await JsonDocument.ParseAsync(jsonStream))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))
@@ -45,9 +45,6 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
             }
-
-
-              
         }
 
         private async Task <BootstrapUpdater_CheckForUpdates> ParseFileList_1(JsonDocument document, string rootDirectory, string entryExecutableName)
@@ -69,7 +66,7 @@ namespace Leayal.PSO2Launcher.Updater
                         if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                             && (prop_val.TryGetProperty("url", out var item_prop_url) && item_prop_url.ValueKind == JsonValueKind.String))
                         {
-                            var localFilename = Path.GetFullPath(displayName, rootDirectory);
+                            var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
                             var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
                             if (!string.Equals(hash, item_prop_sha1.GetString(), StringComparison.OrdinalIgnoreCase))
                             {
@@ -90,7 +87,7 @@ namespace Leayal.PSO2Launcher.Updater
                     var currentNetAsm = Assembly.GetExecutingAssembly();
                     if (needtobeupdated.ContainsKey($"{currentNetAsm.GetName().Name}.dll"))
                     {
-                        return new BootstrapUpdater_CheckForUpdates(needtobeupdated, true, true, null);
+                        return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, true, null);
                     }
                 }
 
@@ -100,6 +97,26 @@ namespace Leayal.PSO2Launcher.Updater
             {
                 throw new BootstrapUpdaterException();
             }
+        }
+
+        public bool? DisplayUpdatePrompt(Form? parent)
+        {
+            var placeholder = new Form();
+            DialogResult result;
+            if (parent == null)
+            {
+                result = placeholder.ShowDialog();
+            }
+            else
+            {
+                result = placeholder.ShowDialog(parent);
+            }
+            return result switch
+            {
+                DialogResult.OK => true,
+                DialogResult.Cancel => false,
+                _ => null
+            };
         }
     }
 }

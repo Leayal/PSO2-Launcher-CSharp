@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PSO2Launcher": {
+      "commandName": "Executable",
+      "executablePath": "$(SolutionDir)Test\\PSO2Launcher.exe"
+    }
+  }
+}
