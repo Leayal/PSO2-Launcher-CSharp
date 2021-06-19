@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <RootNamespace>Leayal.PSO2Launcher.Updater</RootNamespace>
+    <AssemblyName>BootstrapUpdater</AssemblyName>
+    <ApplicationIcon />
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SharpCompress">
+      <HintPath>..\Dependencies\Build\net5.0\SharpCompress.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
