@@ -5,14 +5,16 @@ using System.Windows.Forms;
 using Microsoft.VisualBasic.ApplicationServices;
 using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
+using Leayal.PSO2Launcher.Communication.GameLauncher;
 
 namespace Leayal.PSO2Launcher
 {
     static class Program
     {
-        private static bool flag_reload;
+        private static bool flag_reload, flag_switchtoWPF;
         private static SingleAppController _appController;
         public static SingleAppController AppController => _appController;
+        private static IWPFApp wpfController;
 
         /// <summary>
         ///  The main entry point for the application.
@@ -21,6 +23,7 @@ namespace Leayal.PSO2Launcher
         static void Main(string[] args)
         {
             flag_reload = true;
+            flag_switchtoWPF = false;
             _appController = null;
 
             if (args != null && args.Length == 2 && string.Equals(args[0], "--restart-update", StringComparison.OrdinalIgnoreCase))
@@ -99,8 +102,16 @@ namespace Leayal.PSO2Launcher
             while (flag_reload)
             {
                 flag_reload = false;
-                _appController = new SingleAppController();
-                _appController.Run(args);
+
+                if (flag_switchtoWPF && wpfController != null)
+                {
+                    wpfController.Run(args);
+                }
+                else
+                {
+                    _appController = new SingleAppController();
+                    _appController.Run(args);
+                }
             }
         }
 
@@ -111,6 +122,14 @@ namespace Leayal.PSO2Launcher
                 flag_reload = true;
                 _appController.CloseMainForm();
             }
+        }
+
+        public static void SwitchToWPF(IWPFApp applicationBase)
+        {
+            flag_switchtoWPF = true;
+            flag_reload = true;
+            wpfController = applicationBase;
+            _appController?.CloseMainForm();
         }
     }
 

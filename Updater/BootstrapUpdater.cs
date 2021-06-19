@@ -78,6 +78,8 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
 
+                needtobeupdated.Clear(); // Simulate no new items.
+
                 if (needtobeupdated.ContainsKey("PSO2Launcher.exe"))
                 {
                     return new BootstrapUpdater_CheckForUpdates(needtobeupdated, true, false, entryExecutableName + ".tmp");

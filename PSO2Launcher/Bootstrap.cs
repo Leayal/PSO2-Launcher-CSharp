@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 using Leayal.PSO2Launcher.Communication;
+using Leayal.PSO2Launcher.Communication.GameLauncher;
 
 namespace Leayal.PSO2Launcher
 {
@@ -136,13 +137,25 @@ namespace Leayal.PSO2Launcher
 
             // Loads stuff
 
-            // Updater component
-
-            // Check for dependency updates
-
             // Lazy load the dependency
 
             // Load the Launcher's entry point and call it
+            var launcherCoreContext = new AssemblyLoadContext("LauncherCore");
+            // bootstrapUpdater.LoadFromAssemblyPath(Path.Combine("bin", "SharpCompress.dll")); // Optional??
+            Assembly netasm_launcherCore;
+            try
+            {
+                netasm_launcherCore = launcherCoreContext.LoadFromAssemblyPath(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory));
+            }
+            catch (Exception ex)
+            {
+                this.label1.Text = "Error occured while checking for updates. Could not load 'LauncherCore.dll'.";
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return; // No need to continue.
+            }
+
+            var class_gameLauncher = (IWPFApp)netasm_launcherCore.CreateInstance("Leayal.PSO2Launcher.Core.GameLauncher");
+            Program.SwitchToWPF(class_gameLauncher);
         }
         #endregion
 
