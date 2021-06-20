@@ -10,13 +10,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ControlzEx" Version="5.0.0" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.6" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="4.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\bin\$(TargetName).dll&quot;" />
+    <Exec Command="copy /B /L /Y &quot;$(OutDir)\*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;" />
   </Target>
 
 </Project>

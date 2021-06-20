@@ -36,7 +36,7 @@ namespace Leayal.PSO2Launcher
         #region | Form Loads |
         private void Bootstrap_Load(object sender, EventArgs e)
         {
-            // Placeholder, maybe not even be in using.
+            
         }
 
         private async void Bootstrap_Shown(object sender, EventArgs e)
@@ -139,23 +139,36 @@ namespace Leayal.PSO2Launcher
 
             // Lazy load the dependency
 
-            // Load the Launcher's entry point and call it
-            var launcherCoreContext = new AssemblyLoadContext("LauncherCore");
+            // Load the Launcher's entry point and call it. Isolated.
+            // GameLauncherLoadContext launcherCoreContext = new GameLauncherLoadContext(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory));
             // bootstrapUpdater.LoadFromAssemblyPath(Path.Combine("bin", "SharpCompress.dll")); // Optional??
-            Assembly netasm_launcherCore;
+
             try
             {
-                netasm_launcherCore = launcherCoreContext.LoadFromAssemblyPath(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory));
+                var duh = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory), "Leayal.PSO2Launcher.Core.GameLauncher");
+                if (duh is IWPFApp class_gameLauncher)
+                {
+                    Program.SwitchToWPF(class_gameLauncher);
+                }
+
+
+                // Isolated.
+                //var class_gameLauncher = launcherCoreContext.EntryPoint;
+                //if (class_gameLauncher == null)
+                //{
+                //    throw new Exception("'LauncherCore.dll' loaded but failed to initialize.");
+                //}
+                //else
+                //{
+                //    Program.SwitchToWPF(class_gameLauncher);
+                //}
             }
             catch (Exception ex)
             {
                 this.label1.Text = "Error occured while checking for updates. Could not load 'LauncherCore.dll'.";
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return; // No need to continue.
+                // return; // No need to continue.
             }
-
-            var class_gameLauncher = (IWPFApp)netasm_launcherCore.CreateInstance("Leayal.PSO2Launcher.Core.GameLauncher");
-            Program.SwitchToWPF(class_gameLauncher);
         }
         #endregion
 
