@@ -1,13 +1,38 @@
-﻿<mah:MetroWindow x:Class="Leayal.PSO2Launcher.Core.Windows.MainMenuWindow"
+﻿<local:MetroWindowEx x:Class="Leayal.PSO2Launcher.Core.Windows.MainMenuWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-        xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 mc:Ignorable="d" x:Name="thisWindow"
+        Title="MainWindow" Height="450" Width="800" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid HorizontalAlignment="Right">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="25" />
+                <ColumnDefinition Width="25" />
+                <ColumnDefinition Width="25" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Click="WindowsCommandButtons_Minimize_Click" Focusable="False" BorderBrush="{x:Null}">
+                <iconPacks:PackIconFontAwesome Kind="WindowMinimizeRegular" Width="10" Height="10" />
+            </Button>
+            <Button Grid.Column="1" Click="WindowsCommandButtons_Maximize_Click" Focusable="False" BorderBrush="{x:Null}">
+                <iconPacks:PackIconFontAwesome Kind="WindowMaximizeRegular" Width="10" Height="10" />
+            </Button>
+            <Button Grid.Column="1" Click="WindowsCommandButtons_Maximize_Click" Focusable="False" BorderBrush="{x:Null}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisWindow, Path=IsMaximized, Mode=OneWay}">
+                <iconPacks:PackIconFontAwesome Kind="WindowMaximizeRegular" Width="10" Height="10" />
+            </Button>
+            <Button Grid.Column="1" Click="WindowsCommandButtons_Restore_Click" Focusable="False" BorderBrush="{x:Null}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisWindow, Path=IsMaximized, Mode=OneWay}">
+                <iconPacks:PackIconFontAwesome Kind="WindowRestoreRegular" Width="10" Height="10" />
+            </Button>
+            <Button Grid.Column="2" Click="WindowsCommandButtons_Close_Click" Focusable="False" BorderBrush="{x:Null}">
+                <iconPacks:PackIconFontAwesome Kind="TimesSolid" Width="10" Height="10" />
+            </Button>
+        </Grid>
     </Grid>
-</mah:MetroWindow>
+</local:MetroWindowEx>

@@ -19,11 +19,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainMenuWindow : MetroWindow
+    public partial class MainMenuWindow : MetroWindowEx
     {
         public MainMenuWindow()
         {
             InitializeComponent();
         }
+
+        #region | WindowsCommandButtons |
+        private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            SystemCommands.CloseWindow(this);
+        }
+
+        private void WindowsCommandButtons_Maximize_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            SystemCommands.MaximizeWindow(this);
+        }
+        
+        private void WindowsCommandButtons_Restore_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            SystemCommands.RestoreWindow(this);
+        }
+
+        private void WindowsCommandButtons_Minimize_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            SystemCommands.MinimizeWindow(this);
+        }
+        #endregion
     }
 }
