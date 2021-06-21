@@ -1,7 +1,6 @@
 ﻿using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using System.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -21,8 +23,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
+        private readonly PSO2HttpClient pso2HttpClient;
+
         public MainMenuWindow()
         {
+            this.pso2HttpClient = new PSO2HttpClient();
             InitializeComponent();
         }
 
@@ -51,5 +56,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
             SystemCommands.MinimizeWindow(this);
         }
         #endregion
+
+        private async void ButtonTest_Click(object sender, RoutedEventArgs e)
+        {
+            var rootInfo = await pso2HttpClient.GetPatchRootInfoAsync(CancellationToken.None);
+
+            // Save HTTP requests. Re-use root.
+            var str = await pso2HttpClient.GetPatchVersionAsync(rootInfo, CancellationToken.None);
+            if (MessageBox.Show(this, str, "It's alive", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+            {
+                var patchlist_reboot = await pso2HttpClient.GetPatchListNGSFullAsync(rootInfo, CancellationToken.None);
+                var sb = new StringBuilder();
+                if (patchlist_reboot.TryGetByFilename("pso2.exe", out var patchItemInfo))
+                {
+                    sb.AppendLine($"Main exe: {patchItemInfo.Filename} | {patchItemInfo.FileSize} | {patchItemInfo.MD5}");
+                }
+                sb.AppendLine($"Preview files:");
+                foreach (var item in System.Linq.Enumerable.Take(patchlist_reboot, 10))
+                {
+                    if (item.PatchOrBase.HasValue)
+                    {
+                        char charPM = item.PatchOrBase.Value ? 'p' : 'm';
+                        sb.AppendLine($"{item.Filename} | {item.FileSize} | {item.MD5} | {charPM}");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"{item.Filename} | {item.FileSize} | {item.MD5}");
+                    }
+                }
+
+                MessageBox.Show(this, sb.ToString(), "Preview Data", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }
