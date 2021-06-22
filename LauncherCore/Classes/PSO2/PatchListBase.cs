@@ -8,6 +8,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable
     {
+        public readonly PatchRootInfo RootInfo;
+
+        protected PatchListBase(PatchRootInfo rootInfo)
+        {
+            if (rootInfo == null)
+            {
+                throw new ArgumentNullException(nameof(rootInfo));
+            }
+            this.RootInfo = rootInfo;
+        }
+
         public abstract IEnumerator<PatchListItem> GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.CreateEnumerator();
@@ -16,14 +27,28 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public virtual bool TryGetByFilename(in string filename, out PatchListItem value)
         {
-            if (this.TryGetByFilenameExact(in filename, out value))
+            if (filename.EndsWith(PatchListItem.AffixFilename))
             {
-                return true;
+                if (this.TryGetByFilenameExact(in filename, out value))
+                {
+                    return true;
+                }
+                else
+                {
+                    return this.TryGetByFilenameExact(PatchListItem.GetFilenameWithoutAffix(filename), out value);
+                }
             }
             else
             {
-                var affixedName = filename + ".pat";
-                return this.TryGetByFilenameExact(in affixedName, out value);
+                if (this.TryGetByFilenameExact(in filename, out value))
+                {
+                    return true;
+                }
+                else
+                {
+                    var affixedName = filename + PatchListItem.AffixFilename;
+                    return this.TryGetByFilenameExact(in affixedName, out value);
+                }
             }
         }
 
@@ -50,20 +75,30 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else
             {
+                PatchRootInfo comparand = null;
                 var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 1; i < patchlists.Length; i++)
+                for (int i = 0; i < patchlists.Length; i++)
                 {
+                    if (comparand == null)
+                    {
+                        comparand = patchlists[i].RootInfo;
+                    }
+                    else if (comparand != patchlists[i].RootInfo)
+                    {
+                        throw new InvalidOperationException();
+                    }
                     foreach (var item in patchlists[i])
                     {
-                        if (items.TryGetValue(item.Filename, out var value))
+                        var filenameWithoutAffix = item.GetFilenameWithoutAffix();
+                        if (items.TryGetValue(filenameWithoutAffix, out var value))
                         {
                             if (!value.PatchOrBase.HasValue && !item.PatchOrBase.HasValue)
                             {
-                                items[item.Filename] = item;
+                                items[filenameWithoutAffix] = item;
                             }
                             else if (value.PatchOrBase.HasValue && !item.PatchOrBase.HasValue)
                             {
-                                items[item.Filename] = item;
+                                items[filenameWithoutAffix] = item;
                             }
                             else if (!value.PatchOrBase.HasValue && item.PatchOrBase.HasValue)
                             {
@@ -73,7 +108,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             {
                                 if (item.PatchOrBase == true && value.PatchOrBase == true)
                                 {
-                                    items[item.Filename] = item;
+                                    items[filenameWithoutAffix] = item;
                                 }
                                 else if (item.PatchOrBase == false && value.PatchOrBase == true)
                                 {
@@ -81,18 +116,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 }
                                 else if (item.PatchOrBase == true && value.PatchOrBase == false)
                                 {
-                                    items[item.Filename] = item;
+                                    items[filenameWithoutAffix] = item;
                                 }
                                 // Get whichever is `p`
                             }
                         }
                         else
                         {
-                            items.Add(item.Filename, item);
+                            items.Add(filenameWithoutAffix, item);
                         }
                     }
                 }
-                return new PatchListMemory(items);
+                return new PatchListMemory(comparand, items);
             }
         }
     }

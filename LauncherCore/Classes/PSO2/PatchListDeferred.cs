@@ -15,26 +15,26 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private readonly TextReader tr;
         private readonly bool keepOpen;
 
-        public PatchListDeferred(TextReader textReader) : this(textReader, false) { }
+        public PatchListDeferred(PatchRootInfo rootInfo, TextReader textReader) : this(rootInfo, textReader, false) { }
 
-        public PatchListDeferred(TextReader textReader, bool keepOpen)
+        public PatchListDeferred(PatchRootInfo rootInfo, TextReader textReader, bool keepOpen) : base(rootInfo)
         {
             this.keepOpen = keepOpen;
             this.tr = textReader;
         }
 
-        public override IEnumerator<PatchListItem> GetEnumerator() => new PatchListItemWalker(this.tr);
+        public override IEnumerator<PatchListItem> GetEnumerator() => new PatchListItemWalker(this);
 
-        protected override IEnumerator CreateEnumerator() => new PatchListItemWalker(this.tr);
+        protected override IEnumerator CreateEnumerator() => new PatchListItemWalker(this);
 
         class PatchListItemWalker : IEnumerator<PatchListItem>
         {
-            private readonly TextReader tr;
+            private readonly PatchListDeferred parent;
             private PatchListItem currentItem;
 
-            public PatchListItemWalker(TextReader textReader)
+            public PatchListItemWalker(PatchListDeferred parent)
             {
-                this.tr = textReader;
+                this.parent = parent;
             }
 
             public PatchListItem Current => this.currentItem;
@@ -48,10 +48,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             public bool MoveNext()
             {
-                var currentLine = this.tr.ReadLine();
+                var currentLine = this.parent.tr.ReadLine();
                 if (currentLine != null)
                 {
-                    this.currentItem = PatchListItem.Parse(in currentLine);
+                    this.currentItem = PatchListItem.Parse(this.parent, in currentLine);
                     return true;
                 }
                 return false;
@@ -81,7 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             items.Clear();
             foreach (var item in this)
             {
-                items.Add(item.Filename, item);
+                items.Add(item.GetFilenameWithoutAffix(), item);
             }
         }
 
@@ -89,7 +89,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
             this.InnerCopyTo(items);
-            return new PatchListMemory(items);
+            return new PatchListMemory(this.RootInfo, items);
         }
 
         public void Dispose()

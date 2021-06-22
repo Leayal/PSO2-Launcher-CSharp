@@ -61,15 +61,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             var rootInfo = await pso2HttpClient.GetPatchRootInfoAsync(CancellationToken.None);
 
+            var pso2Updater = new GameClientUpdater("", this.pso2HttpClient);
+            pso2Updater.CheckForPSO2Updates(CancellationToken.None);
+
             // Save HTTP requests. Re-use root.
-            var str = await pso2HttpClient.GetPatchVersionAsync(rootInfo, CancellationToken.None);
-            if (MessageBox.Show(this, str, "It's alive", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+            // var ver = await pso2HttpClient.GetPatchVersionAsync(rootInfo, CancellationToken.None);
+            if ((await pso2Updater.CheckForPSO2Updates(CancellationToken.None)) && MessageBox.Show(this, ver.ToString(), "It's alive", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
                 var patchlist_reboot = await pso2HttpClient.GetPatchListNGSFullAsync(rootInfo, CancellationToken.None);
                 var sb = new StringBuilder();
                 if (patchlist_reboot.TryGetByFilename("pso2.exe", out var patchItemInfo))
                 {
-                    sb.AppendLine($"Main exe: {patchItemInfo.Filename} | {patchItemInfo.FileSize} | {patchItemInfo.MD5}");
+                    sb.AppendLine($"Main exe: {patchItemInfo.GetFilenameWithoutAffix()} | {patchItemInfo.FileSize} | {patchItemInfo.MD5}");
                 }
                 sb.AppendLine($"Preview files:");
                 foreach (var item in System.Linq.Enumerable.Take(patchlist_reboot, 10))
@@ -77,11 +80,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (item.PatchOrBase.HasValue)
                     {
                         char charPM = item.PatchOrBase.Value ? 'p' : 'm';
-                        sb.AppendLine($"{item.Filename} | {item.FileSize} | {item.MD5} | {charPM}");
+                        sb.AppendLine($"{item.RemoteFilename} | {item.FileSize} | {item.MD5} | {charPM}");
                     }
                     else
                     {
-                        sb.AppendLine($"{item.Filename} | {item.FileSize} | {item.MD5}");
+                        sb.AppendLine($"{item.RemoteFilename} | {item.FileSize} | {item.MD5}");
                     }
                 }
 

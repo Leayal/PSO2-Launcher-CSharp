@@ -13,17 +13,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public int Count => this._items.Count;
 
-        public PatchListMemory(IDictionary<string, PatchListItem> items)
+        public PatchListMemory(PatchRootInfo rootInfo, IDictionary<string, PatchListItem> items) : base(rootInfo)
         {
             this._items = new Dictionary<string, PatchListItem>(items, StringComparer.OrdinalIgnoreCase);
         }
 
-        public PatchListMemory()
+        public PatchListMemory(PatchRootInfo rootInfo) : base(rootInfo)
         {
             this._items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
         }
 
-        internal PatchListMemory(Dictionary<string, PatchListItem> items)
+        internal PatchListMemory(PatchRootInfo rootInfo, Dictionary<string, PatchListItem> items) : base(rootInfo)
         {
             this._items = items;
         }
