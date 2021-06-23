@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
-using System.IO;
+using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Helper
 {
-    public static class SHA1Hash
+    public static class MD5Hash
     {
         public static Task<string> ComputeHashFromFileAsync(string filename) => ComputeHashFromFileAsync(filename, CancellationToken.None);
 
@@ -29,28 +30,14 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            SHA1 sha1;
-            byte[] bytes;
-            try
+            using (var md5 = MD5.Create())
             {
-                sha1 = new SHA1Managed();
+                var bytes = await md5.ComputeHashAsync(stream, cancellationToken);
+                return Convert.ToHexString(bytes);
             }
-            catch (InvalidOperationException)
-            {
-                sha1 = SHA1.Create();
-            }
-            try
-            {
-                bytes = await sha1.ComputeHashAsync(stream, cancellationToken);
-            }
-            finally
-            {
-                sha1.Dispose();
-            }
-            return Convert.ToHexString(bytes);
         }
 
-        public static string ComputeHashFromFile(string filename)
+        public static async Task<string> ComputeHashFromFile(string filename)
         {
             using (var fs = File.OpenRead(filename))
             {
@@ -65,25 +52,11 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            SHA1 sha1;
-            byte[] bytes;
-            try
+            using (var md5 = MD5.Create())
             {
-                sha1 = new SHA1Managed();
+                var bytes = md5.ComputeHash(stream);
+                return Convert.ToHexString(bytes);
             }
-            catch (InvalidOperationException)
-            {
-                sha1 = SHA1.Create();
-            }
-            try
-            {
-                bytes = sha1.ComputeHash(stream);
-            }
-            finally
-            {
-                sha1.Dispose();
-            }
-            return Convert.ToHexString(bytes);
         }
     }
 }

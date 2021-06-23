@@ -31,6 +31,47 @@ namespace Leayal.PSO2Launcher.Core.Windows
             InitializeComponent();
         }
 
+        private async void ButtonTest_Click(object sender, RoutedEventArgs e)
+        {
+            // Run test
+            await using (var pso2Updater = new GameClientUpdater(@"G:\Phantasy Star Online 2\pso2_bin", @"G:\Phantasy Star Online 2\LeaCheckCacheV3.dat", this.pso2HttpClient))
+            {
+                pso2Updater.ProgressReport += this.PSO2Updater_ProgressReport;
+                pso2Updater.ProgressBegin += this.PSO2Updater_ProgressBegin;
+                pso2Updater.ProgressEnd += this.PSO2Updater_ProgressEnd;
+
+                pso2Updater.OperationCompleted += this.PSO2Updater_OperationCompleted;
+
+                CancellationToken cancelToken = CancellationToken.None;
+
+                if ((await pso2Updater.CheckForPSO2Updates(cancelToken)) == true)
+                {
+                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.NGS_AND_CLASSIC, FileScanFlags.Balanced, cancelToken);
+                    var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
+                }
+            }
+        }
+
+        private void PSO2Updater_OperationCompleted(GameClientUpdater sender, long howManyFileInTotal, long howManyFileFailure)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void PSO2Updater_ProgressEnd(PatchListItem file, in bool isSuccess)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void PSO2Updater_ProgressBegin(PatchListItem file, in long totalProgressValue)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void PSO2Updater_ProgressReport(PatchListItem file, in long currentProgressValue)
+        {
+            throw new NotImplementedException();
+        }
+
         #region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)
         {
@@ -43,7 +84,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             e.Handled = true;
             SystemCommands.MaximizeWindow(this);
         }
-        
+
         private void WindowsCommandButtons_Restore_Click(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -56,40 +97,5 @@ namespace Leayal.PSO2Launcher.Core.Windows
             SystemCommands.MinimizeWindow(this);
         }
         #endregion
-
-        private async void ButtonTest_Click(object sender, RoutedEventArgs e)
-        {
-            var rootInfo = await pso2HttpClient.GetPatchRootInfoAsync(CancellationToken.None);
-
-            var pso2Updater = new GameClientUpdater("", this.pso2HttpClient);
-            pso2Updater.CheckForPSO2Updates(CancellationToken.None);
-
-            // Save HTTP requests. Re-use root.
-            // var ver = await pso2HttpClient.GetPatchVersionAsync(rootInfo, CancellationToken.None);
-            if ((await pso2Updater.CheckForPSO2Updates(CancellationToken.None)) && MessageBox.Show(this, ver.ToString(), "It's alive", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
-            {
-                var patchlist_reboot = await pso2HttpClient.GetPatchListNGSFullAsync(rootInfo, CancellationToken.None);
-                var sb = new StringBuilder();
-                if (patchlist_reboot.TryGetByFilename("pso2.exe", out var patchItemInfo))
-                {
-                    sb.AppendLine($"Main exe: {patchItemInfo.GetFilenameWithoutAffix()} | {patchItemInfo.FileSize} | {patchItemInfo.MD5}");
-                }
-                sb.AppendLine($"Preview files:");
-                foreach (var item in System.Linq.Enumerable.Take(patchlist_reboot, 10))
-                {
-                    if (item.PatchOrBase.HasValue)
-                    {
-                        char charPM = item.PatchOrBase.Value ? 'p' : 'm';
-                        sb.AppendLine($"{item.RemoteFilename} | {item.FileSize} | {item.MD5} | {charPM}");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"{item.RemoteFilename} | {item.FileSize} | {item.MD5}");
-                    }
-                }
-
-                MessageBox.Show(this, sb.ToString(), "Preview Data", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
     }
 }

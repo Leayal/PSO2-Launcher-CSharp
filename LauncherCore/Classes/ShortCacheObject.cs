@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
+namespace Leayal.PSO2Launcher.Core.Classes
 {
     class ShortCacheObject<T>
     {
