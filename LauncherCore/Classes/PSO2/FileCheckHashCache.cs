@@ -1,7 +1,11 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using SQLite;
+using SQLitePCL;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
+using System.IO;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -11,14 +15,58 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private readonly SQLiteAsyncConnection sqlConn;
 
+        static FileCheckHashCache()
+        {
+            // IGetFunctionPointer gf = MakeDynamic("e_sqlcipher", 2);
+            // Respect path
+            // runtimes\win-x64\native\e_sqlcipher.dll
+            var dllPath = Path.GetFullPath(Path.Combine("runtimes", "win-x64", "native", "e_sqlcipher.dll"), AppDomain.CurrentDomain.BaseDirectory);
+            if (System.Runtime.InteropServices.NativeLibrary.TryLoad(dllPath, out var handle))
+            {
+                SQLite3Provider_dynamic_cdecl.Setup("e_sqlcipher", new MyGetFunctionPointer(handle));
+                raw.SetProvider(new SQLite3Provider_dynamic_cdecl());
+            }
+        }
+
+        private class MyGetFunctionPointer : SafeHandleZeroOrMinusOneIsInvalid, IGetFunctionPointer
+        {
+            public MyGetFunctionPointer(IntPtr dll) : base(true)
+            {
+                this.handle = dll;
+            }
+
+            public IntPtr GetFunctionPointer(string name)
+            {
+                if (NativeLibrary.TryGetExport(this.handle, name, out var address))
+                {
+                    return address;
+                }
+                return IntPtr.Zero;
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                try
+                {
+                    NativeLibrary.Free(this.handle);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
         public FileCheckHashCache(string filepath)
         {
-            var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create, true, "leapso2ngshashtable");
+            var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteAsyncConnection(connectionStr);
         }
 
         public async Task Load()
         {
+            await this.sqlConn.EnableWriteAheadLoggingAsync();
             var versionTb = await this.sqlConn.CreateTableAsync<Versioning>();
             var oldRecordTb = await this.sqlConn.CreateTableAsync<PatchRecordItem>();
             if (versionTb == CreateTableResult.Created)
@@ -70,7 +118,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             try
             {
-                return await this.sqlConn.GetAsync<PatchRecordItem>(filename);
+                return await this.sqlConn.Table<PatchRecordItem>().FirstOrDefaultAsync(obj => obj.RemoteFilename == filename);
             }
             catch (InvalidOperationException)
             {
@@ -91,8 +139,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public class PatchRecordItem
         {
-            [PrimaryKey, Unique, NotNull]
+            [PrimaryKey, Unique, NotNull, MaxLength(2048)]
             public string RemoteFilename { get; set; }
+            [MaxLength(32)]
             public string MD5 { get; set; }
             public long FileSize { get; set; }
             [NotNull]
@@ -102,7 +151,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         class Versioning
         {
             // Not sure whether I should do unique along with Primary
-            [PrimaryKey, Unique, NotNull]
+            [PrimaryKey, Unique, NotNull, MaxLength(256)]
             public string TableName { get; set; }
             [NotNull]
             public int TableVersion { get; set; }

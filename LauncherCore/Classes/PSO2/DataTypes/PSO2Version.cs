@@ -8,9 +8,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
     readonly struct PSO2Version : IComparable<PSO2Version>, IEquatable<PSO2Version>
     {
         public readonly int Version;
-        public readonly int ReleaseCandidate;
+        public readonly string ReleaseCandidate;
 
-        public PSO2Version(int version, int rc)
+        public PSO2Version(int version, string rc)
         {
             this.Version = version;
             this.ReleaseCandidate = rc;
@@ -46,16 +46,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             {
                 if (int.TryParse(buffer, System.Globalization.NumberStyles.Integer, null, out var versionNumber))
                 {
-                    value = new PSO2Version(versionNumber, 0);
+                    value = new PSO2Version(versionNumber, string.Empty);
                     return true;
                 }
             }
             else
             {
-                if (int.TryParse(buffer.Slice(0, index), System.Globalization.NumberStyles.Integer, null, out var versionNumber)
-                    && int.TryParse(buffer.Slice(index + (comparand.Length - 1)), System.Globalization.NumberStyles.Integer, null, out var versionRC))
+                if (int.TryParse(buffer.Slice(0, index), System.Globalization.NumberStyles.Integer, null, out var versionNumber))
                 {
-                    value = new PSO2Version(versionNumber, versionRC);
+                    value = new PSO2Version(versionNumber, new string(buffer.Slice(index + (comparand.Length - 1))));
                     return true;
                 }
             }
@@ -89,12 +88,36 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             var verCompare = this.Version.CompareTo(other.Version);
             if (verCompare == 0)
             {
-                return this.ReleaseCandidate.CompareTo(other.ReleaseCandidate);
+                if (int.TryParse(this.ReleaseCandidate, out var thisRC) && int.TryParse(other.ReleaseCandidate, out var otherRC))
+                {
+                    return thisRC.CompareTo(otherRC);
+                }
+                else
+                {
+                    thisRC = TakeDigitOnly(in this.ReleaseCandidate);
+                    otherRC = TakeDigitOnly(in other.ReleaseCandidate);
+                    return thisRC.CompareTo(otherRC);
+                }
             }
             else
             {
                 return verCompare;
             }
+        }
+
+        private static int TakeDigitOnly(in string str)
+        {
+            var span = str.AsSpan();
+            var sb = new StringBuilder(span.Length);
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (char.IsDigit(span[i]))
+                {
+                    sb.Append(span[i]);
+                }
+            }
+
+            return int.Parse(sb.ToString());
         }
 
         public override bool Equals(object obj)

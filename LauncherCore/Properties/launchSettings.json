@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LauncherCore": {
+      "commandName": "Project",
+      "workingDirectory": "E:\\All Content\\VB_Project\\visual studio 2019\\PSO2-Launcher-CSharp\\Test"
+    }
+  }
+}

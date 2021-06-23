@@ -21,9 +21,10 @@
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
+  
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /B /L /Y &quot;$(OutDir)\*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;" />
+    <Exec Command="copy /B /L /Y &quot;$(OutDir)*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;mkdir &quot;$(SolutionDir)Test\runtimes\win-x64\native&quot;&#xD;&#xA;copy /B /L /Y &quot;$(OutDir)runtimes\win-x64\native\*&quot; &quot;$(SolutionDir)Test\runtimes\win-x64\native\&quot;" />
   </Target>
 
 </Project>

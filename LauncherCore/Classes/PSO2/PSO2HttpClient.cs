@@ -144,6 +144,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
             => InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", cancellationToken);
 
+        public Task<PatchListMemory> GetPatchListAlwaysAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+            => InnerGetPatchListAsync(rootInfo, "patchlist_always.txt", cancellationToken);
+
         public Task<PatchListMemory> GetPatchListNGSPrologueAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
             => InnerGetPatchListAsync(rootInfo, "patchlist_prologue.txt", cancellationToken);
 

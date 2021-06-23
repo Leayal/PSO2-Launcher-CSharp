@@ -30,6 +30,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Cache purposes
         private readonly ObjectShortCacheManager<object> lastKnownObjects;
         private readonly FileCheckHashCache hashCacheDb;
+        private PSO2Version? lastKnownRemoteVersion;
 
         // File check
         private readonly object synclock_pendingFiles;
@@ -58,6 +59,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.lastKnownObjects = new ObjectShortCacheManager<object>();
             this.workingDirectory = whereIsThePSO2_BIN;
             this.webclient = httpHandler;
+        }
+
+        public Task LoadLocalHashCheck()
+        {
+            return this.hashCacheDb.Load();
         }
 
         private Task<PatchRootInfo> InnerGetPatchRootAsync(CancellationToken cancellationToken)
@@ -136,17 +142,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // workingDirectory
 
             // Acquire patch list.
-            PatchListBase headacheMatterAgain;
+            PatchListBase selectedList;
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
-
+            this.lastKnownRemoteVersion = await this.webclient.GetPatchVersionAsync(patchInfoRoot, cancellationToken);
+            var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
-                    headacheMatterAgain = await this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
+                    selectedList = await this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
                     break;
 
                 case GameClientSelection.NGS_Prologue_Only:
-                    headacheMatterAgain = await this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    selectedList = await this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
                     break;
 
                 case GameClientSelection.NGS_Only:
@@ -157,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                     await Task.WhenAll(t_prologueOnly, t_fullngs);
 
-                    headacheMatterAgain = PatchListBase.Create(await t_prologueOnly, await t_fullngs);
+                    selectedList = PatchListBase.Create(await t_prologueOnly, await t_fullngs);
 
                     break;
 
@@ -166,13 +173,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     throw new ArgumentOutOfRangeException(nameof(selection));
             }
 
+            var alwaysList = await t_alwaysList;
+            var headacheMatterAgain = PatchListBase.Create(selectedList, alwaysList);
+
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {
                 Interlocked.Exchange(ref this.count_totalFiles, patchListMemory.Count);
+                this.OnFileCheckBegin(patchListMemory.Count);
             }
             else
             {
                 Interlocked.Exchange(ref this.count_totalFiles, -1);
+                this.OnFileCheckBegin(-1);
             }
 
             var duhB = this.hashCacheDb;
@@ -180,6 +192,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // Begin file check
 
             // Maybe Enum.HasFlag() is better than this mess????
+
+            int processedCount = 0;
 
             switch (flags)
             {
@@ -203,13 +217,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 if (localFileLen == patchItem.FileSize)
                                 {
                                     string localMd5;
-                                    if (cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
+                                    if (cachedHash != null && cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
                                     {
                                         localMd5 = cachedHash.MD5;
                                     }
                                     else
                                     {
                                         localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
                                     }
 
                                     if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
@@ -223,6 +238,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 }
                             }
                         }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
 
@@ -247,6 +263,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     {
                                         this.pendingFiles.Add(patchItem);
                                     }
+                                    else
+                                    {
+                                        var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, patchItem.FileSize, localMd5), localLastModifiedTimeUtc);
+                                    }
                                 }
                                 else
                                 {
@@ -254,6 +275,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 }
                             }
                         }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
 
@@ -267,6 +289,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             this.pendingFiles.Add(patchItem);
                         }
+                        else
+                        {
+                            var cached = await duhB.GetPatchItem(localFilename);
+                            if (cached == null)
+                            {
+                                string localMd5;
+                                var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                using (var fs = File.OpenRead(localFilePath))
+                                {
+                                    localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                }
+                                await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, patchItem.FileSize, localMd5), localLastModifiedTimeUtc);
+                            }
+                        }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
 
@@ -290,8 +327,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 {
                                     this.pendingFiles.Add(patchItem);
                                 }
+                                else
+                                {
+                                    var cached = await duhB.GetPatchItem(localFilename);
+                                    if (cached == null)
+                                    {
+                                        var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                        string localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, patchItem.FileSize, localMd5), localLastModifiedTimeUtc);
+                                    }
+                                }
                             }
                         }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
 
@@ -312,13 +360,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             using (var fs = File.OpenRead(localFilePath))
                             {
                                 string localMd5;
-                                if (cachedHash.FileSize == fs.Length && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
+                                if (cachedHash != null && cachedHash.FileSize == fs.Length && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
                                 {
                                     localMd5 = cachedHash.MD5;
                                 }
                                 else
                                 {
                                     localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                    await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
                                 }
                                 if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                                 {
@@ -326,6 +375,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 }
                             }
                         }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
 
@@ -341,18 +391,26 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         else
                         {
+                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                            string localMd5;
+                            long fileLen;
                             using (var fs = File.OpenRead(localFilePath))
                             {
-                                string localMd5 = await MD5Hash.ComputeHashFromFileAsync(fs);
-                                if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    this.pendingFiles.Add(patchItem);
-                                }
+                                fileLen = fs.Length;
+                                localMd5 = await MD5Hash.ComputeHashFromFileAsync(fs);
+                            }
+                            await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fileLen, localMd5), localLastModifiedTimeUtc);
+                            if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                            {
+                                this.pendingFiles.Add(patchItem);
                             }
                         }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     }
                     break;
             }
+
+            this.OnFileCheckEnd();
         }
 
         public Task StartDownloadFiles(CancellationToken cancellationToken)
@@ -526,20 +584,37 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var failureCount = Interlocked.Exchange(ref this.count_fileFailure, 0);
                 var totalCount = Interlocked.Exchange(ref this.count_totalFiles, 0);
 
+                if (lastKnownRemoteVersion.HasValue)
+                {
+                    File.WriteAllText(Path.GetFullPath("version.ver", this.workingDirectory), lastKnownRemoteVersion.Value.ToString());
+                }
+
                 this.OperationCompleted?.Invoke(this, totalCount, failureCount);
             }
         }
 
+        public event FileCheckBeginHandler FileCheckBegin;
+        private void OnFileCheckBegin(in int total) => this.FileCheckBegin?.Invoke(this, total);
+
+        public event FileCheckReportHandler FileCheckReport;
+        private void OnFileCheckReport(in int current) => this.FileCheckReport?.Invoke(this, current);
+
+        public event FileCheckEndHandler FileCheckEnd;
+        private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
+
         public async ValueTask DisposeAsync()
         {
-            this.pendingFiles.Dispose();
             await this.hashCacheDb.DisposeAsync();
+            this.pendingFiles?.Dispose();
         }
 
         public delegate void ProgressBeginHandler(PatchListItem file, in long totalProgressValue);
         public delegate void ProgressReportHandler(PatchListItem file, in long currentProgressValue);
         public delegate void ProgressEndHandler(PatchListItem file, in bool isSuccess);
 
+        public delegate void FileCheckEndHandler(GameClientUpdater sender);
+        public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
+        public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
         public delegate void OperationCompletedHandler(GameClientUpdater sender, long howManyFileInTotal, long howManyFileFailure);
     }
 }
