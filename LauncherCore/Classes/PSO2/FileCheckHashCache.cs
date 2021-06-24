@@ -15,17 +15,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private readonly SQLiteAsyncConnection sqlConn;
 
-        static FileCheckHashCache()
+        public static SafeHandleZeroOrMinusOneIsInvalid InitSQLite3(string dllPath)
         {
             // IGetFunctionPointer gf = MakeDynamic("e_sqlcipher", 2);
             // Respect path
             // runtimes\win-x64\native\e_sqlcipher.dll
-            var dllPath = Path.GetFullPath(Path.Combine("runtimes", "win-x64", "native", "e_sqlcipher.dll"), AppDomain.CurrentDomain.BaseDirectory);
             if (System.Runtime.InteropServices.NativeLibrary.TryLoad(dllPath, out var handle))
             {
-                SQLite3Provider_dynamic_cdecl.Setup("e_sqlcipher", new MyGetFunctionPointer(handle));
+                var derp = new MyGetFunctionPointer(handle);
+                SQLite3Provider_dynamic_cdecl.Setup("e_sqlcipher", derp);
                 raw.SetProvider(new SQLite3Provider_dynamic_cdecl());
+                return derp;
             }
+
+            return null;
         }
 
         private class MyGetFunctionPointer : SafeHandleZeroOrMinusOneIsInvalid, IGetFunctionPointer
@@ -37,7 +40,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             public IntPtr GetFunctionPointer(string name)
             {
-                if (NativeLibrary.TryGetExport(this.handle, name, out var address))
+                if (System.Runtime.InteropServices.NativeLibrary.TryGetExport(this.handle, name, out var address))
                 {
                     return address;
                 }
@@ -48,7 +51,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 try
                 {
-                    NativeLibrary.Free(this.handle);
+                    System.Runtime.InteropServices.NativeLibrary.Free(this.handle);
                     return true;
                 }
                 catch

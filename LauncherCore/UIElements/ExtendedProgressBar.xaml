@@ -8,6 +8,6 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <local:GradientProgressBar x:Name="progressbar" />
-        <TextBlock TextAlignment="Center" Background="#7FFFFFFF" Foreground="Black" x:Name="progresstext" />
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Background="#7FFFFFFF" Foreground="Black" x:Name="progresstext" />
     </Grid>
 </UserControl>

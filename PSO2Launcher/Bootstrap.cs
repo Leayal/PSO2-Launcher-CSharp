@@ -79,7 +79,7 @@ namespace Leayal.PSO2Launcher
                     var data = await task_data;
 
                     // Handle downloads and overwrite files.
-                    if (data.Items.Count != 0)
+                    if (data.Items != null && data.Items.Count != 0)
                     {
                         // Prompt whether the user wants to update or not.
                         var promptResult = class_bootstrapUpdater.DisplayUpdatePrompt(this);

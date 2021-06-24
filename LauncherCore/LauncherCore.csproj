@@ -20,6 +20,7 @@
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\WebViewCompat\WebViewCompat.csproj" />
   </ItemGroup>
   
 

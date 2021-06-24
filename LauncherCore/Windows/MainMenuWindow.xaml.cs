@@ -5,17 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.IO;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using System.Threading;
 using System.Collections.Concurrent;
+using Leayal.WebViewCompat;
+using System.Diagnostics;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -25,12 +21,60 @@ namespace Leayal.PSO2Launcher.Core.Windows
     public partial class MainMenuWindow : MetroWindowEx
     {
         private readonly PSO2HttpClient pso2HttpClient;
+        private CancellationTokenSource cancelSrc;
+
+        static MainMenuWindow()
+        {
+            WebViewCompatControl.DefaultUserAgent = "PSO2Launcher";
+            // Hack IE to IE11.
+
+            // HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN
+            try
+            {
+                using (var hive = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "Internet Explorer", "Main", "FeatureControl", "FEATURE_BROWSER_EMULATION"), true))
+                {
+                    if (hive != null)
+                    {
+                        string filename;
+                        using (var proc = Process.GetCurrentProcess())
+                        {
+                            filename = Path.GetFileName(proc.MainModule.FileName);
+                        }
+                        if (hive.GetValue(filename) is int verNum)
+                        {
+                            if (verNum < 11001)
+                            {
+                                hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
+                                hive.Flush();
+                            }
+                        }
+                        else
+                        {
+                            hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
+                            hive.Flush();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Optional anyway.
+            }
+        }
 
         public MainMenuWindow()
         {
             this.pso2HttpClient = new PSO2HttpClient();
             InitializeComponent();
             this.TabMainMenu.IsSelected = true;
+        }
+
+        private void WebViewCompatControl_Initialized(object sender, EventArgs e)
+        {
+            if (sender is WebViewCompatControl webview)
+            {
+                webview.NavigateTo(new Uri("https://launcher.pso2.jp/ngs/01/"));
+            }
         }
 
         private async void ButtonCheckForUpdate_Click(object sender, RoutedEventArgs e)
@@ -108,6 +152,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 }), sender, currentfilecount);
                             };
                         }
+                        this.TabGameClientUpdateProgressBar.IsIndetermined = false;
                     }), sender, totalfilecount);
                 };
 
@@ -127,19 +172,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }), sender, totalfiles, failedfiles);
                 };
 
-                CancellationToken cancelToken = CancellationToken.None;
+                this.cancelSrc?.Dispose();
+                this.cancelSrc = new CancellationTokenSource();
 
-                if ((await pso2Updater.CheckForPSO2Updates(cancelToken)) == true)
+                CancellationToken cancelToken = this.cancelSrc.Token;
+
+                if (await pso2Updater.CheckForPSO2Updates(cancelToken))
                 {
-                    await this.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        this.TabGameClientUpdateProgressBar.IsIndetermined = false;
-                    }));
                     await t_loadLocalHashDb;
                     var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.NGS_AND_CLASSIC, FileScanFlags.Balanced, cancelToken);
                     var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
 
-                    await Task.WhenAll(t_fileCheck, t_downloading);
+                    await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
                 }
             }
             /*
@@ -151,7 +195,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
             finally
             {
                 await pso2Updater.DisposeAsync();
-                this.TabMainMenu.IsSelected = true;
+                await this.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    this.TabMainMenu.IsSelected = true;
+                }));
+            }
+        }
+
+        private void TabGameClientUpdateProgressBar_UpdateCancelClicked(object sender, RoutedEventArgs e)
+        {
+            if (this.cancelSrc != null)
+            {
+                if (!this.cancelSrc.IsCancellationRequested)
+                {
+                    this.cancelSrc.Cancel();
+                }
             }
         }
 

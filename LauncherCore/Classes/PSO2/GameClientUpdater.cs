@@ -125,6 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 finally
                 {
                     this.pendingFiles.CompleteAdding();
+                    this.OnFileCheckEnd();
                 }
             }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
@@ -201,6 +202,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.MissingFilesOnly | FileScanFlags.FileSizeMismatch | FileScanFlags.MD5HashMismatch:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -246,6 +252,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.MissingFilesOnly | FileScanFlags.FileSizeMismatch | FileScanFlags.MD5HashMismatch | FileScanFlags.ForceRefreshCache:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -283,6 +294,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.MissingFilesOnly | FileScanFlags.ForceRefreshCache:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -313,6 +329,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.FileSizeMismatch:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -347,6 +368,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.MD5HashMismatch:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -383,6 +409,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case FileScanFlags.MD5HashMismatch | FileScanFlags.ForceRefreshCache:
                     foreach (var patchItem in headacheMatterAgain)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                         if (!File.Exists(localFilePath))
@@ -409,8 +440,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     break;
             }
-
-            this.OnFileCheckEnd();
         }
 
         public Task StartDownloadFiles(CancellationToken cancellationToken)
@@ -450,11 +479,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private async Task InnerDownloadSingleFile(CancellationToken cancellationToken)
         {
-            var downloadbuffer = new byte[4096];
+            // var downloadbuffer = new byte[4096];
+            var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
             var duhB = this.hashCacheDb;
 
             foreach (var file in this.pendingFiles.GetConsumingEnumerable())
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 var localFilename = file.GetFilenameWithoutAffix();
                 var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                 var tmpFilename = localFilename + ".dtmp";
@@ -487,25 +522,36 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 if (remoteSizeInBytes == -1)
                                 {
                                     // Download without knowing total size, until upstream get EOF.
-                                    var byteRead = remoteStream.Read(downloadbuffer, 0, downloadbuffer.Length);
+
+                                    // Still need async to support cancellation faster.
+                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     while (byteRead > 0)
                                     {
+                                        if (cancellationToken.IsCancellationRequested)
+                                        {
+                                            break;
+                                        }
                                         localStream.Write(downloadbuffer, 0, byteRead);
                                         bytesDownloaded += byteRead;
-                                        byteRead = remoteStream.Read(downloadbuffer, 0, downloadbuffer.Length);
+                                        byteRead = await remoteStream.ReadAsync (downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     }
                                 }
                                 else
                                 {
                                     // Download while reporting the download progress, until upstream get EOF.
-                                    var byteRead = remoteStream.Read(downloadbuffer, 0, downloadbuffer.Length);
+                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     while (byteRead > 0)
                                     {
+                                        if (cancellationToken.IsCancellationRequested)
+                                        {
+                                            break;
+                                        }
+
                                         localStream.Write(downloadbuffer, 0, byteRead);
                                         bytesDownloaded += byteRead;
                                         // Report progress here
                                         this.OnProgressReport(file, in bytesDownloaded);
-                                        byteRead = remoteStream.Read(downloadbuffer, 0, downloadbuffer.Length);
+                                        byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     }
                                 }
 
@@ -557,21 +603,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public event ProgressReportHandler ProgressReport;
         private void OnProgressReport(PatchListItem currentFile, in long currentProgress)
-        {
-            this.ProgressReport?.Invoke(currentFile, in currentProgress);
-        }
+            => this.ProgressReport?.Invoke(currentFile, in currentProgress);
 
         public event ProgressBeginHandler ProgressBegin;
         private void OnProgressBegin(PatchListItem currentFile, in long totalProgress)
-        {
-            this.ProgressBegin?.Invoke(currentFile, in totalProgress);
-        }
+            => this.ProgressBegin?.Invoke(currentFile, in totalProgress);
 
         public event ProgressEndHandler ProgressEnd;
         private void OnProgressEnd(PatchListItem currentFile, in bool isSuccess)
-        {
-            this.ProgressEnd?.Invoke(currentFile, in isSuccess);
-        }
+            => this.ProgressEnd?.Invoke(currentFile, in isSuccess);
 
         public event OperationCompletedHandler OperationCompleted;
         private void OnClientOperationComplete1()
@@ -586,7 +626,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 if (lastKnownRemoteVersion.HasValue)
                 {
-                    File.WriteAllText(Path.GetFullPath("version.ver", this.workingDirectory), lastKnownRemoteVersion.Value.ToString());
+                    var val = lastKnownRemoteVersion.Value;
+                    lastKnownRemoteVersion = null;
+                    File.WriteAllText(Path.GetFullPath("version.ver", this.workingDirectory), val.ToString());
+
                 }
 
                 this.OperationCompleted?.Invoke(this, totalCount, failureCount);

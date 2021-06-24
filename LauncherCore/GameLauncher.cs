@@ -3,6 +3,8 @@ using System;
 using ControlzEx.Theming;
 using System.Runtime.Loader;
 using System.Reflection;
+using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using System.IO;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -13,22 +15,30 @@ namespace Leayal.PSO2Launcher.Core
 
         public GameLauncher()
         {
-            // this.isLightMode = false;
-            this._app = new App();
-            ThemeManager.Current.SyncTheme(ThemeSyncMode.SyncWithAppMode);
-            var themeInfo = ThemeManager.Current.DetectTheme(this._app);
-            if (themeInfo == null)
+            var lib = FileCheckHashCache.InitSQLite3(Path.GetFullPath(Path.Combine("runtimes", "win-x64", "native", "e_sqlcipher.dll"), AppDomain.CurrentDomain.BaseDirectory));
+            try
             {
-                // In case the assembly is isolated.
-                // Currently enforce setting. Will do something about save/load later.
-                ThemeManager.Current.ChangeTheme(this._app, ThemeManager.BaseColorDark, "Red");
-                this.isLightMode = false;
+                // this.isLightMode = false;
+                this._app = new App();
+                ThemeManager.Current.SyncTheme(ThemeSyncMode.SyncWithAppMode);
+                var themeInfo = ThemeManager.Current.DetectTheme(this._app);
+                if (themeInfo == null)
+                {
+                    // In case the assembly is isolated.
+                    // Currently enforce setting. Will do something about save/load later.
+                    ThemeManager.Current.ChangeTheme(this._app, ThemeManager.BaseColorDark, "Red");
+                    this.isLightMode = false;
+                }
+                else
+                {
+                    this.isLightMode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
+                }
+                // ThemeManager.Current.ThemeSyncMode = ThemeSyncMode.DoNotSync;
             }
-            else
+            finally
             {
-                this.isLightMode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
+                lib?.Close();
             }
-            // ThemeManager.Current.ThemeSyncMode = ThemeSyncMode.DoNotSync;
         }
 
         public void Run(string[] args)

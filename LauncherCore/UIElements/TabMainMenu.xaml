@@ -10,6 +10,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition />
+            <RowDefinition />
         </Grid.RowDefinitions>
         <Button Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" />
     </Grid>

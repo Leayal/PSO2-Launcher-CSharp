@@ -7,11 +7,12 @@
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
              mc:Ignorable="d" x:Name="thisSelf"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
+    <Grid Margin="2">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <mah:ProgressRing Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
@@ -21,8 +22,23 @@
         <Label Grid.Row="1" Content="Downloading:" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
 
         <!--File download progress bars-->
-        <Grid Grid.Row="2" x:Name="DownloadFileTable" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}">
-            <Grid.RowDefinitions />
-        </Grid>
+        <ListView Grid.Row="2" x:Name="DownloadFileTable" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}"
+                  SelectionMode="Single"
+                  ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                    <Setter Property="Margin" Value="1" />
+                    <Setter Property="Height" Value="30" />
+                    <Setter Property="Focusable" Value="false" />
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+
+        <Button Grid.Row="3" Click="ButtonCancel_Click" Content="Cancel" />
     </Grid>
 </mah:MetroTabItem>

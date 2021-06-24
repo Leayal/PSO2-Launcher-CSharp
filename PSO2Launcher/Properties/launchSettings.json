@@ -2,7 +2,7 @@
   "profiles": {
     "PSO2Launcher": {
       "commandName": "Executable",
-      "executablePath": "$(SolutionDir)Test\\PSO2Launcher.exe"
+      "executablePath": "$(SolutionDir)Test\\PSO2LeaLauncher.exe"
     }
   }
 }

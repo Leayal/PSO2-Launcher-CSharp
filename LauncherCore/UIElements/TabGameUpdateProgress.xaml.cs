@@ -1,6 +1,7 @@
 ﻿using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,44 +24,49 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     {
         private static readonly DependencyProperty IsIndeterminedProperty = DependencyProperty.Register("IsIndetermined", typeof(bool), typeof(TabGameUpdateProgress), new UIPropertyMetadata(false));
 
+        public static readonly RoutedEvent UpdateCancelClickedEvent = EventManager.RegisterRoutedEvent("UpdateCancelClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabGameUpdateProgress));
+
         public bool IsIndetermined
         {
             get => (bool)this.GetValue(IsIndeterminedProperty);
             set => this.SetValue(IsIndeterminedProperty, value);
         }
 
-        private readonly List<ExtendedProgressBar> indexing;
+        public event RoutedEventHandler UpdateCancelClicked
+        {
+            add { this.AddHandler(UpdateCancelClickedEvent, value); }
+            remove { this.RemoveHandler(UpdateCancelClickedEvent, value); }
+        }
+
+        private readonly ObservableCollection<ExtendedProgressBar> indexing;
 
         public TabGameUpdateProgress()
         {
-            this.indexing = new List<ExtendedProgressBar>();
+            this.indexing = new ObservableCollection<ExtendedProgressBar>();
             InitializeComponent();
+            this.DownloadFileTable.ItemsSource = this.indexing;
         }
 
         public void SetProgressBarCount(int count)
         {
-            var currentHaving = this.DownloadFileTable.RowDefinitions.Count;
+            var currentHaving = this.indexing.Count;
             if (count != currentHaving)
             {
                 this.indexing.Clear();
-                this.DownloadFileTable.RowDefinitions.Clear();
-                this.DownloadFileTable.Children.Clear();
                 for (int i = 0; i < count; i++)
                 {
-                    this.DownloadFileTable.RowDefinitions.Add(new RowDefinition());
-                    var progressbar = new ExtendedProgressBar();
+                    // this.DownloadFileTable.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40) });
+                    var progressbar = new ExtendedProgressBar() { Margin = new Thickness(1) };
                     Grid.SetRow(progressbar, i);
                     this.indexing.Add(progressbar);
-                    this.DownloadFileTable.Children.Add(progressbar);
                 }
             }
         }
 
-
-
-        // Not used
         public void SetProgressText(int index, string text) => this.indexing[index].Text = text;
         public void SetProgressValue(int index, in double value) => this.indexing[index].ProgressBar.Value = value;
         public void SetProgressMaximum(int index, in double value) => this.indexing[index].ProgressBar.Maximum = value;
+
+        private void ButtonCancel_Click(object sender, RoutedEventArgs e) => this.RaiseEvent(new RoutedEventArgs(UpdateCancelClickedEvent));
     }
 }

@@ -24,7 +24,7 @@ namespace Leayal.PSO2Launcher.Updater
             // Fetch from internet a list then check for SHA-1.
             using (var wc = new WebClient())
             {
-                using (var jsonStream = await wc.OpenReadTaskAsync("file:///E:/All%20Content/VB_Project/visual%20studio%202019/PSO2-Launcher-CSharp/Test/launcherupdate.json"))
+                using (var jsonStream = await wc.OpenReadTaskAsync("file:///E:/All%20Content/VB_Project/visual%20studio%202019/PSO2-Launcher-CSharp/Test/a.json"))
                 using (var doc = await JsonDocument.ParseAsync(jsonStream))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))
@@ -53,27 +53,30 @@ namespace Leayal.PSO2Launcher.Updater
 
             var rootelement = document.RootElement;
 
-            if (rootelement.TryGetProperty("files", out var prop_files) && prop_files.ValueKind == JsonValueKind.Object)
+            if (rootelement.TryGetProperty("files", out var prop_files))
             {
-                using (var objWalker = prop_files.EnumerateObject())
+                if (prop_files.ValueKind == JsonValueKind.Object)
                 {
-                    var currentNetAsm = Assembly.GetExecutingAssembly();
-                    while (objWalker.MoveNext())
+                    using (var objWalker = prop_files.EnumerateObject())
                     {
-                        var item_prop = objWalker.Current;
-                        var displayName = item_prop.Name;
-                        var prop_val = item_prop.Value;
-                        if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
-                            && (prop_val.TryGetProperty("url", out var item_prop_url) && item_prop_url.ValueKind == JsonValueKind.String))
+                        var currentNetAsm = Assembly.GetExecutingAssembly();
+                        while (objWalker.MoveNext())
                         {
-                            var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
-                            var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
-                            if (!string.Equals(hash, item_prop_sha1.GetString(), StringComparison.OrdinalIgnoreCase))
+                            var item_prop = objWalker.Current;
+                            var displayName = item_prop.Name;
+                            var prop_val = item_prop.Value;
+                            if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
+                                && (prop_val.TryGetProperty("url", out var item_prop_url) && item_prop_url.ValueKind == JsonValueKind.String))
                             {
-                                bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
+                                var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
+                                var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
+                                if (!string.Equals(hash, item_prop_sha1.GetString(), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
 
-                                needtobeupdated.Add(displayName, new UpdateItem(localFilename, item_prop_url.GetString(), displayName, isArchive));
-                            }   
+                                    needtobeupdated.Add(displayName, new UpdateItem(localFilename, item_prop_url.GetString(), displayName, isArchive));
+                                }
+                            }
                         }
                     }
                 }
