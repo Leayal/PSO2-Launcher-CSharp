@@ -104,7 +104,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -113,14 +113,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 data.WorkingDirectory = @"G:\Phantasy Star Online 2\pso2_bin";
                 data.Arguments = " +0x33aca2b9 -reboot -optimize";
                 data.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
-                var exitCode = await ProcessHelper.CreateProcessElevated(data);
-                if (exitCode == 740)
+                var exitCode = ProcessHelper.CreateProcessElevated(data);
+                switch (exitCode)
                 {
-                    MessageBox.Show(this, "The current user doesn't have the privilege to create a process as Administrator.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                else
-                {
-                    MessageBox.Show(this, "Unknown error. Exit code: " + exitCode, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    case 0:
+                        // Do nothing
+                        break;
+                    case 740:
+                        MessageBox.Show(this, "The current user doesn't have the privilege to create a process as Administrator.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        break;
+                    default:
+                        MessageBox.Show(this, "Unknown error. Exit code: " + exitCode, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        break;
                 }
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)

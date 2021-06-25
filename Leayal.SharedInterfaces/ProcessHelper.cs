@@ -14,7 +14,6 @@ namespace Leayal.SharedInterfaces
     {
         public static int CreateProcessElevated(BootstrapElevation elevation)
         {
-            var memId = Guid.NewGuid().ToString();
             string fullFilename;
             using (var currentProc = Process.GetCurrentProcess())
             {
@@ -25,31 +24,53 @@ namespace Leayal.SharedInterfaces
             var data = new RestartObj<BootstrapElevation>(elevation, fullFilename, null);
             var memoryData = data.SerializeJson();
 
-            using (var mmf = MemoryMappedFile.CreateNew(memId, memoryData.Length, MemoryMappedFileAccess.ReadWrite))
+            Exception finalex = null;
+            for (int retry = 0; retry < 3; retry++)
             {
-                using (var writer = mmf.CreateViewStream(0, memoryData.Length))
+                var memId = Guid.NewGuid().ToString();
+                var dir = Path.GetDirectoryName(fullFilename);
+                var tmpFilename = Path.GetFullPath(memId, dir);
+                try
                 {
-                    writer.Write(memoryData.Span);
+                    using (var fs = new FileStream(tmpFilename, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                    {
+                        fs.SetLength(memoryData.Length);
+                        fs.Write(memoryData.Span);
+                        fs.Flush();
+                    }
+                    using (var process = new Process())
+                    {
+                        process.StartInfo.FileName = fullFilename;
+
+                        process.StartInfo.ArgumentList.Add("--launch-elevated");
+                        process.StartInfo.ArgumentList.Add(memId);
+
+                        process.StartInfo.UseShellExecute = true;
+                        process.StartInfo.Verb = "runas";
+                        process.StartInfo.WorkingDirectory = dir;
+
+                        process.Start();
+
+                        process.WaitForExit(60000);
+
+                        return process.ExitCode;
+                    }
                 }
-
-                using (var process = new Process())
+                catch (IOException ex)
                 {
-                    process.StartInfo.FileName = fullFilename;
-
-                    process.StartInfo.ArgumentList.Add("--launch-elevated");
-                    process.StartInfo.ArgumentList.Add(memId);
-
-                    process.StartInfo.UseShellExecute = true;
-                    process.StartInfo.Verb = "runas";
-                    process.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
-
-                    process.Start();
-
-                    process.WaitForExit(60000);
-
-                    return process.ExitCode;
+                    finalex = ex;
+                }
+                finally
+                {
+                    File.Delete(tmpFilename);
                 }
             }
+
+            if (finalex == null)
+            {
+                throw new InvalidProgramException();
+            }
+            throw finalex;
         }
     }
 }

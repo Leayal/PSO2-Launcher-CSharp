@@ -38,11 +38,12 @@ namespace Leayal.PSO2Launcher
                         RestartObj<BootstrapElevation> data = null;
                         try
                         {
-                            using (var mmf = MemoryMappedFile.OpenExisting(memoryId))
-                            using (var dataStream = mmf.CreateViewStream())
+                            using (var fs = new FileStream(memoryId, FileMode.Open, FileAccess.Read))
+                            // using (var mmf = MemoryMappedFile.OpenExisting(Path.Combine("Global", $"leapso2{memoryId}")))
+                            // using (var dataStream = mmf.CreateViewStream())
                             {
-                                var bytes = new byte[dataStream.Length];
-                                dataStream.Read(bytes);
+                                var bytes = new byte[fs.Length];
+                                fs.Read(bytes);
                                 data = RestartObj<BootstrapElevation>.DeserializeJson(bytes);
                             }
                         }
