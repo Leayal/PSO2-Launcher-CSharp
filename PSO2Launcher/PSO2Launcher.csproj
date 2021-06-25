@@ -16,4 +16,8 @@
     <Exec Command="copy /B /L /Y &quot;$(OutDir)\*&quot; &quot;$(SolutionDir)Test\&quot;" />
   </Target>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+  </ItemGroup>
+
 </Project>

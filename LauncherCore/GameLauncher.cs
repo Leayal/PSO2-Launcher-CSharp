@@ -1,4 +1,4 @@
-using Leayal.PSO2Launcher.Communication.GameLauncher;
+using Leayal.SharedInterfaces.Communication;
 using System;
 using ControlzEx.Theming;
 using System.Runtime.Loader;

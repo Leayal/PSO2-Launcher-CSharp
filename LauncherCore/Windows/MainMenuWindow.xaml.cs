@@ -10,8 +10,10 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using System.Threading;
 using System.Collections.Concurrent;
-using Leayal.WebViewCompat;
 using System.Diagnostics;
+using Leayal.SharedInterfaces;
+using System.Reflection;
+using System.ComponentModel;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -25,7 +27,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         static MainMenuWindow()
         {
-            WebViewCompatControl.DefaultUserAgent = "PSO2Launcher";
             // Hack IE to IE11.
 
             // HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_LOCALMACHINE_LOCKDOWN
@@ -69,11 +70,122 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.TabMainMenu.IsSelected = true;
         }
 
+        private void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                // this.RemoveLogicalChild(btn);
+
+                try
+                {
+                    var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
+                        Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), AppDomain.CurrentDomain.BaseDirectory),
+                        "Leayal.WebViewCompat.WebViewCompatControl",
+                        false,
+                        BindingFlags.CreateInstance,
+                        null,
+                        new object[] { "PSO2Launcher" },
+                        null,
+                        null);
+                    var webview = (IWebViewCompatControl)obj;
+                    webview.Initialized += this.WebViewCompatControl_Initialized;
+                    var grid = (Grid)this.Content;
+                    grid.Children.Remove(btn);
+                    var element = (Control)obj;
+                    Grid.SetRow(element, 2);
+                    element.Margin = new Thickness(1);
+                    grid.Children.Add(element);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                
+            }
+        }
+
+        private async void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var data = new SharedInterfaces.Communication.BootstrapElevation();
+                data.Filename = @"G:\Phantasy Star Online 2\pso2_bin\pso2.exe";
+                data.WorkingDirectory = @"G:\Phantasy Star Online 2\pso2_bin";
+                data.Arguments = " +0x33aca2b9 -reboot -optimize";
+                data.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
+                var exitCode = await ProcessHelper.CreateProcessElevated(data);
+                if (exitCode == 740)
+                {
+                    MessageBox.Show(this, "The current user doesn't have the privilege to create a process as Administrator.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    MessageBox.Show(this, "Unknown error. Exit code: " + exitCode, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
-            if (sender is WebViewCompatControl webview)
+            if (sender is IWebViewCompatControl webview)
             {
                 webview.NavigateTo(new Uri("https://launcher.pso2.jp/ngs/01/"));
+
+                // Lock the view to the URL above.
+                webview.Navigating += this.Webview_Navigating;
+            }
+        }
+
+        private void Webview_Navigating(object sender, NavigatingEventArgs e)
+        {
+            if (sender is IWebViewCompatControl wvc)
+            {
+                e.Cancel = true;
+                // Hackish. De-elevate starting Url.
+
+                if (e.Uri.IsAbsoluteUri)
+                {
+                    try
+                    {
+                        Process.Start("explorer.exe", "\"" + e.Uri.AbsoluteUri + "\"").Dispose();
+                    }
+                    catch
+                    {
+
+                    }
+                }
+                else
+                {
+                    if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
+                    {
+                        try
+                        {
+                            Process.Start("explorer.exe", "\"" + absUri.AbsoluteUri + "\"").Dispose();
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
+        {
+            var dialog = new DataManagerWindow();
+            dialog.Owner = this;
+            if (dialog.ShowDialog() == true)
+            {
+
             }
         }
 

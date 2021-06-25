@@ -6,10 +6,10 @@
                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                      xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-                     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" xmlns:webviewcompat="clr-namespace:Leayal.WebViewCompat;assembly=WebViewCompat"
+                     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                      mc:Ignorable="d" x:Name="thisWindow"
-                     MinHeight="600" MinWidth="840"
-                     Title="PSO2 JP Launcher" Height="600" Width="840" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
+                     MinHeight="600" MinWidth="850"
+                     Title="PSO2 JP Launcher" Height="600" Width="850" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="25" />
@@ -40,9 +40,13 @@
         </Grid>
         <mah:MetroAnimatedTabControl Grid.Row="1">
             <localui:TabMainMenu x:Name="TabMainMenu"
-                                 ButtonCheckForPSO2UpdateClicked="ButtonCheckForUpdate_Click" />
-            <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar" UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
+                                 ButtonCheckForPSO2UpdateClicked="ButtonCheckForUpdate_Click"
+                                 ButtonManageGameDataClicked="TabMainMenu_ButtonManageGameDataClick"
+                                 ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick" />
+            <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar" 
+                                           UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>
-        <webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />
+        <Button Grid.Row="2" Margin="1" Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" />
+        <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>
 </local:MetroWindowEx>

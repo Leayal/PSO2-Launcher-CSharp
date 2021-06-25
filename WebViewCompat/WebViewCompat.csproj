@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.902-prerelease" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+  </ItemGroup>
+
 </Project>

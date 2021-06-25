@@ -4,14 +4,13 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher.Communication
+namespace Leayal.SharedInterfaces.Communication
 {
-    class RestartObj<T> where T : RestartDataObj
+    public class RestartObj<T> where T : RestartDataObj<T>, new()
     {
         public readonly T DataObj;
         public readonly string ParentFilename;
         public readonly List<string> ParentParams;
-
 
         public RestartObj(T obj, string filename, List<string> processparams)
         {
@@ -19,6 +18,8 @@ namespace Leayal.PSO2Launcher.Communication
             this.ParentFilename = filename;
             this.ParentParams = processparams;
         }
+
+        public RestartObj(T obj, string filename) : this(obj, filename, null) { }
 
         public ReadOnlyMemory<byte> SerializeJson()
         {
@@ -29,12 +30,19 @@ namespace Leayal.PSO2Launcher.Communication
 
                 writer.WriteString("parentFilename", this.ParentFilename);
 
-                writer.WriteStartArray("parentParams");
-                for (int i = 0; i < this.ParentParams.Count; i++)
+                if (this.ParentParams == null)
                 {
-                    writer.WriteStringValue(this.ParentParams[i]);
+                    writer.WriteNull("parentParams");
                 }
-                writer.WriteEndArray();
+                else
+                {
+                    writer.WriteStartArray("parentParams");
+                    for (int i = 0; i < this.ParentParams.Count; i++)
+                    {
+                        writer.WriteStringValue(this.ParentParams[i]);
+                    }
+                    writer.WriteEndArray();
+                }
                 writer.WritePropertyName("data");
                 this.DataObj.WriteJsonValueTo(writer);
 
@@ -54,17 +62,14 @@ namespace Leayal.PSO2Launcher.Communication
                 var rootElement = doc.RootElement;
                 if (rootElement.TryGetProperty("data", out var prop_data))
                 {
-                    var type = typeof(T).GetType();
-                    var method = type.GetMethod("DeserializeJson", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                    if (method != null)
-                    {
-                        dataObj = method.Invoke(null, new object[] { prop_data }) as T;
-                    }
+                    var parser = new T();
+                    dataObj = parser.DeserializeJson(prop_data);
                 }
 
-                var paramList = new List<string>();
+                List<string> paramList = null;
                 if (rootElement.TryGetProperty("parentParams", out var prop_params) && prop_params.ValueKind == JsonValueKind.Array)
                 {
+                    paramList = new List<string>();
                     using (var arrayWalker = prop_params.EnumerateArray())
                     {
                         while (arrayWalker.MoveNext())
@@ -82,7 +87,7 @@ namespace Leayal.PSO2Launcher.Communication
         }
     }
 
-    public abstract class RestartDataObj
+    public abstract class RestartDataObj<T>
     {
         public virtual ReadOnlyMemory<byte> SerializeJson()
         {
@@ -96,5 +101,7 @@ namespace Leayal.PSO2Launcher.Communication
         }
 
         public abstract void WriteJsonValueTo(Utf8JsonWriter writer);
+
+        public abstract T DeserializeJson(JsonElement element);
     }
 }

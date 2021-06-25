@@ -6,14 +6,14 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher.Communication.GameLauncher
+namespace Leayal.SharedInterfaces.Communication
 {
     public interface IWPFApp
     {
         void Run(string[] args);
     }
 
-    class GameLauncherLoadContext : AssemblyLoadContext
+    public class GameLauncherLoadContext : AssemblyLoadContext
     {
         private readonly string _entryDll;
         private IWPFApp _app;

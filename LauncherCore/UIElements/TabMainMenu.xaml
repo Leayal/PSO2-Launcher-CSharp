@@ -11,7 +11,10 @@
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <Button Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" />
+        <Button Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click" />
+        <Button Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" />
+        <Button Grid.Row="2" Content="Manage game data" Click="ButtonManageGameData_Click" />
     </Grid>
 </mah:MetroTabItem>

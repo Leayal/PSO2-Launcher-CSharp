@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater", "Updater\Updater.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherCore", "LauncherCore\LauncherCore.csproj", "{604A4300-B685-4A05-8A29-387B41C78114}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebViewCompat", "WebViewCompat\WebViewCompat.csproj", "{EA624C84-72F0-41E7-A073-17CD54109231}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebViewCompat", "WebViewCompat\WebViewCompat.csproj", "{EA624C84-72F0-41E7-A073-17CD54109231}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.SharedInterfaces", "Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj", "{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{EA624C84-72F0-41E7-A073-17CD54109231}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA624C84-72F0-41E7-A073-17CD54109231}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA624C84-72F0-41E7-A073-17CD54109231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

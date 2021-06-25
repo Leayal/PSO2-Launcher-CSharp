@@ -1,5 +1,4 @@
-﻿using Leayal.PSO2Launcher.Communication.BootstrapUpdater;
-using Leayal.PSO2Launcher.Helper;
+﻿using Leayal.PSO2Launcher.Helper;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,6 +8,7 @@ using System.Threading.Tasks;
 // using System.Net.Http;
 using System.Text.Json;
 using System.Windows.Forms;
+using Leayal.SharedInterfaces.Communication;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -47,7 +47,7 @@ namespace Leayal.PSO2Launcher.Updater
             }
         }
 
-        private async Task <BootstrapUpdater_CheckForUpdates> ParseFileList_1(JsonDocument document, string rootDirectory, string entryExecutableName)
+        private async Task<BootstrapUpdater_CheckForUpdates> ParseFileList_1(JsonDocument document, string rootDirectory, string entryExecutableName)
         {
             var needtobeupdated = new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase);
 

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher.Communication.BootstrapUpdater
+namespace Leayal.SharedInterfaces.Communication
 {
-    public class BootstrapUpdater_CheckForUpdates : RestartDataObj
+    public class BootstrapUpdater_CheckForUpdates : RestartDataObj<BootstrapUpdater_CheckForUpdates>
     {
         public readonly Dictionary<string, UpdateItem> Items;
         public readonly bool RequireRestart;
@@ -13,6 +13,9 @@ namespace Leayal.PSO2Launcher.Communication.BootstrapUpdater
         public readonly string RestartWithExe;
 
         public readonly Dictionary<string, string> RestartMoveItems;
+
+        public BootstrapUpdater_CheckForUpdates()
+            : this(null, false, false, null) { }
 
         public BootstrapUpdater_CheckForUpdates(Dictionary<string, UpdateItem> items, bool restart, bool reload, string restartWith)
             : this(items, restart, reload, restartWith, null) { }
@@ -75,15 +78,7 @@ namespace Leayal.PSO2Launcher.Communication.BootstrapUpdater
             writer.WriteEndObject();
         }
 
-        public static BootstrapUpdater_CheckForUpdates DeserializeJson(ReadOnlyMemory<byte> data)
-        {
-            using (var doc = JsonDocument.Parse(data))
-            {
-                return DeserializeJson(doc.RootElement);
-            }
-        }
-
-        public static BootstrapUpdater_CheckForUpdates DeserializeJson(JsonElement rootElement)
+        public override BootstrapUpdater_CheckForUpdates DeserializeJson(JsonElement rootElement)
         {
             var dictionary = new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase);
 

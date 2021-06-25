@@ -9,11 +9,13 @@ using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Forms.Integration;
 using System.Windows.Controls;
 using StackOverflow;
+using Microsoft.Web.WebView2.Core;
+using Leayal.SharedInterfaces;
 
 namespace Leayal.WebViewCompat
 {
     [ToolboxItem(true)]
-    public class WebViewCompatControl : ScrollViewer, IDisposable
+    public class WebViewCompatControl : ScrollViewer, IWebViewCompatControl
     {
         public static string DefaultUserAgent { get; set; } = string.Empty;
 
@@ -25,24 +27,21 @@ namespace Leayal.WebViewCompat
 
         public WebViewCompatControl(string userAgent)
         {
-            // ScrollViewer.SetCanContentScroll(this, true);
-            // VirtualizingPanel.SetIsVirtualizing(this, true);
-            // VirtualizingPanel.SetScrollUnit(this, ScrollUnit.Pixel);
-            // VirtualizingPanel.SetVirtualizationMode(this, VirtualizationMode.Recycling);
-            Panel panel = new DockPanel()
-            {
-                MinWidth = 825,
-                MinHeight = 700
-            };
+            ScrollViewer.SetCanContentScroll(this, true);
+            VirtualizingPanel.SetIsVirtualizing(this, true);
+            VirtualizingPanel.SetScrollUnit(this, ScrollUnit.Pixel);
+            VirtualizingPanel.SetVirtualizationMode(this, VirtualizationMode.Recycling);
             this._userAgent = userAgent;
             if (WebViewCompat.HasWebview2Runtime())
             {
                 this._webView2 = new WebView2();
                 this._webView2.CreationProperties = new CoreWebView2CreationProperties() { UserDataFolder = Path.GetFullPath("BrowserCache", AppDomain.CurrentDomain.BaseDirectory), Language = "" };
                 this._webView2.CoreWebView2.Settings.UserAgent = this._userAgent;
-                this._webView2.NavigationStarting += Wv_NavigationStarting;
-                this._webView2.NavigationCompleted += Wv_NavigationCompleted;
-                this._webView2.CoreWebView2InitializationCompleted += Wv_CoreWebView2InitializationCompleted;
+                // this._webView2.NavigationStarting += this.Wv_NavigationStarting;
+                // this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
+
+                //this._webView2. += this.FallbackControl_LoadCompleted;
+                this._webView2.CoreWebView2InitializationCompleted += this.Wv_CoreWebView2InitializationCompleted;
                 // this._webView2.WebMessageReceived += Wv_WebMessageReceived;
                 this.Content = this._webView2;
             }
@@ -53,8 +52,8 @@ namespace Leayal.WebViewCompat
                 host.VerticalAlignment = System.Windows.VerticalAlignment.Center;
                 this._fallbackControl = new WinForm.WebBrowser()
                 {
-                    Width = 825,
-                    Height = 650
+                    Width = 820,
+                    Height = 680
                 };
                 this._fallbackControl.ScrollBarsEnabled = false;
                 // this._fallbackControl.Initialized += this.FallbackControl_Initialized;
@@ -65,7 +64,8 @@ namespace Leayal.WebViewCompat
                 host.Loaded += this.FallbackControl_Initialized;
                 // this._fallbackControl.HandleCreated += this.FallbackControl_Initialized;
                 this._fallbackControl.Navigating += this.FallbackControl_Navigating2;
-                this._fallbackControl.Navigated += this.FallbackControl_Navigated2;
+                // this._fallbackControl.Navigated += this.FallbackControl_Navigated2;
+                this._fallbackControl.DocumentCompleted += this.FallbackControl_DocumentCompleted;
                 // this._fallbackControl.LoadCompleted += this.FallbackControl_LoadCompleted;
                 // panel.Children.Add(this._fallbackControl);
                 host.Child = this._fallbackControl;
@@ -77,26 +77,46 @@ namespace Leayal.WebViewCompat
             }
         }
 
-        private void FallbackControl_LoadCompleted(object sender, System.Windows.Navigation.NavigationEventArgs e)
+        public Uri CurrentUrl
         {
-            // this._fallbackControl.Document
+            get
+            {
+                if (this._webView2 != null)
+                {
+                    return this._webView2.Source;
+                }
+                else
+                {
+                    return this._fallbackControl.Url;
+                }
+            }
         }
 
         public event EventHandler<NavigationEventArgs> Navigated;
-        private void FallbackControl_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
-        {
-            var ev = new NavigationEventArgs(e.Uri);
-            this.Navigated?.Invoke(this, ev);
-        }
-        private void FallbackControl_Navigated2(object sender, WinForm.WebBrowserNavigatedEventArgs e)
+        private void FallbackControl_DocumentCompleted(object sender, WinForm.WebBrowserDocumentCompletedEventArgs e)
         {
             var ev = new NavigationEventArgs(e.Url);
             this.Navigated?.Invoke(this, ev);
         }
-        private void Wv_NavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+        private void Wv_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
-            var ev = new NavigationEventArgs(((WebView2)sender).Source);
-            this.Navigated?.Invoke(this, ev);
+            NavigationEventArgs ev;
+            if (sender is WebView2 wv)
+            {
+                ev = new NavigationEventArgs(wv.Source);
+            }
+            else if (sender is CoreWebView2 cwv)
+            {
+                ev = new NavigationEventArgs(new Uri(cwv.Source));
+            }
+            else
+            {
+                ev = null;
+            }
+            if (ev != null)
+            {
+                this.Navigated?.Invoke(this, ev);
+            }
         }
 
         public event EventHandler<NavigatingEventArgs> Navigating;
@@ -145,33 +165,33 @@ namespace Leayal.WebViewCompat
         }
         private void Wv_CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
         {
-            
+            this._webView2.CoreWebView2.NavigationStarting += this.Wv_NavigationStarting;
+            this._webView2.CoreWebView2.NavigationCompleted += this.Wv_NavigationCompleted;
             this.OnInitialized(EventArgs.Empty);
         }
-
-        public class NavigationEventArgs : EventArgs
-        {
-            public Uri Uri { get; }
-
-            public NavigationEventArgs(Uri uri)
-            {
-                this.Uri = uri;
-            }
-        }
-
-        public class NavigatingEventArgs : NavigationEventArgs
-        {
-            public bool Cancel { get; set; }
-
-            public NavigatingEventArgs(Uri uri) : base(uri)
-            {
-                this.Cancel = false;
-            }
-        }
         
+
+        // Document events here.
         private void Wv_WebMessageReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
         {
+            // this._fallbackControl.Document.AttachEventHandler();
+        }
 
+        private static System.Drawing.Size GetDocumentBodySize(WinForm.WebBrowser webBrowser)
+        {
+            int CurrentWidth, CurrentHeight, CurrentMinWidth = webBrowser.Width, CurrentMaxWidth = 0
+                , CurrentMinHeight = webBrowser.Height, CurrentMaxHeight = 0;
+
+            foreach (WinForm.HtmlElement webBrowserElement in webBrowser.Document.Body.All)
+            {
+                if ((CurrentWidth = Math.Max(webBrowserElement.ClientRectangle.Width, webBrowserElement.ScrollRectangle.Width)) > CurrentMaxWidth)
+                    CurrentMaxWidth = CurrentWidth;
+
+                if ((CurrentHeight = Math.Max(webBrowserElement.ClientRectangle.Height, webBrowserElement.ScrollRectangle.Height)) > CurrentMaxHeight)
+                    CurrentMaxHeight = CurrentHeight;
+            }
+
+            return new System.Drawing.Size(CurrentMaxWidth > CurrentMinWidth ? CurrentMaxWidth : CurrentMinWidth, CurrentMaxHeight > CurrentMinHeight ? CurrentMaxHeight : CurrentMinHeight);
         }
 
         public void NavigateTo(Uri url)

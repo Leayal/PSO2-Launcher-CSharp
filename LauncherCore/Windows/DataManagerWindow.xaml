@@ -1,0 +1,64 @@
+﻿<local:MetroWindowEx xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls" x:Class="Leayal.PSO2Launcher.Core.Windows.DataManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+        mc:Ignorable="d" x:Name="thisSelf"
+                 TitleCharacterCasing="Normal" ShowTitleBar="False"
+        Title="PSO2 Data Manager" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="{Binding ElementName=thisSelf,Path=WindowCommandButtonsWidth,Mode=OneWay}" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <!--For titlebar-->
+            <RowDefinition MinHeight="{Binding ElementName=thisSelf,Path=WindowCommandButtonsHeight,Mode=OneWay}" Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Content="PSO2 Data Manager" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
+
+        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="PSO2 Game Directory (pso2_bin):" />
+            <TextBox Grid.Row="0" Grid.Column="2" />
+            <Button Grid.Row="0" Grid.Column="3" Content="Browse" />
+
+
+            <CheckBox Grid.Row="1" Grid.Column="0" />
+            <Label Grid.Row="1" Grid.Column="1" Content="PSO2 Classic Data Directory [optional]:" />
+            <TextBox Grid.Row="1" Grid.Column="2" />
+            <Button Grid.Row="1" Grid.Column="3" Content="Browse" />
+
+            <CheckBox Grid.Row="2" Grid.Column="0" />
+            <Label Grid.Row="2" Grid.Column="1" Content="PSO2 NGS Data Directory [optional]:" />
+            <TextBox Grid.Row="2" Grid.Column="2" />
+            <Button Grid.Row="2" Grid.Column="3" Content="Browse" />
+        </Grid>
+
+        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" />
+            <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" />
+        </Grid>
+    </Grid>
+</local:MetroWindowEx>

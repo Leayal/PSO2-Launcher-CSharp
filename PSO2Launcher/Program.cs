@@ -5,8 +5,9 @@ using System.Windows.Forms;
 using Microsoft.VisualBasic.ApplicationServices;
 using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
-using Leayal.PSO2Launcher.Communication.GameLauncher;
 using System.Reflection;
+using Leayal.SharedInterfaces.Communication;
+using System.ComponentModel;
 
 namespace Leayal.PSO2Launcher
 {
@@ -27,14 +28,14 @@ namespace Leayal.PSO2Launcher
             flag_switchtoWPF = false;
             _appController = null;
 
-            if (args != null && args.Length == 2 && string.Equals(args[0], "--restart-update", StringComparison.OrdinalIgnoreCase))
+            if (args != null && args.Length == 2)
             {
-                var memoryId = args[1];
-                try
+                if (string.Equals(args[0], "--launch-elevated", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (EventWaitHandle.TryOpenExisting($"{memoryId}-wait", out var waithandle))
+                    var memoryId = args[1];
+                    try
                     {
-                        Communication.RestartObj<Communication.BootstrapUpdater.BootstrapUpdater_CheckForUpdates> data = null;
+                        RestartObj<BootstrapElevation> data = null;
                         try
                         {
                             using (var mmf = MemoryMappedFile.OpenExisting(memoryId))
@@ -42,58 +43,147 @@ namespace Leayal.PSO2Launcher
                             {
                                 var bytes = new byte[dataStream.Length];
                                 dataStream.Read(bytes);
-                                data = Communication.RestartObj<Communication.BootstrapUpdater.BootstrapUpdater_CheckForUpdates>.DeserializeJson(bytes);
+                                data = RestartObj<BootstrapElevation>.DeserializeJson(bytes);
                             }
                         }
-                        catch (Exception)
+                        catch
                         {
                             data = null;
+                            // data = RestartObj<BootstrapElevation>.DeserializeJson(File.ReadAllBytes(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\testelevation.json"));
                         }
-                        finally
-                        {
-                            waithandle.Dispose();
-                        }
-                        
+
                         if (data == null)
                         {
                             Environment.Exit(-1);
                         }
                         else
                         {
-                            if (data.DataObj != null && data.DataObj.RestartMoveItems != null && data.DataObj.RestartMoveItems.Count != 0)
+                            using (var process = new Process())
                             {
-                                foreach (var item in data.DataObj.RestartMoveItems)
+                                process.StartInfo.FileName = data.DataObj.Filename;
+                                if (!string.IsNullOrEmpty(data.DataObj.WorkingDirectory))
                                 {
-                                    File.Move(item.Value, item.Key, true);
+                                    process.StartInfo.WorkingDirectory = data.DataObj.WorkingDirectory;
                                 }
-                            }
-                            if (!string.IsNullOrWhiteSpace(data.ParentFilename))
-                            {
-                                // Replace files
 
-                                using (var process = new Process())
+                                if (!string.IsNullOrEmpty(data.DataObj.Arguments))
                                 {
-                                    process.StartInfo.FileName = data.ParentFilename;
-                                    if (data.ParentParams != null && data.ParentParams.Count != 0)
+                                    process.StartInfo.Arguments = data.DataObj.Arguments;
+                                }
+
+                                if (data.DataObj.ArgumentList.Count != 0)
+                                {
+                                    foreach (var item in data.DataObj.ArgumentList)
                                     {
-                                        foreach (var arg in data.ParentParams)
+                                        process.StartInfo.ArgumentList.Add(item);
+                                    }
+                                }
+
+                                if (data.DataObj.EnvironmentVars.Count != 0)
+                                {
+                                    foreach (var item in data.DataObj.EnvironmentVars)
+                                    {
+                                        if (process.StartInfo.EnvironmentVariables.ContainsKey(item.Key))
                                         {
-                                            process.StartInfo.ArgumentList.Add(arg);
+                                            process.StartInfo.EnvironmentVariables[item.Key] = item.Value;
+                                        }
+                                        else
+                                        {
+                                            process.StartInfo.EnvironmentVariables.Add(item.Key, item.Value);
                                         }
                                     }
-                                    process.StartInfo.UseShellExecute = false;
-
-                                    process.Start();
-                                    process.WaitForExit(500);
                                 }
+                                process.StartInfo.Verb = "runas";
+                                process.StartInfo.UseShellExecute = false;
+
+                                process.Start();
+
+                                if (data.DataObj.LingerTime != 0)
+                                {
+                                    process.WaitForExit(data.DataObj.LingerTime);
+                                }
+                                // Require shell =false
                             }
                             Environment.Exit(0);
                         }
                     }
+                    catch (Win32Exception ex)
+                    {
+                        Environment.Exit(ex.NativeErrorCode);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // Derp, what happen.
+                    }
                 }
-                catch (FileNotFoundException)
+                else if (string.Equals(args[0], "--restart-update", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Derp, what happen.
+                    var memoryId = args[1];
+                    try
+                    {
+                        if (EventWaitHandle.TryOpenExisting($"{memoryId}-wait", out var waithandle))
+                        {
+                            RestartObj<BootstrapUpdater_CheckForUpdates> data = null;
+                            try
+                            {
+                                using (var mmf = MemoryMappedFile.OpenExisting(memoryId))
+                                using (var dataStream = mmf.CreateViewStream())
+                                {
+                                    var bytes = new byte[dataStream.Length];
+                                    dataStream.Read(bytes);
+                                    data = RestartObj<BootstrapUpdater_CheckForUpdates>.DeserializeJson(bytes);
+                                }
+                            }
+                            catch
+                            {
+                                data = null;
+                            }
+                            finally
+                            {
+                                waithandle.Dispose();
+                            }
+
+                            if (data == null)
+                            {
+                                Environment.Exit(-1);
+                            }
+                            else
+                            {
+                                if (data.DataObj != null && data.DataObj.RestartMoveItems != null && data.DataObj.RestartMoveItems.Count != 0)
+                                {
+                                    foreach (var item in data.DataObj.RestartMoveItems)
+                                    {
+                                        File.Move(item.Value, item.Key, true);
+                                    }
+                                }
+                                if (!string.IsNullOrWhiteSpace(data.ParentFilename))
+                                {
+                                    // Replace files
+
+                                    using (var process = new Process())
+                                    {
+                                        process.StartInfo.FileName = data.ParentFilename;
+                                        if (data.ParentParams != null && data.ParentParams.Count != 0)
+                                        {
+                                            foreach (var arg in data.ParentParams)
+                                            {
+                                                process.StartInfo.ArgumentList.Add(arg);
+                                            }
+                                        }
+                                        process.StartInfo.UseShellExecute = false;
+
+                                        process.Start();
+                                        process.WaitForExit(500);
+                                    }
+                                }
+                                Environment.Exit(0);
+                            }
+                        }
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // Derp, what happen.
+                    }
                 }
             }
 
@@ -123,6 +213,8 @@ namespace Leayal.PSO2Launcher
                 AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
             }
         }
+
+       
 
         public static void Reload()
         {

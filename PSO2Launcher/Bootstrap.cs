@@ -7,14 +7,12 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Leayal.PSO2Launcher.Communication.BootstrapUpdater;
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
-using Leayal.PSO2Launcher.Communication;
-using Leayal.PSO2Launcher.Communication.GameLauncher;
+using Leayal.SharedInterfaces.Communication;
 
 namespace Leayal.PSO2Launcher
 {
