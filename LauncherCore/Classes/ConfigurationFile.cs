@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_bin", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return val.GetString();
+                    return (string)val.Value;
                 }
                 return string.Empty;
             }
@@ -35,7 +35,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_data_reboot", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return val.GetString();
+                    return (string)val.Value;
                 }
                 return string.Empty;
             }
@@ -61,7 +61,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_data_classic", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return val.GetString();
+                    return (string)val.Value;
                 }
                 return string.Empty;
             }
@@ -87,7 +87,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloadselection", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = val.GetInt32();
+                    var num = (int)val.Value;
                     var vals = Enum.GetValues<PSO2.GameClientSelection>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -99,7 +99,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 return PSO2.GameClientSelection.NGS_Prologue_Only;
             }
-            set => this.Set("pso2_downloadselection", value);
+            set => this.Set("pso2_downloadselection", (int)value);
         }
 
         public PSO2.FileScanFlags DownloaderProfile
@@ -108,7 +108,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloaderprofile", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = val.GetInt32();
+                    var num = (int)val.Value;
                     var vals = Enum.GetValues<PSO2.FileScanFlags>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -120,15 +120,19 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 return PSO2.FileScanFlags.Balanced;
             }
-            set => this.Set("pso2_downloaderprofile", value);
+            set => this.Set("pso2_downloaderprofile", (int)value);
         }
 
-        public void Load()
+        public bool Load()
         {
             using (var fs = File.OpenRead(this.Filename))
             {
-                this.Load(fs);
+                if (fs.Length != 0)
+                {
+                    return this.Load(fs);
+                }
             }
+            return false;
         }
 
         public void Save()

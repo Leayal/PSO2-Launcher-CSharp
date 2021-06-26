@@ -1,65 +1,19 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using SQLite;
-using SQLitePCL;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
+using Leayal.SharedInterfaces;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public  class FileCheckHashCache : IAsyncDisposable
+    public class FileCheckHashCache : IAsyncDisposable
     {
         private const int LatestVersion = 1;
 
         private readonly SQLiteAsyncConnection sqlConn;
-
-        public static SafeHandleZeroOrMinusOneIsInvalid InitSQLite3(string dllPath)
-        {
-            // IGetFunctionPointer gf = MakeDynamic("e_sqlcipher", 2);
-            // Respect path
-            // runtimes\win-x64\native\e_sqlcipher.dll
-            if (System.Runtime.InteropServices.NativeLibrary.TryLoad(dllPath, out var handle))
-            {
-                var derp = new MyGetFunctionPointer(handle);
-                SQLite3Provider_dynamic_cdecl.Setup("e_sqlcipher", derp);
-                raw.SetProvider(new SQLite3Provider_dynamic_cdecl());
-                return derp;
-            }
-
-            return null;
-        }
-
-        private class MyGetFunctionPointer : SafeHandleZeroOrMinusOneIsInvalid, IGetFunctionPointer
-        {
-            public MyGetFunctionPointer(IntPtr dll) : base(true)
-            {
-                this.handle = dll;
-            }
-
-            public IntPtr GetFunctionPointer(string name)
-            {
-                if (System.Runtime.InteropServices.NativeLibrary.TryGetExport(this.handle, name, out var address))
-                {
-                    return address;
-                }
-                return IntPtr.Zero;
-            }
-
-            protected override bool ReleaseHandle()
-            {
-                try
-                {
-                    System.Runtime.InteropServices.NativeLibrary.Free(this.handle);
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
 
         public FileCheckHashCache(string filepath)
         {
