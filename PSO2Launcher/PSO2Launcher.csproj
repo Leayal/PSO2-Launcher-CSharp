@@ -6,6 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Leayal.PSO2Launcher</RootNamespace>
     <AssemblyName>PSO2LeaLauncher</AssemblyName>
+    <StartupObject>Leayal.PSO2Launcher.ProgramWrapper</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -17,7 +18,9 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

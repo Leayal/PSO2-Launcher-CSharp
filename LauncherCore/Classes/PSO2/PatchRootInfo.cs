@@ -8,7 +8,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class PatchRootInfo : IReadOnlyDictionary<string, PatchRootInfoValue>, IDisposable
+    public class PatchRootInfo : IReadOnlyDictionary<string, PatchRootInfoValue>, IDisposable
     {
         private readonly Dictionary<string, PatchRootInfoValue> content;
 

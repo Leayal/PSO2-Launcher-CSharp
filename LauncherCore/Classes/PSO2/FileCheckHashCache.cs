@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class FileCheckHashCache : IAsyncDisposable
+    public  class FileCheckHashCache : IAsyncDisposable
     {
         private const int LatestVersion = 1;
 

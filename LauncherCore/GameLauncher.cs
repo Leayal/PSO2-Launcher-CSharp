@@ -5,6 +5,8 @@ using System.Runtime.Loader;
 using System.Reflection;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using System.IO;
+using Leayal.SharedInterfaces;
+using Microsoft.Win32.SafeHandles;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -12,12 +14,13 @@ namespace Leayal.PSO2Launcher.Core
     {
         private readonly App _app;
         private bool isLightMode;
-
+        
         public GameLauncher()
         {
-            var lib = FileCheckHashCache.InitSQLite3(Path.GetFullPath(Path.Combine("runtimes", "win-x64", "native", "e_sqlcipher.dll"), AppDomain.CurrentDomain.BaseDirectory));
+            SafeHandleZeroOrMinusOneIsInvalid lib = null;
             try
             {
+                lib = FileCheckHashCache.InitSQLite3(Path.GetFullPath(Path.Combine("runtimes", "win-x64", "native", "e_sqlcipher.dll"), RuntimeValues.RootDirectory));
                 // this.isLightMode = false;
                 this._app = new App();
                 ThemeManager.Current.SyncTheme(ThemeSyncMode.SyncWithAppMode);

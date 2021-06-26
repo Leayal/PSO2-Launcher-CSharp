@@ -35,7 +35,7 @@ namespace Leayal.WebViewCompat
             if (WebViewCompat.HasWebview2Runtime())
             {
                 this._webView2 = new WebView2();
-                this._webView2.CreationProperties = new CoreWebView2CreationProperties() { UserDataFolder = Path.GetFullPath("BrowserCache", AppDomain.CurrentDomain.BaseDirectory), Language = "" };
+                this._webView2.CreationProperties = new CoreWebView2CreationProperties() { UserDataFolder = Path.GetFullPath("BrowserCache", RuntimeValues.RootDirectory), Language = "" };
                 this._webView2.CoreWebView2.Settings.UserAgent = this._userAgent;
                 // this._webView2.NavigationStarting += this.Wv_NavigationStarting;
                 // this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;

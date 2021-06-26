@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
-    class PatchListItem
+    public class PatchListItem
     {
         internal const string AffixFilename = ".pat";
 

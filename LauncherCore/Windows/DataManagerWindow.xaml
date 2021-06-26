@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
         mc:Ignorable="d" x:Name="thisSelf"
                  TitleCharacterCasing="Normal" ShowTitleBar="False"
-        Title="PSO2 Data Manager" Height="450" Width="800">
+                     Loaded="ThisSelf_Loaded"
+        Title="PSO2 Data Manager" Height="450" Width="800" WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -32,24 +33,43 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
             </Grid.RowDefinitions>
 
             <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="PSO2 Game Directory (pso2_bin):" />
-            <TextBox Grid.Row="0" Grid.Column="2" />
-            <Button Grid.Row="0" Grid.Column="3" Content="Browse" />
+            <TextBox Grid.Row="0" Grid.Column="2" x:Name="textbox_pso2_bin" />
+            <Button Grid.Row="0" Grid.Column="3" Content="Browse" Click="ButtonBrowsePSO2Bin_Click" />
 
 
-            <CheckBox Grid.Row="1" Grid.Column="0" />
+            <CheckBox Grid.Row="1" Grid.Column="0" x:Name="checkbox_pso2_classic" />
             <Label Grid.Row="1" Grid.Column="1" Content="PSO2 Classic Data Directory [optional]:" />
-            <TextBox Grid.Row="1" Grid.Column="2" />
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="textbox_pso2_classic" />
             <Button Grid.Row="1" Grid.Column="3" Content="Browse" />
 
-            <CheckBox Grid.Row="2" Grid.Column="0" />
+            <CheckBox Grid.Row="2" Grid.Column="0" x:Name="checkbox_pso2_data_ngs" />
             <Label Grid.Row="2" Grid.Column="1" Content="PSO2 NGS Data Directory [optional]:" />
-            <TextBox Grid.Row="2" Grid.Column="2" />
+            <TextBox Grid.Row="2" Grid.Column="2" x:Name="textbox_pso2_data_ngs" />
             <Button Grid.Row="2" Grid.Column="3" Content="Browse" />
+
+            <Label Grid.Row="3" Grid.Column="1" Content="PSO2 Download Type:" />
+            <ComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadselection">
+                <ComboBox.ItemTemplate>
+                    <ItemContainerTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </ItemContainerTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Label Grid.Row="4" Grid.Column="1" Content="PSO2 Downloader Profile:" />
+            <ComboBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadpreset">
+                <ComboBox.ItemTemplate>
+                    <ItemContainerTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </ItemContainerTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2">
@@ -57,8 +77,8 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" />
-            <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" />
+            <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" Click="ButtonSave_Click" />
+            <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" Click="ButtonClose_Click" />
         </Grid>
     </Grid>
 </local:MetroWindowEx>

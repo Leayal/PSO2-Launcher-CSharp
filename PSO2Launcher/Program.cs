@@ -18,11 +18,7 @@ namespace Leayal.PSO2Launcher
         public static SingleAppController AppController => _appController;
         private static IWPFApp wpfController;
 
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             flag_reload = true;
             flag_switchtoWPF = false;
@@ -188,34 +184,24 @@ namespace Leayal.PSO2Launcher
                 }
             }
 
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
 
-            try
+            while (flag_reload)
             {
-                while (flag_reload)
-                {
-                    flag_reload = false;
+                flag_reload = false;
 
-                    if (flag_switchtoWPF && wpfController != null)
-                    {
-                        wpfController.Run(args);
-                    }
-                    else
-                    {
-                        _appController = new SingleAppController();
-                        _appController.Run(args);
-                    }
+                if (flag_switchtoWPF && wpfController != null)
+                {
+                    wpfController.Run(args);
+                }
+                else
+                {
+                    _appController = new SingleAppController();
+                    _appController.Run(args);
                 }
             }
-            finally
-            {
-                AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
-            }
         }
-
-       
 
         public static void Reload()
         {
@@ -232,42 +218,6 @@ namespace Leayal.PSO2Launcher
             flag_reload = true;
             wpfController = applicationBase;
             _appController?.CloseMainForm();
-        }
-
-        // private static readonly ConcurrentDictionary<string, Assembly> 
-        
-        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            // I start to wonder why I'm using this old way....
-            // So load context doesn't do my stuff well?
-            // Definitely I used it wrongly or something.
-
-
-            // Extending probing path: \bin\*;
-            var filename = GetFilenameFromAssemblyFullname(args.Name);
-            
-            if (!filename.EndsWith(".resources", StringComparison.Ordinal))
-            {
-                var filepath = Path.GetFullPath(Path.Combine("bin", filename + ".dll"), AppDomain.CurrentDomain.SetupInformation.ApplicationBase);
-                if (File.Exists(filepath))
-                {
-                    return Assembly.LoadFrom(filepath);
-                }
-            }
-            return null;
-        }
-
-        private static string GetFilenameFromAssemblyFullname(string fullname)
-        {
-            var index = fullname.IndexOf(',');
-            if (index == -1)
-            {
-                return fullname;
-            }
-            else
-            {
-                return fullname.Substring(0, index);
-            }
         }
     }
 

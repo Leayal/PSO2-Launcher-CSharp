@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
-    readonly struct PSO2Version : IComparable<PSO2Version>, IEquatable<PSO2Version>
+    public readonly struct PSO2Version : IComparable<PSO2Version>, IEquatable<PSO2Version>
     {
         public readonly int Version;
         public readonly string ReleaseCandidate;

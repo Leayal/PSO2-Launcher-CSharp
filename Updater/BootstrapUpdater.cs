@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Windows.Forms;
 using Leayal.SharedInterfaces.Communication;
+using Leayal.SharedInterfaces;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -24,7 +25,7 @@ namespace Leayal.PSO2Launcher.Updater
             // Fetch from internet a list then check for SHA-1.
             using (var wc = new WebClient())
             {
-                using (var jsonStream = await wc.OpenReadTaskAsync("file:///E:/All%20Content/VB_Project/visual%20studio%202019/PSO2-Launcher-CSharp/Test/a.json"))
+                using (var jsonStream = await wc.OpenReadTaskAsync(Path.GetFullPath("a.json", RuntimeValues.RootDirectory)))
                 using (var doc = await JsonDocument.ParseAsync(jsonStream))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))

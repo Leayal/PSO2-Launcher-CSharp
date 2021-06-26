@@ -8,7 +8,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     /// <summary>File checking/scanning profiles (or presets) for <see cref="GameClientUpdater"/>.</summary>
     [Flags]
-    enum FileScanFlags
+    public enum FileScanFlags
     {
         /// <summary>Full scan?</summary>
         None = 0,
@@ -38,28 +38,34 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         // Preset below
 
+        [EnumDisplayName("Prefer speed [Not recommended] (Check missing and incorrect size files)")]
         /// <summary>This should be very fast. But unreliable.</summary>
         /// <remarks>Should only be used for advanced users. Or those who know they're having missing files only.</remarks>
         FastCheck = MissingFilesOnly | FileSizeMismatch,
 
+        [EnumDisplayName("Balanced [Recommended] (Check missing files, incorrect size, and compare file hash in case size is correct)")]
         /// <summary>This should be fast. But somewhat unreliable. However, should be good enough.</summary>
         Balanced = FileSizeMismatch | MD5HashMismatch,
 
+        [EnumDisplayName("Prefer accurate [Very slow] (Check missing files, and compare file hash regardless)")]
         /// <summary>This should be very slowest. But reliable. As all files are going to be hash-compared regardless.</summary>
         HighAccuracy = MD5HashMismatch | ForceRefreshCache
     }
 
-    enum GameClientSelection
+    public enum GameClientSelection
     {
+        [EnumDisplayName("Download NGS files which are needed for NGS prologue only")]
         /// <summary>Download NGS files which are needed for NGS prologue only.</summary>
         /// <remarks>While playing prologue mode, which is singleplay, the game client will download the rest by itself.</remarks>
         NGS_Prologue_Only,
 
-        /// <summary>Download all NGS files which are necessary to play the game.</summary>
+        [EnumDisplayName("Download all NGS files which are necessary to play the NGS game")]
+        /// <summary>Download all NGS files which are necessary to play the NGS game.</summary>
         /// <remarks>You won't be able to switch to PSO2 classic.</remarks>
         NGS_Only,
 
-        /// <summary>Download all NGS files and Classic files which are necessary to play both.</summary>
+        [EnumDisplayName("Download all NGS and Classic files which are necessary to play both")]
+        /// <summary>Download all NGS and Classic files which are necessary to play both.</summary>
         NGS_AND_CLASSIC
     }
 }

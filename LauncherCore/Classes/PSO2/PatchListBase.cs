@@ -6,7 +6,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable
+    public abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable
     {
         public readonly PatchRootInfo RootInfo;
 

@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     /// <summary>Provides instance for forward-only parsing patchlist file.</summary>
     /// <remarks>Mainly used for building <see cref="PatchListMemory"/> or enumerating.</remarks>
-    class PatchListDeferred : PatchListBase, IDisposable
+    public class PatchListDeferred : PatchListBase, IDisposable
     {
         private readonly TextReader tr;
         private readonly bool keepOpen;

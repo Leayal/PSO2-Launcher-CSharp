@@ -22,8 +22,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
+        private static GameClientUpdater CreateGameClientUpdater(string directory, PSO2HttpClient webclient)
+        {
+            return new GameClientUpdater(directory, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
+        }
+
         private readonly PSO2HttpClient pso2HttpClient;
+        private GameClientUpdater? pso2Updater;
         private CancellationTokenSource cancelSrc;
+        private Classes.ConfigurationFile config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
 
         static MainMenuWindow()
         {
@@ -66,8 +73,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public MainMenuWindow()
         {
             this.pso2HttpClient = new PSO2HttpClient();
+            this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
+            if (File.Exists(this.config_main.Filename))
+            {
+                this.config_main.Load();
+                var str = this.config_main.PSO2_BIN;
+                if (!string.IsNullOrEmpty(str))
+                {
+                    str = Path.GetFullPath(str);
+                    if (Directory.Exists(str))
+                    {
+                        pso2Updater = CreateGameClientUpdater(str, this.pso2HttpClient);
+                    }
+                }
+            }
             InitializeComponent();
             this.TabMainMenu.IsSelected = true;
+        }
+
+        private void ThisWindow_Closed(object sender, EventArgs e)
+        {
+            // this.config_main.Save();
         }
 
         private void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
@@ -79,7 +105,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 try
                 {
                     var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
-                        Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), AppDomain.CurrentDomain.BaseDirectory),
+                        Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory),
                         "Leayal.WebViewCompat.WebViewCompatControl",
                         false,
                         BindingFlags.CreateInstance,
@@ -108,23 +134,48 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             try
             {
-                var data = new SharedInterfaces.Communication.BootstrapElevation();
-                data.Filename = @"G:\Phantasy Star Online 2\pso2_bin\pso2.exe";
-                data.WorkingDirectory = @"G:\Phantasy Star Online 2\pso2_bin";
-                data.Arguments = " +0x33aca2b9 -reboot -optimize";
-                data.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
-                var exitCode = ProcessHelper.CreateProcessElevated(data);
-                switch (exitCode)
+                var dir_pso2bin = this.config_main.PSO2_BIN;
+                if (string.IsNullOrEmpty(dir_pso2bin))
                 {
-                    case 0:
-                        // Do nothing
-                        break;
-                    case 740:
-                        MessageBox.Show(this, "The current user doesn't have the privilege to create a process as Administrator.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        break;
-                    default:
-                        MessageBox.Show(this, "Unknown error. Exit code: " + exitCode, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        break;
+                    if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    {
+                        this.TabMainMenu_ButtonManageGameDataClick(null, null);
+                    }
+                    return;
+                }
+                else
+                {
+                    dir_pso2bin = Path.GetFullPath(dir_pso2bin);
+                    var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
+                    if (!Directory.Exists(dir_pso2bin))
+                    {
+                        MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    else if (!File.Exists(filename))
+                    {
+                        MessageBox.Show(this, "The file 'pso2.exe' doesn't exist.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    var data = new SharedInterfaces.Communication.BootstrapElevation();
+                    data.Filename = filename;
+                    data.WorkingDirectory = dir_pso2bin;
+                    data.Arguments = " +0x33aca2b9 -reboot -optimize";
+                    data.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
+                    var exitCode = ProcessHelper.CreateProcessElevated(data);
+                    switch (exitCode)
+                    {
+                        case 0:
+                            // Do nothing
+                            break;
+                        case 740:
+                            MessageBox.Show(this, "The current user doesn't have the privilege to create a process as Administrator.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            break;
+                        default:
+                            MessageBox.Show(this, "Unknown error. Exit code: " + exitCode, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            break;
+                    }
                 }
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
@@ -185,7 +236,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
         {
-            var dialog = new DataManagerWindow();
+            var dialog = new DataManagerWindow(this.config_main);
             dialog.Owner = this;
             if (dialog.ShowDialog() == true)
             {
@@ -196,10 +247,34 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private async void ButtonCheckForUpdate_Click(object sender, RoutedEventArgs e)
         {
             // Run test
-            var pso2Updater = new GameClientUpdater(@"G:\Phantasy Star Online 2\pso2_bin", @"G:\Phantasy Star Online 2\LeaCheckCacheV3.dat", this.pso2HttpClient);
+            var dir_pso2bin = this.config_main.PSO2_BIN;
+            if (string.IsNullOrEmpty(dir_pso2bin))
+            {
+                if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                {
+                    this.TabMainMenu_ButtonManageGameDataClick(null, null);
+                }
+                return;
+            }
+            else
+            {
+                dir_pso2bin = Path.GetFullPath(dir_pso2bin);
+                if (!Directory.Exists(dir_pso2bin))
+                {
+                    if (MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nContinue anyway (may result in full game download)?.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            var pso2Updater = CreateGameClientUpdater(dir_pso2bin, this.pso2HttpClient);
             try
             {
                 var t_loadLocalHashDb = pso2Updater.LoadLocalHashCheck();
+                var downloaderProfile = this.config_main.DownloaderProfile;
+                var downloadType = this.config_main.DownloadSelection;
+
                 this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                 this.TabGameClientUpdateProgressBar.IsSelected = true;
@@ -296,7 +371,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (await pso2Updater.CheckForPSO2Updates(cancelToken))
                 {
                     await t_loadLocalHashDb;
-                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.NGS_AND_CLASSIC, FileScanFlags.Balanced, cancelToken);
+                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
                     var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
 
                     await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.

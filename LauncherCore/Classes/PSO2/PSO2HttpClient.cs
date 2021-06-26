@@ -11,7 +11,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class PSO2HttpClient : IDisposable
+    public class PSO2HttpClient : IDisposable
     {
         private readonly HttpClient client;
         private const string UA_AQUA_HTTP = "AQUA_HTTP";

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class GameClientUpdater : IAsyncDisposable
+    public class GameClientUpdater : IAsyncDisposable
     {
         // Task Thread: File checking
         // Task Thread(s): File download
