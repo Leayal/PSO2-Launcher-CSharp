@@ -1,12 +1,10 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Helper;
+using Leayal.SharedInterfaces;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,17 +31,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private PSO2Version? lastKnownRemoteVersion;
 
         // File check
-        private readonly object synclock_pendingFiles;
         private Task t_fileCheckStarted, t_fileDownloadStarted;
 
         private long count_fileFailure, count_totalFiles;
 
         // Edgy stuffs: volatile
-        private volatile bool flag_fileCheckStarted, flag_fileDownloadStarted;
+        private int flag_fileCheckStarted, flag_fileDownloadStarted, flag_operationCount;
 
-        private BlockingCollection<PatchListItem> pendingFiles;
+        private readonly BlockingCollection<PatchListItem> pendingFiles;
 
         public int ConcurrentDownloadCount { get; set; }
+
+        public int ThrottleFileCheckFactor { get; set; }
 
         // Snail mode (for when internet is extremely unreliable).
 
@@ -52,10 +51,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.hashCacheDb = new FileCheckHashCache(hashCheckCache);
             this.count_fileFailure = 0;
             this.count_totalFiles = 0;
-            this.ConcurrentDownloadCount = Math.Min(Environment.ProcessorCount / 2, 4);
-            this.synclock_pendingFiles = new object();
-            this.flag_fileCheckStarted = false;
-            this.flag_fileDownloadStarted = false;
+            this.lastKnownRemoteVersion = null;
+            this.ConcurrentDownloadCount = 0;
+            this.ThrottleFileCheckFactor = 0;
+            this.flag_fileCheckStarted = 0;
+            this.flag_fileDownloadStarted = 0;
+            this.pendingFiles = new BlockingCollection<PatchListItem>();
             this.lastKnownObjects = new ObjectShortCacheManager<object>();
             this.workingDirectory = whereIsThePSO2_BIN;
             this.webclient = httpHandler;
@@ -92,6 +93,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             if (!PSO2Version.TrySafeParse(in verString, out var localPSO2Ver) || localPSO2Ver != remoteVersion)
             {
+                this.lastKnownRemoteVersion = remoteVersion;
                 return true;
             }
 
@@ -105,42 +107,53 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 throw new ArgumentOutOfRangeException(nameof(flags));
             }
 
-            lock (this.synclock_pendingFiles)
+            if (Interlocked.CompareExchange(ref this.flag_fileCheckStarted, 1, 0) == 0)
             {
-                if (this.flag_fileCheckStarted) return this.t_fileCheckStarted;
-                this.flag_fileCheckStarted = true;
-
-                if (this.pendingFiles == null)
+                Interlocked.Increment(ref this.flag_operationCount);
+                var checkTask = Task.Factory.StartNew(async () =>
                 {
-                    this.pendingFiles = new BlockingCollection<PatchListItem>();
-                }
+                    try
+                    {
+                        await this.InnerScanForFilesNeedToDownload(selection, flags, cancellationToken);
+                    }
+                    finally
+                    {
+                        this.pendingFiles.CompleteAdding();
+                        this.OnFileCheckEnd();
+                    }
+                }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+
+                this.t_fileCheckStarted = checkTask.ContinueWith(t =>
+                {
+                    if (Interlocked.CompareExchange(ref this.flag_fileCheckStarted, 0, 1) == 1)
+                    {
+                        if (Interlocked.Decrement(ref this.flag_operationCount) == 0)
+                        {
+                            this.OnClientOperationComplete1(cancellationToken);
+                        }
+                    }
+                });
             }
-
-            var checkTask = Task.Factory.StartNew(async () =>
-            {
-                try
-                {
-                    await this.InnerScanForFilesNeedToDownload(selection, flags, cancellationToken);
-                }
-                finally
-                {
-                    this.pendingFiles.CompleteAdding();
-                    this.OnFileCheckEnd();
-                }
-            }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
-
-            this.t_fileCheckStarted = checkTask.ContinueWith(t =>
-            {
-                this.flag_fileCheckStarted = false;
-                this.OnClientOperationComplete1();
-            });
 
             return this.t_fileCheckStarted;
         }
 
         private async Task InnerScanForFilesNeedToDownload(GameClientSelection selection, FileScanFlags flags, CancellationToken cancellationToken)
         {
-            // workingDirectory
+            var factorSetting = this.ThrottleFileCheckFactor;
+            int fileCheckThrottleFactor;
+            if (factorSetting > 0)
+            {
+                fileCheckThrottleFactor = Convert.ToInt32(1000 / factorSetting);
+                if (fileCheckThrottleFactor < 20)
+                {
+                    fileCheckThrottleFactor = 0;
+                }
+            }
+            else
+            {
+                fileCheckThrottleFactor = 0;
+            }
 
             // Acquire patch list.
             PatchListBase selectedList;
@@ -245,6 +258,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
 
@@ -287,6 +304,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
 
@@ -320,6 +341,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
 
@@ -361,6 +386,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
 
@@ -402,6 +431,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
 
@@ -437,6 +470,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }
                         this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            await Task.Delay(fileCheckThrottleFactor);
+                        }
                     }
                     break;
             }
@@ -444,35 +481,37 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public Task StartDownloadFiles(CancellationToken cancellationToken)
         {
-            lock (this.synclock_pendingFiles)
+            if (Interlocked.CompareExchange(ref this.flag_fileDownloadStarted, 1, 0) == 0)
             {
-                if (this.flag_fileDownloadStarted) return this.t_fileDownloadStarted;
-                this.flag_fileDownloadStarted = true;
-
-                if (this.pendingFiles == null)
+                Interlocked.Increment(ref this.flag_operationCount);
+                var taskCount = this.ConcurrentDownloadCount;
+                if (taskCount == 0)
                 {
-                    this.pendingFiles = new BlockingCollection<PatchListItem>();
+                    taskCount = RuntimeValues.GetProcessorCountAuto();
                 }
-            }
+                var tasks = new Task[taskCount];
 
-            var taskCount = this.ConcurrentDownloadCount;
-            var tasks = new Task[taskCount];
-
-            for (int i = 0; i < taskCount; i++)
-            {
-                tasks[i] = Task.Factory.StartNew(async () =>
+                for (int i = 0; i < taskCount; i++)
                 {
-                    await this.InnerDownloadSingleFile(cancellationToken);
-                }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                    tasks[i] = Task.Factory.StartNew(async () =>
+                    {
+                        await this.InnerDownloadSingleFile(cancellationToken);
+                    }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                }
+
+                var allTasks = Task.WhenAll(tasks);
+
+                this.t_fileDownloadStarted = allTasks.ContinueWith(t =>
+                {
+                    if (Interlocked.CompareExchange(ref this.flag_fileDownloadStarted, 0, 1) == 1)
+                    {
+                        if (Interlocked.Decrement(ref this.flag_operationCount) == 0)
+                        {
+                            this.OnClientOperationComplete1(cancellationToken);
+                        }
+                    }
+                });
             }
-
-            var allTasks = Task.WhenAll(tasks);
-
-            this.t_fileDownloadStarted = allTasks.ContinueWith(t =>
-            {
-                this.flag_fileDownloadStarted = false;
-                this.OnClientOperationComplete1();
-            });
 
             return this.t_fileDownloadStarted;
         }
@@ -480,7 +519,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private async Task InnerDownloadSingleFile(CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
-            var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
+            // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
+            var downloadbuffer = new byte[1024 * 24]; // 24KB buffer.
             var duhB = this.hashCacheDb;
 
             foreach (var file in this.pendingFiles.GetConsumingEnumerable())
@@ -614,26 +654,23 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             => this.ProgressEnd?.Invoke(currentFile, in isSuccess);
 
         public event OperationCompletedHandler OperationCompleted;
-        private void OnClientOperationComplete1()
+        private void OnClientOperationComplete1(CancellationToken cancellationToken)
         {
-            if (!this.flag_fileCheckStarted && !this.flag_fileDownloadStarted)
+            // Everything is completed.
+            // Write the version file out.
+
+            var failureCount = Interlocked.Exchange(ref this.count_fileFailure, 0);
+            var totalCount = Interlocked.Exchange(ref this.count_totalFiles, 0);
+
+            var ver = lastKnownRemoteVersion;
+            lastKnownRemoteVersion = null;
+
+            if (!cancellationToken.IsCancellationRequested && ver.HasValue)
             {
-                // Everything is completed.
-                // Write the version file out.
-
-                var failureCount = Interlocked.Exchange(ref this.count_fileFailure, 0);
-                var totalCount = Interlocked.Exchange(ref this.count_totalFiles, 0);
-
-                if (lastKnownRemoteVersion.HasValue)
-                {
-                    var val = lastKnownRemoteVersion.Value;
-                    lastKnownRemoteVersion = null;
-                    File.WriteAllText(Path.GetFullPath("version.ver", this.workingDirectory), val.ToString());
-
-                }
-
-                this.OperationCompleted?.Invoke(this, totalCount, failureCount);
+                File.WriteAllText(Path.GetFullPath("version.ver", this.workingDirectory), ver.Value.ToString());
             }
+
+            this.OperationCompleted?.Invoke(this, totalCount, failureCount);
         }
 
         public event FileCheckBeginHandler FileCheckBegin;

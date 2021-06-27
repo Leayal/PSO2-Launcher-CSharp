@@ -37,7 +37,27 @@ namespace Leayal.PSO2Launcher.Core
 
         public void Run(string[] args)
         {
-            this._app.Run();
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                this._app.Run();
+            }
+            else
+            {
+                try
+                {
+                    this._app.Run();
+                }
+                catch (Exception ex)
+                {
+                    using (var sw = new StreamWriter(Path.Combine(RuntimeValues.RootDirectory, "unhandled_error_wpf.txt"), true, System.Text.Encoding.UTF8))
+                    {
+                        sw.WriteLine();
+                        sw.WriteLine();
+                        sw.WriteLine(ex.ToString());
+                        sw.Flush();
+                    }
+                }
+            }
         }
 
         public void ChangeThemeMode(bool isLightMode)

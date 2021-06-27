@@ -44,6 +44,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
             InitializeComponent();
+            this.TopProgressBar.ShowDetailedProgressPercentage = true;
             this.DownloadFileTable.ItemsSource = this.indexing;
         }
 

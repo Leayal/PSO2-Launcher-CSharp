@@ -37,7 +37,7 @@ namespace Leayal.PSO2Launcher.Helper
             }
         }
 
-        public static async Task<string> ComputeHashFromFile(string filename)
+        public static string ComputeHashFromFile(string filename)
         {
             using (var fs = File.OpenRead(filename))
             {

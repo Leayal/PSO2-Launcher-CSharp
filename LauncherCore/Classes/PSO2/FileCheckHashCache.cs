@@ -94,6 +94,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             await this.sqlConn.CloseAsync();
         }
 
+        public class DatabaseErrorException : Exception { }
+
         public class PatchRecordItem
         {
             [PrimaryKey, Unique, NotNull, MaxLength(2048)]

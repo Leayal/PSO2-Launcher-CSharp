@@ -25,6 +25,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             // Or not
 
             // WTF I am doing
+            if (versionString.Length == 0 || versionString.IsWhiteSpace())
+            {
+                value = default;
+                return false;
+            }
             var comparand = "v_rc_".AsSpan();
             ReadOnlySpan<char> buffer;
             if (versionString[0] == comparand[0])

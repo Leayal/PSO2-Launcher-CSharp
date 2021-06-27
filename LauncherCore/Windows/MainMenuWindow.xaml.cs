@@ -91,6 +91,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.TabMainMenu.IsSelected = true;
         }
 
+        private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (this.config_main.LauncherLoadWebsiteAtStartup)
+            {
+                this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+        }
+
         private void ThisWindow_Closed(object sender, EventArgs e)
         {
             // this.config_main.Save();
@@ -101,7 +109,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is Button btn)
             {
                 // this.RemoveLogicalChild(btn);
-
                 try
                 {
                     var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
@@ -274,12 +281,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 var t_loadLocalHashDb = pso2Updater.LoadLocalHashCheck();
                 var downloaderProfile = this.config_main.DownloaderProfile;
                 var downloadType = this.config_main.DownloadSelection;
+                var throttleFileCheck = this.config_main.DownloaderCheckThrottle;
+
+                var logicalCount = Environment.ProcessorCount;
+                var num_concurrentCount = this.config_main.DownloaderConcurrentCount;
+                if (num_concurrentCount > logicalCount)
+                {
+                    num_concurrentCount = logicalCount;
+                }
+                else if (num_concurrentCount <= 0)
+                {
+                    num_concurrentCount = RuntimeValues.GetProcessorCountAuto();
+                }
+
+                pso2Updater.ConcurrentDownloadCount = num_concurrentCount;
+                pso2Updater.ThrottleFileCheckFactor = throttleFileCheck;
 
                 this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                 this.TabGameClientUpdateProgressBar.IsSelected = true;
                 var bagFree = new ConcurrentBag<int>();
-                var dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>(pso2Updater.ConcurrentDownloadCount, pso2Updater.ConcurrentDownloadCount);
+                ConcurrentDictionary<PatchListItem, int> dictionaryInUse = dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>(pso2Updater.ConcurrentDownloadCount, pso2Updater.ConcurrentDownloadCount);
                 for (int i = 0; i < pso2Updater.ConcurrentDownloadCount; i++)
                 {
                     bagFree.Add(i);
@@ -327,6 +349,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
                         this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
                         if (_total == -1)
                         {
                             this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = 100;
@@ -334,7 +357,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         else
                         {
                             this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = _total;
-
+                            this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = true;
                             pso2Updater.FileCheckReport += (sender, currentfilecount) =>
                             {
                                 this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
@@ -352,6 +375,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Dispatcher.Invoke(new GameClientUpdater.FileCheckEndHandler((_sender) =>
                     {
                         this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking completed. Waiting for downloads to complete.";
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
                     }), sender);
                 };
 
@@ -370,19 +394,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                 if (await pso2Updater.CheckForPSO2Updates(cancelToken))
                 {
-                    await t_loadLocalHashDb;
+                    try
+                    {
+                        await t_loadLocalHashDb;
+                    }
+                    catch 
+                    {
+                        try
+                        {
+                            await pso2Updater.LoadLocalHashCheck();
+                        }
+                        catch
+                        {
+                            throw new FileCheckHashCache.DatabaseErrorException();
+                        }
+                    }
                     var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
                     var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
 
                     await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
                 }
             }
-            /*
-            catch (Exception ex)
+            catch (FileCheckHashCache.DatabaseErrorException)
+            {
+                MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex) when (!Debugger.IsAttached)
             {
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            */
             finally
             {
                 await pso2Updater.DisposeAsync();

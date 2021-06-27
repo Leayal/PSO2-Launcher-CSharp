@@ -55,10 +55,60 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.combobox_downloadpreset.SelectedItem = downloaderPreset_list[FileScanFlags.Balanced];
             }
 
+            var logicalCount = Environment.ProcessorCount;
+            var ints = new ValueDOMNumber[logicalCount + 1];
+            ints[0] = new ValueDOMNumber("Auto", 0);
+            for (int i = 1; i < ints.Length; i++)
+            {
+                ints[i] = new ValueDOMNumber(i.ToString(), i);
+            }
+            this.combobox_thradcount.ItemsSource = ints;
+
+            var num_concurrentCount = this._config.DownloaderConcurrentCount;
+            if (num_concurrentCount > logicalCount)
+            {
+                num_concurrentCount = logicalCount;
+            }
+            else if (num_concurrentCount < 0)
+            {
+                num_concurrentCount = 0;
+            }
+            this.combobox_thradcount.SelectedItem = ints[num_concurrentCount];
+
             var str_pso2bin = this._config.PSO2_BIN;
             if (!string.IsNullOrEmpty(str_pso2bin))
             {
                 this.textbox_pso2_bin.Text = str_pso2bin;
+            }
+
+            var str_pso2data_reboot = this._config.PSO2Directory_Reboot;
+            if (!string.IsNullOrEmpty(str_pso2data_reboot))
+            {
+                this.textbox_pso2_data_ngs.Text = str_pso2data_reboot;
+            }
+
+            var str_pso2data_classic = this._config.PSO2Directory_Classic;
+            if (!string.IsNullOrEmpty(str_pso2data_classic))
+            {
+                this.textbox_pso2_data_ngs.Text = str_pso2data_classic;
+            }
+
+            this.checkbox_pso2_data_ngs.IsChecked = this._config.PSO2Enabled_Reboot;
+            this.checkbox_pso2_classic.IsChecked = this._config.PSO2Enabled_Classic;
+            this.checkbox_loadweblauncher.IsChecked = this._config.LauncherLoadWebsiteAtStartup;
+
+            var num_throttleFileCheck = this._config.DownloaderCheckThrottle;
+            if (num_throttleFileCheck < this.numberbox_throttledownload.Minimum)
+            {
+                this.numberbox_throttledownload.Value = this.numberbox_throttledownload.Minimum;
+            }
+            else if (num_throttleFileCheck > this.numberbox_throttledownload.Maximum)
+            {
+                this.numberbox_throttledownload.Value = this.numberbox_throttledownload.Maximum;
+            }
+            else
+            {
+                this.numberbox_throttledownload.Value = num_throttleFileCheck;
             }
         }
 
@@ -67,6 +117,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.PSO2_BIN = this.textbox_pso2_bin.Text;
             this._config.DownloadSelection = ((ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
             this._config.DownloaderProfile = ((ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
+            this._config.DownloaderConcurrentCount = ((ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
+
+            this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
+            this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
+            this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
+            this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
+            this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
+
+            this._config.DownloaderCheckThrottle = (int)this.numberbox_throttledownload.Value;
+
             this._config.Save();
             this.DialogResult = true;
             SystemCommands.CloseWindow(this);
@@ -157,6 +217,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 this.Value = value;
             }
+        }
+
+        readonly struct ValueDOMNumber
+        {
+            public string Name { get; }
+
+            public int Value { get; }
+
+            public ValueDOMNumber(string displayName, int value)
+            {
+                this.Name = displayName;
+                this.Value = value;
+            }
+        }
+
+        private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = System.Linq.Enumerable.Any(e.Text, c => !char.IsDigit(c));
         }
     }
 }

@@ -20,5 +20,7 @@ namespace Leayal.SharedInterfaces
                 RootDirectory = Path.GetDirectoryName(EntryExecutableFilename);
             }
         }
+
+        public static int GetProcessorCountAuto() => Math.Max(Environment.ProcessorCount / 2, 2);
     }
 }

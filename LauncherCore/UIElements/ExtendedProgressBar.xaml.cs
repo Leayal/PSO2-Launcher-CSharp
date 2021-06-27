@@ -34,9 +34,12 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             set => this.SetValue(TextProperty, value);
         }
 
+        public bool ShowDetailedProgressPercentage { get; set; }
+
         public ExtendedProgressBar()
         {
             InitializeComponent();
+            this.ShowDetailedProgressPercentage = false;
             this.progressbar.ValueChanged += this.GradientProgressBar_ValueChanged;
         }
 
@@ -48,13 +51,30 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void RedrawProgressString(double progress)
         {
             var str = this.Text;
+            var derp = this.ShowDetailedProgressPercentage;
             if (string.IsNullOrEmpty(str))
             {
-                this.progresstext.Text = $"{Math.Floor(progress * 100 / this.progressbar.Maximum)}%";
+                if (derp)
+                {
+                    var max = this.progressbar.Maximum;
+                    this.progresstext.Text = $"{progress}/{max} | {Math.Round(progress * 100 / max, 2)}%";
+                }
+                else
+                {
+                    this.progresstext.Text = $"{Math.Round(progress * 100 / this.progressbar.Maximum, 2)}%";
+                }
             }
             else
             {
-                this.progresstext.Text = $"{str} ({Math.Floor(progress * 100 / this.progressbar.Maximum)}%)";
+                if (derp)
+                {
+                    var max = this.progressbar.Maximum;
+                    this.progresstext.Text = $"{str} ({progress}/{max} | {Math.Round(progress * 100 / max, 2)}%)";
+                }
+                else
+                {
+                    this.progresstext.Text = $"{str} ({Math.Round(progress * 100 / this.progressbar.Maximum, 2)}%)";
+                }
             }
         }
         public ProgressBar ProgressBar => this.progressbar;

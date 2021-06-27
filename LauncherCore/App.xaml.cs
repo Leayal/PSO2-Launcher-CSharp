@@ -23,5 +23,18 @@ namespace Leayal.PSO2Launcher.Core
             this.MainWindow = new Windows.MainMenuWindow();
             this.MainWindow.Show();
         }
+
+        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            var window = this.MainWindow;
+            if (window != null)
+            {
+                MessageBox.Show(window, e.Exception.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                MessageBox.Show(e.Exception.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
