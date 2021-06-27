@@ -99,7 +99,7 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" Click="ButtonSave_Click" />
-            <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" Click="ButtonClose_Click" />
+            <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" Click="ButtonClose_Click" IsCancel="True" />
         </Grid>
     </Grid>
 </local:MetroWindowEx>

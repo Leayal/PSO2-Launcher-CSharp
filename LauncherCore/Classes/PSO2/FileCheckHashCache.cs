@@ -6,22 +6,36 @@ using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
 using Leayal.SharedInterfaces;
+using System.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public class FileCheckHashCache : IAsyncDisposable
+    public class FileCheckHashCache : AsyncDisposeObject
     {
         private const int LatestVersion = 1;
 
         private readonly SQLiteAsyncConnection sqlConn;
+        private Task t_load;
+        private int flag_load;
 
         public FileCheckHashCache(string filepath)
         {
+            this.flag_load = 0;
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteAsyncConnection(connectionStr);
         }
 
-        public async Task Load()
+        public Task Load()
+        {
+            if (Interlocked.CompareExchange(ref this.flag_load, 1, 0) == 0)
+            {
+                this.t_load = this.Init();
+            }
+            return this.t_load;
+        }
+
+
+        private async Task Init()
         {
             await this.sqlConn.EnableWriteAheadLoggingAsync();
             var versionTb = await this.sqlConn.CreateTableAsync<Versioning>();
@@ -89,9 +103,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return (result != 0);
         }
 
-        public async ValueTask DisposeAsync()
+        protected override Task OnDisposeAsync()
         {
-            await this.sqlConn.CloseAsync();
+            return this.sqlConn.CloseAsync();
         }
 
         public class DatabaseErrorException : Exception { }

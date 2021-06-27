@@ -14,6 +14,7 @@ using System.Diagnostics;
 using Leayal.SharedInterfaces;
 using System.Reflection;
 using System.ComponentModel;
+using Leayal.PSO2Launcher.Core.UIElements;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -22,13 +23,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
-        private static GameClientUpdater CreateGameClientUpdater(string directory, PSO2HttpClient webclient)
-        {
-            return new GameClientUpdater(directory, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
-        }
-
         private readonly PSO2HttpClient pso2HttpClient;
-        private GameClientUpdater? pso2Updater;
+        private GameClientUpdater pso2Updater;
         private CancellationTokenSource cancelSrc;
         private Classes.ConfigurationFile config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
 
@@ -77,17 +73,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();
-                var str = this.config_main.PSO2_BIN;
-                if (!string.IsNullOrEmpty(str))
-                {
-                    str = Path.GetFullPath(str);
-                    if (Directory.Exists(str))
-                    {
-                        pso2Updater = CreateGameClientUpdater(str, this.pso2HttpClient);
-                    }
-                }
             }
             InitializeComponent();
+            var str = this.config_main.PSO2_BIN;
+            if (!string.IsNullOrEmpty(str))
+            {
+                pso2Updater = CreateGameClientUpdater(Path.GetFullPath(str), this.pso2HttpClient);
+            }
             this.TabMainMenu.IsSelected = true;
         }
 
@@ -241,13 +233,34 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
         {
-            var dialog = new DataManagerWindow(this.config_main);
-            dialog.Owner = this;
-            if (dialog.ShowDialog() == true)
+            if (sender is TabMainMenu tab)
             {
-
+                tab.ButtonManageGameDataClicked -= this.TabMainMenu_ButtonManageGameDataClick;
+                try
+                {
+                    var dialog = new DataManagerWindow(this.config_main);
+                    dialog.Owner = this;
+                    if (dialog.ShowDialog() == true)
+                    {
+                        var str = this.config_main.PSO2_BIN;
+                        if (!string.IsNullOrEmpty(str))
+                        {
+                            var oldUpdater = pso2Updater;
+                            pso2Updater = CreateGameClientUpdater(Path.GetFullPath(str), this.pso2HttpClient);
+                            this.RegistryDisposeObject(pso2Updater);
+                            if (oldUpdater != null)
+                            {
+                                await oldUpdater.DisposeAsync();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    tab.ButtonManageGameDataClicked += this.TabMainMenu_ButtonManageGameDataClick;
+                }
             }
         }
 
@@ -255,7 +268,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             // Run test
             var dir_pso2bin = this.config_main.PSO2_BIN;
-            if (string.IsNullOrEmpty(dir_pso2bin))
+            if (pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
             {
                 if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
@@ -275,117 +288,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            var pso2Updater = CreateGameClientUpdater(dir_pso2bin, this.pso2HttpClient);
+            this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
+            this.TabGameClientUpdateProgressBar.IsIndetermined = true;
+            this.TabGameClientUpdateProgressBar.IsSelected = true;
             try
             {
-                var t_loadLocalHashDb = pso2Updater.LoadLocalHashCheck();
                 var downloaderProfile = this.config_main.DownloaderProfile;
                 var downloadType = this.config_main.DownloadSelection;
-                var throttleFileCheck = this.config_main.DownloaderCheckThrottle;
-
-                var logicalCount = Environment.ProcessorCount;
-                var num_concurrentCount = this.config_main.DownloaderConcurrentCount;
-                if (num_concurrentCount > logicalCount)
-                {
-                    num_concurrentCount = logicalCount;
-                }
-                else if (num_concurrentCount <= 0)
-                {
-                    num_concurrentCount = RuntimeValues.GetProcessorCountAuto();
-                }
-
-                pso2Updater.ConcurrentDownloadCount = num_concurrentCount;
-                pso2Updater.ThrottleFileCheckFactor = throttleFileCheck;
-
-                this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
-                this.TabGameClientUpdateProgressBar.IsIndetermined = true;
-                this.TabGameClientUpdateProgressBar.IsSelected = true;
-                var bagFree = new ConcurrentBag<int>();
-                ConcurrentDictionary<PatchListItem, int> dictionaryInUse = dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>(pso2Updater.ConcurrentDownloadCount, pso2Updater.ConcurrentDownloadCount);
-                for (int i = 0; i < pso2Updater.ConcurrentDownloadCount; i++)
-                {
-                    bagFree.Add(i);
-                }
-
-                pso2Updater.ProgressReport += (PatchListItem file, in long value) =>
-                {
-                    this.Dispatcher.BeginInvoke(new GameClientUpdater.ProgressReportHandler((PatchListItem _file, in long _value) =>
-                    {
-                        if (dictionaryInUse.TryGetValue(file, out var index))
-                        {
-                            this.TabGameClientUpdateProgressBar.SetProgressValue(index, _value);
-                        }
-                    }), file, value);
-                };
-                pso2Updater.ProgressBegin += (PatchListItem file, in long maximum) =>
-                {
-                    this.Dispatcher.Invoke(new GameClientUpdater.ProgressBeginHandler((PatchListItem _file, in long _maximum) =>
-                    {
-                        if (bagFree.TryTake(out var index))
-                        {
-                            if (dictionaryInUse.TryAdd(_file, index))
-                            {
-                                this.TabGameClientUpdateProgressBar.SetProgressText(index, _file.GetFilenameWithoutAffix());
-                                this.TabGameClientUpdateProgressBar.SetProgressMaximum(index, _maximum);
-                            }
-                        }
-                    }), file, maximum);
-                };
-                pso2Updater.ProgressEnd += (PatchListItem file, in bool success) =>
-                {
-                    this.Dispatcher.Invoke(new GameClientUpdater.ProgressEndHandler((PatchListItem _file, in bool _success) =>
-                    {
-                        if (dictionaryInUse.TryRemove(_file, out var index))
-                        {
-                            this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
-                            bagFree.Add(index);
-                        }
-                    }), file, success);
-                };
-
-                pso2Updater.FileCheckBegin += (sender, totalfilecount) =>
-                {
-                    this.Dispatcher.Invoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _total) =>
-                    {
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
-                        if (_total == -1)
-                        {
-                            this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = 100;
-                        }
-                        else
-                        {
-                            this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = _total;
-                            this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = true;
-                            pso2Updater.FileCheckReport += (sender, currentfilecount) =>
-                            {
-                                this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
-                                {
-                                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = _current;
-                                }), sender, currentfilecount);
-                            };
-                        }
-                        this.TabGameClientUpdateProgressBar.IsIndetermined = false;
-                    }), sender, totalfilecount);
-                };
-
-                pso2Updater.FileCheckEnd += (sender) =>
-                {
-                    this.Dispatcher.Invoke(new GameClientUpdater.FileCheckEndHandler((_sender) =>
-                    {
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking completed. Waiting for downloads to complete.";
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
-                    }), sender);
-                };
-
-                pso2Updater.OperationCompleted += (sender, totalfiles, failedfiles) =>
-                {
-                    this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _totalfiles, _failedfiles) =>
-                    {
-                        this.TabMainMenu.IsSelected = true;
-                    }), sender, totalfiles, failedfiles);
-                };
+                var t_loadLocalHashDb = pso2Updater.LoadLocalHashCheck();
 
                 this.cancelSrc?.Dispose();
                 this.cancelSrc = new CancellationTokenSource();
@@ -425,7 +335,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             finally
             {
-                await pso2Updater.DisposeAsync();
                 await this.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     this.TabMainMenu.IsSelected = true;
@@ -442,6 +351,114 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.cancelSrc.Cancel();
                 }
             }
+        }
+
+        private GameClientUpdater CreateGameClientUpdater(string directory, PSO2HttpClient webclient)
+        {
+            var result = new GameClientUpdater(directory, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
+            var throttleFileCheck = this.config_main.DownloaderCheckThrottle;
+
+            var logicalCount = Environment.ProcessorCount;
+            var num_concurrentCount = this.config_main.DownloaderConcurrentCount;
+            if (num_concurrentCount > logicalCount)
+            {
+                num_concurrentCount = logicalCount;
+            }
+            else if (num_concurrentCount <= 0)
+            {
+                num_concurrentCount = RuntimeValues.GetProcessorCountAuto();
+            }
+
+            result.ConcurrentDownloadCount = num_concurrentCount;
+            result.ThrottleFileCheckFactor = throttleFileCheck;
+
+            var bagFree = new ConcurrentBag<int>();
+            ConcurrentDictionary<PatchListItem, int> dictionaryInUse = dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>(result.ConcurrentDownloadCount, result.ConcurrentDownloadCount);
+            for (int i = 0; i < result.ConcurrentDownloadCount; i++)
+            {
+                bagFree.Add(i);
+            }
+
+            result.ProgressReport += (PatchListItem file, in long value) =>
+            {
+                this.Dispatcher.BeginInvoke(new GameClientUpdater.ProgressReportHandler((PatchListItem _file, in long _value) =>
+                {
+                    if (dictionaryInUse.TryGetValue(file, out var index))
+                    {
+                        this.TabGameClientUpdateProgressBar.SetProgressValue(index, _value);
+                    }
+                }), file, value);
+            };
+            result.ProgressBegin += (PatchListItem file, in long maximum) =>
+            {
+                this.Dispatcher.Invoke(new GameClientUpdater.ProgressBeginHandler((PatchListItem _file, in long _maximum) =>
+                {
+                    if (bagFree.TryTake(out var index))
+                    {
+                        if (dictionaryInUse.TryAdd(_file, index))
+                        {
+                            this.TabGameClientUpdateProgressBar.SetProgressText(index, _file.GetFilenameWithoutAffix());
+                            this.TabGameClientUpdateProgressBar.SetProgressMaximum(index, _maximum);
+                        }
+                    }
+                }), file, maximum);
+            };
+            result.ProgressEnd += (PatchListItem file, in bool success) =>
+            {
+                this.Dispatcher.Invoke(new GameClientUpdater.ProgressEndHandler((PatchListItem _file, in bool _success) =>
+                {
+                    if (dictionaryInUse.TryRemove(_file, out var index))
+                    {
+                        this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
+                        bagFree.Add(index);
+                    }
+                }), file, success);
+            };
+
+            result.FileCheckBegin += (sender, totalfilecount) =>
+            {
+                this.Dispatcher.Invoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _total) =>
+                {
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
+                    if (_total == -1)
+                    {
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = 100;
+                    }
+                    else
+                    {
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = _total;
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = true;
+                        result.FileCheckReport += (sender, currentfilecount) =>
+                        {
+                            this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
+                            {
+                                this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = _current;
+                            }), sender, currentfilecount);
+                        };
+                    }
+                    this.TabGameClientUpdateProgressBar.IsIndetermined = false;
+                }), sender, totalfilecount);
+            };
+
+            result.FileCheckEnd += (sender) =>
+            {
+                this.Dispatcher.Invoke(new GameClientUpdater.FileCheckEndHandler((_sender) =>
+                {
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking completed. Waiting for downloads to complete.";
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
+                }), sender);
+            };
+
+            result.OperationCompleted += (sender, totalfiles, failedfiles) =>
+            {
+                this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _totalfiles, _failedfiles) =>
+                {
+                    this.TabMainMenu.IsSelected = true;
+                }), sender, totalfiles, failedfiles);
+            };
+            return result;
         }
 
         #region | WindowsCommandButtons |
