@@ -135,23 +135,44 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PatchListMemory> GetPatchListAllAsync(CancellationToken cancellationToken)
             => this.GetPatchListAllAsync(null, cancellationToken);
 
+        public Task<PatchListMemory> GetPatchListClassicAsync(CancellationToken cancellationToken)
+            => this.GetPatchListClassicAsync(null, cancellationToken);
+
+        public Task<PatchListMemory> GetPatchListAlwaysAsync(CancellationToken cancellationToken)
+            => this.GetPatchListAlwaysAsync(null, cancellationToken);
+
         public Task<PatchListMemory> GetPatchListNGSPrologueAsync(CancellationToken cancellationToken)
             => this.GetPatchListNGSPrologueAsync(null, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListNGSFullAsync(CancellationToken cancellationToken)
             => this.GetPatchListNGSFullAsync(null, cancellationToken);
 
-        public Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", cancellationToken);
+        public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+        {
+            var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
+            var t_ngs = GetPatchListNGSFullAsync(rootInfo, cancellationToken);
+
+            var ngs = await t_ngs;
+            var therest = await t_all;
+            var dictionary = new Dictionary<string, PatchListItem>(therest.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (var item in ngs) dictionary.Add(item.GetFilenameWithoutAffix(), item);
+
+            foreach (var item in therest) dictionary.TryAdd(item.GetFilenameWithoutAffix(), item);
+
+            return new PatchListMemory(rootInfo, null, dictionary);
+        }
 
         public Task<PatchListMemory> GetPatchListAlwaysAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_always.txt", cancellationToken);
+            => InnerGetPatchListAsync(rootInfo, "patchlist_always.txt", null, cancellationToken);
+
+        public Task<PatchListMemory> GetPatchListClassicAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+            => InnerGetPatchListAsync(rootInfo, "patchlist_classic.txt", false, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListNGSPrologueAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_prologue.txt", cancellationToken);
+            => InnerGetPatchListAsync(rootInfo, "patchlist_prologue.txt", true, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListNGSFullAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", cancellationToken);
+            => InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken);
         #endregion
 
         #region | Advanced public APIs |
@@ -210,7 +231,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         #region | Private or inner methods |
 
-        private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, CancellationToken cancellationToken)
+        private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
         {
             PatchRootInfo patchRootInfo;
             if (rootInfo == null)
@@ -227,7 +248,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 try
                 {
-                    return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, filelistFilename, cancellationToken);
+                    return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -240,7 +261,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     try
                     {
-                        return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, filelistFilename, cancellationToken);
+                        return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken);
                     }
                     catch (Exception ex)
                     {
@@ -256,7 +277,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new UnexpectedDataFormatException();
         }
 
-        private async Task<PatchListMemory> InnerGetPatchListAsync2(PatchRootInfo rootInfo, string patchBaseUrl, string filelistFilename, CancellationToken cancellationToken)
+        private async Task<PatchListMemory> InnerGetPatchListAsync2(PatchRootInfo rootInfo, string patchBaseUrl, bool? isReboot, string filelistFilename, CancellationToken cancellationToken)
         {
             var baseUri = new Uri(patchBaseUrl);
             var filelistUrl = new Uri(baseUri, filelistFilename);
@@ -271,7 +292,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 using (var stream = response.Content.ReadAsStream()) // I thought there was only Async ops.
                 using (var sr = new StreamReader(stream))
-                using (var patchlistReader = new PatchListDeferred(rootInfo, sr, false))
+                using (var patchlistReader = new PatchListDeferred(rootInfo, isReboot, sr, false))
                 {
                     return patchlistReader.ToMemory();
                 }

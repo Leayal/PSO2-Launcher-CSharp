@@ -15,9 +15,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private readonly TextReader tr;
         private readonly bool keepOpen;
 
-        public PatchListDeferred(PatchRootInfo rootInfo, TextReader textReader) : this(rootInfo, textReader, false) { }
+        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader textReader) : this(rootInfo, isReboot, textReader, false) { }
 
-        public PatchListDeferred(PatchRootInfo rootInfo, TextReader textReader, bool keepOpen) : base(rootInfo)
+        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader textReader, bool keepOpen) : base(rootInfo, isReboot)
         {
             this.keepOpen = keepOpen;
             this.tr = textReader;
@@ -89,7 +89,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
             this.InnerCopyTo(items);
-            return new PatchListMemory(this.RootInfo, items);
+            return new PatchListMemory(this.RootInfo, this.IsReboot, items);
         }
 
         public void Dispose()

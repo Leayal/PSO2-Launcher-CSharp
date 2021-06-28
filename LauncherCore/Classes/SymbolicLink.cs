@@ -155,7 +155,7 @@ namespace SymbolicLinkSupport
 
         }
 
-        public static bool Exists(string path)
+        public static bool IsSymlink(string path)
         {
             if (!Directory.Exists(path) && !File.Exists(path))
             {
@@ -163,6 +163,45 @@ namespace SymbolicLinkSupport
             }
             string target = GetTarget(path);
             return target != null;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="alloweddepth"></param>
+        /// <returns>The path of the endpoint of symlink(s). Or null if the given path is not existed or not a symlink.</returns>
+        /// <exception cref="IOException">Thrown when the symlinks travels deeper than the allowed depth.</exception>
+        public static string FollowTarget(string path, int alloweddepth = 256)
+        {
+            if (!Directory.Exists(path) && !File.Exists(path))
+            {
+                return null;
+            }
+            string target = GetTarget(path);
+            if (target == null)
+            {
+                return null;
+            }
+            string currentpath = target;
+            for (int i = 0; i < alloweddepth; i++)
+            {
+                if (!Directory.Exists(currentpath) && !File.Exists(currentpath))
+                {
+                    return currentpath;
+                }
+                target = GetTarget(currentpath);
+                if (target == null)
+                {
+                    return currentpath;
+                }
+                else
+                {
+                    currentpath = target;
+                }
+            }
+
+            throw new IOException();
         }
 
         private static SafeFileHandle GetFileHandle(string path)

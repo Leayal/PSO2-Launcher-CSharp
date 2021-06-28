@@ -43,7 +43,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.combobox_downloadselection.SelectedItem = gameSelection_list[GameClientSelection.NGS_Prologue_Only];
             }
 
-            var downloaderPreset_list = EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy });
+            var downloaderPreset_list = EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy, FileScanFlags.CacheOnly });
             this.combobox_downloadpreset.ItemsSource = downloaderPreset_list.Values;
             var selectedPreset = this._config.DownloaderProfile;
             if (downloaderPreset_list.TryGetValue(selectedPreset, out var item_selectedPreset))

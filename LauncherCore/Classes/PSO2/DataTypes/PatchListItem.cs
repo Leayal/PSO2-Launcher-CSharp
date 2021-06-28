@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = p. False = m. Null = Not given.</summary>
         public readonly bool? PatchOrBase;
 
+        public readonly bool? IsRebootData;
+
+        public bool IsDataFile => (DetermineIfReboot(in this.RemoteFilename).HasValue);
+
         public PatchListItem(PatchListBase origin, string filename, long size, string md5) : this(origin, filename, md5, size, null) { }
 
         /// <param name="mORp">True = p. False = m. Null = Not given.</param>
@@ -32,6 +37,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.MD5 = md5;
             this.FileSize = size;
             this.PatchOrBase = mORp;
+            if (DetermineIfReboot(in this.RemoteFilename).HasValue)
+            {
+                this.IsRebootData = origin.IsReboot;
+            }
+            else
+            {
+                this.IsRebootData = null;
+            }
         }
 
         public string GetFilenameWithoutAffix() => GetFilenameWithoutAffix(in this.RemoteFilename);
@@ -137,6 +150,28 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
                     return new PatchListItem(origin, splitted[0], splitted[1], filesize, splitted[3][0] == char_p);
                 default:
                     throw new UnexpectedDataFormatException();
+            }
+        }
+
+        private static string _prefix_data_classic = Path.Combine("data", "win32");
+        private static string _prefix_data_reboot = Path.Combine("data", "win32reboot");
+
+        /// <returns>Full path to a directory.</returns>
+        public static bool? DetermineIfReboot(in string relativePath)
+        {
+            var normalized = PathStringComparer.Default.NormalizePath(relativePath);
+
+            if (normalized.StartsWith(_prefix_data_classic, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            else if (normalized.StartsWith(_prefix_data_reboot, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            else
+            {
+                return null;
             }
         }
     }

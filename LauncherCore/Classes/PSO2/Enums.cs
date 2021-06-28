@@ -33,8 +33,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         /// <summary>Bypass the cached hashes and perform a hash compute from local file regardless.</summary>
         /// <remarks>
         /// <para>This will ignore the existing records in the cache and generate anew.</para>
+        /// <para>This flag will take precede over <seealso cref="CacheOnly"/>.</para>
         /// </remarks>
         ForceRefreshCache = 1 << 3,
+
+        [EnumDisplayName("Cache only [Not recommended] (Only use the info from the cache to check)")]
+        /// <summary>Only use the data info from the hash cache.</summary>
+        /// <remarks>
+        /// <para>Very fast, however this will <b>not</b> do sanity check whether the actual file is existed or matched the written state in the cache.</para>
+        /// <para>This flag cannot be used together with <seealso cref="ForceRefreshCache"/>. If you do, <seealso cref="ForceRefreshCache"/> takes precede.</para>
+        /// </remarks>
+        CacheOnly = 1 << 4,
 
         // Preset below
 
