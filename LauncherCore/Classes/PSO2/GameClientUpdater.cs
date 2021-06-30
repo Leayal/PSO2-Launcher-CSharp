@@ -1,6 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.SharedInterfaces;
+using SymbolicLinkSupport;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -22,7 +23,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private const string Name_PatchRootInfo = "management_beta.txt";
 
-        private readonly string dir_pso2bin, dir_classic_data, dir_reboot_data;
+        private readonly string dir_pso2bin;
+        private readonly string? dir_classic_data, dir_reboot_data;
         private readonly PSO2HttpClient webclient;
 
         // Cache purposes
@@ -36,7 +38,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         // Threadings
         private int flag_fileCheckStarted, flag_fileDownloadStarted, flag_operationCount;
-        private readonly BlockingCollection<PatchListItem> pendingFiles;
+        private readonly BlockingCollection<DownloadItem> pendingFiles;
 
 
         public int ConcurrentDownloadCount { get; set; }
@@ -45,7 +47,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Snail mode (for when internet is extremely unreliable).
         public bool SnailMode { get; set; }
 
-        public GameClientUpdater(string whereIsThePSO2_BIN, string preference_classicWhere, string preference_rebootWhere, string hashCheckCache, PSO2HttpClient httpHandler)
+        public GameClientUpdater(string whereIsThePSO2_BIN, string? preference_classicWhere, string? preference_rebootWhere, string hashCheckCache, PSO2HttpClient httpHandler)
         {
             this.hashCacheDb = new FileCheckHashCache(hashCheckCache);
             this.count_fileFailure = 0;
@@ -56,9 +58,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.flag_fileCheckStarted = 0;
             this.flag_fileDownloadStarted = 0;
             this.dir_pso2bin = Path.GetFullPath(whereIsThePSO2_BIN);
-            this.dir_classic_data = Path.GetFullPath(preference_classicWhere);
-            this.dir_reboot_data = Path.GetFullPath(preference_rebootWhere);
-            this.pendingFiles = new BlockingCollection<PatchListItem>();
+            this.dir_classic_data = string.IsNullOrWhiteSpace(preference_classicWhere) ? null : Path.GetFullPath(preference_classicWhere);
+            this.dir_reboot_data = string.IsNullOrWhiteSpace(preference_rebootWhere) ? null : Path.GetFullPath(preference_rebootWhere);
+            this.pendingFiles = new BlockingCollection<DownloadItem>();
             this.lastKnownObjects = new ObjectShortCacheManager<object>();
             // this.workingDirectory = whereIsThePSO2_BIN;
             this.webclient = httpHandler;
@@ -230,10 +232,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
+                    string localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
+                    // localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
                     if (!File.Exists(localFilePath))
                     {
-                        this.pendingFiles.Add(patchItem);
+                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        if (isLink)
+                        {
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                        }
+                        else
+                        {
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                        }
                     }
                     else
                     {
@@ -246,17 +257,41 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 if (flag_useMd5)
                                 {
                                     string localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                    await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
+                                    var cached = await duhB.GetPatchItem(localFilename);
 
-                                    if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                    var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
+
+                                    if (cached == null || cached.LastModifiedTimeUTC != localLastModifiedTimeUtc || cached.FileSize != localFileLen || !string.Equals(localMd5, cached.MD5, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        this.pendingFiles.Add(patchItem);
+                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
+                                    }
+
+                                    if (!bool_compareMD5)
+                                    {
+                                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                        if (isLink)
+                                        {
+                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                        }
+                                        else
+                                        {
+                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                        }
+                                        // this.pendingFiles.Add(patchItem);
                                     }
                                 }
                             }
                             else
                             {
-                                this.pendingFiles.Add(patchItem);
+                                var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                if (isLink)
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                }
+                                else
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                }
                             }
                         }
                     }
@@ -277,38 +312,40 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
+                    // string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
+                    var localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
                     var cachedHash = await duhB.GetPatchItem(localFilename);
-                    var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                    using (var fs = File.OpenRead(localFilePath))
-                    {
-                        var localFileLen = fs.Length;
-                        if (localFileLen == patchItem.FileSize)
-                        {
-                            if (flag_useMd5)
-                            {
-                                string localMd5;
-                                if (cachedHash != null && cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
-                                {
-                                    localMd5 = cachedHash.MD5;
-                                }
-                                else
-                                {
-                                    localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                    await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
-                                }
+                    // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
 
-                                if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    this.pendingFiles.Add(patchItem);
-                                }
-                            }
+                    if (cachedHash == null)
+                    {
+                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        if (isLink)
+                        {
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
                         }
                         else
                         {
-                            this.pendingFiles.Add(patchItem);
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                        }
+                        // this.pendingFiles.Add(patchItem);
+                    }
+                    else
+                    {
+                        if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                            if (isLink)
+                            {
+                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                            }
+                            else
+                            {
+                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                            }
                         }
                     }
+
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     if (fileCheckThrottleFactor != 0)
                     {
@@ -326,10 +363,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
+                    var localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
+                    // string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
                     if (!File.Exists(localFilePath))
                     {
-                        this.pendingFiles.Add(patchItem);
+                        string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        if (isLink)
+                        {
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                        }
+                        else
+                        {
+                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                        }
                     }
                     else
                     {
@@ -355,13 +401,29 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                                     if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        this.pendingFiles.Add(patchItem);
+                                        string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                        if (isLink)
+                                        {
+                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                        }
+                                        else
+                                        {
+                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                        }
                                     }
                                 }
                             }
                             else
                             {
-                                this.pendingFiles.Add(patchItem);
+                                string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                if (isLink)
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                }
+                                else
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                }
                             }
                         }
                     }
@@ -426,15 +488,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             var duhB = this.hashCacheDb;
 
-            foreach (var file in this.pendingFiles.GetConsumingEnumerable())
+            foreach (var downloadItem in this.pendingFiles.GetConsumingEnumerable())
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
                     break;
                 }
 
-                var localFilename = file.GetFilenameWithoutAffix();
-                var localFilePath = this.fileStorageController.GetFilePath(localFilename, out var isDirectory);
+                var localFilePath = downloadItem.Destination;
                 // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                 // var tmpFilename = localFilename + ".dtmp";
                 var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);
@@ -445,7 +506,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var localStream = File.Create(tmpFilePath); // Sync it is
                 try
                 {
-                    using (var response = await this.webclient.OpenForDownloadAsync(file, cancellationToken))
+                    using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
                     {
                         if (response.IsSuccessStatusCode)
                         {
@@ -458,11 +519,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                             else
                             {
-                                remoteSizeInBytes = file.FileSize;
+                                remoteSizeInBytes = downloadItem.PatchInfo.FileSize;
                             }
                             using (var remoteStream = response.Content.ReadAsStream())
                             {
-                                this.OnProgressBegin(file, in remoteSizeInBytes);
+                                this.OnProgressBegin(downloadItem.PatchInfo, in remoteSizeInBytes);
                                 if (remoteSizeInBytes == -1)
                                 {
                                     // Download without knowing total size, until upstream get EOF.
@@ -494,7 +555,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         localStream.Write(downloadbuffer, 0, byteRead);
                                         bytesDownloaded += byteRead;
                                         // Report progress here
-                                        this.OnProgressReport(file, in bytesDownloaded);
+                                        this.OnProgressReport(downloadItem.PatchInfo, in bytesDownloaded);
                                         byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     }
                                 }
@@ -504,7 +565,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                                 // Final check
                                 var downloadedMd5 = MD5Hash.ComputeHashFromFile(localStream);
-                                if (downloadedMd5 == file.MD5)
+                                if (downloadedMd5 == downloadItem.PatchInfo.MD5)
                                 {
                                     isSuccess = true;
                                 }
@@ -527,7 +588,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     try
                     {
                         File.Move(tmpFilePath, localFilePath, true);
-                        await duhB.SetPatchItem(file, lastWrittenTimeUtc);
+                        await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
                     }
                     catch
                     {
@@ -541,7 +602,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     File.Delete(tmpFilePath);
                 }
 
-                this.OnProgressEnd(file, in isSuccess);
+                this.OnProgressEnd(downloadItem.PatchInfo, in isSuccess);
             }
         }
 
@@ -571,8 +632,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             if (!cancellationToken.IsCancellationRequested && ver.HasValue)
             {
-                var localFilePath = this.fileStorageController.GetFilePath("version.ver", out var isDirectory);
-                if (isDirectory == true)
+                var localFilePath = Path.GetFullPath("version.ver", this.dir_pso2bin);
+                if (Directory.Exists(localFilePath))
                 {
                     Directory.Delete(localFilePath);
                 }
@@ -608,13 +669,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void OperationCompletedHandler(GameClientUpdater sender, long howManyFileInTotal, long howManyFileFailure);
 
 
+        class DownloadItem
+        {
+            public readonly PatchListItem PatchInfo;
+            public readonly string Destination;
+            public readonly string? SymlinkTo;
 
+            public DownloadItem(PatchListItem info, string dest, string? linkTo)
+            {
+                this.PatchInfo = info;
+                this.Destination = dest;
+                this.SymlinkTo = linkTo;
+            }
+        }
 
         private static string _prefix_data_classic = Path.Combine("data", "win32");
         private static string _prefix_data_reboot = Path.Combine("data", "win32reboot");
 
         /// <returns>Full path to a directory.</returns>
-        private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, in string? rebootData)
+        private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, in string? rebootData, out bool isLink)
         {
             var filename = item.GetFilenameWithoutAffix();
             var normalized = PathStringComparer.Default.NormalizePath(in filename);
@@ -625,10 +698,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     if (item.IsRebootData == false && !string.IsNullOrEmpty(classicData))
                     {
+                        isLink = true;
                         return Path.GetFullPath(filename, classicData);
                     }
                     else if (item.IsRebootData == true && !string.IsNullOrEmpty(rebootData))
                     {
+                        isLink = true;
                         return Path.GetFullPath(filename, rebootData);
                     }
                 }
@@ -636,14 +711,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     if (!string.IsNullOrEmpty(classicData) && normalized.StartsWith(_prefix_data_classic))
                     {
+                        isLink = true;
                         return Path.GetFullPath(filename, classicData);
                     }
                     else if (!string.IsNullOrEmpty(rebootData) && normalized.StartsWith(_prefix_data_reboot))
                     {
+                        isLink = true;
                         return Path.GetFullPath(filename, rebootData);
                     }
                 }
             }
+            isLink = false;
             return Path.GetFullPath(filename, pso2bin);
         }
     }

@@ -17,6 +17,7 @@ namespace Leayal.PSO2Launcher.Core
         
         public GameLauncher()
         {
+            // var adminClient = new Leayal.PSO2Launcher.AdminProcess.AdminClient();
             // this.isLightMode = false;
             this._app = new App();
             ThemeManager.Current.SyncTheme(ThemeSyncMode.SyncWithAppMode);

@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebViewCompat", "WebViewCom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.SharedInterfaces", "Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj", "{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminServer", "AdminServer\AdminServer.csproj", "{CF07507C-87A2-4101-BB7D-0BA0315F6570}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminProcess", "AdminServer\AdminProcess.csproj", "{CF07507C-87A2-4101-BB7D-0BA0315F6570}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

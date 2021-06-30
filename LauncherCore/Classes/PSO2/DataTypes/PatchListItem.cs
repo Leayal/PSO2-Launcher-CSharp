@@ -37,7 +37,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.MD5 = md5;
             this.FileSize = size;
             this.PatchOrBase = mORp;
-            if (DetermineIfReboot(in this.RemoteFilename).HasValue)
+            if (origin != null && DetermineIfReboot(in this.RemoteFilename).HasValue)
             {
                 this.IsRebootData = origin.IsReboot;
             }

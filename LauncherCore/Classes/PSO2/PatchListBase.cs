@@ -129,7 +129,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                     }
                 }
-                return new PatchListMemory(comparand, items);
+                return new PatchListMemory(comparand, null, items);
             }
         }
     }

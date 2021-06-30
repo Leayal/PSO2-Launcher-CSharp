@@ -88,6 +88,8 @@ namespace SymbolicLinkSupport
             CreateDirectoryLink(linkPath, targetPath, false);
         }
 
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="IOException"></exception>
         public static void CreateDirectoryLink(string linkPath, string targetPath, bool makeTargetPathRelative)
         {
             if (makeTargetPathRelative)
@@ -103,16 +105,25 @@ namespace SymbolicLinkSupport
                 }
                 catch (COMException exception)
                 {
-                    throw new IOException(exception.Message, exception);
+                    if (exception.ErrorCode == -2147024896)
+                    {
+                        throw new UnauthorizedAccessException();
+                    }
+                    else
+                    {
+                        throw new IOException(exception.Message, exception);
+                    }
                 }
             }
         }
 
+        /// <exception cref="UnauthorizedAccessException"></exception>
         public static void CreateFileLink(string linkPath, string targetPath)
         {
             CreateFileLink(linkPath, targetPath, false);
         }
-        
+
+        /// <exception cref="UnauthorizedAccessException"></exception>
         public static void CreateFileLink(string linkPath, string targetPath, bool makeTargetPathRelative)
         {
             if (makeTargetPathRelative)
@@ -122,7 +133,15 @@ namespace SymbolicLinkSupport
 
             if (!CreateSymbolicLink(linkPath, targetPath, targetIsAFile))
             {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                var hr = Marshal.GetHRForLastWin32Error();
+                if (hr == -2147024896)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+                else
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
             }
         }
         

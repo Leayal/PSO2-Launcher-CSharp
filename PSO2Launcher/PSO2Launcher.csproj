@@ -18,6 +18,9 @@
   </Target>
 
   <ItemGroup>
+    <ProjectReference Include="..\AdminServer\AdminProcess.csproj">
+      <Private>false</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
       <Private>false</Private>
     </ProjectReference>

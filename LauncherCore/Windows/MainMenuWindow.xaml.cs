@@ -129,7 +129,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -157,12 +157,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         return;
                     }
 
+                    /*
                     var data = new SharedInterfaces.Communication.BootstrapElevation();
                     data.Filename = filename;
                     data.WorkingDirectory = dir_pso2bin;
                     data.Arguments = " +0x33aca2b9 -reboot -optimize";
                     data.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
                     var exitCode = ProcessHelper.CreateProcessElevated(data);
+                    */
+                    var elevator = await AdminProcess.AdminProcess.CreateElevator();
+                    var cmd = new AdminProcess.CommandElevateProcess()
+                    {
+                        Filename = filename,
+                        WorkingDirectory = dir_pso2bin,
+                        Arguments = " +0x33aca2b9 -reboot -optimize"
+                    };
+                    cmd.EnvironmentVars.Add("-pso2", "+0x01e3d1e9");
+                    var cmdResult = await elevator.ElevateProcess(cmd);
+                    var exitCode = cmdResult.ExitCode;
                     switch (exitCode)
                     {
                         case 0:
@@ -295,7 +307,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 var downloaderProfile = this.config_main.DownloaderProfile;
                 var downloadType = this.config_main.DownloadSelection;
-                var t_loadLocalHashDb = pso2Updater.LoadLocalHashCheck();
+                var t_loadLocalHashDb = pso2Updater.Prepare();
 
                 this.cancelSrc?.Dispose();
                 this.cancelSrc = new CancellationTokenSource();
@@ -312,7 +324,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         try
                         {
-                            await pso2Updater.LoadLocalHashCheck();
+                            await pso2Updater.Prepare();
                         }
                         catch
                         {
@@ -355,7 +367,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private GameClientUpdater CreateGameClientUpdater(string directory, PSO2HttpClient webclient)
         {
-            var result = new GameClientUpdater(directory, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
+            var result = new GameClientUpdater(directory, null, null, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
             var throttleFileCheck = this.config_main.DownloaderCheckThrottle;
 
             var logicalCount = Environment.ProcessorCount;
