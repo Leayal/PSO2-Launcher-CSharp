@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Leayal.PSO2Launcher.AdminProcess
 {
@@ -106,6 +107,20 @@ namespace Leayal.PSO2Launcher.AdminProcess
                     adminCommandHandlerServer.Listen();
                     adminCommandHandlerServer.ReportIn(reportPort);
 
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool Host2(string[] args)
+        {
+            if (args != null && args.Length > 1)
+            {
+                if (string.Equals(args[0], "--admin-host-process", StringComparison.Ordinal) &&
+                    int.TryParse(args[1], out var reportWindowHandle))
+                {
+                    Application.Run();
                     return true;
                 }
             }

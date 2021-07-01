@@ -143,7 +143,8 @@ namespace Leayal.PSO2Launcher.AdminProcess
                     {
                         var added = Interlocked.Increment(ref this.indexing);
                         var stream = _client.GetStream();
-                        if (!this.clients.TryAdd(added, new ClientItem(_client, stream)))
+                        var clientwrapper = new ClientItem(_client, stream);
+                        if (!this.clients.TryAdd(added, clientwrapper))
                         {
                             stream.Close();
                             _client.Close();
@@ -151,6 +152,7 @@ namespace Leayal.PSO2Launcher.AdminProcess
                         }
                         else
                         {
+                            clientwrapper.Writer.Write(HandshakeRequestPacket);
                             stream.BeginWrite(HandshakeRequestPacket, 0, HandshakeRequestPacket.Length, this.HandshakeClient, added);
                         }
                         this.listener.BeginAcceptTcpClient(this.ReceiveCompleted, null);
@@ -220,32 +222,23 @@ namespace Leayal.PSO2Launcher.AdminProcess
             {
                 var headerSize = stream.EndRead(ar);
                 var sizeOfInt = sizeof(int);
-                WeirdDebugWay($"||{headerSize}:{sizeOfInt}");
                 if (headerSize == sizeOfInt)
                 {
                     var packetSize = BitConverter.ToInt32(state.HeaderBuffer);
-                    WeirdDebugWay("-2:" + packetSize.ToString());
                     byte[] packetBuffer = null;
                     try
                     {
                         packetBuffer = ArrayPool<byte>.Shared.Rent(packetSize);
-                        WeirdDebugWay("-1");
                         if (stream.Read(packetBuffer, 0, packetSize) == packetSize)
                         {
-                            WeirdDebugWay("0");
                             if (CommandElevateProcess.TryDecodeData(packetBuffer.AsMemory(0, packetSize), out var command_elevate))
                             {
-                                WeirdDebugWay("1");
                                 var rep = await command_elevate.Execute();
-                                WeirdDebugWay("2");
                                 var responsePacket = rep.Encode();
-                                WeirdDebugWay("3");
                                 var messageWithHeader = new byte[responsePacket.Length + sizeOfInt];
-                                WeirdDebugWay("4");
                                 BitConverter.GetBytes(responsePacket.Length).CopyTo(messageWithHeader, 0);
                                 responsePacket.CopyTo(new Memory<byte>(messageWithHeader, sizeOfInt, responsePacket.Length));
                                 stream.Write(messageWithHeader, 0, messageWithHeader.Length);
-                                WeirdDebugWay("5");
                             }
                             else
                             {
@@ -297,11 +290,15 @@ namespace Leayal.PSO2Launcher.AdminProcess
         {
             public readonly TcpClient Client;
             public readonly NetworkStream Stream;
+            public readonly BinaryReader Reader;
+            public readonly BinaryWriter Writer;
 
             public ClientItem(TcpClient client, NetworkStream stream)
             {
                 this.Client = client;
                 this.Stream = stream;
+                this.Reader = new BinaryReader(stream, System.Text.Encoding.UTF8);
+                this.Writer = new BinaryWriter(stream, System.Text.Encoding.UTF8);
             }
         }
     }
