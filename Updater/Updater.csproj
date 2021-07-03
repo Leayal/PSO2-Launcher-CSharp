@@ -27,4 +27,5 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\bin\$(TargetFileName)&quot; )" />
   </Target>
+
 </Project>
