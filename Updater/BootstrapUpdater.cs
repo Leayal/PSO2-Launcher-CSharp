@@ -36,7 +36,7 @@ namespace Leayal.PSO2Launcher.Updater
             // Fetch from internet a list then check for SHA-1.
             return Task.Run(async () =>
             {
-                using (var jsonStream = await this.wc.OpenReadTaskAsync("https://leayal.github.io/pso2-launcher-csharp/publish/update.json"))
+                using (var jsonStream = await this.wc.OpenReadTaskAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json"))
                 using (var doc = await JsonDocument.ParseAsync(jsonStream))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))
