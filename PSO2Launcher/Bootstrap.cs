@@ -106,6 +106,8 @@ namespace Leayal.PSO2Launcher
                                 {
                                     if (flag.Value)
                                     {
+                                        Application.Restart();
+                                        return;
                                         // Not really in use but let's support it. For future.
                                         netasm_bootstrapUpdater = null;
                                         bootstrapUpdater.Unload();

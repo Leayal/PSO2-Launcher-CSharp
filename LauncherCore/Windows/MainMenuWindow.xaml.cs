@@ -129,7 +129,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is TabMainMenu tab)
             {
                 tab.ButtonGameStartClicked -= this.TabMainMenu_ButtonGameStartClick;
-                this.TabGameClientUpdateProgressBar.IsSelected = true;
                 CancellationTokenSource currentCancelSrc = null;
                 try
                 {
@@ -161,6 +160,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.cancelSrc?.Dispose();
                         this.cancelSrc = currentCancelSrc;
                         var cancelToken = currentCancelSrc.Token;
+
+                        this.TabGameClientUpdateProgressBar.IsSelected = true;
 
                         var downloaderprofile = this.config_main.DownloaderProfile;
 
