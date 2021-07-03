@@ -354,25 +354,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }), sender, cancelled, totalfiles, failedfiles);
             };
             this.pso2Updater.OperationCompleted += completed;
-            this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
-            this.TabGameClientUpdateProgressBar.IsIndetermined = true;
-            this.TabGameClientUpdateProgressBar.IsSelected = true;
+            
+            CancellationTokenSource currentCancelSrc = null;
             try
             {
                 var downloaderProfile = this.config_main.DownloaderProfile;
                 var downloadType = this.config_main.DownloadSelection;
-                var t_loadLocalHashDb = pso2Updater.Prepare();
-
+                this.TabGameClientUpdateProgressBar.IsIndetermined = true;
+                this.TabGameClientUpdateProgressBar.IsSelected = true;
+                currentCancelSrc = new CancellationTokenSource();
                 this.cancelSrc?.Dispose();
-                this.cancelSrc = new CancellationTokenSource();
+                this.cancelSrc = currentCancelSrc;
 
-                CancellationToken cancelToken = this.cancelSrc.Token;
+                CancellationToken cancelToken = currentCancelSrc.Token;
 
                 if (await pso2Updater.CheckForPSO2Updates(cancelToken))
                 {
+                    this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
+                    
                     try
                     {
-                        await t_loadLocalHashDb;
+                        await pso2Updater.Prepare();
                     }
                     catch 
                     {
@@ -389,6 +391,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
 
                     await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
+                }
+                else
+                {
+                    this.pso2Updater.OperationCompleted -= completed;
+                    this.TabMainMenu.IsSelected = true;
                 }
             }
             catch (FileCheckHashCache.DatabaseErrorException)
