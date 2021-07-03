@@ -50,6 +50,7 @@ namespace Leayal.SharedInterfaces.Communication
                     var val = item.Value;
                     writer.WriteStartObject(item.Key);
                     writer.WriteString("displayName", val.DisplayName);
+                    writer.WriteString("sha1", val.SHA1Hash);
                     writer.WriteString("filename", val.LocalFilename);
                     writer.WriteString("url", val.DownloadUrl);
                     writer.WriteBoolean("archive", val.IsRemoteAnArchive);
@@ -95,6 +96,7 @@ namespace Leayal.SharedInterfaces.Communication
                             dictionary.Add(current.Name,
                                 new UpdateItem(
                                     currentValue.GetProperty("filename").GetString(),
+                                    currentValue.GetProperty("sha1").GetString(),
                                     currentValue.GetProperty("url").GetString(),
                                     currentValue.GetProperty("displayName").GetString(),
                                     currentValue.GetProperty("archive").GetBoolean()
@@ -140,24 +142,32 @@ namespace Leayal.SharedInterfaces.Communication
         public readonly string DownloadUrl;
         public readonly string DisplayName;
         public readonly bool IsRemoteAnArchive;
+        public readonly string SHA1Hash;
 
-        public UpdateItem(string localFilename, string url, string displayName) : this(localFilename, url, displayName, false) { }
+        public UpdateItem(string localFilename, string sha1hash, string url, string displayName) : this(localFilename, sha1hash, url, displayName, false) { }
 
-        public UpdateItem(string localFilename, string url, string displayName, bool isArchive)
+        public UpdateItem(string localFilename, string sha1hash, string url, string displayName, bool isArchive)
         {
             this.LocalFilename = localFilename;
             this.DownloadUrl = url;
             this.DisplayName = displayName;
             this.IsRemoteAnArchive = isArchive;
+            this.SHA1Hash = sha1hash;
         }
     }
 
-    public class BootstrapUpdaterException : Exception
-    {
+    public class BootstrapUpdaterException : Exception { }
 
+    public class FileDownloadedEventArgs : EventArgs
+    {
+        public readonly UpdateItem Item;
+        public FileDownloadedEventArgs(in UpdateItem item)
+        {
+            this.Item = item;
+        }
     }
 
-    public interface IBootstrapUpdater
+    public interface IBootstrapUpdater : IDisposable
     {
         Task<BootstrapUpdater_CheckForUpdates> CheckForUpdatesAsync(string rootDirectory, string entryExecutableName);
 
@@ -167,5 +177,16 @@ namespace Leayal.SharedInterfaces.Communication
         /// <param name="parent"></param>
         /// <returns>Null to cancel. True to proceed. False to ignore and continue.</returns>
         bool? DisplayUpdatePrompt(System.Windows.Forms.Form? parent);
+
+        /// <returns>
+        /// <para>Null: Continue</para>
+        /// <para>True: Need restart</para>
+        /// <para>False: Cancelled</para>
+        /// </returns>
+        Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo);
+
+        event EventHandler<FileDownloadedEventArgs> FileDownloaded;
+
+        event EventHandler<StringEventArgs> StepChanged;
     }
 }

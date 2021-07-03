@@ -11,6 +11,8 @@ namespace SymbolicLinkSupport
     /// </remarks>
     internal static class SymbolicLink
     {
+        private const string LongPathIndicator = @"\\?\";
+
         private const uint genericReadAccess = 0x80000000;
 
         private const uint fileFlagsForOpenReparsePointAndBackupSemantics = 0x02200000;
@@ -82,6 +84,18 @@ namespace SymbolicLinkSupport
             FileAttributes dwAttrFrom,
             string pszTo,
             FileAttributes dwAttrTo);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return:MarshalAs(UnmanagedType.Bool)]
+        static extern bool DeleteFileW(string lpPath);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool DeleteVolumeMountPointW(string lpPath);
+
+        // LPCWSTR
+        // DeleteVolumeMountPointW
+        // DeleteFileW
 
         public static void CreateDirectoryLink(string linkPath, string targetPath)
         {
@@ -182,6 +196,59 @@ namespace SymbolicLinkSupport
             }
             string target = GetTarget(path);
             return target != null;
+        }
+
+        public static bool DeleteSymlink(string path)
+        {
+            bool? isLink = null;
+            if (path.Length >= 248)
+            {
+                if (Path.IsPathRooted(path))
+                {
+                    if (!path.StartsWith(LongPathIndicator))
+                    {
+                        path = LongPathIndicator + path;
+                    }
+                }
+                else
+                {
+                    throw new PathTooLongException();
+                }
+            }
+            if (File.Exists(path))
+            {
+                if (!isLink.HasValue)
+                {
+                    isLink = (GetTarget(path) != null);
+                }
+                if (isLink.Value)
+                {
+                    return DeleteFileW(path);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (Directory.Exists(path))
+            {
+                if (!isLink.HasValue)
+                {
+                    isLink = (GetTarget(path) != null);
+                }
+                if (isLink.Value)
+                {
+                    return DeleteVolumeMountPointW(path);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

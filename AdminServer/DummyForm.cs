@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.IO;
-using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.AdminProcess
 {
-    public partial class DummyForm : Form
+    class DummyForm : Form
     {
+        private Dictionary<ReadOnlyMemory<byte>, TaskCompletionSource<ReadOnlyMemory<byte>>> task_dictionary;
         private const int WM_COPYDATA = 0x004A;
         public DummyForm()
         {
-            InitializeComponent();
+            this.task_dictionary = new Dictionary<ReadOnlyMemory<byte>, TaskCompletionSource<ReadOnlyMemory<byte>>>();
         }
 
         public bool ListenForMessage()
@@ -44,7 +42,7 @@ namespace Leayal.PSO2Launcher.AdminProcess
                 {
                     callback.BeginInvoke(senderWindowHandle, buffer, callback.EndInvoke, null);
                 }
-                
+
             }
             base.WndProc(ref m);
         }
@@ -64,7 +62,7 @@ namespace Leayal.PSO2Launcher.AdminProcess
         private void InnerSendDataTo(IntPtr windowHandle, int dataType, ReadOnlyMemory<byte> data)
         {
             var dataWrapped = new COPYDATASTRUCT();
-            dataWrapped.cbData = (uint)data.Length;
+            dataWrapped.cbData = data.Length;
             using (var pinned = data.Pin())
             {
                 dataWrapped.dwData = new IntPtr(dataType);
@@ -72,13 +70,50 @@ namespace Leayal.PSO2Launcher.AdminProcess
                 {
                     dataWrapped.lpData = new IntPtr(pinned.Pointer);
                 }
-                PostMessage(windowHandle, WM_COPYDATA, this.Handle, ref dataWrapped);
+                SendMessage(windowHandle, WM_COPYDATA, this.Handle, ref dataWrapped);
             }
         }
 
+        public async Task SendDataToAsync(IntPtr windowHandle, int dataType, ReadOnlyMemory<byte> data)
+        {
+            if (this.InvokeRequired)
+            {
+                var ar = this.BeginInvoke(new _InnerSendDataToAsync(this.InnerSendDataToAsync), windowHandle, dataType, data);
+                var obj = await Task.Factory.FromAsync(ar, this.EndInvoke);
+                var task = (Task)obj;
+                await task;
+            }
+            else
+            {
+                await this.InnerSendDataToAsync(windowHandle, dataType, data);
+            }
+        }
+
+        private Task<ReadOnlyMemory<byte>> InnerSendDataToAsync(IntPtr windowHandle, int dataType, ReadOnlyMemory<byte> data)
+        {
+            TaskCompletionSource<ReadOnlyMemory<byte>> tSrc;
+            if (!this.task_dictionary.TryGetValue(data, out tSrc))
+            {
+                tSrc = new TaskCompletionSource<ReadOnlyMemory<byte>>();
+                var dataWrapped = new COPYDATASTRUCT();
+                dataWrapped.cbData = data.Length;
+                using (var pinned = data.Pin())
+                {
+                    dataWrapped.dwData = new IntPtr(dataType);
+                    unsafe
+                    {
+                        dataWrapped.lpData = new IntPtr(pinned.Pointer);
+                    }
+                    PostMessage(windowHandle, WM_COPYDATA, this.Handle, ref dataWrapped);
+                }
+            }
+            return tSrc.Task;
+        }
+
+        private delegate Task _InnerSendDataToAsync(IntPtr windowHandle, int dataType, ReadOnlyMemory<byte> data);
         private delegate void _InnerSendDataTo(IntPtr windowHandle, int dataType, ReadOnlyMemory<byte> data);
 
-        public IPCBufferReceivedCallback IPCBufferReceived;
+        public event IPCBufferReceivedCallback IPCBufferReceived;
 
         public delegate void IPCBufferReceivedCallback(IntPtr senderWindowHandle, BorrowedBuffer buffer);
 
@@ -118,7 +153,10 @@ namespace Leayal.PSO2Launcher.AdminProcess
         private static extern bool ChangeWindowMessageFilterEx(IntPtr handle, uint messageID, [MarshalAs(UnmanagedType.U4)] MessageFilterAction action, IntPtr propPointer);
 
         [DllImport("user32.dll", SetLastError = true)]
-        static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        static extern bool SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, ref COPYDATASTRUCT data);
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, ref COPYDATASTRUCT data);
@@ -160,11 +198,73 @@ namespace Leayal.PSO2Launcher.AdminProcess
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct COPYDATASTRUCT
+        public struct COPYDATASTRUCT : IDisposable
         {
             public IntPtr dwData;
-            public uint cbData;
+            [MarshalAs(UnmanagedType.U4)]
+            public int cbData;
             public IntPtr lpData;
+
+            public COPYDATASTRUCT(IntPtr dw, int cb, IntPtr lp)
+            {
+                this.dwData = dw;
+                this.cbData = cb;
+                this.lpData = lp;
+            }
+
+            /// <summary>
+            /// Only dispose COPYDATASTRUCT if you were the one who allocated it
+            /// </summary>
+            public void Dispose()
+            {
+                if (lpData != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(lpData);
+                    lpData = IntPtr.Zero;
+                    cbData = 0;
+                }
+            }
+
+            public string AsString()
+            {
+                if (this.lpData == IntPtr.Zero) throw new ObjectDisposedException(nameof(COPYDATASTRUCT));
+
+                return Marshal.PtrToStringUni(lpData);
+            }
+
+            public unsafe ReadOnlySpan<byte> AsBinary()
+            {
+                if (this.lpData == IntPtr.Zero) throw new ObjectDisposedException(nameof(COPYDATASTRUCT));
+                if (this.cbData == 0) return Array.Empty<byte>();
+                return new ReadOnlySpan<byte>(this.lpData.ToPointer(), this.cbData);
+            }
+
+            public static COPYDATASTRUCT Create(int dwData, string value)
+            {
+                var allocated = Marshal.StringToCoTaskMemUni(value);
+                return new COPYDATASTRUCT(new IntPtr(dwData), value.Length + 1, allocated);
+            }
+
+            public static COPYDATASTRUCT Create(int dwData, byte[] value)
+            {
+                var len = value.Length;
+                var mem = IntPtr.Zero;
+                try
+                {
+                    mem = Marshal.AllocCoTaskMem(len);
+                    Marshal.Copy(value, 0, mem, len);
+                }
+                catch
+                {
+                    if (mem != IntPtr.Zero)
+                    {
+                        Marshal.FreeCoTaskMem(mem);
+                    }
+                    throw;
+                }
+                return new COPYDATASTRUCT(new IntPtr(dwData), len, mem);
+            }
         }
+
     }
 }

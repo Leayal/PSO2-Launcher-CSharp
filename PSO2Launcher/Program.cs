@@ -23,11 +23,6 @@ namespace Leayal.PSO2Launcher
             flag_reload = true;
             flag_switchtoWPF = false;
             _appController = null;
-
-            if (Leayal.PSO2Launcher.AdminProcess.AdminProcess.Host(args))
-            {
-                return;
-            }
             
             if (args != null && args.Length == 2)
             {
@@ -206,12 +201,6 @@ namespace Leayal.PSO2Launcher
                     _appController.Run(args);
                 }
             }
-
-            try
-            {
-                Leayal.PSO2Launcher.AdminProcess.AdminProcess.TerminateAdminProcess();
-            }
-            catch { }
         }
 
         public static void Reload()

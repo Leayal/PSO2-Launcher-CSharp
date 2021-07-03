@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SHA1Maker": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\docs\\publish\\files\" \"..\\docs\\publish\\update.json\" \"https://leayal.github.io/pso2-launcher-csharp/publish/\"",
+      "workingDirectory": "$(SolutionDir)"
+    }
+  }
+}

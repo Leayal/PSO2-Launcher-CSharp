@@ -120,11 +120,22 @@ namespace Leayal.PSO2Launcher.AdminProcess
                 if (string.Equals(args[0], "--admin-host-process", StringComparison.Ordinal) &&
                     int.TryParse(args[1], out var reportWindowHandle))
                 {
-                    Application.Run();
+                    var form = new DummyForm();
+                    form.IPCBufferReceived += Form_IPCBufferReceived;
+                    if (form.ListenForMessage())
+                    {
+                        form.SendDataTo(new IntPtr(reportWindowHandle), 0, null);
+                        Application.Run();
+                    }
                     return true;
                 }
             }
             return false;
+        }
+
+        private static void Form_IPCBufferReceived(IntPtr senderWindowHandle, DummyForm.BorrowedBuffer buffer)
+        {
+            throw new NotImplementedException();
         }
     }
 }

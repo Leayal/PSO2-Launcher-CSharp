@@ -7,6 +7,7 @@
     <ApplicationIcon />
     <StartupObject />
     <RootNamespace>Leayal.PSO2Launcher.Core</RootNamespace>
+    <Configurations>Debug;Release;Publish</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AdminServer\AdminProcess.csproj" />
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
       <Private>true</Private>
     </ProjectReference>
@@ -31,7 +31,7 @@
   
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /B /L /Y &quot;$(OutDir)*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;mkdir &quot;$(SolutionDir)Test\runtimes\win-x64\native&quot;&#xD;&#xA;copy /B /L /Y &quot;$(OutDir)runtimes\win-x64\native\*&quot; &quot;$(SolutionDir)Test\bin\&quot;" />
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( &#xD;&#xA;copy /B /L /Y &quot;$(OutDir)*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;copy /B /L /Y &quot;$(OutDir)runtimes\win-x64\native\*&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;)" />
   </Target>
 
 </Project>

@@ -63,6 +63,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         #endregion
 
         #region | Simple public APIs |
+
+
         public async Task<PatchRootInfo> GetPatchRootInfoAsync(CancellationToken cancellationToken)
         {
             // Why the official launcher request twice over the same thing within the same time frame..
@@ -214,7 +216,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             HttpResponseMessage response = null;
             try
             {
-                response = await this.client.SendAsync(request, cancellationToken);
+                response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 return response;
             }

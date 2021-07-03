@@ -194,7 +194,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             for (int i = 0; i < names.Length; i++)
             {
                 var member = Enum.Parse<T>(names[i]);
-                _list.Add(member, new ValueDOM<T>(member));
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(member, out var isVisible) || isVisible)
+                {
+                    _list.Add(member, new ValueDOM<T>(member));
+                }
             }
             return _list;
         }

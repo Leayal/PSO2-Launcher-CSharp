@@ -5,9 +5,14 @@
     <RootNamespace>Leayal.PSO2Launcher.AdminProcess</RootNamespace>
     <AssemblyName>PSO2Launcher.AdminProcess</AssemblyName>
     <UseWindowsForms>true</UseWindowsForms>
+    <Configurations>Debug;Release;Publish</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

@@ -23,6 +23,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private const string Name_PatchRootInfo = "management_beta.txt";
 
+        private GameClientSelection? currentSelectedDownload;
         private readonly string dir_pso2bin;
         private readonly string? dir_classic_data, dir_reboot_data;
         private readonly PSO2HttpClient webclient;
@@ -40,7 +41,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private int flag_fileCheckStarted, flag_fileDownloadStarted, flag_operationCount;
         private readonly BlockingCollection<DownloadItem> pendingFiles;
 
-
+        public string Path_PSO2BIN => this.dir_pso2bin;
+        public string? Path_PSO2ClassicData => this.dir_classic_data;
+        public string? Path_PSO2RebootData => this.dir_reboot_data;
         public int ConcurrentDownloadCount { get; set; }
         public int ThrottleFileCheckFactor { get; set; }
 
@@ -49,6 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public GameClientUpdater(string whereIsThePSO2_BIN, string? preference_classicWhere, string? preference_rebootWhere, string hashCheckCache, PSO2HttpClient httpHandler)
         {
+            this.currentSelectedDownload = null;
             this.hashCacheDb = new FileCheckHashCache(hashCheckCache);
             this.count_fileFailure = 0;
             this.count_totalFiles = 0;
@@ -120,6 +124,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             if (Interlocked.CompareExchange(ref this.flag_fileCheckStarted, 1, 0) == 0)
             {
                 Interlocked.Increment(ref this.flag_operationCount);
+                this.currentSelectedDownload = selection;
                 var checkTask = Task.Factory.StartNew(async () =>
                 {
                     try
@@ -166,7 +171,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // Acquire patch list.
-            PatchListBase selectedList;
+            PatchListBase selectedList = null;
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             this.lastKnownRemoteVersion = await this.webclient.GetPatchVersionAsync(patchInfoRoot, cancellationToken);
             var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
@@ -178,6 +183,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 case GameClientSelection.NGS_Prologue_Only:
                     selectedList = await this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    break;
+
+                case GameClientSelection.Always_Only:
                     break;
 
                 case GameClientSelection.NGS_Only:
@@ -197,7 +205,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             var alwaysList = await t_alwaysList;
-            var headacheMatterAgain = PatchListBase.Create(selectedList, alwaysList);
+            PatchListBase headacheMatterAgain;
+            if (selectedList != null)
+            {
+                headacheMatterAgain = PatchListBase.Create(selectedList, alwaysList);
+            }
+            else
+            {
+                headacheMatterAgain = alwaysList;
+            }
 
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {
@@ -220,6 +236,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
                 flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
+                flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),
+                flag_missingOnly = flags.HasFlag(FileScanFlags.MissingFilesOnly),
                 flag_useMd5 = flags.HasFlag(FileScanFlags.MD5HashMismatch);
 
             if (flag_forceRefresh)
@@ -379,50 +397,53 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     else
                     {
-                        var cachedHash = await duhB.GetPatchItem(localFilename);
-                        var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                        using (var fs = File.OpenRead(localFilePath))
+                        if (flag_useFileSize || flag_useMd5)
                         {
-                            var localFileLen = fs.Length;
-                            if (localFileLen == patchItem.FileSize)
+                            var cachedHash = await duhB.GetPatchItem(localFilename);
+                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                            using (var fs = File.OpenRead(localFilePath))
                             {
-                                if (flag_useMd5)
+                                var localFileLen = fs.Length;
+                                if (!flag_useFileSize || localFileLen == patchItem.FileSize)
                                 {
-                                    string localMd5;
-                                    if (cachedHash != null && cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
+                                    if (flag_useMd5)
                                     {
-                                        localMd5 = cachedHash.MD5;
-                                    }
-                                    else
-                                    {
-                                        localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
-                                    }
-
-                                    if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
-                                        if (isLink)
+                                        string localMd5;
+                                        if (cachedHash != null && cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
                                         {
-                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                            localMd5 = cachedHash.MD5;
                                         }
                                         else
                                         {
-                                            this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                            localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                            await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
+                                        }
+
+                                        if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                            if (isLink)
+                                            {
+                                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                            }
+                                            else
+                                            {
+                                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
-                                if (isLink)
-                                {
-                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
-                                }
                                 else
                                 {
-                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                    string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                    if (isLink)
+                                    {
+                                        this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                    }
+                                    else
+                                    {
+                                        this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                    }
                                 }
                             }
                         }
@@ -629,8 +650,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             var ver = lastKnownRemoteVersion;
             lastKnownRemoteVersion = null;
+            var selectedMode = this.currentSelectedDownload;
+            this.currentSelectedDownload = null;
 
-            if (!cancellationToken.IsCancellationRequested && ver.HasValue)
+            if (!cancellationToken.IsCancellationRequested && ver.HasValue && selectedMode.HasValue && selectedMode.Value != GameClientSelection.Always_Only)
             {
                 var localFilePath = Path.GetFullPath("version.ver", this.dir_pso2bin);
                 if (Directory.Exists(localFilePath))
@@ -641,7 +664,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             }
 
-            this.OperationCompleted?.Invoke(this, totalCount, failureCount);
+            this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, totalCount, failureCount);
         }
 
         public event FileCheckBeginHandler FileCheckBegin;
@@ -666,7 +689,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
-        public delegate void OperationCompletedHandler(GameClientUpdater sender, long howManyFileInTotal, long howManyFileFailure);
+        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailure);
 
 
         class DownloadItem

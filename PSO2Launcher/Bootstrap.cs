@@ -22,6 +22,7 @@ namespace Leayal.PSO2Launcher
     public partial class Bootstrap : Form
     {
         #region | Fields |
+        private int downloadedcount;
         #endregion
 
         #region | Constructor |
@@ -34,7 +35,7 @@ namespace Leayal.PSO2Launcher
         #region | Form Loads |
         private void Bootstrap_Load(object sender, EventArgs e)
         {
-            
+            this.downloadedcount = 0;
         }
 
         private async void Bootstrap_Shown(object sender, EventArgs e)
@@ -85,33 +86,44 @@ namespace Leayal.PSO2Launcher
                         {
                             if (promptResult.Value)
                             {
-                                // Download here
-
-
-                                if (data.RequireRestart)
+                                class_bootstrapUpdater.FileDownloaded += Class_bootstrapUpdater_FileDownloaded;
+                                class_bootstrapUpdater.StepChanged += Class_bootstrapUpdater_StepChanged;
+                                if (this.progressBar1.InvokeRequired)
                                 {
-                                    // Not really in use but let's support it. For future.
-                                    netasm_bootstrapUpdater = null;
-                                    bootstrapUpdater.Unload();
-                                    if (string.IsNullOrWhiteSpace(data.RestartWithExe))
+                                    this.progressBar1.Invoke(new Action(() =>
                                     {
-                                        RestartApplicationToUpdate(in fullFilename, in data);
-                                    }
-                                    else
-                                    {
-                                        RestartApplicationToUpdate(in data.RestartWithExe, in data);
-                                    }
-                                    // Expect code termination here.
-                                    return;
-                                }
-                                else if (data.RequireReload)
-                                {
-                                    // Not really in use but let's support it. For future.
-                                    Program.Reload();
+                                        this.progressBar1.Maximum = data.Items.Count;
+                                    }));
                                 }
                                 else
                                 {
-                                    // Continue. So there's nothing here.
+                                    this.progressBar1.Maximum = data.Items.Count;
+                                }
+                                var flag = await class_bootstrapUpdater.PerformUpdate(data);
+                                // Download here
+
+                                if (flag.HasValue)
+                                {
+                                    if (flag.Value)
+                                    {
+                                        // Not really in use but let's support it. For future.
+                                        netasm_bootstrapUpdater = null;
+                                        bootstrapUpdater.Unload();
+                                        if (string.IsNullOrWhiteSpace(data.RestartWithExe))
+                                        {
+                                            RestartApplicationToUpdate(in fullFilename, in data);
+                                        }
+                                        else
+                                        {
+                                            RestartApplicationToUpdate(in data.RestartWithExe, in data);
+                                        }
+                                        // Expect code termination here.
+                                        return;
+                                    }
+                                    else
+                                    {
+                                        Program.Reload();
+                                    }
                                 }
                             }
                         }
@@ -126,6 +138,11 @@ namespace Leayal.PSO2Launcher
                 {
                     // Report error
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
             finally
             {
@@ -166,6 +183,38 @@ namespace Leayal.PSO2Launcher
                 this.label1.Text = "Error occured while checking for updates. Could not load 'LauncherCore.dll'.";
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 // return; // No need to continue.
+            }
+        }
+
+        private void Class_bootstrapUpdater_StepChanged(object sender, SharedInterfaces.StringEventArgs e)
+        {
+            var label = this.label1;
+            if (label.InvokeRequired)
+            {
+                label.BeginInvoke(new Action<string>((text) =>
+                {
+                    this.label1.Text = text;
+                }), e.Data);
+            }
+            else
+            {
+                label.Text = e.Data;
+            }
+        }
+
+        private void Class_bootstrapUpdater_FileDownloaded(object sender, FileDownloadedEventArgs e)
+        {
+            var progressbar = this.progressBar1;
+            if (progressbar.InvokeRequired)
+            {
+                progressbar.BeginInvoke(new Action(() =>
+                {
+                    this.progressBar1.Value = Interlocked.Increment(ref this.downloadedcount);
+                }));
+            }
+            else
+            {
+                this.progressBar1.Value = Interlocked.Increment(ref this.downloadedcount);
             }
         }
         #endregion

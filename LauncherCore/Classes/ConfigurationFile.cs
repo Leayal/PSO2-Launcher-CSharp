@@ -91,9 +91,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     var vals = Enum.GetValues<PSO2.GameClientSelection>();
                     for (int i = 0; i < vals.Length; i++)
                     {
-                        if (((int)vals[i]) == num)
+                        if (!EnumVisibleInOptionAttribute.TryGetIsVisible(vals[i], out var isvisible) || isvisible)
                         {
-                            return vals[i];
+                            if (((int)vals[i]) == num)
+                            {
+                                return vals[i];
+                            }
                         }
                     }
                 }

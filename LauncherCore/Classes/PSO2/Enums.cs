@@ -75,6 +75,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         [EnumDisplayName("Download all NGS and Classic files which are necessary to play both")]
         /// <summary>Download all NGS and Classic files which are necessary to play both.</summary>
-        NGS_AND_CLASSIC
+        NGS_AND_CLASSIC,
+
+        [EnumVisibleInOption(false)]
+        /// <summary>Internal use only. Check the files which should always be checked before starting game.</summary>
+        Always_Only
     }
 }

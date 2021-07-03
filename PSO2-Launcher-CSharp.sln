@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebViewCompat", "WebViewCom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.SharedInterfaces", "Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj", "{ECC24A18-75B7-4B19-8B4E-1E8909DF95D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminProcess", "AdminServer\AdminProcess.csproj", "{CF07507C-87A2-4101-BB7D-0BA0315F6570}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminProcess", "AdminServer\AdminProcess.csproj", "{CF07507C-87A2-4101-BB7D-0BA0315F6570}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SHA1Maker", "SHA1Maker\SHA1Maker.csproj", "{7CB248DB-6B40-412B-84B5-61AB542A6516}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{CF07507C-87A2-4101-BB7D-0BA0315F6570}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF07507C-87A2-4101-BB7D-0BA0315F6570}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF07507C-87A2-4101-BB7D-0BA0315F6570}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CB248DB-6B40-412B-84B5-61AB542A6516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CB248DB-6B40-412B-84B5-61AB542A6516}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CB248DB-6B40-412B-84B5-61AB542A6516}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CB248DB-6B40-412B-84B5-61AB542A6516}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
