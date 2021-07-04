@@ -1,7 +1,9 @@
 @echo off
 cd /d %~dp0
 
-mkdir "docs\publish\files"
+if not exist docs\publish\files (
+ mkdir "docs\publish\files"
+)
 
 dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCore" "LauncherCore\LauncherCore.csproj"
 copy /B /L /Y "Build\LauncherCore\*.dll" "docs\publish\files\"

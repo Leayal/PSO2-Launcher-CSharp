@@ -112,6 +112,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     webview.Initialized += this.WebViewCompatControl_Initialized;
                     var grid = (Grid)this.Content;
                     grid.Children.Remove(btn);
+                    
                     var element = (Control)obj;
                     Grid.SetRow(element, 2);
                     element.Margin = new Thickness(1);
@@ -124,108 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async void TabMainMenu_ButtonGameStartClick(object sender, RoutedEventArgs e)
-        {
-            if (sender is TabMainMenu tab)
-            {
-                tab.ButtonGameStartClicked -= this.TabMainMenu_ButtonGameStartClick;
-                CancellationTokenSource currentCancelSrc = null;
-                try
-                {
-                    var dir_pso2bin = this.config_main.PSO2_BIN;
-                    if (string.IsNullOrEmpty(dir_pso2bin))
-                    {
-                        if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                        {
-                            this.TabMainMenu_ButtonManageGameDataClick(null, null);
-                        }
-                        return;
-                    }
-                    else
-                    {
-                        dir_pso2bin = Path.GetFullPath(dir_pso2bin);
-                        var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
-                        if (!Directory.Exists(dir_pso2bin))
-                        {
-                            MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
-                        else if (!File.Exists(filename))
-                        {
-                            MessageBox.Show(this, "The file 'pso2.exe' doesn't exist.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
-
-                        currentCancelSrc = new CancellationTokenSource();
-                        this.cancelSrc?.Dispose();
-                        this.cancelSrc = currentCancelSrc;
-                        var cancelToken = currentCancelSrc.Token;
-
-                        this.TabGameClientUpdateProgressBar.IsSelected = true;
-
-                        var downloaderprofile = this.config_main.DownloaderProfile;
-
-
-                        GameClientUpdater.OperationCompletedHandler completed = null;
-                        completed = (sender, cancelled, totalfiles, failedfiles) =>
-                        {
-                            this.pso2Updater.OperationCompleted -= completed;
-                            this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _cancelled, _totalfiles, _failedfiles) =>
-                            {
-                                this.TabMainMenu.IsSelected = true;
-                            }), sender, cancelled, totalfiles, failedfiles);
-                           
-                        };
-                        this.pso2Updater.OperationCompleted += completed;
-                        this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
-
-                        var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
-                        if (hasUpdate)
-                        {
-                            if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                            {
-                                return;
-                            }
-                        }
-
-                        var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);
-                        var t2 = this.pso2Updater.StartDownloadFiles(cancelToken);
-                        await Task.WhenAll(t1, t2);
-
-                        if (!cancelToken.IsCancellationRequested)
-                        {
-                            using (var proc = new Process())
-                            {
-                                proc.StartInfo.UseShellExecute = true;
-                                proc.StartInfo.Verb = "runas";
-                                proc.StartInfo.FileName = filename;
-                                proc.StartInfo.ArgumentList.Add("-reboot");
-                                proc.StartInfo.ArgumentList.Add("-optimize");
-                                proc.StartInfo.WorkingDirectory = dir_pso2bin;
-                                proc.Start();
-                            }
-                        }
-                    }
-                }
-                catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
-                {
-                    // Silent it as user press "No" themselves.
-                    // MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                finally
-                {
-                    currentCancelSrc?.Dispose();
-                    await this.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        tab.ButtonGameStartClicked += this.TabMainMenu_ButtonGameStartClick;
-                    }));
-                }
-            }
-        }
+        
 
         private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
@@ -244,32 +144,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 e.Cancel = true;
                 // Hackish. De-elevate starting Url.
-
-                if (e.Uri.IsAbsoluteUri)
+                try
                 {
-                    try
+                    if (e.Uri.IsAbsoluteUri)
                     {
-                        Process.Start("explorer.exe", "\"" + e.Uri.AbsoluteUri + "\"").Dispose();
+                        Process.Start("explorer.exe", "\"" + e.Uri.AbsoluteUri + "\"")?.Dispose();
                     }
-                    catch
+                    else if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
                     {
-
+                        Process.Start("explorer.exe", "\"" + absUri.AbsoluteUri + "\"")?.Dispose();
                     }
                 }
-                else
-                {
-                    if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
-                    {
-                        try
-                        {
-                            Process.Start("explorer.exe", "\"" + absUri.AbsoluteUri + "\"").Dispose();
-                        }
-                        catch
-                        {
-
-                        }
-                    }
-                }
+                catch { }
             }
         }
 
@@ -576,5 +462,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             SystemCommands.MinimizeWindow(this);
         }
         #endregion
+
+        
     }
 }

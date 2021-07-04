@@ -7,6 +7,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using System.IO;
 using Leayal.SharedInterfaces;
 using Microsoft.Win32.SafeHandles;
+using System.Security;
 
 namespace Leayal.PSO2Launcher.Core
 {

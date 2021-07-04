@@ -8,6 +8,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.IO;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using System.Security;
+using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -16,6 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private readonly HttpClient client;
         private const string UA_AQUA_HTTP = "AQUA_HTTP";
         private const string UA_PSO2Launcher = "PSO2Launcher";
+        private const string UA_PSO2_Launcher = "PSO2 Launcher";
         private const string UA_pso2launcher = "pso2launcher";
 
         // Need to add snail mode (for when internet is extremely unreliable).
@@ -60,9 +64,122 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             request.Headers.Accept.ParseAdd("*/*");
             request.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.7");
         }
+
+        private void SetUA_PSO2_Launcher(HttpRequestMessage request)
+        {
+            request.Headers.Add("User-Agent", UA_PSO2_Launcher);
+            // request.Headers.UserAgent.Add(new ProductInfoHeaderValue(UA_PSO2Launcher));
+        }
         #endregion
 
         #region | Simple public APIs |
+
+        public async Task<PSO2LoginToken> LoginPSO2Async(SecureString username, SecureString password, CancellationToken cancellationToken)
+        {
+            var url = new Uri("https://auth.pso2.jp/auth/v1/auth");
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            SetUA_PSO2_Launcher(request);
+            request.Headers.Host = url.Host;
+            using (var content = new PSO2LoginContent(username, password))
+            {
+                request.Content = content;
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                {
+                    response.EnsureSuccessStatusCode();
+                    using (var stream = response.Content.ReadAsStream())
+                    using (var doc = JsonDocument.Parse(stream))
+                    {
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Number)
+                        {
+                            var code = result.GetInt32();
+                            if (code == 0)
+                            {
+                                return new PSO2LoginToken(in root);
+                            }
+                            else
+                            {
+                                throw new PSO2LoginException(code);
+                            }
+                        }
+                        else
+                        {
+                            throw new UnexpectedDataFormatException();
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>This class is sh**.</summary>
+        class PSO2LoginContent : HttpContent
+        {
+            private static readonly byte[] b_1 = Encoding.UTF8.GetBytes("{\"id\":\"");
+            private static readonly byte[] b_2 = Encoding.UTF8.GetBytes("\",\"password\":\"");
+            private static readonly byte[] b_3 = Encoding.UTF8.GetBytes("\"}");
+            private SecureString username;
+            private SecureString password;
+
+            private long? computedLength;
+
+            public PSO2LoginContent(SecureString username, SecureString pw) : base()
+            {
+                this.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
+                this.computedLength = null;
+                this.username = username;
+                this.password = pw;
+            }
+
+            // {"id":"","password":""}
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                stream.Write(b_1);
+                this.username.EncodeTo(Encoding.UTF8, stream, out _, out var b_id);
+                stream.Write(b_2);
+                this.password.EncodeTo(Encoding.UTF8, stream, out _, out var b_pw);
+                stream.Write(b_3);
+
+                if (!computedLength.HasValue)
+                {
+                    computedLength = b_1.Length + b_2.Length + b_3.Length + b_id + b_pw;
+                }
+
+                return Task.CompletedTask;
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                if (!computedLength.HasValue)
+                {
+                    var bufferLen = Math.Max(this.username.Length, this.password.Length) * 2;
+                    var buffer = new byte[bufferLen];
+                    try
+                    {
+                        using (var mem = new MemoryStream(buffer, true))
+                        {
+                            mem.Position = 0;
+                            this.username.EncodeTo(Encoding.UTF8, mem, out _, out var b_id);
+                            mem.Position = 0;
+                            this.password.EncodeTo(Encoding.UTF8, mem, out _, out var b_pw);
+                            computedLength = b_1.Length + b_2.Length + b_3.Length + b_id + b_pw;
+                        }
+                    }
+                    finally
+                    {
+                        Array.Fill(buffer, (byte)0);
+                    }
+                }
+                length = computedLength.Value;
+                return true;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                this.username = null;
+                this.password = null;
+                base.Dispose(disposing);
+            }
+        }
 
 
         public async Task<PatchRootInfo> GetPatchRootInfoAsync(CancellationToken cancellationToken)

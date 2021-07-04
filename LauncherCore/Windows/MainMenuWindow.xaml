@@ -14,8 +14,8 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="25" />
-            <RowDefinition Height="Auto" />
             <RowDefinition />
+            <RowDefinition MaxHeight="300" />
         </Grid.RowDefinitions>
         <Grid HorizontalAlignment="Right">
             <Grid.ColumnDefinitions>
@@ -43,7 +43,8 @@
             <localui:TabMainMenu x:Name="TabMainMenu"
                                  ButtonCheckForPSO2UpdateClicked="ButtonCheckForUpdate_Click"
                                  ButtonManageGameDataClicked="TabMainMenu_ButtonManageGameDataClick"
-                                 ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick" />
+                                 ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick"
+                                 LoginAndPlayClicked="TabMainMenu_LoginAndPlayClicked" />
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar" 
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>
