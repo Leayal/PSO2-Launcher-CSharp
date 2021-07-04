@@ -152,7 +152,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
-                        if (MessageBox.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        if (MessageBox.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.\r\nDo you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                         {
                             return;
                         }
