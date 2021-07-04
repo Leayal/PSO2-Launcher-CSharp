@@ -47,8 +47,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 btn.IsEnabled = false;
                 try
                 {
-                    var loggedin = await this.webclient.LoginPSO2Async(this.GetUsername(), this.GetPassword(), CancellationToken.None);
-                    this._loginToken = loggedin;
+                    using (var id = this.GetUsername())
+                    using (var pw = this.GetPassword())
+                    {
+                        this._loginToken = await this.webclient.LoginPSO2Async(id, pw, CancellationToken.None);
+                    }
                     this.DialogResult = true;
                     this.Close();
                 }
