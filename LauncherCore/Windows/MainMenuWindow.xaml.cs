@@ -175,8 +175,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
                         if (string.IsNullOrEmpty(dir_root))
                         {
-                            var oldUpdater = pso2Updater;
-                            pso2Updater = null;
+                            var oldUpdater = this.pso2Updater;
+                            this.pso2Updater = null;
                             await oldUpdater.DisposeAsync();
                         }
                         else
@@ -184,15 +184,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             dir_root = Path.GetFullPath(dir_root);
                             dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data);
                             dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data);
-                            var oldUpdater = pso2Updater;
-                            if (!string.Equals(oldUpdater.Path_PSO2BIN, dir_root, StringComparison.OrdinalIgnoreCase) ||
-                                !string.Equals(oldUpdater.Path_PSO2RebootData, dir_reboot_data, StringComparison.OrdinalIgnoreCase) ||
-                                !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
+                            var oldUpdater = this.pso2Updater;
+                            if (oldUpdater == null)
                             {
-                                pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                                this.RegistryDisposeObject(pso2Updater);
-                                if (oldUpdater != null)
+                                this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
+                                this.RegistryDisposeObject(this.pso2Updater);
+                            }
+                            else
+                            {
+                                if (!string.Equals(oldUpdater.Path_PSO2BIN, dir_root, StringComparison.OrdinalIgnoreCase) ||
+                                    !string.Equals(oldUpdater.Path_PSO2RebootData, dir_reboot_data, StringComparison.OrdinalIgnoreCase) ||
+                                    !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
                                 {
+                                    this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
+                                    this.RegistryDisposeObject(this.pso2Updater);
                                     await oldUpdater.DisposeAsync();
                                 }
                             }

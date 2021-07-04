@@ -115,11 +115,11 @@ namespace Leayal.PSO2Launcher.Updater
             DialogResult result;
             if (parent == null)
             {
-                result = MessageBox.Show("Found new version. Update the launcher?\r\n(Recommended Yes)", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             }
             else
             {
-                result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\n(Recommended Yes)", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             }
             return result switch
             {
