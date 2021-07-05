@@ -29,7 +29,7 @@ namespace SHA1Maker
                 writer.WriteStartObject();
                 writer.WriteNumber("rep-version", 2);
                 var baseUrl = new Uri(url);
-                writer.WriteString("root-url", (new Uri(baseUrl, "files")).AbsoluteUri);
+                writer.WriteString("root-url", (new Uri(baseUrl, "files/")).AbsoluteUri);
                 writer.WriteString("root-url-critical", baseUrl.AbsoluteUri);
                 var currentProbe = Path.Combine(dir, "files");
                 if (Directory.Exists(currentProbe))
