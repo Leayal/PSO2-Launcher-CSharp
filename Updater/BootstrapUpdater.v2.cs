@@ -64,7 +64,6 @@ namespace Leayal.PSO2Launcher.Updater
                         }
                     }
                 }
-                return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, false, null);
             }
 
             if (rootelement.TryGetProperty("files", out var prop_files))
@@ -101,26 +100,26 @@ namespace Leayal.PSO2Launcher.Updater
                                         {
                                             bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
                                             bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                            needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, true, isEntry));
+                                            needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, false, isEntry));
                                         }
                                     }
                                     else
                                     {
                                         bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
                                         bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                        needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, true, isEntry));
+                                        needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, false, isEntry));
                                     }
                                 }
                             }
                         }
                     }
                 }
-                return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, false, null);
             }
             else
             {
                 throw new BootstrapUpdaterException();
             }
+            return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, false, null);
         }
     }
 }

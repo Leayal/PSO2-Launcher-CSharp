@@ -37,6 +37,7 @@ namespace Leayal.PSO2Launcher
         {
             this.totalcount = 0;
             this.downloadedcount = 0;
+            this.Icon = new Icon(Leayal.PSO2Launcher.Properties.Resources._1, new Size(24, 24));
         }
 
         private async void Bootstrap_Shown(object sender, EventArgs e)
