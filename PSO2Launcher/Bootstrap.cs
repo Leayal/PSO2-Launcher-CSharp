@@ -106,8 +106,8 @@ namespace Leayal.PSO2Launcher
                                     if (flag.Value)
                                     {
                                         // Not really in use but let's support it. For future.
-                                        netasm_bootstrapUpdater = null;
-                                        bootstrapUpdater.Unload();
+                                        // netasm_bootstrapUpdater = null;
+                                        // bootstrapUpdater.Unload();
                                         Application.Restart();
                                         return;
                                         if (string.IsNullOrWhiteSpace(data.RestartWithExe))
@@ -148,7 +148,11 @@ namespace Leayal.PSO2Launcher
             finally
             {
                 netasm_bootstrapUpdater = null;
-                bootstrapUpdater.Unload();
+                try
+                {
+                    bootstrapUpdater.Unload();
+                }
+                catch { }
             }
 
             // Loads stuff
