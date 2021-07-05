@@ -6,13 +6,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
         mc:Ignorable="d" ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" ShowCloseButton="False"
-        Title="PSO2LoginDialog" Height="130" Width="400" ShowInTaskbar="False">
+        Title="PSO2LoginDialog" Height="170" Width="400" ShowInTaskbar="False">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -23,12 +25,20 @@
         <TextBlock Text="Login to PSO2" Grid.ColumnSpan="2" TextAlignment="Center" Margin="1" />
 
         <Label Grid.Row="1" Content="Username:" Margin="1" />
-        <TextBox Grid.Row="1" Grid.Column="1" Margin="1" x:Name="idBox" />
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="1,1,1,0" x:Name="idBox" />
+        <CheckBox Grid.Row="2" Grid.Column="1" Margin="1,0,1,1" Content="Remember my username" x:Name="checkbox_rememberusername" />
 
-        <Label Grid.Row="2" Content="Password:" Margin="1" />
-        <PasswordBox Grid.Row="2" Grid.Column="1" Margin="1" x:Name="pwBox" />
+        <Label Grid.Row="3" Content="Password:" Margin="1" />
+        <PasswordBox Grid.Row="3" Grid.Column="1" Margin="1" x:Name="pwBox" />
+        <ComboBox Grid.Row="4" Grid.Column="1" Margin="1" x:Name="rememberOption">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
 
-        <Grid Grid.Row="4" Grid.ColumnSpan="2" Margin="1">
+        <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />

@@ -31,6 +31,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public MainMenuWindow()
         {
+            this.ss_id = null;
+            this.ss_pw = null;
             this.pso2HttpClient = new PSO2HttpClient();
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             if (File.Exists(this.config_main.Filename))
@@ -305,7 +307,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (!this.cancelSrc.IsCancellationRequested)
                 {
-                    this.cancelSrc.Cancel();
+                    try
+                    {
+                        this.cancelSrc.Cancel();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        this.TabMainMenu.IsSelected = true;
+                    }
                 }
             }
         }
@@ -466,8 +475,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             e.Handled = true;
             SystemCommands.MinimizeWindow(this);
         }
-        #endregion
 
-        
+        #endregion
     }
 }

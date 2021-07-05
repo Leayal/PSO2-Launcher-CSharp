@@ -11,11 +11,25 @@ namespace Leayal.PSO2Launcher.Core.Classes
     {
         public static void UseAsString(this SecureString myself, SecretRevealedText revealed)
         {
-            throw new NotImplementedException();
+            UseRaw(myself, Encoding.Unicode, new SecretRevealedRaw((in ReadOnlySpan<byte> buffer) =>
+            {
+                unsafe
+                {
+                    fixed (byte* b = buffer)
+                    {
+                        var span = new ReadOnlySpan<char>(b, buffer.Length / 2);
+                        revealed.Invoke(in span);
+                    }
+                }
+            }));
         }
 
         public static void EncodeTo(this SecureString myself, System.Text.Encoding encoding, Stream stream, out int writtenChars, out int writtenBytes)
         {
+            if (myself == null)
+            {
+                throw new ArgumentNullException(nameof(myself));
+            }
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(nameof(stream));
@@ -117,7 +131,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         }
 
         // Would this create a copy of string?
-        public delegate void SecretRevealedText(in string text);
+        public delegate void SecretRevealedText(in ReadOnlySpan<char> characters);
 
         public delegate void SecretRevealedRaw(in ReadOnlySpan<byte> data);
 

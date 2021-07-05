@@ -13,14 +13,14 @@
             <RowDefinition />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <local:SplitButton Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click" IsEnabled="{Binding ElementName=thisSelf,Path=GameStartEnabled,Mode=OneWay}">
+        <local:SplitButton Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click" IsEnabled="{Binding ElementName=thisSelf,Path=GameStartEnabled,Mode=OneWay}" x:Name="ButtonGameStart">
             <local:SplitButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Login and play" Click="MenuItemLoginAndPlay_Click" />
                 </ContextMenu>
             </local:SplitButton.ContextMenu>
-            
         </local:SplitButton>
+        
         <Button Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" />
         <Button Grid.Row="2" Content="Manage game data" Click="ButtonManageGameData_Click" />
     </Grid>

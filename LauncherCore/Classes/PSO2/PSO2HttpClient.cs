@@ -76,6 +76,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public async Task<PSO2LoginToken> LoginPSO2Async(SecureString username, SecureString password, CancellationToken cancellationToken)
         {
+            if (username == null)
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+            if (password == null)
+            {
+                throw new ArgumentNullException(nameof(password));
+            }
             var url = new Uri("https://auth.pso2.jp/auth/v1/auth");
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             SetUA_PSO2_Launcher(request);
