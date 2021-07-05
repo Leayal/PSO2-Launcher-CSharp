@@ -8,8 +8,9 @@ namespace Leayal.PSO2Launcher.Updater
 {
     class WebClientEx : WebClient
     {
-        protected override WebResponse GetWebResponse(WebRequest request)
+        protected override WebRequest GetWebRequest(Uri address)
         {
+            var request = base.GetWebRequest(address);
             if (request is HttpWebRequest httpRequest)
             {
                 if (httpRequest.AutomaticDecompression != DecompressionMethods.All)
@@ -17,19 +18,7 @@ namespace Leayal.PSO2Launcher.Updater
                     httpRequest.AutomaticDecompression = DecompressionMethods.All;
                 }
             }
-            return base.GetWebResponse(request);
-        }
-
-        protected override WebResponse GetWebResponse(WebRequest request, IAsyncResult result)
-        {
-            if (request is HttpWebRequest httpRequest)
-            {
-                if (httpRequest.AutomaticDecompression != DecompressionMethods.All)
-                {
-                    httpRequest.AutomaticDecompression = DecompressionMethods.All;
-                }
-            }
-            return base.GetWebResponse(request, result);
+            return request;
         }
     }
 }

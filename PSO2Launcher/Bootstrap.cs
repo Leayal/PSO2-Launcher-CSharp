@@ -49,12 +49,17 @@ namespace Leayal.PSO2Launcher
                 rootDirectory = Path.GetDirectoryName(fullFilename);
             }
 
-            var bootstrapUpdater = new BootstrapUpdaterAssemblyLoadContext();
+            // var bootstrapUpdater = new BootstrapUpdaterAssemblyLoadContext();
+            var bootstrapUpdater = new AssemblyLoadContext("BootstrapUpdater", true);
             // bootstrapUpdater.LoadFromAssemblyPath(Path.Combine("bin", "SharpCompress.dll")); // Optional??
             Assembly netasm_bootstrapUpdater;
             try
             {
-                netasm_bootstrapUpdater = bootstrapUpdater.Init(Path.GetFullPath(Path.Combine("bin", "BootstrapUpdater.dll"), rootDirectory));
+                // netasm_bootstrapUpdater = bootstrapUpdater.Init(Path.GetFullPath(Path.Combine("bin", "BootstrapUpdater.dll"), rootDirectory));
+                using (var fs = File.OpenRead(Path.GetFullPath(Path.Combine("bin", "BootstrapUpdater.dll"), rootDirectory)))
+                {
+                    netasm_bootstrapUpdater = bootstrapUpdater.LoadFromStream(fs);
+                }
             }
             catch (Exception ex)
             {
@@ -68,7 +73,7 @@ namespace Leayal.PSO2Launcher
             {
                 // Invoke updater. Dynamic is slow.
                 // Hardcoded
-                var class_bootstrapUpdater = (IBootstrapUpdater_v2)netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater", false, BindingFlags.CreateInstance, null, new object[] { 1, bootstrapUpdater }, null, null);
+                var class_bootstrapUpdater = (IBootstrapUpdater)netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater", false, BindingFlags.CreateInstance, null, new object[] { 1, AssemblyLoadContext.Default }, null, null);
                 // var medthod_bootstrapUpdater_CheckForUpdates = class_bootstrapUpdater.GetType().GetMethod("CheckForUpdatesAsync");
                 // var obj = medthod_bootstrapUpdater_CheckForUpdates.Invoke(class_bootstrapUpdater, new object[] { rootDirectory, exename });
                 if (class_bootstrapUpdater.CheckForUpdatesAsync(rootDirectory, exename) is Task<BootstrapUpdater_CheckForUpdates> task_data)
@@ -87,8 +92,12 @@ namespace Leayal.PSO2Launcher
                             {
                                 class_bootstrapUpdater.FileDownloaded += Class_bootstrapUpdater_FileDownloaded;
                                 class_bootstrapUpdater.StepChanged += Class_bootstrapUpdater_StepChanged;
-                                class_bootstrapUpdater.ProgressBarMaximumChanged += Class_bootstrapUpdater_ProgressBarMaximumChanged;
-                                class_bootstrapUpdater.ProgressBarValueChanged += Class_bootstrapUpdater_ProgressBarValueChanged;
+                                if (class_bootstrapUpdater is IBootstrapUpdater_v2 v2)
+                                {
+                                    v2.ProgressBarMaximumChanged += Class_bootstrapUpdater_ProgressBarMaximumChanged;
+                                    v2.ProgressBarValueChanged += Class_bootstrapUpdater_ProgressBarValueChanged;
+                                }
+                                
                                 var flag = await class_bootstrapUpdater.PerformUpdate(data);
                                 // Download here
 

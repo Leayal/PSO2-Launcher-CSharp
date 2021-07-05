@@ -207,7 +207,7 @@ namespace Leayal.SharedInterfaces.Communication
         event EventHandler<StringEventArgs> StepChanged;
     }
 
-    public interface IBootstrapUpdater_v2 : IBootstrapUpdater
+    public interface IBootstrapUpdater_v2
     {
         event Action<long> ProgressBarMaximumChanged;
         event Action<long> ProgressBarValueChanged;

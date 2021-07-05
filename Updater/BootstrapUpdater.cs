@@ -14,7 +14,7 @@ using System.Runtime.Loader;
 
 namespace Leayal.PSO2Launcher.Updater
 {
-    public partial class BootstrapUpdater : IBootstrapUpdater_v2
+    public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
         private readonly WebClientEx wc;
         private bool requireBootstrapUpdate, recommendBootstrapUpdate;

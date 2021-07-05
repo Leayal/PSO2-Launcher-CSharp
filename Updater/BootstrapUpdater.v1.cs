@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Updater
 {
-    partial class BootstrapUpdater
+    public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
         private async Task<BootstrapUpdater_CheckForUpdates> ParseFileList_1(JsonDocument document, string rootDirectory, string entryExecutableName)
         {
