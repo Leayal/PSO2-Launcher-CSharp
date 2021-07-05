@@ -20,7 +20,7 @@ namespace Leayal.PSO2Launcher.Updater
             {
                 if (prop_criticalfiles.ValueKind == JsonValueKind.Object)
                 {
-                    if (rootelement.TryGetProperty("root-url", out var prop_rootUrl) && prop_rootUrl.ValueKind == JsonValueKind.String &&
+                    if (rootelement.TryGetProperty("root-url-critical", out var prop_rootUrl) && prop_rootUrl.ValueKind == JsonValueKind.String &&
                         Uri.TryCreate(prop_rootUrl.GetString(), UriKind.Absolute, out var rootUrl))
                     {
                         using (var objWalker = prop_criticalfiles.EnumerateObject())

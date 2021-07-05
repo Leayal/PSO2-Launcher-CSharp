@@ -28,14 +28,16 @@ namespace SHA1Maker
             {
                 writer.WriteStartObject();
                 writer.WriteNumber("rep-version", 2);
-                writer.WriteString("root-url", url);
+                var baseUrl = new Uri(url);
+                writer.WriteString("root-url", (new Uri(baseUrl, "files")).AbsoluteUri);
+                writer.WriteString("root-url-critical", baseUrl.AbsoluteUri);
                 var currentProbe = Path.Combine(dir, "files");
                 if (Directory.Exists(currentProbe))
                 {
                     writer.WriteStartObject("files");
                     foreach (var file in Directory.EnumerateFiles(currentProbe, "*", SearchOption.AllDirectories))
                     {
-                        var relativePath = file.Remove(0, dir.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
+                        var relativePath = file.Remove(0, currentProbe.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
                         using (var fs = File.OpenRead(file))
                         using (var sha1 = SHA1.Create())
                         {
