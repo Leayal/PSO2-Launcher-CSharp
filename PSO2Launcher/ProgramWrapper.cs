@@ -8,9 +8,9 @@ namespace Leayal.PSO2Launcher
 {
     static class ProgramWrapper
     {
-        private static readonly string RootDirectory;
-        private static readonly Dictionary<string, Assembly> _preloaded;
-        private static readonly HashSet<string> DemandLoadWithoutLock;
+        internal static readonly string RootDirectory;
+        internal static readonly Dictionary<string, Assembly> _preloaded;
+        internal static readonly HashSet<string> DemandLoadWithoutLock;
 
         static ProgramWrapper()
         {
@@ -53,26 +53,23 @@ namespace Leayal.PSO2Launcher
                 return asm;
             }
 
-            if (!filename.EndsWith(".resources", StringComparison.Ordinal))
+            var filepath = Path.GetFullPath(Path.Combine("bin", filename + ".dll"), RootDirectory);
+            if (File.Exists(filepath))
             {
-                var filepath = Path.GetFullPath(Path.Combine("bin", filename + ".dll"), RootDirectory);
-                if (File.Exists(filepath))
+                if (DemandLoadWithoutLock.Contains(filename))
                 {
-                    if (DemandLoadWithoutLock.Contains(filename))
+                    using (var fs = File.OpenRead(filepath))
                     {
-                        using (var fs = File.OpenRead(filepath))
-                        {
-                            var bytes = new byte[fs.Length];
-                            fs.Read(bytes, 0, bytes.Length);
-                            asm = Assembly.Load(bytes);
-                            _preloaded.Add(filename, asm);
-                            return asm;
-                        }
+                        var bytes = new byte[fs.Length];
+                        fs.Read(bytes, 0, bytes.Length);
+                        asm = Assembly.Load(bytes);
+                        _preloaded.Add(filename, asm);
+                        return asm;
                     }
-                    else
-                    {
-                        return Assembly.LoadFrom(filepath);
-                    }
+                }
+                else
+                {
+                    return Assembly.LoadFrom(filepath);
                 }
             }
             return null;

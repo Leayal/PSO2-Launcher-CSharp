@@ -10,26 +10,40 @@ using System.Text.Json;
 using System.Windows.Forms;
 using Leayal.SharedInterfaces.Communication;
 using Leayal.SharedInterfaces;
+using System.Runtime.Loader;
 
 namespace Leayal.PSO2Launcher.Updater
 {
-    public class BootstrapUpdater : IBootstrapUpdater
+    public partial class BootstrapUpdater : IBootstrapUpdater_v2
     {
-        private readonly WebClient wc;
+        private readonly WebClientEx wc;
+        private bool requireBootstrapUpdate, recommendBootstrapUpdate;
+        private readonly AssemblyLoadContext? _loadedAssemblies;
 
-        public BootstrapUpdater()
+        private readonly int bootstrapversion;
+
+        public BootstrapUpdater() : this(0, null) { }
+
+        public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies)
         {
-            this.wc = new WebClient()
+            this.bootstrapversion = bootstrapversion;
+            this.requireBootstrapUpdate = false;
+            this.recommendBootstrapUpdate = false;
+            this._loadedAssemblies = loadedAssemblies;
+            this.wc = new WebClientEx()
             {
                 Proxy = null,
                 CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore),
                 Credentials = null,
                 UseDefaultCredentials = false
             };
+            this.wc.Headers.Add(HttpRequestHeader.UserAgent, "PSO2LeaLauncher");
         }
 
         public event EventHandler<FileDownloadedEventArgs> FileDownloaded;
+        public event Action<long> ProgressBarValueChanged;
         public event EventHandler<StringEventArgs> StepChanged;
+        public event Action<long> ProgressBarMaximumChanged;
 
         public Task<BootstrapUpdater_CheckForUpdates> CheckForUpdatesAsync(string rootDirectory, string entryExecutableName)
         {
@@ -45,10 +59,21 @@ namespace Leayal.PSO2Launcher.Updater
                         {
                             return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
                         }
+                        else if (response_ver == 2)
+                        {
+                            if (this.bootstrapversion < 1)
+                            {
+                                this.recommendBootstrapUpdate = true;
+                                return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
+                            }
+                            else
+                            {
+                                return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
+                            }
+                        }
                         else
                         {
-                            // Latest kind of data
-                            return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
+                            return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
                         }
                     }
                     else
@@ -59,67 +84,30 @@ namespace Leayal.PSO2Launcher.Updater
             });
         }
 
-        private async Task<BootstrapUpdater_CheckForUpdates> ParseFileList_1(JsonDocument document, string rootDirectory, string entryExecutableName)
-        {
-            var needtobeupdated = new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase);
-
-            var rootelement = document.RootElement;
-
-            if (rootelement.TryGetProperty("files", out var prop_files))
-            {
-                if (prop_files.ValueKind == JsonValueKind.Object)
-                {
-                    if (rootelement.TryGetProperty("root-url", out var prop_rootUrl) && prop_rootUrl.ValueKind == JsonValueKind.String &&
-                        Uri.TryCreate(prop_rootUrl.GetString(), UriKind.Absolute, out var rootUrl))
-                    {
-                        using (var objWalker = prop_files.EnumerateObject())
-                        {
-                            while (objWalker.MoveNext())
-                            {
-                                var item_prop = objWalker.Current;
-                                var displayName = item_prop.Name;
-                                var prop_val = item_prop.Value;
-                                if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String))
-                                {
-                                    var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
-                                    var remotehash = item_prop_sha1.GetString();
-                                    if (File.Exists(localFilename))
-                                    {
-                                        var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
-                                        if (!string.Equals(hash, remotehash, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                            needtobeupdated.Add(displayName, new UpdateItem(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive));
-                                        }
-                                    }
-                                    else
-                                    {
-                                        bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                        needtobeupdated.Add(displayName, new UpdateItem(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, false, null);
-            }
-            else
-            {
-                throw new BootstrapUpdaterException();
-            }
-        }
-
         public bool? DisplayUpdatePrompt(Form? parent)
         {
             DialogResult result;
-            if (parent == null)
+            if (this.recommendBootstrapUpdate)
             {
-                result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                if (parent == null)
+                {
+                    result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                }
+                else
+                {
+                    result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                }
             }
             else
             {
-                result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                if (parent == null)
+                {
+                    result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                }
+                else
+                {
+                    result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                }
             }
             return result switch
             {
@@ -135,20 +123,117 @@ namespace Leayal.PSO2Launcher.Updater
             {
                 var e_filedownload = this.FileDownloaded;
                 var e_step = this.StepChanged;
+                var e_progressbarMax = this.ProgressBarMaximumChanged;
+                var e_downloadProgress = this.ProgressBarValueChanged;
+                byte[] buffer = new byte[1024 * 16];
+
+                bool isNewBootstrap = this.bootstrapversion > 0;
+                bool shouldRestart = isNewBootstrap ? false : true;
 
                 string filepath, tmpFilename;
+                e_progressbarMax?.Invoke(100);
                 foreach (var item in updateinfo.Items)
                 {
                     filepath = item.Value.LocalFilename;
                     tmpFilename = filepath + ".dtmp";
 
                     e_step?.Invoke(this, new StringEventArgs($"Downloading '{item.Value.DisplayName}'"));
-                    await this.wc.DownloadFileTaskAsync(item.Value.DownloadUrl, tmpFilename);
+
+                    if (isNewBootstrap)
+                    {
+                        if (item.Value is UpdateItem_v2 itemv2)
+                        {
+                            if (itemv2.FileSize == -1)
+                            {
+                                await this.wc.DownloadFileTaskAsync(item.Value.DownloadUrl, tmpFilename);
+                            }
+                            else
+                            {
+                                // e_progressbarMax?.Invoke(itemv2.FileSize);
+                                using (var remoteStream = await this.wc.OpenReadTaskAsync(item.Value.DownloadUrl))
+                                using (var localStream = File.Create(tmpFilename))
+                                {
+                                    long totalbyte = itemv2.FileSize;
+                                    long bytetoDownload = totalbyte;
+                                    long bytedownloaded = 0;
+                                    int byteread = remoteStream.Read(buffer, 0, buffer.Length);
+                                    while (byteread > 0 && bytetoDownload != 0)
+                                    {
+                                        localStream.Write(buffer, 0, byteread);
+                                        bytedownloaded += byteread;
+                                        bytetoDownload -= byteread;
+                                        double val = bytedownloaded * 100 / totalbyte;
+                                        e_downloadProgress?.Invoke(Convert.ToInt32(Math.Floor(val)));
+                                        if (bytetoDownload > buffer.Length)
+                                        {
+                                            byteread = remoteStream.Read(buffer, 0, buffer.Length);
+                                        }
+                                        else
+                                        {
+                                            byteread = remoteStream.Read(buffer, 0, (int)bytetoDownload);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            await this.wc.DownloadFileTaskAsync(item.Value.DownloadUrl, tmpFilename);
+                        }
+                    }
+                    else
+                    {
+                        await this.wc.DownloadFileTaskAsync(item.Value.DownloadUrl, tmpFilename);
+                    }
 
                     var hash_downloaded = SHA1Hash.ComputeHashFromFile(tmpFilename);
                     if (string.Equals(hash_downloaded, item.Value.SHA1Hash, StringComparison.OrdinalIgnoreCase))
                     {
-                        File.Move(tmpFilename, filepath, true);
+                        if (item.Value is UpdateItem_v2 itemv2)
+                        {
+                            if (itemv2.IsCritical)
+                            {
+                                shouldRestart = true;
+                                if (itemv2.IsEntry)
+                                {
+                                    var entryAsm = Assembly.GetEntryAssembly();
+                                    var location = entryAsm.Location;
+                                    if (!string.IsNullOrEmpty(location))
+                                    {
+                                        location = Path.GetFullPath(location);
+                                        File.Move(location, Path.ChangeExtension(location, ".bak"), true);
+                                        File.Move(tmpFilename, location, true);
+                                    }
+                                    else
+                                    {
+                                        var dllName = Path.ChangeExtension(RuntimeValues.EntryExecutableFilename, ".dll");
+                                        location = Path.GetFullPath(Path.Combine("dotnet", dllName), RuntimeValues.RootDirectory);
+                                        if (!File.Exists(location))
+                                        {
+                                            location = Path.GetFullPath(dllName, RuntimeValues.RootDirectory);
+                                        }
+                                        if (File.Exists(location))
+                                        {
+                                            File.Move(location, Path.ChangeExtension(location, ".bak"), true);
+                                            File.Move(tmpFilename, location, true);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    File.Move(filepath, Path.ChangeExtension(filepath, ".bak"), true);
+                                    File.Move(tmpFilename, filepath, true);
+                                }
+                            }
+                            else
+                            {
+                                File.Move(tmpFilename, filepath, true);
+                            }
+                        }
+                        else
+                        {
+                            File.Move(tmpFilename, filepath, true);
+                        }
                     }
                     else
                     {
@@ -157,8 +242,23 @@ namespace Leayal.PSO2Launcher.Updater
                     e_filedownload?.Invoke(this, new FileDownloadedEventArgs(item.Value));
                 }
 
-                // Force restart anyway.
-                return true;
+                if (!shouldRestart)
+                {
+                    if (this._loadedAssemblies != null)
+                    {
+                        foreach (var loaded in this._loadedAssemblies.Assemblies)
+                        {
+                            if (updateinfo.Items.ContainsKey(loaded.GetName().Name + ".dll"))
+                            {
+                                shouldRestart = true;
+                                break;
+                            }
+                        }
+                        
+                    }
+                }
+
+                return shouldRestart;
             });
         }
 

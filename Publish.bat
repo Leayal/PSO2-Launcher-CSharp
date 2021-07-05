@@ -14,4 +14,4 @@ copy /B /L /Y "Build\Updater\*.dll" "docs\publish\files\"
 
 copy /B /L /Y "Dependencies\Build\net5.0\*.dll" "docs\publish\files\"
 
-Tools\SHA1Maker.exe "docs\publish\files" "docs\publish\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/files/"
+Tools\SHA1Maker.exe "docs\publish" "docs\publish\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/"

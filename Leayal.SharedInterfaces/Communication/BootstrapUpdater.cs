@@ -136,7 +136,7 @@ namespace Leayal.SharedInterfaces.Communication
         }
     }
 
-    public readonly struct UpdateItem
+    public class UpdateItem
     {
         public readonly string LocalFilename;
         public readonly string DownloadUrl;
@@ -153,6 +153,23 @@ namespace Leayal.SharedInterfaces.Communication
             this.DisplayName = displayName;
             this.IsRemoteAnArchive = isArchive;
             this.SHA1Hash = sha1hash;
+        }
+    }
+
+    public class UpdateItem_v2 : UpdateItem
+    {
+        public readonly long FileSize;
+        public readonly bool IsCritical;
+        public readonly bool IsEntry;
+
+        public UpdateItem_v2(string localFilename, string sha1hash, string url, string displayName, long filesize, bool critical, bool isEntry) : this(localFilename, sha1hash, url, displayName, false, filesize, critical, isEntry) { }
+
+        public UpdateItem_v2(string localFilename, string sha1hash, string url, string displayName, bool isArchive, long filesize, bool critical, bool isEntry)
+            : base(localFilename, sha1hash, url, displayName, isArchive)
+        {
+            this.FileSize = filesize;
+            this.IsCritical = critical;
+            this.IsEntry = isEntry;
         }
     }
 
@@ -188,5 +205,11 @@ namespace Leayal.SharedInterfaces.Communication
         event EventHandler<FileDownloadedEventArgs> FileDownloaded;
 
         event EventHandler<StringEventArgs> StepChanged;
+    }
+
+    public interface IBootstrapUpdater_v2 : IBootstrapUpdater
+    {
+        event Action<long> ProgressBarMaximumChanged;
+        event Action<long> ProgressBarValueChanged;
     }
 }

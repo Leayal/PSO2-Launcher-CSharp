@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Leayal.SharedInterfaces.Communication;
 using System.ComponentModel;
+using System.Collections.Generic;
 
 namespace Leayal.PSO2Launcher
 {
@@ -15,8 +16,10 @@ namespace Leayal.PSO2Launcher
     {
         private static bool flag_reload, flag_switchtoWPF;
         private static SingleAppController _appController;
-        public static SingleAppController AppController => _appController;
         private static IWPFApp wpfController;
+
+        // Should add before the library is loaded.
+        public static HashSet<string> LoadWithoutLock => ProgramWrapper.DemandLoadWithoutLock;
 
         public static void Main(string[] args)
         {
@@ -186,6 +189,7 @@ namespace Leayal.PSO2Launcher
 
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.EnableVisualStyles();
 
             while (flag_reload)
             {

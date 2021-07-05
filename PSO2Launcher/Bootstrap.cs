@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher
     public partial class Bootstrap : Form
     {
         #region | Fields |
-        private int downloadedcount;
+        private int downloadedcount, totalcount;
         #endregion
 
         #region | Constructor |
@@ -35,6 +35,7 @@ namespace Leayal.PSO2Launcher
         #region | Form Loads |
         private void Bootstrap_Load(object sender, EventArgs e)
         {
+            this.totalcount = 0;
             this.downloadedcount = 0;
         }
 
@@ -48,15 +49,12 @@ namespace Leayal.PSO2Launcher
                 rootDirectory = Path.GetDirectoryName(fullFilename);
             }
 
-            var bootstrapUpdater = new AssemblyLoadContext("BootstrapUpdater", true);
+            var bootstrapUpdater = new BootstrapUpdaterAssemblyLoadContext();
             // bootstrapUpdater.LoadFromAssemblyPath(Path.Combine("bin", "SharpCompress.dll")); // Optional??
             Assembly netasm_bootstrapUpdater;
             try
             {
-                using (var fs = File.OpenRead(Path.GetFullPath(Path.Combine("bin", "BootstrapUpdater.dll"), rootDirectory)))
-                {
-                    netasm_bootstrapUpdater = bootstrapUpdater.LoadFromStream(fs);
-                }
+                netasm_bootstrapUpdater = bootstrapUpdater.Init(Path.GetFullPath(Path.Combine("bin", "BootstrapUpdater.dll"), rootDirectory));
             }
             catch (Exception ex)
             {
@@ -70,7 +68,7 @@ namespace Leayal.PSO2Launcher
             {
                 // Invoke updater. Dynamic is slow.
                 // Hardcoded
-                var class_bootstrapUpdater = (IBootstrapUpdater)netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater");
+                var class_bootstrapUpdater = (IBootstrapUpdater_v2)netasm_bootstrapUpdater.CreateInstance("Leayal.PSO2Launcher.Updater.BootstrapUpdater", false, BindingFlags.CreateInstance, null, new object[] { 1, bootstrapUpdater }, null, null);
                 // var medthod_bootstrapUpdater_CheckForUpdates = class_bootstrapUpdater.GetType().GetMethod("CheckForUpdatesAsync");
                 // var obj = medthod_bootstrapUpdater_CheckForUpdates.Invoke(class_bootstrapUpdater, new object[] { rootDirectory, exename });
                 if (class_bootstrapUpdater.CheckForUpdatesAsync(rootDirectory, exename) is Task<BootstrapUpdater_CheckForUpdates> task_data)
@@ -80,6 +78,7 @@ namespace Leayal.PSO2Launcher
                     // Handle downloads and overwrite files.
                     if (data.Items != null && data.Items.Count != 0)
                     {
+                        this.totalcount = data.Items.Count;
                         // Prompt whether the user wants to update or not.
                         var promptResult = class_bootstrapUpdater.DisplayUpdatePrompt(this);
                         if (promptResult.HasValue)
@@ -88,17 +87,8 @@ namespace Leayal.PSO2Launcher
                             {
                                 class_bootstrapUpdater.FileDownloaded += Class_bootstrapUpdater_FileDownloaded;
                                 class_bootstrapUpdater.StepChanged += Class_bootstrapUpdater_StepChanged;
-                                if (this.progressBar1.InvokeRequired)
-                                {
-                                    this.progressBar1.Invoke(new Action(() =>
-                                    {
-                                        this.progressBar1.Maximum = data.Items.Count;
-                                    }));
-                                }
-                                else
-                                {
-                                    this.progressBar1.Maximum = data.Items.Count;
-                                }
+                                class_bootstrapUpdater.ProgressBarMaximumChanged += Class_bootstrapUpdater_ProgressBarMaximumChanged;
+                                class_bootstrapUpdater.ProgressBarValueChanged += Class_bootstrapUpdater_ProgressBarValueChanged;
                                 var flag = await class_bootstrapUpdater.PerformUpdate(data);
                                 // Download here
 
@@ -106,11 +96,11 @@ namespace Leayal.PSO2Launcher
                                 {
                                     if (flag.Value)
                                     {
-                                        Application.Restart();
-                                        return;
                                         // Not really in use but let's support it. For future.
                                         netasm_bootstrapUpdater = null;
                                         bootstrapUpdater.Unload();
+                                        Application.Restart();
+                                        return;
                                         if (string.IsNullOrWhiteSpace(data.RestartWithExe))
                                         {
                                             RestartApplicationToUpdate(in fullFilename, in data);
@@ -188,6 +178,36 @@ namespace Leayal.PSO2Launcher
             }
         }
 
+        private void Class_bootstrapUpdater_ProgressBarValueChanged(long obj)
+        {
+            if (this.progressBar1.InvokeRequired)
+            {
+                this.progressBar1.Invoke(new Action(() =>
+                {
+                    this.progressBar1.Value = (int)obj;
+                }));
+            }
+            else
+            {
+                this.progressBar1.Value = (int)obj;
+            }
+        }
+
+        private void Class_bootstrapUpdater_ProgressBarMaximumChanged(long obj)
+        {
+            if (this.progressBar1.InvokeRequired)
+            {
+                this.progressBar1.Invoke(new Action(() =>
+                {
+                    this.progressBar1.Maximum = (int)obj;
+                }));
+            }
+            else
+            {
+                this.progressBar1.Maximum = (int)obj;
+            }
+        }
+
         private void Class_bootstrapUpdater_StepChanged(object sender, SharedInterfaces.StringEventArgs e)
         {
             var label = this.label1;
@@ -195,12 +215,14 @@ namespace Leayal.PSO2Launcher
             {
                 label.BeginInvoke(new Action<string>((text) =>
                 {
-                    this.label1.Text = text;
+                    var downloadedCount = Interlocked.CompareExchange(ref this.downloadedcount, 0, 0);
+                    this.label1.Text = $"{text} ({downloadedCount}/{this.totalcount})";
                 }), e.Data);
             }
             else
             {
-                label.Text = e.Data;
+                var downloadedCount = Interlocked.CompareExchange(ref this.downloadedcount, 0, 0);
+                label.Text = $"{e.Data} ({downloadedCount}/{this.totalcount})";
             }
         }
 
@@ -211,12 +233,14 @@ namespace Leayal.PSO2Launcher
             {
                 progressbar.BeginInvoke(new Action(() =>
                 {
-                    this.progressBar1.Value = Interlocked.Increment(ref this.downloadedcount);
+                    this.progressBar1.Value = 0;
+                    Interlocked.Increment(ref this.downloadedcount);
                 }));
             }
             else
             {
-                this.progressBar1.Value = Interlocked.Increment(ref this.downloadedcount);
+                this.progressBar1.Value = 0;
+                Interlocked.Increment(ref this.downloadedcount);
             }
         }
         #endregion
