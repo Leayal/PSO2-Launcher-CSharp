@@ -25,10 +25,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (this.ss_id != null)
             {
+                this.ss_id.Dispose();
                 this.ss_id = null;
             }
             if (this.ss_pw != null)
             {
+                this.ss_pw.Dispose();
                 this.ss_pw = null;
             }
             this.TabMainMenu.ForgetLoginInfoEnabled = false;
@@ -98,6 +100,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
 
+                        try
+                        {
+                            await this.pso2Updater.Prepare();
+                        }
+                        catch
+                        {
+                            await this.pso2Updater.Prepare();
+                        }
                         var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);
                         var t2 = this.pso2Updater.StartDownloadFiles(cancelToken);
                         await Task.WhenAll(t1, t2);
@@ -289,7 +299,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.cancelSrc?.Dispose();
                                 this.cancelSrc = currentCancelSrc;
 
-                                this.TabGameClientUpdateProgressBar.IsSelected = true;
+                                if (this.TabGameClientUpdateProgressBar.IsSelected != true)
+                                {
+                                    this.TabGameClientUpdateProgressBar.IsSelected = true;
+                                }
 
                                 var downloaderprofile = this.config_main.DownloaderProfile;
 
@@ -314,6 +327,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     {
                                         return;
                                     }
+                                }
+
+                                try
+                                {
+                                    await this.pso2Updater.Prepare();
+                                }
+                                catch
+                                {
+                                    await this.pso2Updater.Prepare();
                                 }
 
                                 var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);

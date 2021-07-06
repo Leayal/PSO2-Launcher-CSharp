@@ -8,6 +8,7 @@ using System.IO;
 using Leayal.SharedInterfaces;
 using Microsoft.Win32.SafeHandles;
 using System.Security;
+using System.Diagnostics;
 
 namespace Leayal.PSO2Launcher.Core
 {

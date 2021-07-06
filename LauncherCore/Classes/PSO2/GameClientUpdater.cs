@@ -3,6 +3,7 @@ using Leayal.PSO2Launcher.Helper;
 using Leayal.SharedInterfaces;
 using SymbolicLinkSupport;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -39,7 +40,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         // Threadings
         private int flag_fileCheckStarted, flag_fileDownloadStarted, flag_operationCount;
-        private readonly BlockingCollection<DownloadItem> pendingFiles;
+        private BlockingCollection<DownloadItem>? pendingFiles;
 
         public string Path_PSO2BIN => this.dir_pso2bin;
         public string? Path_PSO2ClassicData => this.dir_classic_data;
@@ -52,6 +53,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public GameClientUpdater(string whereIsThePSO2_BIN, string? preference_classicWhere, string? preference_rebootWhere, string hashCheckCache, PSO2HttpClient httpHandler)
         {
+            this.pendingFiles = null;
             this.currentSelectedDownload = null;
             this.hashCacheDb = new FileCheckHashCache(hashCheckCache);
             this.count_fileFailure = 0;
@@ -64,9 +66,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.dir_pso2bin = Path.GetFullPath(whereIsThePSO2_BIN);
             this.dir_classic_data = string.IsNullOrWhiteSpace(preference_classicWhere) ? null : Path.GetFullPath(preference_classicWhere);
             this.dir_reboot_data = string.IsNullOrWhiteSpace(preference_rebootWhere) ? null : Path.GetFullPath(preference_rebootWhere);
-            this.pendingFiles = new BlockingCollection<DownloadItem>();
             this.lastKnownObjects = new ObjectShortCacheManager<object>();
-            // this.workingDirectory = whereIsThePSO2_BIN;
             this.webclient = httpHandler;
             this.SnailMode = false;
         }
@@ -123,6 +123,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             if (Interlocked.CompareExchange(ref this.flag_fileCheckStarted, 1, 0) == 0)
             {
+                var old = Interlocked.CompareExchange(ref this.pendingFiles, new BlockingCollection<DownloadItem>(), null);
+                if (old != null)
+                {
+                    if (old.IsAddingCompleted)
+                    {
+                        Interlocked.CompareExchange(ref this.pendingFiles, new BlockingCollection<DownloadItem>(), old);
+                        old.Dispose();
+                    }
+                }
                 Interlocked.Increment(ref this.flag_operationCount);
                 this.currentSelectedDownload = selection;
                 var checkTask = Task.Factory.StartNew(async () =>
@@ -175,27 +184,51 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             this.lastKnownRemoteVersion = await this.webclient.GetPatchVersionAsync(patchInfoRoot, cancellationToken);
             var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
+            bool bakExist_classic = false;
+            bool bakExist_reboot = false;
+            Task<PatchListMemory> t_prologueOnly = null, t_fulllist;
+            BackupFileFoundEventArgs e_onBackup = null;
+
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
-                    selectedList = await this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
+                    t_fulllist = this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
+                    bakExist_classic = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
+                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    if (bakExist_reboot || bakExist_classic)
+                    {
+                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, bakExist_classic);
+                        await this.OnBackupFileFound(e_onBackup);
+                    }
                     break;
 
                 case GameClientSelection.NGS_Prologue_Only:
-                    selectedList = await this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    t_fulllist = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    if (bakExist_reboot)
+                    {
+                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
+                        await this.OnBackupFileFound(e_onBackup);
+                    }
                     break;
 
                 case GameClientSelection.Always_Only:
+                    t_fulllist = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
                     break;
 
                 case GameClientSelection.NGS_Only:
                     // Download both files at the same time.
-                    var t_prologueOnly = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
-                    var t_fullngs = this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken);
+                    t_prologueOnly = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    t_fulllist = this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken);
+                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    if (bakExist_reboot)
+                    {
+                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
+                        await this.OnBackupFileFound(e_onBackup);
+                    }
+                    await Task.WhenAll(t_prologueOnly, t_fulllist);
 
-                    await Task.WhenAll(t_prologueOnly, t_fullngs);
-
-                    selectedList = PatchListBase.Create(await t_prologueOnly, await t_fullngs);
+                    
 
                     break;
 
@@ -203,6 +236,94 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     // Universe exploded because you handed wrong value.
                     throw new ArgumentOutOfRangeException(nameof(selection));
             }
+
+            if (e_onBackup != null && e_onBackup.Handled == false)
+            {
+                string dest;
+                byte[]? buffer = null;
+                try
+                {
+                    foreach (var item in e_onBackup.Items)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+                        dest = item.BackupFileDestination;
+                        if (File.Exists(dest))
+                        {
+                            if (buffer == null)
+                            {
+                                buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 128);
+                            }
+
+                            var linkTarget = SymbolicLink.FollowTarget(dest);
+                            if (linkTarget != null)
+                            {
+                                dest = linkTarget;
+                                if (string.Equals(Path.GetPathRoot(dest), Path.GetPathRoot(item.BackupFileSourcePath), StringComparison.OrdinalIgnoreCase))
+                                {
+                                    File.Move(item.BackupFileSourcePath, dest, true);
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        using (var fs_dest = File.Create(dest))
+                                        using (var fs_src = File.OpenRead(item.BackupFileSourcePath))
+                                        {
+                                            if (fs_src.Length != 0)
+                                            {
+                                                int byteread = fs_src.Read(buffer, 0, buffer.Length);
+                                                while (byteread > 0)
+                                                {
+                                                    if (cancellationToken.IsCancellationRequested)
+                                                    {
+                                                        break;
+                                                    }
+                                                    fs_dest.Write(buffer, 0, byteread);
+                                                    byteread = fs_src.Read(buffer, 0, buffer.Length);
+                                                }
+                                            }
+                                        }
+                                        File.Delete(item.BackupFileSourcePath);
+                                    }
+                                    catch
+                                    {
+                                        if (File.Exists(item.BackupFileSourcePath))
+                                        {
+                                            File.Move(item.BackupFileSourcePath, dest, true);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                File.Move(item.BackupFileSourcePath, dest, true);
+                            }
+                        }
+                        else
+                        {
+                            File.Move(item.BackupFileSourcePath, dest, true);
+                        }
+                    }
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
+            if (t_prologueOnly == null)
+            {
+                selectedList = await t_fulllist;
+            }
+            else
+            {
+                await Task.WhenAll(t_prologueOnly, t_fulllist);
+                selectedList = PatchListBase.Create(await t_prologueOnly, await t_fulllist);
+            }
+            
 
             var alwaysList = await t_alwaysList;
             PatchListBase headacheMatterAgain;
@@ -462,6 +583,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             if (Interlocked.CompareExchange(ref this.flag_fileDownloadStarted, 1, 0) == 0)
             {
                 Interlocked.Increment(ref this.flag_operationCount);
+                Interlocked.CompareExchange(ref this.pendingFiles, new BlockingCollection<DownloadItem>(), null);
                 var taskCount = this.ConcurrentDownloadCount;
                 if (taskCount == 0)
                 {
@@ -516,7 +638,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
                 }
 
-                var localFilePath = downloadItem.Destination;
+                var localFilePath = SymbolicLink.FollowTarget(downloadItem.Destination) ?? downloadItem.Destination;
                 // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                 // var tmpFilename = localFilename + ".dtmp";
                 var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);
@@ -605,10 +727,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 if (isSuccess)
                 {
-                    var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                    
                     try
                     {
                         File.Move(tmpFilePath, localFilePath, true);
+                        var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                         await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
                     }
                     catch
@@ -647,24 +770,44 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             var failureCount = Interlocked.Exchange(ref this.count_fileFailure, 0);
             var totalCount = Interlocked.Exchange(ref this.count_totalFiles, 0);
+            var oldone = Interlocked.Exchange(ref this.pendingFiles, null);
+            oldone?.Dispose();
 
-            var ver = lastKnownRemoteVersion;
-            lastKnownRemoteVersion = null;
-            var selectedMode = this.currentSelectedDownload;
-            this.currentSelectedDownload = null;
-
-            if (!cancellationToken.IsCancellationRequested && ver.HasValue && selectedMode.HasValue && selectedMode.Value != GameClientSelection.Always_Only)
+            try
             {
-                var localFilePath = Path.GetFullPath("version.ver", this.dir_pso2bin);
-                if (Directory.Exists(localFilePath))
+                var ver = lastKnownRemoteVersion;
+                lastKnownRemoteVersion = null;
+                var selectedMode = this.currentSelectedDownload;
+                this.currentSelectedDownload = null;
+
+                if (!cancellationToken.IsCancellationRequested && ver.HasValue && selectedMode.HasValue && selectedMode.Value != GameClientSelection.Always_Only)
                 {
-                    Directory.Delete(localFilePath);
+                    var localFilePath = Path.GetFullPath("version.ver", this.dir_pso2bin);
+                    if (Directory.Exists(localFilePath))
+                    {
+                        Directory.Delete(localFilePath);
+                    }
+                    File.WriteAllText(localFilePath, ver.Value.ToString());
                 }
-                File.WriteAllText(localFilePath, ver.Value.ToString());
-
             }
+            finally
+            {
+                this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, totalCount, failureCount);
+            }
+        }
 
-            this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, totalCount, failureCount);
+        public event BackupFileFoundHandler BackupFileFound;
+        private Task OnBackupFileFound(BackupFileFoundEventArgs e)
+        {
+            var callback = this.BackupFileFound;
+            if (callback == null)
+            {
+                return Task.CompletedTask;
+            }
+            else
+            {
+                return callback.Invoke(this, e);
+            }
         }
 
         public event FileCheckBeginHandler FileCheckBegin;
@@ -685,12 +828,92 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void ProgressBeginHandler(PatchListItem file, in long totalProgressValue);
         public delegate void ProgressReportHandler(PatchListItem file, in long currentProgressValue);
         public delegate void ProgressEndHandler(PatchListItem file, in bool isSuccess);
-
+        
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
         public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailure);
+        public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
+        public class BackupFileFoundEventArgs : EventArgs
+        {
+            private readonly string root;
+            private IEnumerable<BackupRestoreItem> walking;
+            private readonly bool doesReboot, doesClassic;
+
+            public bool HasRebootBackup => this.doesReboot;
+            public bool HasClassicBackup => this.doesClassic;
+
+            /// <summary>
+            /// <para>True to tell the <seealso cref="GameClientUpdater"/> that you have handled the backup restoring progress.</para>
+            /// <para>False to let the <seealso cref="GameClientUpdater"/> handle the backup restoring progress.</para>
+            /// <para>Null ignore the backup files.</para>
+            /// </summary>
+            /// <remarks>
+            /// If true, you should handle your backup restoring within a background Task to avoid blocking UI Thread.
+            /// </remarks>
+            public bool? Handled { get; set; }
+
+            public IEnumerable<BackupRestoreItem> Items
+            {
+                get
+                {
+                    if (this.walking == null)
+                    {
+                        this.walking = this.Walk();
+                    }
+                    return this.walking;
+                }
+            }
+
+            private IEnumerable<BackupRestoreItem> Walk()
+            {
+                string currentDir, bakDir;
+                if (this.doesReboot)
+                {
+                    currentDir = Path.GetFullPath(Path.Combine("data", "win32reboot"), this.root);
+                    bakDir = Path.Combine(currentDir, "backup");
+                    foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.AllDirectories))
+                    {
+                        var relativePath = Path.GetRelativePath(bakDir, file);
+                        yield return new BackupRestoreItem(file, relativePath, Path.GetFullPath(relativePath, currentDir));
+                    }
+                }
+
+                if (this.doesClassic)
+                {
+                    currentDir = Path.GetFullPath(Path.Combine("data", "win32"), this.root);
+                    bakDir = Path.Combine(currentDir, "backup");
+                    foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        var relativePath = Path.GetRelativePath(bakDir, file);
+                        yield return new BackupRestoreItem(file, relativePath, Path.GetFullPath(relativePath, currentDir));
+                    }
+                }
+            }
+
+            public BackupFileFoundEventArgs(string pso2_bin, bool reboot, bool classic)
+            {
+                this.Handled = false;
+                this.root = pso2_bin;
+                this.doesReboot = reboot;
+                this.doesClassic = classic;
+            }
+        }
+
+        public readonly struct BackupRestoreItem
+        {
+            public readonly string RelativePath;
+            public readonly string BackupFileDestination;
+            public readonly string BackupFileSourcePath;
+
+            public BackupRestoreItem(string sourcePath, string relativePath, string to)
+            {
+                this.BackupFileSourcePath = sourcePath;
+                this.RelativePath = relativePath;
+                this.BackupFileDestination = to;
+            }
+        }
 
         class DownloadItem
         {
@@ -709,10 +932,28 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private static string _prefix_data_classic = Path.Combine("data", "win32");
         private static string _prefix_data_reboot = Path.Combine("data", "win32reboot");
 
+        public static bool IsDirectoryExistsAndNotEmpty(in string path)
+        {
+            if (Directory.Exists(path))
+            {
+                using (var walker = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).GetEnumerator())
+                {
+                    if (walker.MoveNext())
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         /// <returns>Full path to a directory.</returns>
         private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, in string? rebootData, out bool isLink)
         {
+            isLink = false;
             var filename = item.GetFilenameWithoutAffix();
+            return Path.GetFullPath(filename, pso2bin);
+            
             var normalized = PathStringComparer.Default.NormalizePath(in filename);
             if (item.IsDataFile)
             {
