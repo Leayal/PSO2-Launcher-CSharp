@@ -1,6 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using Leayal.PSO2Launcher.Core.UIElements;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using System;
@@ -36,11 +37,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.webclient = webclient;
             InitializeComponent();
 
-            var defaultItem = new ValueDOM<RememberOption>(RememberOption.DoNotRememberLoginInfo);
-            var items = new List<ValueDOM<RememberOption>>(2)
+            var defaultItem = new EnumComboBox.ValueDOM<RememberOption>(RememberOption.DoNotRememberLoginInfo);
+            var items = new List<EnumComboBox.ValueDOM<RememberOption>>(2)
             {
                 defaultItem,
-                new ValueDOM<RememberOption>(RememberOption.RememberLoginInfo)
+                new EnumComboBox.ValueDOM<RememberOption>(RememberOption.RememberLoginInfo)
             };
             this.rememberOption.ItemsSource = items;
             this.rememberOption.SelectedItem = defaultItem;
@@ -66,7 +67,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
-                    return ((ValueDOM<RememberOption>)selected).Value;
+                    return ((EnumComboBox.ValueDOM<RememberOption>)selected).Value;
                 }
             }
         }
@@ -149,26 +150,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             [EnumDisplayName("Remember my login info until launcher exits")]
             RememberLoginInfo
-        }
-
-        class ValueDOM<T> where T : Enum
-        {
-            public string Name { get; }
-
-            public T Value { get; }
-
-            public ValueDOM(T value)
-            {
-                if (EnumDisplayNameAttribute.TryGetDisplayName(value, out var name))
-                {
-                    this.Name = name;
-                }
-                else
-                {
-                    this.Name = value.ToString();
-                }
-                this.Value = value;
-            }
         }
     }
 }

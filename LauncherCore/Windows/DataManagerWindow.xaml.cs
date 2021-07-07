@@ -1,5 +1,6 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using Leayal.PSO2Launcher.Core.UIElements;
 using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
@@ -56,11 +57,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             var logicalCount = Environment.ProcessorCount;
-            var ints = new ValueDOMNumber[logicalCount + 1];
-            ints[0] = new ValueDOMNumber("Auto", 0);
+            var ints = new EnumComboBox.ValueDOMNumber[logicalCount + 1];
+            ints[0] = new EnumComboBox.ValueDOMNumber("Auto", 0);
             for (int i = 1; i < ints.Length; i++)
             {
-                ints[i] = new ValueDOMNumber(i.ToString(), i);
+                ints[i] = new EnumComboBox.ValueDOMNumber(i.ToString(), i);
             }
             this.combobox_thradcount.ItemsSource = ints;
 
@@ -115,9 +116,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
             this._config.PSO2_BIN = this.textbox_pso2_bin.Text;
-            this._config.DownloadSelection = ((ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
-            this._config.DownloaderProfile = ((ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
-            this._config.DownloaderConcurrentCount = ((ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
+            this._config.DownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
+            this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
+            this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
 
             this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
             this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
@@ -172,13 +173,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
 
-        private static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
+        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
         {
             var _enum = Enum.GetNames<T>();
             return EnumToDictionary<T>(_enum);
         }
 
-        private static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>(T[] values) where T : struct, Enum
+        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>(T[] values) where T : struct, Enum
         {
             var strs = new string[values.Length];
             for (int i = 0; i < values.Length; i++)
@@ -188,51 +189,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return EnumToDictionary<T>(strs);
         }
 
-        private static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>(params string[] names) where T : struct, Enum
+        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>(params string[] names) where T : struct, Enum
         {
-            var _list = new Dictionary<T, ValueDOM<T>>(names.Length);
+            var _list = new Dictionary<T, EnumComboBox.ValueDOM<T>>(names.Length);
             for (int i = 0; i < names.Length; i++)
             {
                 var member = Enum.Parse<T>(names[i]);
                 if (!EnumVisibleInOptionAttribute.TryGetIsVisible(member, out var isVisible) || isVisible)
                 {
-                    _list.Add(member, new ValueDOM<T>(member));
+                    _list.Add(member, new EnumComboBox.ValueDOM<T>(member));
                 }
             }
             return _list;
-        }
-
-        class ValueDOM<T> where T : Enum
-        {
-            public string Name { get; }
-
-            public T Value { get; }
-
-            public ValueDOM(T value)
-            {
-                if (EnumDisplayNameAttribute.TryGetDisplayName(value, out var name))
-                {
-                    this.Name = name;
-                }
-                else
-                {
-                    this.Name = value.ToString();
-                }
-                this.Value = value;
-            }
-        }
-
-        readonly struct ValueDOMNumber
-        {
-            public string Name { get; }
-
-            public int Value { get; }
-
-            public ValueDOMNumber(string displayName, int value)
-            {
-                this.Name = displayName;
-                this.Value = value;
-            }
         }
 
         private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)

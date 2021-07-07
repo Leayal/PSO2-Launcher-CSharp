@@ -459,7 +459,26 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var cachedHash = await duhB.GetPatchItem(localFilename);
                     // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
 
-                    if (cachedHash == null)
+                    if (File.Exists(localFilePath))
+                    {
+                        if (cachedHash != null)
+                        {
+                            if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                if (isLink)
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                }
+                                else
+                                {
+                                    this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                }
+                                this.OnDownloadQueueAdded(this.pendingFiles.Count);
+                            }
+                        }
+                    }
+                    else
                     {
                         var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
                         if (isLink)
@@ -471,23 +490,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                         }
                         this.OnDownloadQueueAdded(this.pendingFiles.Count);
-                        // this.pendingFiles.Add(patchItem);
-                    }
-                    else
-                    {
-                        if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
-                            if (isLink)
-                            {
-                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
-                            }
-                            else
-                            {
-                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
-                            }
-                            this.OnDownloadQueueAdded(this.pendingFiles.Count);
-                        }
                     }
 
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
