@@ -7,6 +7,11 @@
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
              mc:Ignorable="d" x:Name="thisSelf"
              d:DesignHeight="450" d:DesignWidth="800">
+    <mah:MetroTabItem.Resources>
+        <ResourceDictionary>
+            <local:NumberToStringConverter x:Key="_NumberToStringConverter" />
+        </ResourceDictionary>
+    </mah:MetroTabItem.Resources>
     <Grid Margin="2">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,7 +24,23 @@
         <Label Content="Preparing" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
         
         <local:ExtendedProgressBar Text="Checking file" x:Name="TopProgressBar" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
-        <Label Grid.Row="1" Content="Downloading:" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
+        <Grid Grid.Row="1" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" HorizontalAlignment="Left">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Label Content="Downloading: " />
+            <Label Grid.Column="1" Content="(" />
+            <Label Grid.Column="2" x:Name="label_downloaded" Content="0" />
+            <Label Grid.Column="3" Content="/" />
+            <Label Grid.Column="4" x:Name="label_downloadtotal" Content="0" />
+            <Label Grid.Column="5" Content=")" />
+        </Grid>
+        
 
         <!--File download progress bars-->
         <ListView Grid.Row="2" x:Name="DownloadFileTable" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}"

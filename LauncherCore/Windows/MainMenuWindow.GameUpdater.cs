@@ -206,10 +206,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }), file, maximum);
             };
+
             result.ProgressEnd += (PatchListItem file, in bool success) =>
             {
                 this.Dispatcher.Invoke(new GameClientUpdater.ProgressEndHandler((PatchListItem _file, in bool _success) =>
                 {
+                    this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount();
                     if (dictionaryInUse.TryRemove(_file, out var index))
                     {
                         this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
@@ -222,6 +224,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.Dispatcher.Invoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _total) =>
                 {
+                    this.TabGameClientUpdateProgressBar.ResetDownloadCount();
                     this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
                     this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
                     this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
@@ -243,6 +246,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     this.TabGameClientUpdateProgressBar.IsIndetermined = false;
                 }), sender, totalfilecount);
+            };
+
+            result.DownloadQueueAdded += (GameClientUpdater sender, in int total) =>
+            {
+                this.Dispatcher.BeginInvoke((Action<int>)((_total) =>
+                {
+                    this.TabGameClientUpdateProgressBar.IncreaseNeedToDownloadCount();
+                }), total);
             };
 
             result.FileCheckEnd += (sender) =>

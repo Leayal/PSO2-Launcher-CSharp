@@ -88,6 +88,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             SetUA_PSO2_Launcher(request);
             request.Headers.Host = url.Host;
+            request.Headers.ConnectionClose = true;
             using (var content = new PSO2LoginContent(username, password))
             {
                 request.Content = content;

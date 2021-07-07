@@ -384,6 +384,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                         }
+                        this.OnDownloadQueueAdded(this.pendingFiles.Count);
                     }
                     else
                     {
@@ -416,6 +417,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         {
                                             this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                                         }
+                                        this.OnDownloadQueueAdded(this.pendingFiles.Count);
                                         // this.pendingFiles.Add(patchItem);
                                     }
                                 }
@@ -431,6 +433,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 {
                                     this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                                 }
+                                this.OnDownloadQueueAdded(this.pendingFiles.Count);
                             }
                         }
                     }
@@ -467,6 +470,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                         }
+                        this.OnDownloadQueueAdded(this.pendingFiles.Count);
                         // this.pendingFiles.Add(patchItem);
                     }
                     else
@@ -482,6 +486,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             {
                                 this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                             }
+                            this.OnDownloadQueueAdded(this.pendingFiles.Count);
                         }
                     }
 
@@ -515,6 +520,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                         }
+                        this.OnDownloadQueueAdded(this.pendingFiles.Count);
                     }
                     else
                     {
@@ -551,6 +557,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             {
                                                 this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                                             }
+                                            this.OnDownloadQueueAdded(this.pendingFiles.Count);
                                         }
                                     }
                                 }
@@ -565,6 +572,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     {
                                         this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
                                     }
+                                    this.OnDownloadQueueAdded(this.pendingFiles.Count);
                                 }
                             }
                         }
@@ -816,6 +824,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public event FileCheckReportHandler FileCheckReport;
         private void OnFileCheckReport(in int current) => this.FileCheckReport?.Invoke(this, current);
 
+        public event DownloadQueueAddedHandler DownloadQueueAdded;
+        private void OnDownloadQueueAdded(in int total) => this.DownloadQueueAdded?.Invoke(this, total);
+
         public event FileCheckEndHandler FileCheckEnd;
         private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
 
@@ -831,6 +842,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
+        public delegate void DownloadQueueAddedHandler(GameClientUpdater sender, in int total);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
         public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailure);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
