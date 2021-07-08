@@ -31,10 +31,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         // Cache purposes
         private readonly ObjectShortCacheManager<object> lastKnownObjects;
-        private readonly FileCheckHashCache hashCacheDb;
+        // private FileCheckHashCache hashCacheDb;
         private PSO2Version? lastKnownRemoteVersion;
 
         // File check
+        private readonly string hashCheckCachePath;
         private Task t_fileCheckStarted, t_fileDownloadStarted;
         private long count_fileFailure, count_totalFiles;
 
@@ -55,7 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             this.pendingFiles = null;
             this.currentSelectedDownload = null;
-            this.hashCacheDb = new FileCheckHashCache(hashCheckCache);
+            this.hashCheckCachePath = hashCheckCache;
             this.count_fileFailure = 0;
             this.count_totalFiles = 0;
             this.lastKnownRemoteVersion = null;
@@ -70,8 +71,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.webclient = httpHandler;
             this.SnailMode = false;
         }
-
-        public Task Prepare() => this.hashCacheDb.Load();
 
         private Task<PatchRootInfo> InnerGetPatchRootAsync(CancellationToken cancellationToken)
             => this.InnerGetPatchRootAsync(false, cancellationToken);
@@ -136,14 +135,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.currentSelectedDownload = selection;
                 var checkTask = Task.Factory.StartNew(async () =>
                 {
+                    FileCheckHashCache duhB = null;
                     try
                     {
-                        await this.InnerScanForFilesNeedToDownload(selection, flags, cancellationToken);
+                        duhB = FileCheckHashCache.CreateOrOpen(this.hashCheckCachePath);
+                        await this.InnerScanForFilesNeedToDownload(selection, flags, duhB, cancellationToken);
                     }
                     finally
                     {
                         this.pendingFiles.CompleteAdding();
                         this.OnFileCheckEnd();
+                        if (duhB != null)
+                        {
+                            FileCheckHashCache.Close(duhB);
+                        }
                     }
                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
@@ -162,7 +167,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return this.t_fileCheckStarted;
         }
 
-        private async Task InnerScanForFilesNeedToDownload(GameClientSelection selection, FileScanFlags flags, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -180,19 +185,22 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // Acquire patch list.
-            PatchListBase selectedList = null;
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             this.lastKnownRemoteVersion = await this.webclient.GetPatchVersionAsync(patchInfoRoot, cancellationToken);
-            var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
+            // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             bool bakExist_classic = false;
             bool bakExist_reboot = false;
-            Task<PatchListMemory> t_prologueOnly = null, t_fulllist;
+            Task<PatchListMemory> t_addition = null, t_fulllist;
             BackupFileFoundEventArgs e_onBackup = null;
 
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
                     t_fulllist = this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
+                    if (t_fulllist.Status == TaskStatus.Created)
+                    {
+                        t_fulllist.Start();
+                    }
                     bakExist_classic = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
                     bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot || bakExist_classic)
@@ -204,6 +212,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 case GameClientSelection.NGS_Prologue_Only:
                     t_fulllist = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    if (t_fulllist.Status == TaskStatus.Created)
+                    {
+                        t_fulllist.Start();
+                    }
                     bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
@@ -214,22 +226,30 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 case GameClientSelection.Always_Only:
                     t_fulllist = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
+                    if (t_fulllist.Status == TaskStatus.Created)
+                    {
+                        t_fulllist.Start();
+                    }
                     break;
 
                 case GameClientSelection.NGS_Only:
                     // Download both files at the same time.
-                    t_prologueOnly = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    t_addition = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
+                    if (t_addition.Status == TaskStatus.Created)
+                    {
+                        t_addition.Start();
+                    }
                     t_fulllist = this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken);
+                    if (t_fulllist.Status == TaskStatus.Created)
+                    {
+                        t_fulllist.Start();
+                    }
                     bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
                         e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
                         await this.OnBackupFileFound(e_onBackup);
                     }
-                    await Task.WhenAll(t_prologueOnly, t_fulllist);
-
-                    
-
                     break;
 
                 default:
@@ -314,28 +334,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
 
-            if (t_prologueOnly == null)
+            PatchListBase headacheMatterAgain;
+            if (t_addition == null)
             {
-                selectedList = await t_fulllist;
+                headacheMatterAgain = await t_fulllist;
             }
             else
             {
-                await Task.WhenAll(t_prologueOnly, t_fulllist);
-                selectedList = PatchListBase.Create(await t_prologueOnly, await t_fulllist);
+                await Task.WhenAll(t_addition, t_fulllist);
+                headacheMatterAgain = PatchListBase.Create(await t_addition, await t_fulllist);
             }
             
-
-            var alwaysList = await t_alwaysList;
-            PatchListBase headacheMatterAgain;
-            if (selectedList != null)
-            {
-                headacheMatterAgain = PatchListBase.Create(selectedList, alwaysList);
-            }
-            else
-            {
-                headacheMatterAgain = alwaysList;
-            }
-
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {
                 Interlocked.Exchange(ref this.count_totalFiles, patchListMemory.Count);
@@ -347,7 +356,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.OnFileCheckBegin(-1);
             }
 
-            var duhB = this.hashCacheDb;
+            await duhB.Load();
 
             // Begin file check
 
@@ -461,7 +470,30 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                     if (File.Exists(localFilePath))
                     {
-                        if (cachedHash != null)
+                        if (cachedHash == null)
+                        {
+                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                            using (var fs = File.OpenRead(localFilePath))
+                            {
+                                var localMd5 = MD5Hash.ComputeHashFromFile(fs);
+                                cachedHash = await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
+                            }
+                        }
+                        
+                        if (cachedHash == null)
+                        {
+                            var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                            if (isLink)
+                            {
+                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                            }
+                            else
+                            {
+                                this.pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                            }
+                            this.OnDownloadQueueAdded(this.pendingFiles.Count);
+                        }
+                        else
                         {
                             if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                             {
@@ -601,11 +633,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
                 var tasks = new Task[taskCount];
 
+                var duhB = FileCheckHashCache.CreateOrOpen(this.hashCheckCachePath);
+
                 for (int i = 0; i < taskCount; i++)
                 {
                     tasks[i] = Task.Factory.StartNew(async () =>
                     {
-                        await this.InnerDownloadSingleFile(cancellationToken);
+                        await this.InnerDownloadSingleFile(duhB, cancellationToken);
                     }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                 }
 
@@ -615,6 +649,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     if (Interlocked.CompareExchange(ref this.flag_fileDownloadStarted, 0, 1) == 1)
                     {
+                        FileCheckHashCache.Close(duhB);
                         if (Interlocked.Decrement(ref this.flag_operationCount) == 0)
                         {
                             this.OnClientOperationComplete1(cancellationToken);
@@ -626,7 +661,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return this.t_fileDownloadStarted;
         }
 
-        private async Task InnerDownloadSingleFile(CancellationToken cancellationToken)
+        private async Task InnerDownloadSingleFile(FileCheckHashCache duhB, CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
             // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
@@ -639,7 +674,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 downloadbuffer = new byte[1024 * 24]; // 24KB buffer.
             }
-            var duhB = this.hashCacheDb;
+
+            await duhB.Load();
 
             foreach (var downloadItem in this.pendingFiles.GetConsumingEnumerable())
             {
@@ -832,10 +868,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public event FileCheckEndHandler FileCheckEnd;
         private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
 
-        protected override async Task OnDisposeAsync()
+        protected override Task OnDisposeAsync()
         {
             this.pendingFiles?.Dispose();
-            await this.hashCacheDb.DisposeAsync();
+            return Task.CompletedTask;
         }
 
         public delegate void ProgressBeginHandler(PatchListItem file, in long totalProgressValue);

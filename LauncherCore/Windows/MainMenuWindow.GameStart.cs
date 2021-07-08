@@ -100,14 +100,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
 
-                        try
-                        {
-                            await this.pso2Updater.Prepare();
-                        }
-                        catch
-                        {
-                            await this.pso2Updater.Prepare();
-                        }
                         var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);
                         var t2 = this.pso2Updater.StartDownloadFiles(cancelToken);
                         await Task.WhenAll(t1, t2);
@@ -327,15 +319,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     {
                                         return;
                                     }
-                                }
-
-                                try
-                                {
-                                    await this.pso2Updater.Prepare();
-                                }
-                                catch
-                                {
-                                    await this.pso2Updater.Prepare();
                                 }
 
                                 var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);

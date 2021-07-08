@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MahApps.Metro.Controls;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,9 +24,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     {
         public static readonly RoutedEvent DropDownClickEvent = EventManager.RegisterRoutedEvent("DropDownClick", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SplitButton));
         public static readonly RoutedEvent ClickEvent = EventManager.RegisterRoutedEvent("Click", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SplitButton));
+        private readonly Dictionary<string, MenuItem> table;
 
         public SplitButton()
         {
+            this.table = new Dictionary<string, MenuItem>();
             InitializeComponent();
         }
 
@@ -40,7 +44,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
         }
-        
+
         public event RoutedEventHandler Click
         {
             add { this.AddHandler(ClickEvent, value); }

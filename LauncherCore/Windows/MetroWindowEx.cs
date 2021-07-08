@@ -113,7 +113,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (Interlocked.CompareExchange(ref this.flag_disposing, 2, 1) == 1)
                         {
-                            Task.Factory.StartNew(this.DisposeAsyncStuffs, TaskCreationOptions.LongRunning).ContinueWith(t =>
+                            Task.Factory.StartNew(this.DisposeAsyncStuffs, TaskCreationOptions.LongRunning).Unwrap().ContinueWith(t =>
                             {
                                 if (Interlocked.CompareExchange(ref this.flag_disposing, 3, 2) == 2)
                                 {

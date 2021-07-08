@@ -68,21 +68,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
-                    try
-                    {
-                        await pso2Updater.Prepare();
-                    }
-                    catch
-                    {
-                        try
-                        {
-                            await pso2Updater.Prepare();
-                        }
-                        catch
-                        {
-                            throw new FileCheckHashCache.DatabaseErrorException();
-                        }
-                    }
                     var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
                     var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
 

@@ -1,7 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using SQLite;
 using System;
-using System.Reflection;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
@@ -10,28 +10,125 @@ using System.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public class FileCheckHashCache : AsyncDisposeObject
+    public class FileCheckHashCache
     {
+        private static readonly ConcurrentDictionary<string, FileCheckHashCache> _connectionPool;
+
+        static FileCheckHashCache()
+        {
+            _connectionPool = new ConcurrentDictionary<string, FileCheckHashCache>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        public static FileCheckHashCache CreateOrOpen(string path)
+        {
+            return _connectionPool.AddOrUpdate(path, (key) => 
+            {
+                try
+                {
+                    var connection = new FileCheckHashCache(key);
+                    connection.IncreaseRefCount();
+                    _ = connection.Load();
+                    return connection;
+                }
+                catch
+                {
+                    throw new DatabaseErrorException();
+                }
+            }, (key, existing) => 
+            {
+                var state = Interlocked.CompareExchange(ref existing.flag_state, 0, 0);
+                if (state == 3)
+                {
+                    try
+                    {
+                        var connection = new FileCheckHashCache(key);
+                        connection.IncreaseRefCount();
+                        _ = connection.Load();
+                        return connection;
+                    }
+                    catch
+                    {
+                        throw new DatabaseErrorException();
+                    }
+                }
+                else
+                {
+                    if (existing.IncreaseRefCount() == 1)
+                    {
+                        existing.CancelScheduleClose();
+                    }
+                    return existing;
+                }
+            });
+        }
+
+        public static async void Close(FileCheckHashCache db)
+        {
+            if (_connectionPool.TryGetValue(db.filepath, out var connection))
+            {
+                if (connection.DecreaseRefCount() == 0)
+                {
+                    await connection.ScheduleCloseAsync().ContinueWith(t =>
+                    {
+                        _connectionPool.TryRemove(db.filepath, out connection);
+                    });
+                }
+            }
+        }
+
+        public static async Task ForceCloseAll()
+        {
+            string[] keys = new string[_connectionPool.Keys.Count];
+            _connectionPool.Keys.CopyTo(keys, 0);
+            for (int i = 0; i < keys.Length; i++)
+            {
+                if (_connectionPool.TryRemove(keys[i], out var connection))
+                {
+                    try
+                    {
+                        await connection.ForceClose();
+                    }
+                    catch { }
+                }
+            }
+        }
+
         private const int LatestVersion = 1;
 
+        private readonly string filepath;
         private readonly SQLiteAsyncConnection sqlConn;
         private Task t_load;
-        private int flag_load;
+        private int flag_state;
+        private CancellationTokenSource cancelSchedule;
 
-        public FileCheckHashCache(string filepath)
+        private int refCount;
+
+        private FileCheckHashCache(string filepath)
         {
-            this.flag_load = 0;
+            this.cancelSchedule = null;
+            this.filepath = filepath;
+            this.refCount = 0;
+            this.flag_state = 0;
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteAsyncConnection(connectionStr);
         }
 
-        public Task Load()
+        private int IncreaseRefCount() => Interlocked.Increment(ref this.refCount);
+
+        private int DecreaseRefCount() => Interlocked.Decrement(ref this.refCount);
+
+        public async Task Load()
         {
-            if (Interlocked.CompareExchange(ref this.flag_load, 1, 0) == 0)
+            var state = Interlocked.CompareExchange(ref this.flag_state, 1, 0);
+            if (state == 0)
             {
                 this.t_load = this.Init();
             }
-            return this.t_load;
+            else if (state == 3)
+            {
+                throw new ObjectDisposedException(nameof(FileCheckHashCache));
+            }
+            await this.t_load;
         }
 
 
@@ -97,15 +194,52 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public async Task<bool> SetPatchItem(PatchListItem item, DateTime lastModifiedTimeUTC)
+        public async Task<PatchRecordItem> SetPatchItem(PatchListItem item, DateTime lastModifiedTimeUTC)
         {
-            var result = await this.sqlConn.InsertOrReplaceAsync(new PatchRecordItem() { RemoteFilename = item.GetFilenameWithoutAffix(), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC });
-            return (result != 0);
+            var obj = new PatchRecordItem() { RemoteFilename = item.GetFilenameWithoutAffix(), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC };
+            var result = await this.sqlConn.InsertOrReplaceAsync(obj);
+            if (result != 0)
+            {
+                return obj;
+            }
+            else
+            {
+                return null;
+            }
         }
 
-        protected override Task OnDisposeAsync()
+        private void CancelScheduleClose()
         {
-            return this.sqlConn.CloseAsync();
+            var state = Interlocked.CompareExchange(ref this.flag_state, 1, 2);
+            if (state == 2)
+            {
+                this.cancelSchedule.Cancel();
+            }
+        }
+
+        private async Task ScheduleCloseAsync()
+        {
+            var state = Interlocked.CompareExchange(ref this.flag_state, 2, 1);
+            if (state == 1)
+            {
+                this.cancelSchedule = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var token = this.cancelSchedule.Token;
+                await Task.Delay(TimeSpan.FromSeconds(30), token).ContinueWith(async t =>
+                {
+                    if (!t.IsCanceled)
+                    {
+                        if (Interlocked.CompareExchange(ref this.flag_state, 3, 2) == 2)
+                        {
+                            await this.ForceClose();
+                        }
+                    }
+                }).Unwrap();
+            }
+        }
+
+        private async Task ForceClose()
+        {
+            await this.sqlConn.CloseAsync();
         }
 
         public class DatabaseErrorException : Exception { }

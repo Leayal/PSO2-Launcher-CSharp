@@ -6,14 +6,22 @@
              xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
              mc:Ignorable="d" x:Name="thisSelf"
+                  Background="Transparent"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <local:SplitButton Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click" IsEnabled="{Binding ElementName=thisSelf,Path=GameStartEnabled,Mode=OneWay}" x:Name="ButtonGameStart">
+        <local:SplitButton Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsEnabled="{Binding ElementName=thisSelf,Path=GameStartEnabled,Mode=OneWay}" x:Name="ButtonGameStart">
             <local:SplitButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Login and play" Click="MenuItemLoginAndPlay_Click" />
@@ -21,7 +29,17 @@
             </local:SplitButton.ContextMenu>
         </local:SplitButton>
         
-        <Button Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" />
-        <Button Grid.Row="2" Content="Manage game data" Click="ButtonManageGameData_Click" />
+        <local:WeirdButton Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <local:WeirdButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+        <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonLauncherOption_Click">
+            <local:WeirdButton.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click" />
+                </ContextMenu>
+            </local:WeirdButton.ContextMenu>
+        </local:WeirdButton>
+        <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Grid>
 </mah:MetroTabItem>

@@ -17,6 +17,7 @@
             <RowDefinition />
             <RowDefinition MaxHeight="300" />
         </Grid.RowDefinitions>
+        <Image x:Name="BgImg" Grid.RowSpan="3" IsHitTestVisible="False" Focusable="False" RenderOptions.BitmapScalingMode="Fant" Stretch="UniformToFill" />
         <Grid HorizontalAlignment="Right">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="25" />
@@ -39,17 +40,17 @@
                 <iconPacks:PackIconFontAwesome Kind="TimesSolid" Width="10" Height="10" />
             </Button>
         </Grid>
-        <mah:MetroAnimatedTabControl Grid.Row="1">
+        <mah:MetroAnimatedTabControl Grid.Row="1" Background="Transparent">
             <localui:TabMainMenu x:Name="TabMainMenu"
                                  ButtonCheckForPSO2UpdateClicked="ButtonCheckForUpdate_Click"
                                  ButtonManageGameDataClicked="TabMainMenu_ButtonManageGameDataClick"
                                  ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick"
                                  ForgetLoginInfoClicked="TabMainMenu_ForgetLoginInfoClicked"
                                  LoginAndPlayClicked="TabMainMenu_LoginAndPlayClicked" />
-            <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar" 
+            <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>
-        <Button Grid.Row="2" Margin="1" Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" x:Name="ButtonLoadLauncherWebView" />
+        <localui:WeirdButton Grid.Row="2" Margin="1" Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" x:Name="ButtonLoadLauncherWebView" />
         <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>
 </local:MetroWindowEx>

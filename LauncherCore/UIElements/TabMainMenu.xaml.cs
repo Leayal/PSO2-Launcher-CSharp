@@ -110,5 +110,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             this.RaiseEvent(new RoutedEventArgs(ForgetLoginInfoClickedEvent));
         }
+
+        private void WeirdButtonLauncherOption_Click(object sender, RoutedEventArgs e)
+        {
+            // It's okay, weird button is still a button
+            if (sender is Button btn && btn.ContextMenu != null)
+            {
+                btn.ContextMenu.IsOpen = true;
+            }
+        }
     }
 }

@@ -31,5 +31,36 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
             return new ValueTask(this.t_dispose);
         }
+
+        public static AsyncDisposeObject CreateFrom(IAsyncDisposable disposable) => new InnerWrapperObj(disposable);
+        public static AsyncDisposeObject CreateFrom(Func<Task> disposable) => new InnerWrapperDelegate(disposable);
+
+        class InnerWrapperObj : AsyncDisposeObject
+        {
+            private readonly IAsyncDisposable disposable;
+            public InnerWrapperObj(IAsyncDisposable disposable)
+            {
+                this.disposable = disposable;
+            }
+
+            protected override async Task OnDisposeAsync()
+            {
+                await this.disposable.DisposeAsync();
+            }
+        }
+
+        class InnerWrapperDelegate : AsyncDisposeObject
+        {
+            private readonly Func<Task> disposable;
+            public InnerWrapperDelegate(Func<Task> disposable)
+            {
+                this.disposable = disposable;
+            }
+
+            protected override async Task OnDisposeAsync()
+            {
+                await this.disposable.Invoke();
+            }
+        }
     }
 }

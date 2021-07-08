@@ -167,7 +167,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 {
                     return true;
                 }
-                return false;
+                return true;
             }
             set => this.Set("launcher_loadwebsitelauncher", value);
         }

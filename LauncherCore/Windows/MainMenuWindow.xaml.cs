@@ -16,6 +16,8 @@ using System.Reflection;
 using System.ComponentModel;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.PSO2Launcher.Helper;
+using Leayal.PSO2Launcher.Core.Classes;
+using System.Windows.Media.Imaging;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -55,10 +57,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
+            {
+                await FileCheckHashCache.ForceCloseAll();
+            }));
             if (this.config_main.LauncherLoadWebsiteAtStartup)
             {
                 this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             }
+
+            try
+            {
+                var currentMe = Assembly.GetExecutingAssembly();
+                using (var stream = currentMe.GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources._bgimg.png"))
+                {
+                    if (stream != null)
+                    {
+                        var bm = new BitmapImage();
+                        bm.BeginInit();
+                        bm.CacheOption = BitmapCacheOption.OnLoad;
+                        bm.StreamSource = stream;
+                        bm.EndInit();
+                        bm.Freeze();
+                        this.BgImg.Source = bm;
+                    }
+                }
+            }
+            catch { }
         }
 
         private void ThisWindow_Closed(object sender, EventArgs e)
