@@ -34,12 +34,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.checkbox_loadweblauncher.IsChecked = this._config.LauncherLoadWebsiteAtStartup;
             this.checkbox_checkpso2updatestartup.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartup;
+            this.checkbox_checkpso2updatestartup_prompt.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt;
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
             this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
+            this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
 
             this._config.Save();
             this.DialogResult = true;

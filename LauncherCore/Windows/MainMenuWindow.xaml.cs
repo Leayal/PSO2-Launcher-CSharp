@@ -59,7 +59,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.TabMainMenu.IsSelected = true;
         }
 
-        private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void ThisWindow_Loaded(object sender, RoutedEventArgs e)
         {
             this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
             {
@@ -86,7 +86,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
             {
-                this.ButtonCheckForUpdate_Click(null, new RoutedEventArgs());
+                await StartGameClientUpdate(false, this.config_main.LauncherCheckForPSO2GameUpdateAtStartupPrompt);
+                // this.ButtonCheckForUpdate_Click(null, new RoutedEventArgs());
                 // this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             }
         }

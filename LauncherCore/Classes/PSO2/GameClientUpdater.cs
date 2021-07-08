@@ -72,6 +72,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.SnailMode = false;
         }
 
+        public bool TryGetLastKnownLatestVersion(out PSO2Version version)
+        {
+            var lastknown = this.lastKnownRemoteVersion;
+            if (lastknown.HasValue)
+            {
+                version = lastknown.Value;
+                return true;
+            }
+            else
+            {
+                version = default;
+                return false;
+            }
+        }
+
         private Task<PatchRootInfo> InnerGetPatchRootAsync(CancellationToken cancellationToken)
             => this.InnerGetPatchRootAsync(false, cancellationToken);
 

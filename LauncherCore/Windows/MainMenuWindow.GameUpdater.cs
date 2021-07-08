@@ -77,7 +77,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             await StartGameClientUpdate(true);
         }
 
-        private async Task StartGameClientUpdate(bool fixMode = false)
+        private async Task StartGameClientUpdate(bool fixMode = false, bool promptBeforeUpdate = false)
         {
             var dir_pso2bin = this.config_main.PSO2_BIN;
             if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
@@ -130,8 +130,28 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                 CancellationToken cancelToken = currentCancelSrc.Token;
 
-                if (fixMode || await pso2Updater.CheckForPSO2Updates(cancelToken))
+                if (fixMode || await this.pso2Updater.CheckForPSO2Updates(cancelToken))
                 {
+                    if (promptBeforeUpdate)
+                    {
+                        string msg;
+                        if (this.pso2Updater.TryGetLastKnownLatestVersion(out var version))
+                        {
+                            msg = $"Launcher has found updates for PSO2 game client (v{version}).\r\nDo you want to perform update?";
+                        }
+                        else
+                        {
+                            msg = "Launcher has found updates for PSO2 game client.\r\nDo you want to perform update?";
+                        }
+                        if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        {
+                            currentCancelSrc.Dispose();
+                            this.cancelSrc = null;
+                            this.pso2Updater.OperationCompleted -= completed;
+                            this.TabMainMenu.IsSelected = true;
+                            return;
+                        }
+                    }
                     this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
                     if (fixMode && downloaderProfile == FileScanFlags.CacheOnly)
@@ -146,6 +166,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
+                    currentCancelSrc.Dispose();
+                    this.cancelSrc = null;
                     this.pso2Updater.OperationCompleted -= completed;
                     this.TabMainMenu.IsSelected = true;
                 }
