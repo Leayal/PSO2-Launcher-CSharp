@@ -163,11 +163,21 @@ namespace Leayal.PSO2Launcher.Core.Classes
         {
             get
             {
-                if (this.TryGetRaw("launcher_loadwebsitelauncher", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.True)
+                if (this.TryGetRaw("launcher_loadwebsitelauncher", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
                 {
                     return true;
                 }
-                return true;
             }
             set => this.Set("launcher_loadwebsitelauncher", value);
         }
