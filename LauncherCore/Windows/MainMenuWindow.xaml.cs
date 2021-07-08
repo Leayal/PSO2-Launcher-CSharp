@@ -84,6 +84,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             catch { }
         }
 
+        protected override void OnThemeRefresh()
+        {
+            if (App.Current.IsLightMode)
+            {
+                this.BgImg.Source = lazybg_light.Value;
+            }
+            else
+            {
+                this.BgImg.Source = lazybg_dark.Value;
+            }
+        }
+
         private void ThisWindow_Closed(object sender, EventArgs e)
         {
             // this.config_main.Save();

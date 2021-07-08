@@ -7,6 +7,7 @@ using System.IO;
 using ControlzEx.Theming;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Win32;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -18,26 +19,59 @@ namespace Leayal.PSO2Launcher.Core
         public new static App Current => ((App)(Application.Current));
 
         private bool isLightMode;
+        private readonly UserPreferenceChangingEventHandler preferenceChangingEventHandler;
 
         public bool IsLightMode => this.isLightMode;
 
         public App() : base()
         {
+            this.preferenceChangingEventHandler = new UserPreferenceChangingEventHandler(this.SystemEvents_UserPreferenceChanging);
             this.InitializeComponent();
-            ThemeManager.Current.SyncTheme(ThemeSyncMode.SyncWithAppMode);
-            var themeInfo = ThemeManager.Current.DetectTheme(this);
+            this.ManuallySyncTheme();
+            SystemEvents.UserPreferenceChanging += this.preferenceChangingEventHandler;
+            // ThemeManager.Current.ThemeSyncMode = ThemeSyncMode.DoNotSync;
+        }
+
+        private void SystemEvents_UserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
+        {
+            if (e.Category == UserPreferenceCategory.General || e.Category == UserPreferenceCategory.Color || e.Category == UserPreferenceCategory.VisualStyle)
+            {
+                this.ManuallySyncTheme();
+            }
+        }
+
+        public void ManuallySyncTheme()
+        {
+            var thememgr = ThemeManager.Current;
+            thememgr.SyncTheme(ThemeSyncMode.SyncWithAppMode | ThemeSyncMode.SyncWithAccent);
+            var themeInfo = thememgr.DetectTheme(this);
             if (themeInfo == null)
             {
                 // In case the assembly is isolated.
                 // Currently enforce setting. Will do something about save/load later.
-                ThemeManager.Current.ChangeTheme(this, ThemeManager.BaseColorDark, "Red");
+                thememgr.ChangeTheme(this, ThemeManager.BaseColorDark, "Red");
                 this.isLightMode = false;
             }
             else
             {
                 this.isLightMode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
+                if (this.isLightMode)
+                {
+                    thememgr.ChangeThemeColorScheme(this, "Blue");
+                }
+                else
+                {
+                    thememgr.ChangeThemeColorScheme(this, "Red");
+                }
             }
-            // ThemeManager.Current.ThemeSyncMode = ThemeSyncMode.DoNotSync;
+
+            foreach (var window in this.Windows)
+            {
+                if (window is Windows.MetroWindowEx windowex)
+                {
+                    windowex.RefreshTheme();
+                }
+            }
         }
 
         private void Application_Startup(object sender, StartupEventArgs e)
@@ -82,6 +116,11 @@ namespace Leayal.PSO2Launcher.Core
                 MessageBox.Show(str, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             e.Handled = true;
+        }
+
+        private void Application_Exit(object sender, ExitEventArgs e)
+        {
+            SystemEvents.UserPreferenceChanging -= this.preferenceChangingEventHandler;
         }
     }
 }

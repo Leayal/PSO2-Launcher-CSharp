@@ -54,7 +54,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.SetValue(WindowCommandButtonsWidthPropertyKey, winBtnCommands.ActualWidth);
             this.SetValue(WindowCommandButtonsHeightPropertyKey, winBtnCommands.ActualHeight);
             winBtnCommands.SizeChanged += this.WinBtnCommands_SizeChanged;
+            this.OnThemeRefresh();
         }
+
+        public void RefreshTheme()
+        {
+            this.OnThemeRefresh();
+        }
+
+        protected virtual void OnThemeRefresh() { }
 
         private void WinBtnCommands_SizeChanged(object sender, SizeChangedEventArgs e)
         {
