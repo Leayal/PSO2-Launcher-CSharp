@@ -18,6 +18,7 @@ using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.PSO2Launcher.Core.Classes;
 using System.Windows.Media.Imaging;
+using System.Windows.Media;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -29,7 +30,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly PSO2HttpClient pso2HttpClient;
         private GameClientUpdater pso2Updater;
         private CancellationTokenSource cancelSrc;
-        private readonly Classes.ConfigurationFile config_main;
+        private readonly ConfigurationFile config_main;
+        private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
 
         public MainMenuWindow()
         {
@@ -41,6 +43,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.config_main.Load();
             }
+            this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
+            this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             InitializeComponent();
             string dir_root = this.config_main.PSO2_BIN,
                 dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
@@ -68,19 +72,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             try
             {
-                var currentMe = Assembly.GetExecutingAssembly();
-                using (var stream = currentMe.GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources._bgimg.png"))
+                if (App.Current.IsLightMode)
                 {
-                    if (stream != null)
-                    {
-                        var bm = new BitmapImage();
-                        bm.BeginInit();
-                        bm.CacheOption = BitmapCacheOption.OnLoad;
-                        bm.StreamSource = stream;
-                        bm.EndInit();
-                        bm.Freeze();
-                        this.BgImg.Source = bm;
-                    }
+                    this.BgImg.Source = lazybg_light.Value;
+                }
+                else
+                {
+                    this.BgImg.Source = lazybg_dark.Value;
                 }
             }
             catch { }

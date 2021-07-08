@@ -33,13 +33,19 @@
         <local:WeirdButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
         <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonLauncherOption_Click">
+        <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click" />
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
-        <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
+            <local:WeirdButton.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Scan and download missing or corrupted game files" Click="ButtonScanFixGameData_Click" />
+                </ContextMenu>
+            </local:WeirdButton.ContextMenu>
+        </local:WeirdButton>
     </Grid>
 </mah:MetroTabItem>

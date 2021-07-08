@@ -46,6 +46,7 @@
                                  ButtonManageGameDataClicked="TabMainMenu_ButtonManageGameDataClick"
                                  ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick"
                                  ForgetLoginInfoClicked="TabMainMenu_ForgetLoginInfoClicked"
+                                 ButtonScanFixGameDataClicked="TabMainMenu_ButtonScanFixGameDataClicked"
                                  LoginAndPlayClicked="TabMainMenu_LoginAndPlayClicked" />
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />

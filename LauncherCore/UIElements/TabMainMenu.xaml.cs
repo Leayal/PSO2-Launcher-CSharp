@@ -26,6 +26,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonGameStartClickedEvent = EventManager.RegisterRoutedEvent("ButtonGameStartClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent LoginAndPlayClickedEvent = EventManager.RegisterRoutedEvent("LoginAndPlayClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ForgetLoginInfoClickedEvent = EventManager.RegisterRoutedEvent("ForgetLoginInfoClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent ButtonScanFixGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonScanFixGameDataClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
 
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true));
         public static readonly DependencyProperty ForgetLoginInfoEnabledProperty = DependencyProperty.Register("ForgetLoginInfoEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(false, (obj, val)=>
@@ -111,13 +112,23 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.RaiseEvent(new RoutedEventArgs(ForgetLoginInfoClickedEvent));
         }
 
-        private void WeirdButtonLauncherOption_Click(object sender, RoutedEventArgs e)
+        private void WeirdButtonDropDownAble_Click(object sender, RoutedEventArgs e)
         {
             // It's okay, weird button is still a button
             if (sender is Button btn && btn.ContextMenu != null)
             {
                 btn.ContextMenu.IsOpen = true;
             }
+        }
+
+        public event RoutedEventHandler ButtonScanFixGameDataClicked
+        {
+            add { this.AddHandler(ButtonScanFixGameDataClickedEvent, value); }
+            remove { this.RemoveHandler(ButtonScanFixGameDataClickedEvent, value); }
+        }
+        private void ButtonScanFixGameData_Click(object sender, RoutedEventArgs e)
+        {
+            this.RaiseEvent(new RoutedEventArgs(ButtonScanFixGameDataClickedEvent));
         }
     }
 }

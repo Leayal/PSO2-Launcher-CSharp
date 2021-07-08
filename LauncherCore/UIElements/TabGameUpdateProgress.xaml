@@ -45,7 +45,7 @@
 
         <!--File download progress bars-->
         <ListView Grid.Row="2" x:Name="DownloadFileTable" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}"
-                  SelectionMode="Single"
+                  SelectionMode="Single" Background="Transparent"
                   ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -54,6 +54,7 @@
             </ListView.ItemsPanel>
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                    <Setter Property="Background" Value="Transparent" />
                     <Setter Property="Margin" Value="1" />
                     <Setter Property="Height" Value="30" />
                     <Setter Property="Focusable" Value="false" />
@@ -61,6 +62,6 @@
             </ListView.ItemContainerStyle>
         </ListView>
 
-        <Button Grid.Row="3" Click="ButtonCancel_Click" Content="Cancel" />
+        <local:WeirdButton Grid.Row="3" Click="ButtonCancel_Click" Content="Cancel" />
     </Grid>
 </mah:MetroTabItem>

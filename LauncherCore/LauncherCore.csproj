@@ -24,10 +24,13 @@
 
   <ItemGroup>
     <None Remove="Resources\_bgimg.png" />
+    <None Remove="Resources\_bgimg_dark.png" />
+    <None Remove="Resources\_bgimg_light.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\_bgimg.png" />
+    <EmbeddedResource Include="Resources\_bgimg_dark.png" />
+    <EmbeddedResource Include="Resources\_bgimg_light.png" />
   </ItemGroup>
 
   <ItemGroup>

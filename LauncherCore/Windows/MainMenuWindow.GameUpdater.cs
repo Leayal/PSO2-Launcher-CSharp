@@ -18,75 +18,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private async void ButtonCheckForUpdate_Click(object sender, RoutedEventArgs e)
         {
-            // Run test
-            var dir_pso2bin = this.config_main.PSO2_BIN;
-            if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
-            {
-                if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                {
-                    this.TabMainMenu_ButtonManageGameDataClick(null, null);
-                }
-                return;
-            }
-            else
-            {
-                dir_pso2bin = Path.GetFullPath(dir_pso2bin);
-                if (!Directory.Exists(dir_pso2bin))
-                {
-                    if (MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nContinue anyway (may result in full game download)?.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                    {
-                        return;
-                    }
-                }
-            }
-
-            GameClientUpdater.OperationCompletedHandler completed = null;
-            completed = (sender, cancelled, totalfiles, failedfiles) =>
-            {
-                this.pso2Updater.OperationCompleted -= completed;
-                this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _cancelled, _totalfiles, _failedfiles) =>
-                {
-                    this.TabMainMenu.IsSelected = true;
-                }), sender, cancelled, totalfiles, failedfiles);
-            };
-            this.pso2Updater.OperationCompleted += completed;
-
-            CancellationTokenSource currentCancelSrc = null;
-            try
-            {
-                var downloaderProfile = this.config_main.DownloaderProfile;
-                var downloadType = this.config_main.DownloadSelection;
-                this.TabGameClientUpdateProgressBar.IsIndetermined = true;
-                this.TabGameClientUpdateProgressBar.IsSelected = true;
-                currentCancelSrc = new CancellationTokenSource();
-                this.cancelSrc?.Dispose();
-                this.cancelSrc = currentCancelSrc;
-
-                CancellationToken cancelToken = currentCancelSrc.Token;
-
-                if (await pso2Updater.CheckForPSO2Updates(cancelToken))
-                {
-                    this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
-
-                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
-                    var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
-
-                    await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
-                }
-                else
-                {
-                    this.pso2Updater.OperationCompleted -= completed;
-                    this.TabMainMenu.IsSelected = true;
-                }
-            }
-            catch (FileCheckHashCache.DatabaseErrorException)
-            {
-                MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            catch (Exception ex) when (!Debugger.IsAttached)
-            {
-                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            await StartGameClientUpdate(false);
         }
 
         private void TabGameClientUpdateProgressBar_UpdateCancelClicked(object sender, RoutedEventArgs e)
@@ -137,6 +69,94 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 return result;
             });
+        }
+
+        private async void TabMainMenu_ButtonScanFixGameDataClicked(object sender, RoutedEventArgs e)
+        {
+            await StartGameClientUpdate(true);
+        }
+
+        private async Task StartGameClientUpdate(bool fixMode = false)
+        {
+            var dir_pso2bin = this.config_main.PSO2_BIN;
+            if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
+            {
+                if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                {
+                    this.TabMainMenu_ButtonManageGameDataClick(null, null);
+                }
+                return;
+            }
+
+            dir_pso2bin = Path.GetFullPath(dir_pso2bin);
+            if (!Directory.Exists(dir_pso2bin))
+            {
+                if (MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nContinue anyway (may result in full game download)?\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            if (fixMode)
+            {
+                if (MessageBox.Show(this, "Are you sure you want to begin the file check and repair?\r\n(If the download profile is 'Cache Only', it will use 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            GameClientUpdater.OperationCompletedHandler completed = null;
+            completed = (sender, cancelled, totalfiles, failedfiles) =>
+            {
+                this.pso2Updater.OperationCompleted -= completed;
+                this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _cancelled, _totalfiles, _failedfiles) =>
+                {
+                    this.TabMainMenu.IsSelected = true;
+                }), sender, cancelled, totalfiles, failedfiles);
+            };
+            this.pso2Updater.OperationCompleted += completed;
+
+            CancellationTokenSource currentCancelSrc = null;
+            try
+            {
+                var downloaderProfile = this.config_main.DownloaderProfile;
+                var downloadType = this.config_main.DownloadSelection;
+                this.TabGameClientUpdateProgressBar.IsIndetermined = true;
+                this.TabGameClientUpdateProgressBar.IsSelected = true;
+                currentCancelSrc = new CancellationTokenSource();
+                this.cancelSrc?.Dispose();
+                this.cancelSrc = currentCancelSrc;
+
+                CancellationToken cancelToken = currentCancelSrc.Token;
+
+                if (fixMode || await pso2Updater.CheckForPSO2Updates(cancelToken))
+                {
+                    this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
+
+                    if (fixMode && downloaderProfile == FileScanFlags.CacheOnly)
+                    {
+                        // To ensure the accuracy of the fix. Don't use Cache Only.
+                        downloaderProfile = FileScanFlags.Balanced;
+                    }
+                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
+                    var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
+
+                    await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
+                }
+                else
+                {
+                    this.pso2Updater.OperationCompleted -= completed;
+                    this.TabMainMenu.IsSelected = true;
+                }
+            }
+            catch (FileCheckHashCache.DatabaseErrorException)
+            {
+                MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex) when (!Debugger.IsAttached)
+            {
+                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private GameClientUpdater CreateGameClientUpdater(string directory, string? path_classic_data, string? path_reboot_data, PSO2HttpClient webclient)
