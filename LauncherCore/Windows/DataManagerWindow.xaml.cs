@@ -96,7 +96,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.checkbox_pso2_data_ngs.IsChecked = this._config.PSO2Enabled_Reboot;
             this.checkbox_pso2_classic.IsChecked = this._config.PSO2Enabled_Classic;
-            this.checkbox_loadweblauncher.IsChecked = this._config.LauncherLoadWebsiteAtStartup;
 
             var num_throttleFileCheck = this._config.DownloaderCheckThrottle;
             if (num_throttleFileCheck < this.numberbox_throttledownload.Minimum)
@@ -124,7 +123,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
             this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
             this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
-            this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
 
             this._config.DownloaderCheckThrottle = (int)this.numberbox_throttledownload.Value;
 

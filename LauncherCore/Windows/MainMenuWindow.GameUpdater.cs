@@ -1,4 +1,5 @@
-﻿using Leayal.PSO2Launcher.Core.Classes.PSO2;
+﻿using Leayal.PSO2Launcher.Core.Classes;
+using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.SharedInterfaces;
@@ -181,21 +182,46 @@ namespace Leayal.PSO2Launcher.Core.Windows
             result.ThrottleFileCheckFactor = throttleFileCheck;
 
             var bagFree = new ConcurrentBag<int>();
+            DebounceDispatcher[] debouncers = null;
             ConcurrentDictionary<PatchListItem, int> dictionaryInUse = dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>(result.ConcurrentDownloadCount, result.ConcurrentDownloadCount);
             for (int i = 0; i < result.ConcurrentDownloadCount; i++)
             {
                 bagFree.Add(i);
             }
 
+            result.OperationCompleted += new GameClientUpdater.OperationCompletedHandler((sender, iscancelled, totalFileToDownload, downloadedFileCount) =>
+            {
+                this.Dispatcher.Invoke((Action)delegate
+                {
+                    if (debouncers != null)
+                    {
+                        var oldOnes = debouncers;
+                        debouncers = null;
+                        for (int i = 0; i < oldOnes.Length; i++)
+                        {
+                            oldOnes[i].Dispose();
+                        }
+                    }
+                }, System.Windows.Threading.DispatcherPriority.Send);
+            });
+
             result.ProgressReport += (PatchListItem file, in long value) =>
             {
-                this.Dispatcher.BeginInvoke(new GameClientUpdater.ProgressReportHandler((PatchListItem _file, in long _value) =>
+                if (dictionaryInUse.TryGetValue(file, out var index))
                 {
-                    if (dictionaryInUse.TryGetValue(file, out var index))
+                    if (debouncers != null)
                     {
-                        this.TabGameClientUpdateProgressBar.SetProgressValue(index, _value);
+                        var val = value;
+                        var debouncer = debouncers[index + 1];
+                        debouncer.ThrottleEx(30, delegate
+                        {
+                            this.Dispatcher.BeginInvoke(new GameClientUpdater.ProgressReportHandler((PatchListItem _file, in long _value) =>
+                            {
+                                this.TabGameClientUpdateProgressBar.SetProgressValue(index, _value);
+                            }), file, val);
+                        });
                     }
-                }), file, value);
+                }
             };
             result.ProgressBegin += (PatchListItem file, in long maximum) =>
             {
@@ -220,6 +246,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (dictionaryInUse.TryRemove(_file, out var index))
                     {
                         this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
+                        this.TabGameClientUpdateProgressBar.SetProgressValue(index, 0);
                         bagFree.Add(index);
                     }
                 }), file, success);
@@ -229,6 +256,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.Dispatcher.Invoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _total) =>
                 {
+                    if (debouncers != null)
+                    {
+                        for (int i = 0; i < debouncers.Length; i++)
+                        {
+                            debouncers[i].Dispose();
+                        }
+                    }
+                    debouncers = new DebounceDispatcher[result.ConcurrentDownloadCount + 1];
+                    for (int i = 0; i < debouncers.Length; i++)
+                    {
+                        debouncers[i] = new DebounceDispatcher(this.Dispatcher);
+                    }
                     this.TabGameClientUpdateProgressBar.ResetDownloadCount();
                     this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
                     this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
@@ -243,10 +282,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = true;
                         result.FileCheckReport += (sender, currentfilecount) =>
                         {
-                            this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
+                            var debouncer = debouncers[0];
+                            debouncer.ThrottleEx(30, delegate
                             {
-                                this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = _current;
-                            }), sender, currentfilecount);
+                                this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
+                                {
+                                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = _current;
+                                }), sender, currentfilecount);
+                            });
+                            
                         };
                     }
                     this.TabGameClientUpdateProgressBar.IsIndetermined = false;
@@ -266,7 +310,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.Dispatcher.Invoke(new GameClientUpdater.FileCheckEndHandler((_sender) =>
                 {
                     this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking completed. Waiting for downloads to complete.";
-                    this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
+                    // this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum;
                 }), sender);
             };
             return result;

@@ -182,6 +182,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_loadwebsitelauncher", value);
         }
 
+        public bool LauncherCheckForPSO2GameUpdateAtStartup
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_checkpso2updatestartup", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_checkpso2updatestartup", value);
+        }
+
         public bool Load()
         {
             using (var fs = File.OpenRead(this.Filename))

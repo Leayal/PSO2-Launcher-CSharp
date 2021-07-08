@@ -51,6 +51,19 @@
       <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Windows\LauncherBehaviorManagerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Windows\LauncherBehaviorManagerWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
   
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

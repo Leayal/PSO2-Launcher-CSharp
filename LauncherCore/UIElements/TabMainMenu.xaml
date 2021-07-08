@@ -30,20 +30,21 @@
         </local:SplitButton>
         
         <local:WeirdButton Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <local:WeirdButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <local:WeirdButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
 
-        <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonPSO2GameOption_Click" />
         <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click" />
+                    <MenuItem Header="Manage launcher's behaviors" Click="ButtonManageGameLauncherBehavior_Click" />
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
         <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Scan and download missing or corrupted game files" Click="ButtonScanFixGameData_Click" />
+                    <MenuItem Header="Scan and download missing, modified or damaged game files" Click="ButtonScanFixGameData_Click" />
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>

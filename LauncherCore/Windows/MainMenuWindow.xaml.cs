@@ -65,11 +65,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 await FileCheckHashCache.ForceCloseAll();
             }));
-            if (this.config_main.LauncherLoadWebsiteAtStartup)
-            {
-                this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            }
-
+            
             try
             {
                 if (App.Current.IsLightMode)
@@ -82,6 +78,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
             catch { }
+
+            if (this.config_main.LauncherLoadWebsiteAtStartup)
+            {
+                this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+
+            if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
+            {
+                this.ButtonCheckForUpdate_Click(null, new RoutedEventArgs());
+                // this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
         }
 
         protected override void OnThemeRefresh()
@@ -162,8 +169,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        
-
         private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
@@ -193,6 +198,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
                 catch { }
+            }
+        }
+
+        private async void TabMainMenu_ButtonManageGameLauncherBehaviorClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is TabMainMenu tab)
+            {
+                tab.ButtonManageGameLauncherBehaviorClicked -= this.TabMainMenu_ButtonManageGameLauncherBehaviorClicked;
+                try
+                {
+                    var dialog = new LauncherBehaviorManagerWindow(this.config_main);
+                    dialog.Owner = this;
+
+                    dialog.ShowDialog();
+                }
+                finally
+                {
+                    tab.ButtonManageGameLauncherBehaviorClicked += this.TabMainMenu_ButtonManageGameLauncherBehaviorClicked;
+                }
             }
         }
 

@@ -7,6 +7,7 @@
                       xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                       xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                       mc:Ignorable="d" x:Name="thisSelf"
+                      SizeToContent="Height"
                       TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
                       ResizeMode="CanMinimize"
                       Loaded="ThisSelf_Loaded"
@@ -50,15 +51,15 @@
             <Button Grid.Row="0" Grid.Column="3" Content="Browse" Click="ButtonBrowsePSO2Bin_Click" Margin="1" />
 
 
-            <CheckBox Grid.Row="1" Grid.Column="0" x:Name="checkbox_pso2_classic" Margin="1" />
-            <Label Grid.Row="1" Grid.Column="1" Content="PSO2 Classic Data Directory [optional]:" Margin="1" />
-            <TextBox Grid.Row="1" Grid.Column="2" x:Name="textbox_pso2_classic" Margin="1" />
-            <Button Grid.Row="1" Grid.Column="3" Content="Browse" Margin="1" />
+            <CheckBox Grid.Row="1" Grid.Column="0" x:Name="checkbox_pso2_classic" Margin="1" Visibility="Collapsed" />
+            <Label Grid.Row="1" Grid.Column="1" Content="PSO2 Classic Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
+            <TextBox Grid.Row="1" Grid.Column="2" x:Name="textbox_pso2_classic" Margin="1" Visibility="Collapsed" />
+            <Button Grid.Row="1" Grid.Column="3" Content="Browse" Margin="1" Visibility="Collapsed" />
 
-            <CheckBox Grid.Row="2" Grid.Column="0" x:Name="checkbox_pso2_data_ngs" Margin="1" />
-            <Label Grid.Row="2" Grid.Column="1" Content="PSO2 NGS Data Directory [optional]:" Margin="1" />
-            <TextBox Grid.Row="2" Grid.Column="2" x:Name="textbox_pso2_data_ngs" Margin="1" />
-            <Button Grid.Row="2" Grid.Column="3" Content="Browse" Margin="1" />
+            <CheckBox Grid.Row="2" Grid.Column="0" x:Name="checkbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
+            <Label Grid.Row="2" Grid.Column="1" Content="PSO2 NGS Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
+            <TextBox Grid.Row="2" Grid.Column="2" x:Name="textbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
+            <Button Grid.Row="2" Grid.Column="3" Content="Browse" Margin="1" Visibility="Collapsed" />
 
             <Label Grid.Row="3" Grid.Column="1" Content="PSO2 Download Type:" Margin="1" />
             <ComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadselection" Margin="1">
@@ -78,8 +79,6 @@
             <Label Grid.Row="6" Grid.Column="1" Content="Throttle File Check (per-second):" Margin="1" />
             <mah:NumericUpDown Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_throttledownload" Margin="1,1,1,0" Maximum="1000" Minimum="0" PreviewTextInput="Numberbox_throttledownload_PreviewTextInput" />
             <Label Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="2" Content="(Value '0' means no throttle)" Margin="1,0,1,1" />
-            
-            <CheckBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="3" Content="Load the launcher website at startup" Margin="1" x:Name="checkbox_loadweblauncher" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">

@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using Leayal.SharedInterfaces.Communication;
 using Leayal.SharedInterfaces;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -26,6 +27,16 @@ namespace Leayal.PSO2Launcher.Updater
 
         public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies)
         {
+            if (EventWaitHandle.TryOpenExisting("pso2lealauncher-v2-waiter", out var waitHandle))
+            {
+                using (waitHandle)
+                {
+                    if (waitHandle.Set())
+                    {
+                        Application.Exit();
+                    }
+                }
+            }
             this.bootstrapversion = bootstrapversion;
             this.requireBootstrapUpdate = false;
             this.recommendBootstrapUpdate = false;

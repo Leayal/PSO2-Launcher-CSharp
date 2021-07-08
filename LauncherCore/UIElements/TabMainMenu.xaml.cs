@@ -27,7 +27,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent LoginAndPlayClickedEvent = EventManager.RegisterRoutedEvent("LoginAndPlayClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ForgetLoginInfoClickedEvent = EventManager.RegisterRoutedEvent("ForgetLoginInfoClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonScanFixGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonScanFixGameDataClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
-
+        public static readonly RoutedEvent ButtonPSO2GameOptionClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2GameOptionClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent ButtonManageGameLauncherBehaviorClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherBehaviorClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true));
         public static readonly DependencyProperty ForgetLoginInfoEnabledProperty = DependencyProperty.Register("ForgetLoginInfoEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(false, (obj, val)=>
         {
@@ -129,6 +131,26 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void ButtonScanFixGameData_Click(object sender, RoutedEventArgs e)
         {
             this.RaiseEvent(new RoutedEventArgs(ButtonScanFixGameDataClickedEvent));
+        }
+
+        public event RoutedEventHandler ButtonPSO2GameOptionClicked
+        {
+            add { this.AddHandler(ButtonPSO2GameOptionClickedEvent, value); }
+            remove { this.RemoveHandler(ButtonPSO2GameOptionClickedEvent, value); }
+        }
+        private void WeirdButtonPSO2GameOption_Click(object sender, RoutedEventArgs e)
+        {
+            this.RaiseEvent(new RoutedEventArgs(ButtonPSO2GameOptionClickedEvent));
+        }
+
+        public event RoutedEventHandler ButtonManageGameLauncherBehaviorClicked
+        {
+            add { this.AddHandler(ButtonManageGameLauncherBehaviorClickedEvent, value); }
+            remove { this.RemoveHandler(ButtonManageGameLauncherBehaviorClickedEvent, value); }
+        }
+        private void ButtonManageGameLauncherBehavior_Click(object sender, RoutedEventArgs e)
+        {
+            this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherBehaviorClickedEvent));
         }
     }
 }
