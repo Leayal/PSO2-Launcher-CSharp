@@ -86,15 +86,13 @@ namespace Leayal.PSO2Launcher.Core
             {
                 app.Dispatcher.BeginInvoke((Action)delegate
                 {
-                    if (app.MainWindow is Windows.MetroWindowEx mainWindow)
-                    {
-                        mainWindow.Activate();
-                    }
+                    app.MainWindow?.Activate();
                 });
             }
         }
     }
 
+    // Unused
     public class GameLauncher2 : WindowsFormsApplicationBase, IWPFApp
     {
         private App _app;
