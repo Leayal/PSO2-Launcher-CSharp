@@ -23,6 +23,8 @@ namespace Leayal.PSO2Launcher.Updater
 
         private readonly int bootstrapversion;
 
+        private bool failToCheck;
+
         public BootstrapUpdater() : this(0, null) { }
 
         public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies)
@@ -37,6 +39,7 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
             }
+            this.failToCheck = false;
             this.bootstrapversion = bootstrapversion;
             this.requireBootstrapUpdate = false;
             this.recommendBootstrapUpdate = false;
@@ -61,8 +64,20 @@ namespace Leayal.PSO2Launcher.Updater
             // Fetch from internet a list then check for SHA-1.
             return Task.Run(async () =>
             {
-                using (var jsonStream = await this.wc.OpenReadTaskAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json"))
-                using (var doc = await JsonDocument.ParseAsync(jsonStream))
+                string jsonData;
+                try
+                {
+                    jsonData = await this.wc.DownloadStringTaskAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
+                }
+                catch
+                {
+                    this.failToCheck = true;
+                    return new BootstrapUpdater_CheckForUpdates(new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        { string.Empty, new UpdateItem(string.Empty, string.Empty, string.Empty, string.Empty) }
+                    }, false, false, null);
+                }
+                using (var doc = JsonDocument.Parse(jsonData))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))
                     {
@@ -98,34 +113,53 @@ namespace Leayal.PSO2Launcher.Updater
         public bool? DisplayUpdatePrompt(Form? parent)
         {
             DialogResult result;
-            if (this.recommendBootstrapUpdate)
+            if (this.failToCheck)
             {
                 if (parent == null)
                 {
-                    result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    result = MessageBox.Show("Failed to check for launcher updates.\r\nDo you want to continue anyway?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 }
                 else
                 {
-                    result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    result = MessageBox.Show(parent, "Failed to check for launcher updates.\r\nDo you want to continue anyway?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 }
+                return result switch
+                {
+                    DialogResult.Yes => false,
+                    _ => null
+                };
             }
             else
             {
-                if (parent == null)
+                if (this.recommendBootstrapUpdate)
                 {
-                    result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    if (parent == null)
+                    {
+                        result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    }
+                    else
+                    {
+                        result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    }
                 }
                 else
                 {
-                    result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    if (parent == null)
+                    {
+                        result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    }
+                    else
+                    {
+                        result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    }
                 }
+                return result switch
+                {
+                    DialogResult.Yes => true,
+                    DialogResult.No => false,
+                    _ => null
+                };
             }
-            return result switch
-            {
-                DialogResult.Yes => true,
-                DialogResult.No => false,
-                _ => null
-            };
         }
 
         public Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo)

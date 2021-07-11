@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>Leayal.PSO2.UserConfig</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ConfigTokenObject.cs" />
+    <Compile Remove="Enums.cs" />
+    <Compile Remove="PSO2ConfigToken.cs" />
+    <Compile Remove="PSO2UserConfiguration.cs" />
+    <Compile Remove="ValuesCollection.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

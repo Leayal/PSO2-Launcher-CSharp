@@ -17,6 +17,9 @@ namespace Leayal.PSO2Launcher.Updater
                 {
                     httpRequest.AutomaticDecompression = DecompressionMethods.All;
                 }
+                httpRequest.Timeout = 30000; // 30s for socket connecting.
+                httpRequest.AllowReadStreamBuffering = true;
+                httpRequest.ReadWriteTimeout = 20000; // 20s for each read/write call.
             }
             return request;
         }

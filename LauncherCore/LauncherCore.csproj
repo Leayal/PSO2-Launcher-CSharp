@@ -41,9 +41,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj" />
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
       <Private>true</Private>
     </ProjectReference>
+    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj">
       <Private>false</Private>
     </ProjectReference>
