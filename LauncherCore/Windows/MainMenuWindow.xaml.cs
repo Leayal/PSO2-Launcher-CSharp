@@ -202,7 +202,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async void TabMainMenu_ButtonManageGameLauncherBehaviorClicked(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonManageGameLauncherBehaviorClicked(object sender, RoutedEventArgs e)
         {
             if (sender is TabMainMenu tab)
             {
@@ -217,6 +217,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 finally
                 {
                     tab.ButtonManageGameLauncherBehaviorClicked += this.TabMainMenu_ButtonManageGameLauncherBehaviorClicked;
+                }
+            }
+        }
+
+        private void TabMainMenu_ButtonPSO2GameOptionClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is TabMainMenu tab)
+            {
+                tab.ButtonPSO2GameOptionClicked -= this.TabMainMenu_ButtonPSO2GameOptionClicked;
+                try
+                {
+                    var dialog = new PSO2UserConfigurationWindow();
+                    dialog.Owner = this;
+
+                    dialog.ShowDialog();
+                }
+                finally
+                {
+                    tab.ButtonPSO2GameOptionClicked += this.TabMainMenu_ButtonPSO2GameOptionClicked;
                 }
             }
         }

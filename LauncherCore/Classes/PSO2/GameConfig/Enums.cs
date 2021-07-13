@@ -6,12 +6,20 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
 {
-    enum TextureResolution : int
+    enum TextureResolution
     {
         Low,
         Medium,
         High,
         Maximum
+    }
+
+    enum ScreenMode
+    {
+        Windowed,
+        BorderlessFullscreen,
+        [EnumDisplayName("")]
+        ExclusiveFullsreen,
     }
 
     enum TextureFiltering

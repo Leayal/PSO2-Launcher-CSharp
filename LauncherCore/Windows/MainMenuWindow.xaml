@@ -48,6 +48,7 @@
                                  ForgetLoginInfoClicked="TabMainMenu_ForgetLoginInfoClicked"
                                  ButtonScanFixGameDataClicked="TabMainMenu_ButtonScanFixGameDataClicked"
                                  ButtonManageGameLauncherBehaviorClicked="TabMainMenu_ButtonManageGameLauncherBehaviorClicked"
+                                 ButtonPSO2GameOptionClicked="TabMainMenu_ButtonPSO2GameOptionClicked"
                                  LoginAndPlayClicked="TabMainMenu_LoginAndPlayClicked" />
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />

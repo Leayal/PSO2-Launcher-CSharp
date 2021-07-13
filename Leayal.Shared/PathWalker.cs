@@ -15,6 +15,7 @@ namespace Leayal.Shared
         public static IEnumerable<ReadOnlyMemory<char>> Walk(ReadOnlyMemory<char> path)
         {
             var span = path.Span;
+            var spanLen = span.Length;
             if (span.IsWhiteSpace())
             {
                 yield return path;
@@ -33,11 +34,11 @@ namespace Leayal.Shared
                     {
                         yield return path.Slice(lastIndex, index - lastIndex);
                         lastIndex = index;
-                        index = span.Slice(lastIndex).IndexOfAny(seperators);
+                        index = path.Span.Slice(lastIndex).IndexOfAny(seperators);
                     }
-                    if (lastIndex < span.Length)
+                    if (lastIndex < spanLen)
                     {
-                        yield return path.Slice(lastIndex, span.Length - lastIndex);
+                        yield return path.Slice(lastIndex, spanLen - lastIndex);
                     }
                 }
             }

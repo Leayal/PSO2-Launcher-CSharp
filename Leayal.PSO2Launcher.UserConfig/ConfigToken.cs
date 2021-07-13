@@ -88,8 +88,7 @@ namespace Leayal.PSO2.UserConfig
                             PrintIndent(sb, depth);
                             sb.Append($"{item.Key} = ");
                             token.WriteValueTo(sb, depth + 1);
-                            sb.Append(',');
-                            sb.AppendLine();
+                            sb.Append(',').AppendLine();
                         }
                     }
                     else
@@ -124,10 +123,11 @@ namespace Leayal.PSO2.UserConfig
                         }
                         else if (val is ReadOnlyMemory<char> c)
                         {
-                            sb.Append($"{item.Key} = ");
-                            sb.Append(c);
-                            sb.Append(',');
-                            sb.AppendLine();
+                            sb.Append($"{item.Key} = ").Append(c).Append(',').AppendLine();
+                        }
+                        else
+                        {
+                            sb.AppendLine($"{item.Key} = {val},");
                         }
                     }
                 }

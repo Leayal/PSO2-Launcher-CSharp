@@ -8,10 +8,10 @@
                       xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                       mc:Ignorable="d" x:Name="thisSelf"
                       TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
-                      ResizeMode="CanMinimize"
+                      ResizeMode="NoResize"
                       Loaded="ThisSelf_Loaded"
                       SizeToContent="Height"
-                      Title="PSO2 Data Manager" Height="450" Width="800" WindowStartupLocation="CenterOwner">
+                      Title="Launcher Behavior Manager" Height="450" Width="800" WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />

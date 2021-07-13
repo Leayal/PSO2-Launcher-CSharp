@@ -13,22 +13,49 @@ namespace Leayal.PSO2.UserConfig
     /// </remarks>
     public class UserConfig : ConfigToken
     {
+        private readonly Lazy<StringBuilder> _sb;
         public string Name { get; }
 
         public UserConfig(string name) : base()
         {
             this.Name = name;
+            this._sb = new Lazy<StringBuilder>();
         }
 
         public void SaveAs(string filepath)
         {
+            StringBuilder sb;
+            if (this._sb.IsValueCreated)
+            {
+                sb = this._sb.Value.Clear();
+            }
+            else
+            {
+                sb = this._sb.Value;
+            }
+            this.WriteValueTo(sb);
             using (StreamWriter sw = new StreamWriter(filepath, false, Encoding.UTF8))
             {
-                var sb = new StringBuilder();
-                this.WriteValueTo(sb);
                 sw.WriteLine(sb.ToString());
                 sw.Flush();
             }
+        }
+
+        /// <summary>Returns the configuration data as string.</summary>
+        /// <returns>A string which is the configuration data.</returns>
+        public override string ToString()
+        {
+            StringBuilder sb;
+            if (this._sb.IsValueCreated)
+            {
+                sb = this._sb.Value.Clear();
+            }
+            else
+            {
+                sb = this._sb.Value;
+            }
+            this.WriteValueTo(sb);
+            return sb.ToString();
         }
 
         protected override void WriteValueTo(StringBuilder sb, int depth)
@@ -112,7 +139,14 @@ namespace Leayal.PSO2.UserConfig
                             }
                             else if (spanVal[0] == '"' && spanVal[spanVal.Length - 1] == '"')
                             {
-                                token[in currentProperty] = new string(tmpBuffer.Slice(1, tmpBuffer.Length - 2).Span);
+                                if (spanVal.Length == 2)
+                                {
+                                    token[in currentProperty] = string.Empty;
+                                }
+                                else
+                                {
+                                    token[in currentProperty] = new string(spanVal.Slice(1, spanVal.Length - 2));
+                                }
                             }
                             else
                             {

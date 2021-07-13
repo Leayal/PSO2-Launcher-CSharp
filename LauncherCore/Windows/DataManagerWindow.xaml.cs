@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class DataManagerWindow : MetroWindowEx
     {
-        private ConfigurationFile _config;
+        private readonly ConfigurationFile _config;
 
         public DataManagerWindow(ConfigurationFile config)
         {

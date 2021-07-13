@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class LauncherBehaviorManagerWindow : MetroWindowEx
     {
-        private ConfigurationFile _config;
+        private readonly ConfigurationFile _config;
 
         public LauncherBehaviorManagerWindow(ConfigurationFile config)
         {
@@ -52,17 +52,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.DialogResult = false;
             SystemCommands.CloseWindow(this);
-        }
-
-        readonly struct WhyDidYouDoThis : IWin32Window
-        {
-            public WhyDidYouDoThis(Window window)
-            {
-                var helper = new System.Windows.Interop.WindowInteropHelper(window);
-                this.Handle = helper.Handle;
-            }
-
-            public IntPtr Handle { get; }
         }
 
         private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
