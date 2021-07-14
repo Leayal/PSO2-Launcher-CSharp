@@ -70,6 +70,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     Grid.SetRow(opt.CheckBox, gridX);
                     Grid.SetColumn(opt.CheckBox, 1);
                     this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    opt.Reload(this._configR);
                     this.OptionsItems.Children.Add(text);
                     this.OptionsItems.Children.Add(opt.CheckBox);
                     this.listOfOptions.Add(opt);
@@ -85,6 +86,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     Grid.SetRow(opt.Slider, gridX);
                     Grid.SetColumn(opt.Slider, 1);
                     this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    opt.Reload(this._configR);
                     this.OptionsItems.Children.Add(text);
                     this.OptionsItems.Children.Add(opt.Slider);
                     this.listOfOptions.Add(opt);

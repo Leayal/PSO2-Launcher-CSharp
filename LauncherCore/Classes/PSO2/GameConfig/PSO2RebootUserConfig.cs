@@ -138,6 +138,29 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        /// <remarks>
+        /// It's the 'ConfigR/ConfigId_071' in the user.pso2 file for PSO2 Reboot
+        /// </remarks>
+        public AntiAliasing AntiAliasing
+        {
+            get
+            {
+                var token = this.conf["ConfigR"] as ConfigToken;
+                if (token != null && token["ConfigId_071"] is long l)
+                {
+                    if (Leayal.Shared.EnumHelper.Clamp<AntiAliasing>(l, out var value))
+                    {
+                        return value;
+                    }
+                }
+                return AntiAliasing.FXAA;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["ConfigId_071"] = (long)value;
+            }
+        }
+
         public int InactiveFrameKeep
         {
             get

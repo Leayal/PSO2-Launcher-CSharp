@@ -34,4 +34,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         [EnumDisplayName("Anisotropic x16")]
         anisotropic_x16
     }
+
+    enum AntiAliasing
+    {
+        Off,
+        FXAA,
+        TAA,
+        [EnumDisplayName("FXAA + TAA")]
+        FXAA_TAA
+    }
 }
