@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,6 +25,23 @@ namespace Leayal.PSO2Launcher.Core.Classes
             if (mem != null && mem.Length != 0)
             {
                 var attr = Attribute.GetCustomAttribute(mem[0], typeof(EnumVisibleInOptionAttribute)) as EnumVisibleInOptionAttribute;
+                if (attr != null)
+                {
+                    isVisible = attr.IsVisible;
+                    return true;
+                }
+            }
+
+            isVisible = default;
+            return false;
+        }
+
+        public static bool TryGetIsVisible(MemberInfo mem, out bool isVisible)
+        {
+            // Attribute.GetCustomAttribute()
+            if (mem != null)
+            {
+                var attr = Attribute.GetCustomAttribute(mem, typeof(EnumVisibleInOptionAttribute)) as EnumVisibleInOptionAttribute;
                 if (attr != null)
                 {
                     isVisible = attr.IsVisible;

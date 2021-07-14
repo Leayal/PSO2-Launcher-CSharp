@@ -99,11 +99,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
                 var token = this.conf["ConfigR"] as ConfigToken;
                 if (token != null && token["ConfigId_101"] is long l)
                 {
-                    if (!Leayal.Shared.EnumHelper.Clamp<TextureResolution>(l, out var value))
+                    if (Leayal.Shared.EnumHelper.Clamp<TextureResolution>(l, out var value))
                     {
-                        value = TextureResolution.Medium;
+                        return value;
                     }
-                    return value;
                 }
                 return TextureResolution.Medium;
             }
@@ -126,13 +125,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
                 var token = this.conf["ConfigR"] as ConfigToken;
                 if (token != null && token["ConfigId_100"] is long l)
                 {
-                    if (!Leayal.Shared.EnumHelper.Clamp<TextureFiltering>(l, out var value))
+                    if (Leayal.Shared.EnumHelper.Clamp<TextureFiltering>(l, out var value))
                     {
-                        value = TextureFiltering.Trilinear;
+                        return value;
                     }
-                    return value;
                 }
-                return TextureFiltering.Trilinear;
+                return TextureFiltering.Bilinear;
             }
             set
             {
@@ -140,6 +138,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        public int InactiveFrameKeep
+        {
+            get
+            {
+                if (this.conf["InactiveFrameKeep"] is long l)
+                {
+                    return Convert.ToInt32(l);
+                }
+                return 30;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["InactiveFrameKeep"] = (long)value;
+            }
+        }
 
         public void SaveAs(string filepath) => this.conf.SaveAs(filepath);
     }

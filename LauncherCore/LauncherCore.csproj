@@ -49,9 +49,16 @@
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\StackOverflow.Core\StackOverflow.Core.csproj" />
     <ProjectReference Include="..\WebViewCompat\WebViewCompat.csproj">
       <Private>true</Private>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FastColoredTextBox">
+      <HintPath>..\Dependencies\Build\net5.0-windows\FastColoredTextBox.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

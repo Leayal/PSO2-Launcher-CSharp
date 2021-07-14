@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SHA1Maker", "SHA1Maker\SHA1
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.PSO2.UserConfig", "Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj", "{56FAC75E-CA2C-48F5-B30A-036DC9520BA6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.Shared", "Leayal.Shared\Leayal.Shared.csproj", "{443B5D7E-7857-438C-8961-F3A7F15B3E8B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.Shared", "Leayal.Shared\Leayal.Shared.csproj", "{443B5D7E-7857-438C-8961-F3A7F15B3E8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StackOverflow.Core", "StackOverflow.Core\StackOverflow.Core.csproj", "{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{443B5D7E-7857-438C-8961-F3A7F15B3E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{443B5D7E-7857-438C-8961-F3A7F15B3E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{443B5D7E-7857-438C-8961-F3A7F15B3E8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

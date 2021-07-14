@@ -1,0 +1,24 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
+  <metadata>
+    <id>Net5-FCTB</id>
+    <version>2.16.26.105</version>
+    <title>FastColoredTextBoxy by Pavel Torgashov</title>
+    <authors>Pavel Torgashov, Sara LaFleur, Fahad Alshaya</authors>
+    <owners>Pavel, Torgashov</owners>
+    <projectUrl>https://github.com/fahadabdulaziz/FastColoredTextBox</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/saralafleur/Sara-Common/master/Avatar4.jpg</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Fork of FastColoredTextBox by Pavel Torgashov with small modifications by Sara LaFleur. and targeted .NET 5</description>
+    <releaseNotes>Targeted .NET 5</releaseNotes>
+    <copyright>GNU License</copyright>
+    <tags></tags>
+    <license type="file">license.txt</license>
+    <repository type="git" url="https://github.com/fahadabdulaziz/FastColeredTextBox.git"/>
+  </metadata>
+
+  <files>
+    <!-- License -->
+    <file src="license.txt" target="" />
+  </files>
+</package>

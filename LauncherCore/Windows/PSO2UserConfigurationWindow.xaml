@@ -5,6 +5,8 @@
                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                       xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                       xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                      xmlns:so="clr-namespace:StackOverflow;assembly=StackOverflow.Core"
+                      xmlns:crtb="clr-namespace:FastColoredTextBoxNS;assembly=FastColoredTextBox"
                       xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                       mc:Ignorable="d" x:Name="thisSelf"
                       TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
@@ -27,25 +29,15 @@
 
         <mah:MetroTabControl Grid.Row="1" Grid.ColumnSpan="2" SelectionChanged="MetroTabControl_SelectionChanged">
             <mah:MetroTabItem Header="Simple" Selector.Selected="TabSimple_Selected" x:Name="TabSimple">
-                <ListView VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel />
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Width="Auto" DisplayMemberBinding="{Binding Name}" />
-                            <GridViewColumn>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <ContentPresenter Content="{Binding ValueController}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
+                <ScrollViewer VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
+                    <Grid x:Name="OptionsItems">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" MinWidth="100" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions />
+                    </Grid>
+                </ScrollViewer>
             </mah:MetroTabItem>
             <mah:MetroTabItem Header="Advanced" Selector.Selected="TabAdvanced_Selected" x:Name="TabAdvanced">
                 <Grid>
@@ -54,7 +46,12 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <Button Content="Undo all changes" Click="ButtonUndoAllChanges_Click" />
-                    <RichTextBox Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" x:Name="Box_ManualConfig" />
+                    <!--<RichTextBox Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" x:Name="Box_ManualConfig" />-->
+                    <so:WindowsFormsHostEx Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <so:WindowsFormsHostEx.Child>
+                            <crtb:FastColoredTextBox x:Name="Box_ManualConfig" Dock="Fill" AutoIndent="False" />
+                        </so:WindowsFormsHostEx.Child>
+                    </so:WindowsFormsHostEx>
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>

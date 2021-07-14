@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>NuGet_Empty</RootNamespace>
+    <Version>2.16.26.105</Version>
+    <Package>Sara-FCTB</Package>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release (&#xD;&#xA;&#xD;&#xA;  if not exist &quot;$(ProjectDir)..\NuGet Output&quot; mkdir &quot;$(ProjectDir)..\NuGet Output&quot;&#xD;&#xA;&#xD;&#xA;  cd $(ProjectDir)..\&#xD;&#xA;  echo ---Packing $(Package).nupkg&#xD;&#xA;  nuget pack $(Package).nuspec -OutputDirectory &quot;$(ProjectDir)..\NuGet Output&quot;&#xD;&#xA;&#xD;&#xA;  if exist &quot;$(ProjectDir)..\NuGet Output\$(Package).$(Version).nupkg&quot; (&#xD;&#xA;    echo ...&#xD;&#xA;    echo            NuGet Packaged - SUCCESS $(Version)&#xD;&#xA;    echo ...&#xD;&#xA;  ) else (&#xD;&#xA;    echo ...&#xD;&#xA;    echo            NuGet Packaged - XXXX FAILURE $(Version) XXXX&#xD;&#xA;    echo ...&#xD;&#xA;  )&#xD;&#xA;&#xD;&#xA;  :: The following is for a local copy of the NuGet Repository&#xD;&#xA;  echo ---Reminder: The version in $(Package).nuspec must match the NuGet Empty Project version.&#xD;&#xA;  echo ---Deploying local NuGet Repository&#xD;&#xA;  if exist &quot;E:\Nuget Output&quot; (&#xD;&#xA;    echo ---Copying $(Package).$(Version).nupkg&#xD;&#xA;    copy &quot;$(ProjectDir)..\NuGet Output\$(Package).$(Version).nupkg&quot; &quot;E:\NuGet Output\&quot;&#xD;&#xA;    &#xD;&#xA;    echo ...&#xD;&#xA;    echo ---INITIALIZE local NuGet Repository&#xD;&#xA;    rd /s/q &quot;E:\NuGet Repository&quot;&#xD;&#xA;    mkdir &quot;E:\NuGet Repository&quot;&#xD;&#xA;    nuget init &quot;E:\Nuget Output&quot; &quot;E:\Nuget Repository&quot;&#xD;&#xA;    echo ---Complete..&#xD;&#xA;  )&#xD;&#xA;&#xD;&#xA;)" />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastColoredTextBox\FastColoredTextBox.csproj" />
+  </ItemGroup>
+
+</Project>

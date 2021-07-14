@@ -14,7 +14,7 @@ namespace StackOverflow
     /// <summary>
     /// https://stackoverflow.com/questions/14080580/scrollviewer-is-not-working-in-wpf-windowsformhost
     /// </summary>
-    class WindowsFormsHostEx : WindowsFormsHost
+    public class WindowsFormsHostEx : WindowsFormsHost
     {
         #region DllImports
         [DllImport("User32.dll", SetLastError = true)]

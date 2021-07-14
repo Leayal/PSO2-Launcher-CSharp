@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -12,9 +13,10 @@ namespace Leayal.Shared
         public static bool Clamp<T>(int value, int min, int max, out T @enum) where T : struct, Enum
         {
             var i = Math.Clamp(value, min, max);
-            if (Enum.IsDefined(typeof(T), i))
+            var t = typeof(T);
+            if (Enum.IsDefined(t, i))
             {
-                @enum = Unsafe.As<int, T>(ref i);
+                @enum = (T)Enum.ToObject(t, value);
                 return true;
             }
             else
@@ -26,18 +28,59 @@ namespace Leayal.Shared
 
         public static bool Clamp<TEnum>(object value, out TEnum @enum) where TEnum : struct, Enum
         {
-            // GetMinAndMax<TEnum, long>(out var min, out var max);
-            // var i = Math.Clamp(value, min.HasValue ? min.Value : long.MinValue, max.HasValue ? max.Value : long.MaxValue);
-            if (Enum.IsDefined(typeof(TEnum), value))
+            var t = typeof(TEnum);
+            var primitiveT = Enum.GetUnderlyingType(t);
+            if (primitiveT == typeof(int))
             {
-                @enum = Unsafe.As<object, TEnum>(ref value);
+                GetMinAndMax<TEnum, int>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToInt32(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : int.MinValue, max.HasValue ? max.Value : int.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
                 return true;
             }
-            else
+            else if (primitiveT == typeof(long))
             {
-                @enum = default;
-                return false;
+                GetMinAndMax<TEnum, long>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToInt64(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : long.MinValue, max.HasValue ? max.Value : long.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
             }
+            else if (primitiveT == typeof(short))
+            {
+                GetMinAndMax<TEnum, short>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToInt16(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : short.MinValue, max.HasValue ? max.Value : short.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
+            }
+            else if (primitiveT == typeof(ushort))
+            {
+                GetMinAndMax<TEnum, ushort>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToUInt16(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : ushort.MinValue, max.HasValue ? max.Value : ushort.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
+            }
+            else if (primitiveT == typeof(ulong))
+            {
+                GetMinAndMax<TEnum, ulong>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToUInt64(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : ulong.MinValue, max.HasValue ? max.Value : ulong.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
+            }
+            else if (primitiveT == typeof(uint))
+            {
+                GetMinAndMax<TEnum, uint>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToUInt32(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : uint.MinValue, max.HasValue ? max.Value : uint.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
+            }
+            else if (primitiveT == typeof(byte))
+            {
+                GetMinAndMax<TEnum, byte>(out var min, out var max);
+                var i = Math.Clamp(Convert.ToByte(value, CultureInfo.InvariantCulture.NumberFormat), min.HasValue ? min.Value : byte.MinValue, max.HasValue ? max.Value : byte.MaxValue);
+                @enum = (TEnum)Enum.ToObject(t, i);
+                return true;
+            }
+            @enum = default;
+            return false;
         }
 
         public static void GetMinAndMax<TEnum, T>(out T? min, out T? max) where TEnum : struct, Enum where T : struct
