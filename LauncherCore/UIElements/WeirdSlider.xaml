@@ -13,7 +13,7 @@
             <ColumnDefinition Width="*" MinWidth="20" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition />
+            <RowDefinition Height="9*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <local:WeirdButton Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonPrevious_Click" x:Name="WeirdButtonPrevious">
@@ -21,6 +21,12 @@
         </local:WeirdButton>
 
         <TextBlock Grid.Column="1" TextAlignment="Center" Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorLevel=1,AncestorType={x:Type local:WeirdSlider}},Mode=OneWay,Path=ValueText}"/>
+        <Grid Grid.Row="1" Grid.Column="1" x:Name="Indicator" Margin="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+        </Grid>
 
         <local:WeirdButton Grid.Column="2" Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonNext_Click" x:Name="WeirdButtonNext">
             <iconPacks:PackIconFontAwesome Kind="CaretRightSolid" />

@@ -56,6 +56,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var t_bool = typeof(bool);
             this.listOfOptions.Clear();
             int gridX = 0;
+            SolidColorBrush bruh;
+            if (App.Current.IsLightMode)
+            {
+                bruh = new SolidColorBrush(Colors.Blue);
+            }
+            else
+            {
+                bruh = new SolidColorBrush(Colors.DarkRed);
+            }
+            if (bruh.CanFreeze) bruh.Freeze();
             for (int i = 0; i < props.Length; i++)
             {
                 var t = props[i];
@@ -82,6 +92,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     opt.Slider.ValueChanged += this.OptionSlider_ValueChanged;
                     // options.Add(opt);
                     var text = new TextBlock() { Text = opt.Name };
+                    opt.Slider.IndicatorBrush = bruh;
                     Grid.SetRow(text, gridX);
                     Grid.SetRow(opt.Slider, gridX);
                     Grid.SetColumn(opt.Slider, 1);
@@ -249,6 +260,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnThemeRefresh()
         {
+            SolidColorBrush bruh;
             if (App.Current.IsLightMode)
             {
                 if (this.Foreground is SolidColorBrush foreground)
@@ -270,6 +282,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.ForeColor = System.Drawing.Color.WhiteSmoke;
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkBlue;
+                bruh = new SolidColorBrush(Colors.Blue);
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkGreen;
             }
             else
@@ -293,7 +306,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.BackColor = System.Drawing.Color.FromArgb(255, 17, 17, 17);
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkRed;
+                bruh = new SolidColorBrush(Colors.DarkRed);
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkSlateGray;
+            }
+            if (bruh.CanFreeze) bruh.Freeze();
+            foreach (var item in this.listOfOptions)
+            {
+                if (item is EnumOptionDOM dom)
+                {
+                    dom.Slider.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                }
             }
         }
 
@@ -319,7 +341,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             public BooleanOptionDOM(string name) : base(name) 
             {
-                this.CheckBox = new CheckBox() { Tag = this };
+                this.CheckBox = new CheckBox() { Tag = this, Name = "PSO2GameOption_" + name };
             }
 
             public override void Reload(PSO2RebootUserConfig conf)
@@ -343,7 +365,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public EnumOptionDOM(string name, Type type) : base(name)
             {
                 this._type = type;
-                this.Slider = new WeirdSlider() { Tag = this };
+                this.Slider = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name };
                 var mems = Enum.GetNames(type);
                 var d = new Dictionary<int, string>(mems.Length);
                 for (int i = 0; i < mems.Length; i++)
