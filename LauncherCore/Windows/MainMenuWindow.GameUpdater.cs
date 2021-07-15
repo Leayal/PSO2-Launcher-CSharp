@@ -172,6 +172,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.TabMainMenu.IsSelected = true;
                 }
             }
+            catch (TaskCanceledException)
+            {
+                currentCancelSrc?.Dispose();
+                this.cancelSrc = null;
+                this.pso2Updater.OperationCompleted -= completed;
+                this.TabMainMenu.IsSelected = true;
+            }
             catch (FileCheckHashCache.DatabaseErrorException)
             {
                 MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

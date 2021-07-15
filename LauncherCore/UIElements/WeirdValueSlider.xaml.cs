@@ -53,10 +53,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             var span = e.Text.AsSpan();
-            if (span.Length == 0)
-            {
-                e.Handled = true;
-            }
+
             for (int i = 0; i < span.Length; i++)
             {
                 if (!char.IsDigit(span[i]))
@@ -65,6 +62,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     return;
                 }
             }
+
+            
         }
 
         private void WeirdButtonNext_Click(object sender, RoutedEventArgs e)
@@ -109,23 +108,73 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             if (!flag_dontDOIT)
             {
-                flag_dontDOIT = true;
-                try
+                // Useless check but it also cast.
+                if (sender is TextBox tb)
                 {
-                    var str = this.textbox.Text;
-                    if (!string.IsNullOrWhiteSpace(str))
+                    flag_dontDOIT = true;
+                    try
                     {
                         var currentVal = Convert.ToInt32(this.slider.Value);
-                        var newVal = Convert.ToInt32(str);
-                        if (currentVal != newVal)
+                        var str = tb.Text;
+                        int checkNum = Convert.ToInt32(this.slider.Minimum);
+                        if (string.IsNullOrWhiteSpace(str))
                         {
-                            this.slider.Value = newVal;
+                            e.Handled = true;
+                            tb.Text = checkNum.ToString();
+                            tb.CaretIndex = tb.Text.Length;
+                            if (currentVal != checkNum)
+                            {
+                                this.slider.Value = checkNum;
+                            }
+                        }
+                        else if (int.TryParse(str, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var num))
+                        {
+                            // Invalid values will not be accepted.
+                            if (num < checkNum)
+                            {
+                                e.Handled = true;
+                                tb.Text = checkNum.ToString();
+                                tb.CaretIndex = tb.Text.Length;
+                                if (currentVal != num)
+                                {
+                                    this.slider.Value = num;
+                                }
+                            }
+                            else
+                            {
+                                checkNum = Convert.ToInt32(this.slider.Maximum);
+                                if (num > checkNum)
+                                {
+                                    e.Handled = true;
+                                    tb.Text = checkNum.ToString();
+                                    tb.CaretIndex = tb.Text.Length;
+                                    if (currentVal != num)
+                                    {
+                                        this.slider.Value = num;
+                                    }
+                                }
+                                else
+                                {
+                                    if (currentVal != num)
+                                    {
+                                        this.slider.Value = num;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var newVal = Convert.ToInt32(str);
+                            if (currentVal != newVal)
+                            {
+                                this.slider.Value = newVal;
+                            }
                         }
                     }
-                }
-                finally
-                {
-                    flag_dontDOIT = false;
+                    finally
+                    {
+                        flag_dontDOIT = false;
+                    }
                 }
             }
         }
