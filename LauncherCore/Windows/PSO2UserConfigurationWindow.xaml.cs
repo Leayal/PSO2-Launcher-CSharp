@@ -31,13 +31,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Dictionary<string, List<OptionDOM>> listOfOptions;
         private static readonly Lazy<SolidColorBrush> brush_darkTheme = new Lazy<SolidColorBrush>(()=>
         {
-            var brush = new SolidColorBrush(Colors.DarkRed);
+            var brush = new SolidColorBrush(Color.FromArgb(255, 229, 20, 0));
             if (brush.CanFreeze) brush.Freeze();
             return brush;
         }),
             brush_lightTheme = new Lazy<SolidColorBrush>(() =>
             {
-                var brush = new SolidColorBrush(Colors.Blue);
+                var brush = new SolidColorBrush(Color.FromArgb(255, 0, 120, 215));
                 if (brush.CanFreeze) brush.Freeze();
                 return brush;
             });
@@ -338,6 +338,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnThemeRefresh()
         {
+            Brush brush;
             if (App.Current.IsLightMode)
             {
                 if (this.Foreground is SolidColorBrush foreground)
@@ -359,6 +360,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.ForeColor = System.Drawing.Color.WhiteSmoke;
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkBlue;
+                brush = brush_lightTheme.Value;
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkGreen;
             }
             else
@@ -382,6 +384,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.BackColor = System.Drawing.Color.FromArgb(255, 17, 17, 17);
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkRed;
+                brush = brush_darkTheme.Value;
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkSlateGray;
             }
 
@@ -391,11 +394,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (opt is EnumOptionDOM enumDom)
                     {
-                        enumDom.Slider.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                        enumDom.Slider.IndicatorBrush = brush;
                     }
                     else if (opt is BooleanIntOptionDOM boolDom)
                     {
-                        boolDom.CheckBox.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                        boolDom.CheckBox.IndicatorBrush = brush;
                     }
                 }
             }
