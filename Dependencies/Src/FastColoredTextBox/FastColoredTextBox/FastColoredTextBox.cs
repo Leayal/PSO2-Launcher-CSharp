@@ -1393,7 +1393,11 @@ namespace FastColoredTextBoxNS
 
             set
             {
-                if (value == Text && value != "")
+                if (value == null)
+                {
+                    value = string.Empty;
+                }
+                if (value == Text)
                     return;
 
                 SetAsCurrentTB();

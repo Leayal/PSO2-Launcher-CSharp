@@ -66,7 +66,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.OptionsItems.Children.Clear();
             this.OptionsItems.RowDefinitions.Clear();
             var props = this._configR.GetType().GetProperties();
-            var t_bool = typeof(bool);
+            Type t_bool = typeof(bool),
+                t_int = typeof(int);
             this.listOfOptions.Clear();
             int gridX = 0;
 
@@ -76,33 +77,47 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 var t = props[i];
                 var propT = t.PropertyType;
-                if (propT == t_bool || propT.IsEnum)
+                if (propT == t_bool || propT == t_int || propT.IsEnum)
                 {
                     if (!CategoryAttribute.TryGetCategoryName(t, out var categoryName))
                     {
                         categoryName = string.Empty;
                     }
                     OptionDOM opt;
-                    WeirdSlider slider;
+                    FrameworkElement slider;
                     if (!EnumDisplayNameAttribute.TryGetDisplayName(t, out var displayName))
                     {
                         displayName = t.Name;
                     }
                     if (propT == t_bool)
                     {
-                        var _opt = new BooleanOptionDOM(t.Name, displayName);
+                        var _opt = new BooleanIntOptionDOM(t.Name, displayName);
+                        _opt.CheckBox.ValueChanged += this.OptionSlider_ValueChanged;
+                        _opt.CheckBox.IndicatorBrush = bruh;
                         slider = _opt.CheckBox;
+                        opt = _opt;
+                    }
+                    else if (propT == t_int)
+                    {
+                        if (!ValueRangeAttribute.TryGetRange(t, out var min, out var max))
+                        {
+                            min = 0;
+                            max = 100;
+                        }
+                        var _opt = new IntOptionDOM(t.Name, min, max, displayName);
+                        _opt.Slider.ValueChanged += this.OptionSlider_ValueChanged;
+                        slider = _opt.Slider;
                         opt = _opt;
                     }
                     else
                     {
                         var _opt = new EnumOptionDOM(t.Name, displayName, propT);
+                        _opt.Slider.ValueChanged += this.OptionSlider_ValueChanged;
+                        _opt.Slider.IndicatorBrush = bruh;
                         slider = _opt.Slider;
                         opt = _opt;
                     }
 
-                    slider.ValueChanged += this.OptionSlider_ValueChanged;
-                    slider.IndicatorBrush = bruh;
                     this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
                     opt.Reload(this._configR);
                     if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
@@ -161,15 +176,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var prop = t.GetProperty(dom.Name);
                     if (prop != null)
                     {
-                        if (slider.Tag is EnumOptionDOM)
-                        {
-                            prop.SetValue(this._configR, e.NewValue);
-                        }
-                        else if (slider.Tag is BooleanOptionDOM)
+                        if (slider.Tag is BooleanIntOptionDOM)
                         {
                             bool b = e.NewValue != 0;
                             prop.SetValue(this._configR, b);
                         }
+                        else if (slider.Tag is EnumOptionDOM)
+                        {
+                            prop.SetValue(this._configR, e.NewValue);
+                        }
+                    }
+                }
+            }
+            else if (sender is WeirdValueSlider valueslider)
+            {
+                var t = this._configR.GetType();
+                if (valueslider.Tag is IntOptionDOM dom)
+                {
+                    var prop = t.GetProperty(dom.Name);
+                    if (prop != null)
+                    {
+                        prop.SetValue(this._configR, e.NewValue);
                     }
                 }
             }
@@ -285,9 +312,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ReloadConfigFromLoadedConfig()
         {
-            this.Box_ManualConfig.Clear();
-            this.Box_ManualConfig.Text = this._conf.ToString();
-            this.Box_ManualConfig.ClearUndo();
+            //this.Box_ManualConfig.Clear();
+            // this.Box_ManualConfig.Clear();
+            // var oldSource = this.Box_ManualConfig.SourceTextBox;
+            var oldsrc = this.Box_ManualConfig.SourceTextBox;
+            var newsrc = new FastColoredTextBoxNS.FastColoredTextBox();
+            newsrc.Text = this._conf.ToString();
+            newsrc.ClearUndo();
+            this.Box_ManualConfig.SourceTextBox = newsrc;
+            if (oldsrc != null)
+            {
+                if (oldsrc != this.Box_ManualConfig)
+                {
+                    oldsrc.Clear();
+                    oldsrc.Dispose();
+                }
+                // this.Box_ManualConfig.Text = this._conf.ToString();
+                // this.Box_ManualConfig.ClearUndo();
+            }
+            // oldSource.Dispose();
             // var b = this.Box_ManualConfig.Document.Blocks;
             // b.Clear();
             // b.Add(new Paragraph(new Run(this._conf.ToString())));
@@ -350,7 +393,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         enumDom.Slider.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
                     }
-                    else if (opt is BooleanOptionDOM boolDom)
+                    else if (opt is BooleanIntOptionDOM boolDom)
                     {
                         boolDom.CheckBox.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
                     }
@@ -377,7 +420,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public abstract FrameworkElement ValueController { get; }
         }
 
-        class BooleanOptionDOM : OptionDOM
+        class BooleanIntOptionDOM : OptionDOM
         {
             public readonly WeirdSlider CheckBox;
             private static readonly IReadOnlyDictionary<int, string> lookupDictionary = new Dictionary<int, string>(2)
@@ -386,7 +429,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 { 1, "On" }
             };
 
-            public BooleanOptionDOM(string name, string displayName) : base(name, displayName) 
+            public BooleanIntOptionDOM(string name, string displayName) : base(name, displayName) 
             {
                 this.CheckBox = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name, ItemsSource = lookupDictionary };
             }
@@ -401,6 +444,30 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             public override FrameworkElement ValueController => this.CheckBox;
+        }
+
+        class IntOptionDOM : OptionDOM
+        {
+            public readonly WeirdValueSlider Slider;
+
+            public IntOptionDOM(string name, in int min, in int max, string displayName) : base(name, displayName)
+            {
+                this.Slider = new WeirdValueSlider() { Tag = this, Name = "PSO2GameOption_" + name };
+                this.Slider.slider.Minimum = min;
+                this.Slider.slider.Maximum = max;
+            }
+
+            public override void Reload(PSO2RebootUserConfig conf)
+            {
+                var prop = conf.GetType().GetProperty(this.Name);
+                if (prop != null)
+                {
+                    var safe_val = Math.Clamp(Convert.ToInt32(prop.GetValue(conf), CultureInfo.InvariantCulture.NumberFormat), Convert.ToInt32(this.Slider.slider.Minimum), Convert.ToInt32(this.Slider.slider.Maximum));
+                    this.Slider.Value = safe_val;
+                }
+            }
+
+            public override FrameworkElement ValueController => this.Slider;
         }
 
         class EnumOptionDOM : OptionDOM

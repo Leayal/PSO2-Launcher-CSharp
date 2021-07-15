@@ -167,12 +167,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
-        [Category("Graphics"), EnumDisplayName("FrameRate when inactive")]
+        [Category("Screen"), ValueRange(1, 60), EnumDisplayName("FrameRate when inactive")]
         public int InactiveFrameKeep
         {
             get
             {
-                if (this.conf["InactiveFrameKeep"] is long l)
+                if (this.conf.TryGetProperty("InactiveFrameKeep", out var val) && val is long l)
                 {
                     return Convert.ToInt32(l);
                 }
@@ -184,7 +184,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
-        [Category("Graphics"), EnumDisplayName("Camera Lighting")]
+        [Category("Graphics"), ValueRange(0, 100), EnumDisplayName("Camera Lighting")]
         /// <remarks>ConfigId_082</remarks>
         public int CameraLighting
         {
@@ -222,7 +222,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
-        [Category("Graphics"), EnumDisplayName("Reduce framerate when game is inactive")]
+        [Category("Screen"), EnumDisplayName("Reduce framerate when game is inactive")]
         /// <remarks>ConfigId_104</remarks>
         public bool AdjustFrameFrameRateWhenInactive
         {
@@ -241,7 +241,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
-        [Category("Graphics"), EnumDisplayName("Distance for Level of Details")]
+        [Category("Graphics"), ValueRange(1, 5), EnumDisplayName("Distance for Level of Details")]
         /// <remarks>ConfigId_103</remarks>
         public int LODDistance
         {

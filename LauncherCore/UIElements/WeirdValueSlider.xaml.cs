@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Leayal.PSO2Launcher.Core.Classes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,20 +21,111 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// </summary>
     public partial class WeirdValueSlider : UserControl
     {
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(int), typeof(WeirdValueSlider), new UIPropertyMetadata(0, (obj, e) =>
+        {
+            if (obj is WeirdValueSlider slider)
+            {
+                slider.RaiseEvent(new RoutedPropertyChangedEventArgs<int>((int)e.OldValue, (int)e.NewValue, ValueChangedEvent));
+            }
+        }));
+        public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Direct, typeof(RoutedPropertyChangedEventHandler<int>), typeof(WeirdValueSlider));
+        private static readonly DoubleToIntConverter _doubleToIntConverter = new DoubleToIntConverter();
+
+        public event RoutedPropertyChangedEventHandler<int> ValueChanged
+        {
+            add => this.AddHandler(ValueChangedEvent, value);
+            remove => this.RemoveHandler(ValueChangedEvent, value);
+        }
+
+        public int Value
+        {
+            get => (int)this.GetValue(ValueProperty);
+            set => this.SetValue(ValueProperty, value);
+        }
+
         public WeirdValueSlider()
         {
             InitializeComponent();
+
+            this.SetBinding(ValueProperty, new Binding("Value") { Source = this.slider, Mode = BindingMode.TwoWay, Converter = _doubleToIntConverter });
         }
 
         private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             var span = e.Text.AsSpan();
+            if (span.Length == 0)
+            {
+                e.Handled = true;
+            }
             for (int i = 0; i < span.Length; i++)
             {
                 if (!char.IsDigit(span[i]))
                 {
                     e.Handled = true;
                     return;
+                }
+            }
+        }
+
+        private void WeirdButtonNext_Click(object sender, RoutedEventArgs e)
+        {
+            var val = this.slider.Value;
+            if (val < this.slider.Maximum)
+            {
+                this.slider.Value = val + 1;
+            }
+        }
+
+        private void WeirdButtonPrevious_Click(object sender, RoutedEventArgs e)
+        {
+            var val = this.slider.Value;
+            if (val > this.slider.Minimum)
+            {
+                this.slider.Value = val - 1;
+            }
+        }
+
+
+        // Text="{Binding ElementName=slider,Path=Value,Mode=TwoWay,Converter={StaticResource NumberToStringConverter}}"
+
+        bool flag_dontDOIT = false;
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!flag_dontDOIT)
+            {
+                flag_dontDOIT = true;
+                try
+                {
+                    this.textbox.Text = Convert.ToInt32(e.NewValue).ToString();
+                }
+                finally
+                {
+                    flag_dontDOIT = false;
+                }
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!flag_dontDOIT)
+            {
+                flag_dontDOIT = true;
+                try
+                {
+                    var str = this.textbox.Text;
+                    if (!string.IsNullOrWhiteSpace(str))
+                    {
+                        var currentVal = Convert.ToInt32(this.slider.Value);
+                        var newVal = Convert.ToInt32(str);
+                        if (currentVal != newVal)
+                        {
+                            this.slider.Value = newVal;
+                        }
+                    }
+                }
+                finally
+                {
+                    flag_dontDOIT = false;
                 }
             }
         }

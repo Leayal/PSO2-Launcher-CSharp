@@ -5,26 +5,26 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="30" d:DesignWidth="150">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition />
+            <ColumnDefinition MinWidth="30" />
             <ColumnDefinition Width="9*" />
-            <ColumnDefinition />
-            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" MinWidth="30" />
+            <ColumnDefinition MinWidth="30" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <local:WeirdButton Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonPrevious_Click" x:Name="WeirdButtonPrevious">
+        <local:WeirdButton Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonPrevious_Click"  x:Name="WeirdButtonPrevious">
             <iconPacks:PackIconFontAwesome Kind="CaretLeftSolid" />
         </local:WeirdButton>
         
-        <Slider Grid.Column="1" />
-        <TextBox Grid.Column="2" PreviewTextInput="TextBox_PreviewTextInput" />
+        <Slider Grid.Column="1" x:Name="slider" ValueChanged="Slider_ValueChanged" />
+        <TextBox Grid.Column="2" x:Name="textbox" PreviewTextInput="TextBox_PreviewTextInput" TextChanged="TextBox_TextChanged" />
 
-        <local:WeirdButton Grid.Column="3" Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonNext_Click" x:Name="WeirdButtonNext">
+        <local:WeirdButton Grid.Column="3" Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonNext_Click"  x:Name="WeirdButtonNext">
             <iconPacks:PackIconFontAwesome Kind="CaretRightSolid" />
         </local:WeirdButton>
 
