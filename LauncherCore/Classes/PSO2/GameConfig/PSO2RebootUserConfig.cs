@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Leayal.PSO2.UserConfig;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
 {
@@ -18,6 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             this.conf = conf;
         }
 
+        [Category("Screen"), EnumDisplayName("Screen resolution")]
         public ScreenResolution ScreenResolution
         {
             get
@@ -41,6 +43,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        [Category("Screen"), EnumDisplayName("Screen Mode")]
         public ScreenMode ScreenMode
         {
             get
@@ -88,6 +91,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        [Category("Graphics"), EnumDisplayName("Texture Resolution")]
         /// <summary>
         /// 
         /// </summary>
@@ -112,6 +116,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        [Category("Graphics"), EnumDisplayName("Texture Filtering")]
         /// <summary>
         /// 
         /// </summary>
@@ -138,6 +143,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        [Category("Graphics"), EnumDisplayName("Anti-aliasing")]
         /// <remarks>
         /// It's the 'ConfigR/ConfigId_071' in the user.pso2 file for PSO2 Reboot
         /// </remarks>
@@ -161,6 +167,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
         }
 
+        [Category("Graphics"), EnumDisplayName("FrameRate when inactive")]
         public int InactiveFrameKeep
         {
             get
@@ -173,7 +180,83 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
             set
             {
-                this.conf.CreateOrSelect("ConfigR")["InactiveFrameKeep"] = (long)value;
+                this.conf["InactiveFrameKeep"] = (long)value;
+            }
+        }
+
+        [Category("Graphics"), EnumDisplayName("Camera Lighting")]
+        /// <remarks>ConfigId_082</remarks>
+        public int CameraLighting
+        {
+            get
+            {
+                var token = this.conf["ConfigR"] as ConfigToken;
+                if (token != null && token["ConfigId_082"] is long l)
+                {
+                    return Math.Clamp(Convert.ToInt32(l), 0, 100);
+                }
+                return 50;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["ConfigId_082"] = (long)value;
+            }
+        }
+
+        [Category("Graphics"), EnumDisplayName("Automatically adjust render resolution")]
+        /// <remarks>ConfigId_078</remarks>
+        public bool AutoAdjustRenderResolution
+        {
+            get
+            {
+                var token = this.conf["ConfigR"] as ConfigToken;
+                if (token != null && token["ConfigId_078"] is long l)
+                {
+                    return (l != 0);
+                }
+                return false;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["ConfigId_078"] = value.ToInt64();
+            }
+        }
+
+        [Category("Graphics"), EnumDisplayName("Reduce framerate when game is inactive")]
+        /// <remarks>ConfigId_104</remarks>
+        public bool AdjustFrameFrameRateWhenInactive
+        {
+            get
+            {
+                var token = this.conf["ConfigR"] as ConfigToken;
+                if (token != null && token["ConfigId_104"] is long l)
+                {
+                    return (l != 0);
+                }
+                return true;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["ConfigId_104"] = value.ToInt64();
+            }
+        }
+
+        [Category("Graphics"), EnumDisplayName("Distance for Level of Details")]
+        /// <remarks>ConfigId_103</remarks>
+        public int LODDistance
+        {
+            get
+            {
+                var token = this.conf["ConfigR"] as ConfigToken;
+                if (token != null && token["ConfigId_103"] is long l)
+                {
+                    return Math.Clamp((int)l, 1, 5);
+                }
+                return 1;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("ConfigR")["ConfigId_103"] = (long)value;
             }
         }
 

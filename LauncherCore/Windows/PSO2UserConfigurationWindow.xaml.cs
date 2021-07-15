@@ -16,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Reflection;
+using System.Globalization;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -27,7 +28,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly string path_conf;
         private UserConfig _conf;
         private PSO2RebootUserConfig _configR;
-        private readonly List<OptionDOM> listOfOptions;
+        private readonly Dictionary<string, List<OptionDOM>> listOfOptions;
+        private static readonly Lazy<SolidColorBrush> brush_darkTheme = new Lazy<SolidColorBrush>(()=>
+        {
+            var brush = new SolidColorBrush(Colors.DarkRed);
+            if (brush.CanFreeze) brush.Freeze();
+            return brush;
+        }),
+            brush_lightTheme = new Lazy<SolidColorBrush>(() =>
+            {
+                var brush = new SolidColorBrush(Colors.Blue);
+                if (brush.CanFreeze) brush.Freeze();
+                return brush;
+            });
 
         public PSO2UserConfigurationWindow()
         {
@@ -43,7 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             this._configR = new PSO2RebootUserConfig(this._conf);
-            this.listOfOptions = new List<OptionDOM>();
+            this.listOfOptions = new Dictionary<string, List<OptionDOM>>(6, StringComparer.OrdinalIgnoreCase);
             InitializeComponent();
         }
 
@@ -56,80 +69,108 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var t_bool = typeof(bool);
             this.listOfOptions.Clear();
             int gridX = 0;
-            SolidColorBrush bruh;
-            if (App.Current.IsLightMode)
-            {
-                bruh = new SolidColorBrush(Colors.Blue);
-            }
-            else
-            {
-                bruh = new SolidColorBrush(Colors.DarkRed);
-            }
-            if (bruh.CanFreeze) bruh.Freeze();
+
+            SolidColorBrush bruh = App.Current.IsLightMode ? brush_lightTheme.Value : brush_darkTheme.Value;
+
             for (int i = 0; i < props.Length; i++)
             {
                 var t = props[i];
                 var propT = t.PropertyType;
-                if (propT == t_bool)
+                if (propT == t_bool || propT.IsEnum)
                 {
-                    var opt = new BooleanOptionDOM(t.Name);
-                    opt.CheckBox.Checked += this.OptionCheckBox_CheckChanged;
-                    opt.CheckBox.Unchecked += this.OptionCheckBox_CheckChanged;
-                    var text = new TextBlock() { Text = opt.Name };
-                    Grid.SetRow(text, gridX);
-                    Grid.SetRow(opt.CheckBox, gridX);
-                    Grid.SetColumn(opt.CheckBox, 1);
+                    if (!CategoryAttribute.TryGetCategoryName(t, out var categoryName))
+                    {
+                        categoryName = string.Empty;
+                    }
+                    OptionDOM opt;
+                    WeirdSlider slider;
+                    if (!EnumDisplayNameAttribute.TryGetDisplayName(t, out var displayName))
+                    {
+                        displayName = t.Name;
+                    }
+                    if (propT == t_bool)
+                    {
+                        var _opt = new BooleanOptionDOM(t.Name, displayName);
+                        slider = _opt.CheckBox;
+                        opt = _opt;
+                    }
+                    else
+                    {
+                        var _opt = new EnumOptionDOM(t.Name, displayName, propT);
+                        slider = _opt.Slider;
+                        opt = _opt;
+                    }
+
+                    slider.ValueChanged += this.OptionSlider_ValueChanged;
+                    slider.IndicatorBrush = bruh;
                     this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
                     opt.Reload(this._configR);
-                    this.OptionsItems.Children.Add(text);
-                    this.OptionsItems.Children.Add(opt.CheckBox);
-                    this.listOfOptions.Add(opt);
+                    if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
+                    {
+                        opts = new List<OptionDOM>();
+                        this.listOfOptions.Add(categoryName, opts);
+                    }
+                    opts.Add(opt);
                     gridX++;
                 }
-                else if (propT.IsEnum)
+            }
+
+            this.OptionsTab.ItemsSource = this.listOfOptions.Keys;
+            this.OptionsTab.SelectedIndex = 0;
+        }
+
+        private void OptionsTab_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems != null && e.AddedItems.Count != 0)
+            {
+                if (e.AddedItems[0] is string selected)
                 {
-                    var opt = new EnumOptionDOM(t.Name, propT);
-                    opt.Slider.ValueChanged += this.OptionSlider_ValueChanged;
-                    // options.Add(opt);
-                    var text = new TextBlock() { Text = opt.Name };
-                    opt.Slider.IndicatorBrush = bruh;
-                    Grid.SetRow(text, gridX);
-                    Grid.SetRow(opt.Slider, gridX);
-                    Grid.SetColumn(opt.Slider, 1);
-                    this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
-                    opt.Reload(this._configR);
-                    this.OptionsItems.Children.Add(text);
-                    this.OptionsItems.Children.Add(opt.Slider);
-                    this.listOfOptions.Add(opt);
-                    gridX++;
+                    this.OptionsItems.Children.Clear();
+                    this.OptionsItems.RowDefinitions.Clear();
+                    if (this.listOfOptions.TryGetValue(selected, out var list))
+                    {
+                        var gridX = 0;
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            OptionDOM opt = list[i];
+
+                            // list[i];
+                            this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                            var text = new TextBlock() { Text = opt.DisplayName };
+                            Grid.SetRow(text, gridX);
+                            Grid.SetRow(opt.ValueController, gridX);
+                            Grid.SetColumn(opt.ValueController, 1);
+
+                            this.OptionsItems.Children.Add(text);
+                            this.OptionsItems.Children.Add(opt.ValueController);
+
+                            gridX++;
+                        }
+                    }
                 }
             }
         }
 
-        private void OptionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void OptionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<int> e)
         {
             if (sender is WeirdSlider slider)
             {
-                var dom = (EnumOptionDOM)slider.Tag;
                 var t = this._configR.GetType();
-                var prop = t.GetProperty(dom.Name);
-                if (prop != null)
+                if (slider.Tag is OptionDOM dom)
                 {
-                    prop.SetValue(this._configR, e.NewValue);
-                }
-            }
-        }
-
-        private void OptionCheckBox_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox box)
-            {
-                var dom = (BooleanOptionDOM)box.Tag;
-                var t = this._configR.GetType();
-                var prop = t.GetProperty(dom.Name);
-                if (prop != null)
-                {
-                    prop.SetValue(this._configR, box.IsChecked == true);
+                    var prop = t.GetProperty(dom.Name);
+                    if (prop != null)
+                    {
+                        if (slider.Tag is EnumOptionDOM)
+                        {
+                            prop.SetValue(this._configR, e.NewValue);
+                        }
+                        else if (slider.Tag is BooleanOptionDOM)
+                        {
+                            bool b = e.NewValue != 0;
+                            prop.SetValue(this._configR, b);
+                        }
+                    }
                 }
             }
         }
@@ -147,9 +188,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     _ = conf.ToString();
                     this._conf = conf;
                     this._configR = new PSO2RebootUserConfig(conf);
-                    foreach (var opt in this.listOfOptions)
+                    foreach (var opts in this.listOfOptions)
                     {
-                        opt.Reload(this._configR);
+                        foreach (var opt in opts.Value)
+                        {
+                            opt.Reload(this._configR);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -174,15 +218,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.ReloadConfigFromLoadedConfig();
                 }
             }
-        }
-
-        private void TabSimple_Selected(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void TabAdvanced_Selected(object sender, RoutedEventArgs e)
-        {
-            
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
@@ -260,7 +295,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnThemeRefresh()
         {
-            SolidColorBrush bruh;
             if (App.Current.IsLightMode)
             {
                 if (this.Foreground is SolidColorBrush foreground)
@@ -282,7 +316,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.ForeColor = System.Drawing.Color.WhiteSmoke;
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkBlue;
-                bruh = new SolidColorBrush(Colors.Blue);
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkGreen;
             }
             else
@@ -306,15 +339,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Box_ManualConfig.BackColor = System.Drawing.Color.FromArgb(255, 17, 17, 17);
                 }
                 this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkRed;
-                bruh = new SolidColorBrush(Colors.DarkRed);
                 // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkSlateGray;
             }
-            if (bruh.CanFreeze) bruh.Freeze();
-            foreach (var item in this.listOfOptions)
+
+            foreach (var list in this.listOfOptions)
             {
-                if (item is EnumOptionDOM dom)
+                foreach (var opt in list.Value)
                 {
-                    dom.Slider.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                    if (opt is EnumOptionDOM enumDom)
+                    {
+                        enumDom.Slider.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                    }
+                    else if (opt is BooleanOptionDOM boolDom)
+                    {
+                        boolDom.CheckBox.IndicatorBrush = new SolidColorBrush(Colors.DarkRed);
+                    }
                 }
             }
         }
@@ -325,9 +364,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             public string Name { get; }
 
-            protected OptionDOM(string name)
+            public string DisplayName { get; }
+
+            protected OptionDOM(string name, string displayname)
             {
                 this.Name = name;
+                this.DisplayName = displayname;
             }
 
             public abstract void Reload(PSO2RebootUserConfig conf);
@@ -337,20 +379,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         class BooleanOptionDOM : OptionDOM
         {
-            public readonly CheckBox CheckBox;
-
-            public BooleanOptionDOM(string name) : base(name) 
+            public readonly WeirdSlider CheckBox;
+            private static readonly IReadOnlyDictionary<int, string> lookupDictionary = new Dictionary<int, string>(2)
             {
-                this.CheckBox = new CheckBox() { Tag = this, Name = "PSO2GameOption_" + name };
+                { 0, "Off" },
+                { 1, "On" }
+            };
+
+            public BooleanOptionDOM(string name, string displayName) : base(name, displayName) 
+            {
+                this.CheckBox = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name, ItemsSource = lookupDictionary };
             }
 
             public override void Reload(PSO2RebootUserConfig conf)
             {
-                var t = conf.GetType();
-                var prop = t.GetProperty(this.Name);
+                var prop = conf.GetType().GetProperty(this.Name);
                 if (prop != null)
                 {
-                    this.CheckBox.IsChecked = (bool)prop.GetValue(conf);
+                    this.CheckBox.Value = Convert.ToInt32(prop.GetValue(conf), CultureInfo.InvariantCulture.NumberFormat);
                 }
             }
 
@@ -360,11 +406,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
         class EnumOptionDOM : OptionDOM
         {
             public readonly WeirdSlider Slider;
-            private readonly Type _type;
 
-            public EnumOptionDOM(string name, Type type) : base(name)
+            public EnumOptionDOM(string name, string displayName, Type type) : base(name, displayName)
             {
-                this._type = type;
                 this.Slider = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name };
                 var mems = Enum.GetNames(type);
                 var d = new Dictionary<int, string>(mems.Length);

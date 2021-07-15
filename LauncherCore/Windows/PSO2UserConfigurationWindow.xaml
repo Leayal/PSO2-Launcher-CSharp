@@ -28,18 +28,31 @@
         <Label Content="PSO2 Game Options" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
 
         <mah:MetroTabControl Grid.Row="1" Grid.ColumnSpan="2" SelectionChanged="MetroTabControl_SelectionChanged">
-            <mah:MetroTabItem Header="Simple" Selector.Selected="TabSimple_Selected" x:Name="TabSimple">
-                <ScrollViewer VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True">
-                    <Grid x:Name="OptionsItems">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition />
-                            <ColumnDefinition Width="Auto" MinWidth="250" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions />
-                    </Grid>
-                </ScrollViewer>
+            <mah:MetroTabItem Header="Simple" x:Name="TabSimple">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <mah:MetroAnimatedSingleRowTabControl x:Name="OptionsTab" SelectionChanged="OptionsTab_SelectionChanged" IsSynchronizedWithCurrentItem="True">
+                        <mah:MetroAnimatedSingleRowTabControl.ItemContainerStyle>
+                            <Style TargetType="{x:Type mah:MetroTabItem}" BasedOn="{StaticResource {x:Type mah:MetroTabItem}}">
+                                <Setter Property="Content" Value="{x:Null}" />
+                            </Style>
+                        </mah:MetroAnimatedSingleRowTabControl.ItemContainerStyle>
+                    </mah:MetroAnimatedSingleRowTabControl>
+                    <ScrollViewer Grid.Row="1" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling" CanContentScroll="True">
+                        <Grid x:Name="OptionsItems">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" MinWidth="220" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions />
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
             </mah:MetroTabItem>
-            <mah:MetroTabItem Header="Advanced" Selector.Selected="TabAdvanced_Selected" x:Name="TabAdvanced">
+            <mah:MetroTabItem Header="Advanced" x:Name="TabAdvanced">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

@@ -29,7 +29,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 // EnumDisplayNameAttribute
                 // var t = val.NewValue.GetType();
                 slider.RefreshState();
-                slider.RaiseEvent(new RoutedPropertyChangedEventArgs<object>(val.OldValue, val.NewValue, ValueChangedEvent));
+                slider.RaiseEvent(new RoutedPropertyChangedEventArgs<int>((int)val.OldValue, (int)val.NewValue, ValueChangedEvent));
             }
         }));
         public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(int), typeof(WeirdSlider), new UIPropertyMetadata(1, (obj, val) =>
@@ -133,9 +133,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }));
 
-        public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Direct, typeof(RoutedPropertyChangedEventHandler<object>), typeof(WeirdSlider));
+        public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Direct, typeof(RoutedPropertyChangedEventHandler<int>), typeof(WeirdSlider));
 
-        public event RoutedPropertyChangedEventHandler<object> ValueChanged
+        public event RoutedPropertyChangedEventHandler<int> ValueChanged
         {
             add => this.AddHandler(ValueChangedEvent, value);
             remove => this.RemoveHandler(ValueChangedEvent, value);

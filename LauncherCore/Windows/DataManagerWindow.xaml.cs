@@ -203,7 +203,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = System.Linq.Enumerable.Any(e.Text, c => !char.IsDigit(c));
+            var span = e.Text.AsSpan();
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsDigit(span[i]))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
         }
     }
 }
