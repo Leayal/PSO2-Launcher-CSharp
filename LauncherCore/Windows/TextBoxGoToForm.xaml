@@ -1,0 +1,32 @@
+﻿<local:MetroWindowEx xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                     x:Class="Leayal.PSO2Launcher.Core.Windows.TextBoxGoToForm"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+                     mc:Ignorable="d"
+                     WindowStartupLocation="CenterOwner"
+                     ShowTitleBar="False" ResizeMode="NoResize" ShowMinButton="False" ShowMaxRestoreButton="False" SizeToContent="Height"
+                     Title="Go to line" Height="110" Width="400" Activated="MetroWindowEx_Activated">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Go to line number" FontSize="26" IsHitTestVisible="False" />
+
+        <mah:NumericUpDown Grid.Row="1" Margin="1" PreviewTextInput="NumericUpDown_PreviewTextInput" ValueChanged="NumericUpDown_ValueChanged" Value="1" Name="PART_InputBox" />
+
+        <Grid Grid.Row="2" Margin="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Button HorizontalAlignment="Center" VerticalAlignment="Center" Content="Go" IsDefault="True" Click="ButtonGo_Click" IsTabStop="False" />
+            <Button Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Close" IsCancel="True" Click="ButtonClose_Click" IsTabStop="False" />
+        </Grid>
+    </Grid>
+</local:MetroWindowEx>

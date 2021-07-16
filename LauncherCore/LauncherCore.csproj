@@ -23,17 +23,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\SyntaxHighlightRuleDarkTheme.xml" />
+    <None Remove="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <None Remove="Resources\_bgimg.png" />
     <None Remove="Resources\_bgimg_dark.png" />
     <None Remove="Resources\_bgimg_light.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\SyntaxHighlightRuleDarkTheme.xml" />
+    <EmbeddedResource Include="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <EmbeddedResource Include="Resources\_bgimg_dark.png" />
     <EmbeddedResource Include="Resources\_bgimg_light.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.1.2.30" />
     <PackageReference Include="ControlzEx" Version="5.0.1" />
     <PackageReference Include="MahApps.Metro" Version="2.4.7" />
     <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="4.8.0" />
@@ -53,12 +58,6 @@
     <ProjectReference Include="..\WebViewCompat\WebViewCompat.csproj">
       <Private>true</Private>
     </ProjectReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="FastColoredTextBox">
-      <HintPath>..\Dependencies\Build\net5.0-windows\FastColoredTextBox.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>

@@ -17,6 +17,8 @@ using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Reflection;
 using System.Globalization;
+using ICSharpCode.AvalonEdit.Search;
+using ICSharpCode.AvalonEdit.Highlighting;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -42,6 +44,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 return brush;
             });
 
+        private static readonly Lazy<IHighlightingDefinition> highlighter_dark = new Lazy<IHighlightingDefinition>(() =>
+        {
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.SyntaxHighlightRuleDarkTheme.xml"))
+            {
+                if (stream != null)
+                {
+                    using (var xmlr = System.Xml.XmlReader.Create(stream))
+                    {
+                        return ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(xmlr, HighlightingManager.Instance);
+                    }
+                }
+                return null;
+            }
+        }),
+            highlighter_light = new Lazy<IHighlightingDefinition>(() =>
+            {
+                using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.SyntaxHighlightRuleLightTheme.xml"))
+                {
+                    if (stream != null)
+                    {
+                        using (var xmlr = System.Xml.XmlReader.Create(stream))
+                        {
+                            return ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(xmlr, HighlightingManager.Instance);
+                        }
+                    }
+                }
+                return null;
+            });
+
         public PSO2UserConfigurationWindow()
         {
             this.path_conf = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SEGA", "PHANTASYSTARONLINE2", "user.pso2");
@@ -58,6 +89,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._configR = new PSO2RebootUserConfig(this._conf);
             this.listOfOptions = new Dictionary<string, List<OptionDOM>>(6, StringComparer.OrdinalIgnoreCase);
             InitializeComponent();
+            this.Box_ManualConfig.TextArea.Options.EnableHyperlinks = false;
+            this.Box_ManualConfig.TextArea.Options.EnableEmailHyperlinks = false;
+            SearchPanel.Install(this.Box_ManualConfig.TextArea);
+
+            this.Box_ManualConfig.InputBindings.Add(new KeyBinding() { CommandTarget = this.Box_ManualConfig, Command = KeyCommandGoTo.Default, CommandParameter = this, Key = Key.G, Modifiers = ModifierKeys.Control });
+
+            // this.Box_ManualConfig.SyntaxHighlighting = ICSharpCode.AvalonEdit.Highlighting.HighlightingManager.Instance.GetDefinition("JavaScript");
         }
 
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
@@ -312,9 +350,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ReloadConfigFromLoadedConfig()
         {
-            //this.Box_ManualConfig.Clear();
-            // this.Box_ManualConfig.Clear();
-            // var oldSource = this.Box_ManualConfig.SourceTextBox;
+            this.Box_ManualConfig.Clear();
+            this.Box_ManualConfig.Text = this._conf.ToString();
+            /*
             var oldsrc = this.Box_ManualConfig.SourceTextBox;
             var newsrc = new FastColoredTextBoxNS.FastColoredTextBox();
             newsrc.Text = this._conf.ToString();
@@ -327,66 +365,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     oldsrc.Clear();
                     oldsrc.Dispose();
                 }
-                // this.Box_ManualConfig.Text = this._conf.ToString();
-                // this.Box_ManualConfig.ClearUndo();
             }
-            // oldSource.Dispose();
-            // var b = this.Box_ManualConfig.Document.Blocks;
-            // b.Clear();
-            // b.Add(new Paragraph(new Run(this._conf.ToString())));
+            */
         }
 
         protected override void OnThemeRefresh()
         {
             Brush brush;
+            var brush_fore = this.Foreground.Clone();
+            if (brush_fore.CanFreeze && !brush_fore.IsFrozen) brush_fore.Freeze();
+            this.Box_ManualConfig.Foreground = brush_fore;
+            IHighlightingDefinition highlightingDefinition;
+
+            // var brush_back = this.Background.Clone();
+            // if (brush_back.CanFreeze && !brush_back.IsFrozen) brush_back.Freeze();
+            // this.Box_ManualConfig.Background = brush_back;
             if (App.Current.IsLightMode)
             {
-                if (this.Foreground is SolidColorBrush foreground)
-                {
-                    this.Box_ManualConfig.ForeColor = WPFColorToWFColor(foreground.Color);
-                    this.Box_ManualConfig.ForeColor = WPFColorToWFColor(foreground.Color);
-                }
-                else
-                {
-                    this.Box_ManualConfig.ForeColor = System.Drawing.Color.Black;
-                    this.Box_ManualConfig.ForeColor = System.Drawing.Color.Black;
-                }
-                if (this.Background is SolidColorBrush background)
-                {
-                    this.Box_ManualConfig.BackColor = WPFColorToWFColor(background.Color);
-                }
-                else
-                {
-                    this.Box_ManualConfig.ForeColor = System.Drawing.Color.WhiteSmoke;
-                }
-                this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkBlue;
                 brush = brush_lightTheme.Value;
-                // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkGreen;
+                highlightingDefinition = highlighter_light.Value;
             }
             else
             {
-                if (this.Foreground is SolidColorBrush foreground)
-                {
-                    this.Box_ManualConfig.ForeColor = WPFColorToWFColor(foreground.Color);
-                    this.Box_ManualConfig.CaretColor = WPFColorToWFColor(foreground.Color);
-                }
-                else
-                {
-                    this.Box_ManualConfig.ForeColor = System.Drawing.Color.WhiteSmoke;
-                    this.Box_ManualConfig.CaretColor = System.Drawing.Color.WhiteSmoke;
-                }
-                if (this.Background is SolidColorBrush background)
-                {
-                    this.Box_ManualConfig.BackColor = WPFColorToWFColor(background.Color);
-                }
-                else
-                {
-                    this.Box_ManualConfig.BackColor = System.Drawing.Color.FromArgb(255, 17, 17, 17);
-                }
-                this.Box_ManualConfig.SelectionColor = System.Drawing.Color.DarkRed;
                 brush = brush_darkTheme.Value;
-                // this.Box_ManualConfig.LineNumberColor = System.Drawing.Color.DarkSlateGray;
+                highlightingDefinition = highlighter_dark.Value;
             }
+
+            this.Box_ManualConfig.SyntaxHighlighting = highlightingDefinition;
 
             foreach (var list in this.listOfOptions)
             {

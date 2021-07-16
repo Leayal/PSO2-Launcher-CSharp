@@ -5,8 +5,7 @@
                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                       xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                       xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-                      xmlns:so="clr-namespace:StackOverflow;assembly=StackOverflow.Core"
-                      xmlns:crtb="clr-namespace:FastColoredTextBoxNS;assembly=FastColoredTextBox"
+                      xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
                       xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                       mc:Ignorable="d" x:Name="thisSelf"
                       TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
@@ -60,11 +59,7 @@
                     </Grid.RowDefinitions>
                     <Button Content="Undo all changes" Click="ButtonUndoAllChanges_Click" />
                     <!--<RichTextBox Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" x:Name="Box_ManualConfig" />-->
-                    <so:WindowsFormsHostEx Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                        <so:WindowsFormsHostEx.Child>
-                            <crtb:FastColoredTextBox x:Name="Box_ManualConfig" Dock="Fill" AutoIndent="False" />
-                        </so:WindowsFormsHostEx.Child>
-                    </so:WindowsFormsHostEx>
+                    <avalon:TextEditor Grid.Row="1" x:Name="Box_ManualConfig" ShowLineNumbers="True" />
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>

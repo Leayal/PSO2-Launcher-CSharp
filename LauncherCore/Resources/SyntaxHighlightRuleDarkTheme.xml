@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copied from https://github.com/icsharpcode/AvalonEdit/issues/30#issuecomment-317679582 -->
+<SyntaxDefinition name="Json" extensions=".json" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Digits" foreground="#0076d7" exampleText="3.14" />
+  <Color name="Booleans" foreground="Cyan" exampleText="true" />
+  <Color name="String" foreground="Sienna" exampleText="var text = &quot;Hello, World!&quot;;" />
+  <Color name="Value" foreground="Sienna" exampleText="var text = &quot;Hello, World!&quot;;" />
+  <Color name="Character" foreground="LightSalmon" exampleText="var char = 'a';" />
+  <Color name="ParamName" foreground="Sienna"  exampleText="var text = &quot;Hello, World!&quot;;" />
+  <RuleSet ignoreCase="true">
+    <Keywords color="Booleans" >
+      <Word>true</Word>
+      <Word>false</Word>
+    </Keywords>
+    <Span color="ParamName">
+      <Begin>"</Begin>
+      <End>(?=:)</End>
+    </Span>
+    <Span color="Value" multiline="true">
+      <Begin>
+        (?&lt;=:)\040"[^"]*
+      </Begin>
+      <End>"</End>
+    </Span>
+    <Span color="String" multiline="true">
+			<Begin>"</Begin>
+			<End>"</End>
+			<RuleSet>
+				<Span begin="\\" end="." />
+			</RuleSet>
+		</Span>
+		<Span color="Character">
+			<Begin>'</Begin>
+			<End>'</End>
+			<RuleSet>
+				<Span begin="\\" end="." />
+			</RuleSet>
+		</Span>
+    <Rule color="Digits">\b0[xX][0-9a-fA-F]+|(\b\d+(\.[0-9]+)?|\.[0-9]+)([eE][+-]?[0-9]+)?</Rule>
+  </RuleSet>
+</SyntaxDefinition>
