@@ -1,6 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.SharedInterfaces;
 using System;
@@ -19,7 +20,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private async void ButtonCheckForUpdate_Click(object sender, RoutedEventArgs e)
         {
-            await StartGameClientUpdate(false);
+            await StartGameClientUpdate(false, true);
         }
 
         private void TabGameClientUpdateProgressBar_UpdateCancelClicked(object sender, RoutedEventArgs e)
@@ -72,12 +73,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             });
         }
 
-        private async void TabMainMenu_ButtonScanFixGameDataClicked(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonScanFixGameDataClicked(object sender, ButtonScanFixGameDataClickRoutedEventArgs e)
         {
-            await StartGameClientUpdate(true);
+            await StartGameClientUpdate(true, false, e.SelectedMode);
         }
 
-        private async Task StartGameClientUpdate(bool fixMode = false, bool promptBeforeUpdate = false)
+        private async Task StartGameClientUpdate(bool fixMode = false, bool promptBeforeUpdate = false, GameClientSelection selection = GameClientSelection.Auto)
         {
             var dir_pso2bin = this.config_main.PSO2_BIN;
             if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
@@ -98,9 +99,64 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
+            var downloaderProfile = this.config_main.DownloaderProfile;
+            var conf_DownloadType = this.config_main.DownloadSelection;
+            GameClientSelection downloadType;
+            switch (selection)
+            {
+                case GameClientSelection.Auto:
+                    downloadType = conf_DownloadType;
+                    break;
+                case GameClientSelection.NGS_Only:
+                    if (conf_DownloadType == GameClientSelection.NGS_Prologue_Only)
+                    {
+                        downloadType = GameClientSelection.NGS_Prologue_Only;
+                    }
+                    else
+                    {
+                        downloadType = GameClientSelection.NGS_Only;
+                    }
+                    break;
+                default:
+                    downloadType = selection;
+                    break;
+            }
+
+            
+
             if (fixMode)
             {
-                if (MessageBox.Show(this, "Are you sure you want to begin the file check and repair?\r\n(If the download profile is 'Cache Only', it will use 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                var sb = new StringBuilder("Are you sure you want to begin the file check and repair");
+                switch (downloadType)
+                {
+                    case GameClientSelection.NGS_Prologue_Only:
+                        sb.Append(" for the NGS Prologue files");
+                        break;
+                    case GameClientSelection.NGS_Only:
+                        sb.Append(" for all NGS files");
+                        break;
+                    case GameClientSelection.Classic_Only:
+                        sb.Append(" for all Classic files");
+                        break;
+                    case GameClientSelection.NGS_AND_CLASSIC:
+                        sb.Append(" for all NGS and Classic files");
+                        break;
+                }
+                sb.Append('?');
+
+                if (selection == GameClientSelection.Classic_Only && conf_DownloadType != GameClientSelection.NGS_AND_CLASSIC)
+                {
+                    sb.AppendLine();
+                    sb.Append("(Your setting has been set to ignore Classic files. However, you have selected scanning including Classic files. If you continue, your game client may become full NGS and Classic game)");
+                }
+
+                if (downloaderProfile == FileScanFlags.CacheOnly)
+                {
+                    sb.AppendLine();
+                    sb.Append("(If the download profile is 'Cache Only', it will use 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
+                }
+
+                if (MessageBox.Show(this, sb.ToString(), "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 {
                     return;
                 }
@@ -120,8 +176,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             CancellationTokenSource currentCancelSrc = null;
             try
             {
-                var downloaderProfile = this.config_main.DownloaderProfile;
-                var downloadType = this.config_main.DownloadSelection;
                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                 this.TabGameClientUpdateProgressBar.IsSelected = true;
                 currentCancelSrc = new CancellationTokenSource();
@@ -130,18 +184,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                 CancellationToken cancelToken = currentCancelSrc.Token;
 
-                if (fixMode || await this.pso2Updater.CheckForPSO2Updates(cancelToken))
+                PSO2Version? ver;
+                bool newVer = false;
+                if (fixMode)
+                {
+                    ver = null;
+                    newVer = true; // Force it to go ahead.
+                }
+                else
+                {
+                    var version = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
+                    ver = version;
+                    newVer = await this.pso2Updater.CheckForPSO2Updates(version, cancelToken);
+                }
+                
+
+                if (newVer)
                 {
                     if (promptBeforeUpdate)
                     {
                         string msg;
-                        if (this.pso2Updater.TryGetLastKnownLatestVersion(out var version))
+                        if (ver.HasValue)
                         {
-                            msg = $"Launcher has found updates for PSO2 game client (v{version}).\r\nDo you want to perform update?";
+                            msg = $"Launcher has found updates for PSO2 game client (v{ver.Value}).\r\nDo you want to perform update?";
                         }
                         else
                         {
-                            msg = "Launcher has found updates for PSO2 game client.\r\nDo you want to perform update?";
+                            msg = $"Launcher has found updates for PSO2 game client.\r\nDo you want to perform update?";
                         }
                         if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                         {
@@ -159,10 +228,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         // To ensure the accuracy of the fix. Don't use Cache Only.
                         downloaderProfile = FileScanFlags.Balanced;
                     }
-                    var t_fileCheck = pso2Updater.ScanForFilesNeedToDownload(downloadType, downloaderProfile, cancelToken);
-                    var t_downloading = pso2Updater.StartDownloadFiles(cancelToken);
-
-                    await Task.WhenAll(t_fileCheck, t_downloading); // Wasting but it's not much.
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(downloadType, downloaderProfile, cancelToken);
                 }
                 else
                 {

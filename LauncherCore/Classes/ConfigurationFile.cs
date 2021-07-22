@@ -165,13 +165,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("launcher_loadwebsitelauncher", out var val))
                 {
-                    if (val.ValueKind == System.Text.Json.JsonValueKind.True)
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
                     {
-                        return true;
+                        return false;
                     }
                     else
                     {
-                        return false;
+                        return true;
                     }
                 }
                 else
@@ -188,13 +188,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("launcher_checkpso2updatestartup", out var val))
                 {
-                    if (val.ValueKind == System.Text.Json.JsonValueKind.True)
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
                     {
                         return true;
                     }
                     else
                     {
-                        return false;
+                        return true;
                     }
                 }
                 else
@@ -203,6 +203,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
             }
             set => this.Set("launcher_checkpso2updatestartup", value);
+        }
+
+        public bool CheckForPSO2GameUpdateBeforeLaunchingGame
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_checkpso2updatebeforelaunch", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_checkpso2updatebeforelaunch", value);
         }
 
         public bool LauncherCheckForPSO2GameUpdateAtStartupPrompt

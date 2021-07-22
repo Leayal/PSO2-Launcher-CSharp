@@ -75,8 +75,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                         this.TabGameClientUpdateProgressBar.IsSelected = true;
 
-                        var downloaderprofile = this.config_main.DownloaderProfile;
-
+                        var checkUpdateBeforeLaunch = this.config_main.CheckForPSO2GameUpdateBeforeLaunchingGame;
 
                         GameClientUpdater.OperationCompletedHandler completed = null;
                         completed = (sender, cancelled, totalfiles, failedfiles) =>
@@ -91,18 +90,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.pso2Updater.OperationCompleted += completed;
                         this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
-                        var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
-                        if (hasUpdate)
+                        if (checkUpdateBeforeLaunch)
                         {
-                            if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                            var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
+                            if (hasUpdate)
                             {
-                                return;
+                                if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                                {
+                                    return;
+                                }
                             }
                         }
 
-                        var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);
-                        var t2 = this.pso2Updater.StartDownloadFiles(cancelToken);
-                        await Task.WhenAll(t1, t2);
+                        // Force using Balanced for safety reasons.
+                        await this.pso2Updater.ScanAndDownloadFilesAsync(GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
 
                         if (!cancelToken.IsCancellationRequested)
                         {
@@ -280,7 +281,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                         else
                         {
-                            this.TabGameClientUpdateProgressBar.IsSelected = true;
+                            await this.Dispatcher.BeginInvoke((Action)delegate
+                            {
+                                this.TabGameClientUpdateProgressBar.IsSelected = true;
+                            });
                             token = await this.pso2HttpClient.LoginPSO2Async(this.ss_id, this.ss_pw, cancelToken);
                         }
 
@@ -288,7 +292,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             try
                             {
-                                this.cancelSrc?.Dispose();
+                                try
+                                {
+                                    this.cancelSrc?.Dispose();
+                                }
+                                catch { }
                                 this.cancelSrc = currentCancelSrc;
 
                                 if (this.TabGameClientUpdateProgressBar.IsSelected != true)
@@ -296,8 +304,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     this.TabGameClientUpdateProgressBar.IsSelected = true;
                                 }
 
-                                var downloaderprofile = this.config_main.DownloaderProfile;
-
+                                var checkUpdateBeforeLaunch = this.config_main.CheckForPSO2GameUpdateBeforeLaunchingGame;
 
                                 GameClientUpdater.OperationCompletedHandler completed = null;
                                 completed = (sender, cancelled, totalfiles, failedfiles) =>
@@ -312,18 +319,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.pso2Updater.OperationCompleted += completed;
                                 this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
-                                var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
-                                if (hasUpdate)
+                                if (checkUpdateBeforeLaunch)
                                 {
-                                    if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                                    var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
+                                    if (hasUpdate)
                                     {
-                                        return;
+                                        if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                                        {
+                                            return;
+                                        }
                                     }
                                 }
 
-                                var t1 = this.pso2Updater.ScanForFilesNeedToDownload(GameClientSelection.Always_Only, downloaderprofile, cancelToken);
-                                var t2 = this.pso2Updater.StartDownloadFiles(cancelToken);
-                                await Task.WhenAll(t1, t2);
+                                // Safety reason => Balanced.
+                                await this.pso2Updater.ScanAndDownloadFilesAsync(GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
 
                                 if (!cancelToken.IsCancellationRequested)
                                 {

@@ -3,33 +3,34 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using Leayal.PSO2Launcher.Core.Interfaces;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class ObjectShortCacheManager<T>
+    class ObjectShortCacheManager<T> : ICacheManager<T>
     {
-        private readonly ConcurrentDictionary<string, ObjectShortCacheAsyncItem<T>> innerCache;
+        private readonly ConcurrentDictionary<string, ObjectShortCacheAsyncItem> innerCache;
 
         public ObjectShortCacheManager() : this(StringComparer.Ordinal) { }
 
         public ObjectShortCacheManager(StringComparer nameComparer)
         {
-            this.innerCache = new ConcurrentDictionary<string, ObjectShortCacheAsyncItem<T>>(nameComparer);
+            this.innerCache = new ConcurrentDictionary<string, ObjectShortCacheAsyncItem>(nameComparer);
         }
 
-        public bool TryGet(string name, out Task<T> value)
+        public Task Load() => Task.CompletedTask;
+
+        public Task<T> TryGet(string name)
         {
             if (this.innerCache.TryGetValue(name, out var cached))
             {
                 if (DateTime.UtcNow <= cached.ttl)
                 {
-                    value = cached.ObjectData;
-                    return false;
+                    return cached.ObjectData;
                 }
             }
 
-            value = default;
-            return false;
+            return Task.FromResult(default(T));
         }
 
         public Task<T> GetOrAdd(string name, Func<Task<T>> factory)
@@ -39,12 +40,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
         {
             return this.innerCache.AddOrUpdate(name, (cachedName) =>
             {
-                return new ObjectShortCacheAsyncItem<T>(factory.Invoke(), howLongWillILive);
+                return new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive);
             }, (cachedName, cachedValue) =>
             {
                 if (DateTime.UtcNow > cachedValue.ttl)
                 {
-                    return new ObjectShortCacheAsyncItem<T>(factory.Invoke(), howLongWillILive);
+                    return new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive);
                 }
                 else
                 {
@@ -53,7 +54,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }).ObjectData;
         }
 
-        class ObjectShortCacheAsyncItem<T>
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+        class ObjectShortCacheAsyncItem
         {
             public readonly Task<T> ObjectData;
             public readonly DateTime ttl;
@@ -66,6 +69,5 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 this.ttl = DateTime.UtcNow.Add(timeToLive);
             }
         }
-
     }
 }

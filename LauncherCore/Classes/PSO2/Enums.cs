@@ -79,6 +79,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         [EnumVisibleInOption(false)]
         /// <summary>Internal use only. Check the files which should always be checked before starting game.</summary>
-        Always_Only
+        Always_Only,
+        
+        [EnumVisibleInOption(false)]
+        /// <summary>Internal use only. Check the classic files only.</summary>
+        Classic_Only,
+
+        [EnumVisibleInOption(false)]
+        /// <summary>Internal use only. Follow the settings.</summary>
+        Auto
     }
 }

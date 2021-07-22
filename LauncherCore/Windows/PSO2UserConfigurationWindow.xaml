@@ -59,7 +59,7 @@
                     </Grid.RowDefinitions>
                     <Button Content="Undo all changes" Click="ButtonUndoAllChanges_Click" />
                     <!--<RichTextBox Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" x:Name="Box_ManualConfig" />-->
-                    <avalon:TextEditor Grid.Row="1" x:Name="Box_ManualConfig" ShowLineNumbers="True" />
+                    <avalon:TextEditor Grid.Row="1" x:Name="Box_ManualConfig" ShowLineNumbers="True" Foreground="{Binding ElementName=thisSelf,Path=Foreground,Mode=OneWay}" />
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>

@@ -118,21 +118,6 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private static readonly DependencyPropertyKey ValueTextPropertyKey = DependencyProperty.RegisterReadOnly("ValueText", typeof(string), typeof(WeirdSlider), new UIPropertyMetadata(string.Empty));
         public static readonly DependencyProperty ValueTextProperty = ValueTextPropertyKey.DependencyProperty;
 
-        public static readonly DependencyProperty IndicatorBrushProperty = DependencyProperty.Register("IndicatorBrush", typeof(Brush), typeof(WeirdSlider), new UIPropertyMetadata(null, (obj, val) =>
-        {
-            if (obj is WeirdSlider slider)
-            {
-                if (val.NewValue is Brush bruh)
-                {
-                    slider._border.Background = bruh;
-                }
-                else
-                {
-                    slider._border.Background = null;
-                }
-            }
-        }));
-
         public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Direct, typeof(RoutedPropertyChangedEventHandler<int>), typeof(WeirdSlider));
 
         public event RoutedPropertyChangedEventHandler<int> ValueChanged
@@ -165,21 +150,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             set => this.SetValue(ItemsSourceProperty, value);
         }
 
-        public Brush IndicatorBrush
-        {
-            get => (Brush)this.GetValue(IndicatorBrushProperty);
-            set => this.SetValue(IndicatorBrushProperty, value);
-        }
-
         public string ValueText => (string)this.GetValue(ValueTextProperty);
-        private readonly Border _border;
 
         public WeirdSlider()
         {
-            this._border = new Border() { IsHitTestVisible = false, MinHeight = 3 };
             InitializeComponent();
-
-            this.Indicator.Children.Add(this._border);
         }
 
         private void WeirdButtonNext_Click(object sender, RoutedEventArgs e)
@@ -218,7 +193,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 this.SetValue(ValueTextPropertyKey, current.ToString());
             }
-            Grid.SetColumn(this._border, current);
+            Grid.SetColumn(this.IndicatorValue, current);
         }
     }
 }

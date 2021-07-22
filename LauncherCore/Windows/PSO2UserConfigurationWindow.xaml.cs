@@ -31,18 +31,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private UserConfig _conf;
         private PSO2RebootUserConfig _configR;
         private readonly Dictionary<string, List<OptionDOM>> listOfOptions;
-        private static readonly Lazy<SolidColorBrush> brush_darkTheme = new Lazy<SolidColorBrush>(()=>
-        {
-            var brush = new SolidColorBrush(Color.FromArgb(255, 229, 20, 0));
-            if (brush.CanFreeze) brush.Freeze();
-            return brush;
-        }),
-            brush_lightTheme = new Lazy<SolidColorBrush>(() =>
-            {
-                var brush = new SolidColorBrush(Color.FromArgb(255, 0, 120, 215));
-                if (brush.CanFreeze) brush.Freeze();
-                return brush;
-            });
 
         private static readonly Lazy<IHighlightingDefinition> highlighter_dark = new Lazy<IHighlightingDefinition>(() =>
         {
@@ -109,7 +97,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.listOfOptions.Clear();
             int gridX = 0;
 
-            SolidColorBrush bruh = App.Current.IsLightMode ? brush_lightTheme.Value : brush_darkTheme.Value;
+            // Hackish. Append the resolution selecting first.
+
 
             for (int i = 0; i < props.Length; i++)
             {
@@ -131,7 +120,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         var _opt = new BooleanIntOptionDOM(t.Name, displayName);
                         _opt.CheckBox.ValueChanged += this.OptionSlider_ValueChanged;
-                        _opt.CheckBox.IndicatorBrush = bruh;
                         slider = _opt.CheckBox;
                         opt = _opt;
                     }
@@ -151,7 +139,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         var _opt = new EnumOptionDOM(t.Name, displayName, propT);
                         _opt.Slider.ValueChanged += this.OptionSlider_ValueChanged;
-                        _opt.Slider.IndicatorBrush = bruh;
                         slider = _opt.Slider;
                         opt = _opt;
                     }
@@ -371,42 +358,26 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnThemeRefresh()
         {
-            Brush brush;
+            /*
             var brush_fore = this.Foreground.Clone();
             if (brush_fore.CanFreeze && !brush_fore.IsFrozen) brush_fore.Freeze();
             this.Box_ManualConfig.Foreground = brush_fore;
-            IHighlightingDefinition highlightingDefinition;
+            var brush_back = this.Background.Clone();
+            if (brush_back.CanFreeze && !brush_back.IsFrozen) brush_back.Freeze();
+            this.Box_ManualConfig.Background = brush_back;
+            */
 
-            // var brush_back = this.Background.Clone();
-            // if (brush_back.CanFreeze && !brush_back.IsFrozen) brush_back.Freeze();
-            // this.Box_ManualConfig.Background = brush_back;
+            IHighlightingDefinition highlightingDefinition;
             if (App.Current.IsLightMode)
             {
-                brush = brush_lightTheme.Value;
                 highlightingDefinition = highlighter_light.Value;
             }
             else
             {
-                brush = brush_darkTheme.Value;
                 highlightingDefinition = highlighter_dark.Value;
             }
 
             this.Box_ManualConfig.SyntaxHighlighting = highlightingDefinition;
-
-            foreach (var list in this.listOfOptions)
-            {
-                foreach (var opt in list.Value)
-                {
-                    if (opt is EnumOptionDOM enumDom)
-                    {
-                        enumDom.Slider.IndicatorBrush = brush;
-                    }
-                    else if (opt is BooleanIntOptionDOM boolDom)
-                    {
-                        boolDom.CheckBox.IndicatorBrush = brush;
-                    }
-                }
-            }
         }
 
         private static System.Drawing.Color WPFColorToWFColor(Color color) => System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);

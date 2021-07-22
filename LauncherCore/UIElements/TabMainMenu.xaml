@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-             mc:Ignorable="d" x:Name="thisSelf"
+             mc:Ignorable="d"
                   Background="Transparent"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
         <local:SplitButton Grid.Row="0" Content="Start game" Click="ButtonGameStart_Click"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                           IsEnabled="{Binding ElementName=thisSelf,Path=GameStartEnabled,Mode=OneWay}" x:Name="ButtonGameStart">
+                           IsEnabled="{Binding RelativeSource={RelativeSource AncestorLevel=1,AncestorType=mah:MetroTabItem,Mode=FindAncestor},Path=GameStartEnabled,Mode=OneWay}" x:Name="ButtonGameStart">
             <local:SplitButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Login and play" Click="MenuItemLoginAndPlay_Click" />
@@ -44,7 +44,11 @@
         <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Scan and download missing, modified or damaged game files" Click="ButtonScanFixGameData_Click" />
+                    <MenuItem Header="Scan and download missing, modified or damaged game files">
+                        <MenuItem Header="Scan according to your launcher settings" Click="ButtonScanFixGameData_Click" />
+                        <MenuItem Header="Scan for NGS files only" Click="ButtonScanFixGameData_NGSOnly_Click" />
+                        <MenuItem Header="Scan for Classic files only" Click="ButtonScanFixGameData_ClassicOnly_Click" />
+                    </MenuItem>
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>

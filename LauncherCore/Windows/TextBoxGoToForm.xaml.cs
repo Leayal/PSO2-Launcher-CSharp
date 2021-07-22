@@ -43,7 +43,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ButtonGo_Click(object sender, RoutedEventArgs e)
         {
             this.RaiseEvent(new RoutedPropertyChangedEventArgs<int>(this.oldLineNumber, this.lineNumber, LineJumpRequestEvent));
-            SystemCommands.CloseWindow(this);
+            // SystemCommands.CloseWindow(this);
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)

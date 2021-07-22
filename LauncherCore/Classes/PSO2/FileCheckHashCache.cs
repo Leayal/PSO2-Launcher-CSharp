@@ -12,6 +12,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     public class FileCheckHashCache
     {
+        private const int LatestVersion = 2;
+
         private static readonly ConcurrentDictionary<string, FileCheckHashCache> _connectionPool;
 
         static FileCheckHashCache()
@@ -36,8 +38,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }, (key, existing) => 
             {
-                var state = Interlocked.CompareExchange(ref existing.flag_state, 0, 0);
-                if (state == 3)
+                if (existing.CancelScheduleClose())
+                {
+                    existing.IncreaseRefCount();
+                    return existing;
+                }
+                else
                 {
                     try
                     {
@@ -50,14 +56,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     {
                         throw new DatabaseErrorException();
                     }
-                }
-                else
-                {
-                    if (existing.IncreaseRefCount() == 1)
-                    {
-                        existing.CancelScheduleClose();
-                    }
-                    return existing;
                 }
             });
         }
@@ -93,8 +91,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        private const int LatestVersion = 1;
-
         private readonly string filepath;
         private readonly SQLiteAsyncConnection sqlConn;
         private Task t_load;
@@ -109,7 +105,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.filepath = filepath;
             this.refCount = 0;
             this.flag_state = 0;
-            var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create, true, "leapso2ngshashtable");
+            var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteAsyncConnection(connectionStr);
         }
 
@@ -150,8 +146,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 try
                 {
-                    var verRecordTb = await this.sqlConn.GetAsync<Versioning>("Ver");
-                    if (verRecordTb.TableVersion != LatestVersion)
+                    var verRecordTb = await this.sqlConn.FindAsync<Versioning>("Ver");
+                    if (verRecordTb == null)
+                    {
+                        await this.sqlConn.InsertAsync(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
+                        await this.sqlConn.DropTableAsync<PatchRecordItem>();
+                        await this.sqlConn.CreateTableAsync<PatchRecordItem>();
+                    }
+                    else if (verRecordTb.TableVersion != LatestVersion)
                     {
                         await this.Upgrading(verRecordTb.TableVersion);
                     }
@@ -175,6 +177,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else
             {
+                if (fromVersion == 1)
+                {
+
+                }
                 if (fromVersion == LatestVersion)
                 {
                     return;
@@ -208,12 +214,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        private void CancelScheduleClose()
+        private bool CancelScheduleClose()
         {
             var state = Interlocked.CompareExchange(ref this.flag_state, 1, 2);
             if (state == 2)
             {
                 this.cancelSchedule.Cancel();
+                return true;
+            }
+            else if (state == 3)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
             }
         }
 
@@ -226,13 +241,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var token = this.cancelSchedule.Token;
                 await Task.Delay(TimeSpan.FromSeconds(30), token).ContinueWith(async t =>
                 {
-                    if (!t.IsCanceled)
+                    if (!token.IsCancellationRequested && !t.IsCanceled)
                     {
                         if (Interlocked.CompareExchange(ref this.flag_state, 3, 2) == 2)
                         {
                             await this.ForceClose();
                         }
                     }
+                    this.cancelSchedule?.Dispose();
+                    this.cancelSchedule = null;
                 }).Unwrap();
             }
         }

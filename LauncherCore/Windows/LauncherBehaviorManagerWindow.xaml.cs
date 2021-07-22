@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -35,6 +34,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.checkbox_loadweblauncher.IsChecked = this._config.LauncherLoadWebsiteAtStartup;
             this.checkbox_checkpso2updatestartup.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartup;
             this.checkbox_checkpso2updatestartup_prompt.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt;
+
+            this.checkbox_checkpso2updatebeforegamestart.IsChecked = this._config.CheckForPSO2GameUpdateBeforeLaunchingGame;
+            this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
@@ -42,6 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
+            this._config.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
 
             this._config.Save();
             this.DialogResult = true;
@@ -84,9 +87,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return _list;
         }
 
-        private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void Checkbox_checkpso2updatebeforegamestart_Unchecked(object sender, RoutedEventArgs e)
         {
-            e.Handled = System.Linq.Enumerable.Any(e.Text, c => !char.IsDigit(c));
+            if (MessageBox.Show(this, "Are you sure you want to disable checking for PSO2 updates before starting game?\r\n(Disable this will NOT disable binaries integrity check before starting. They are 2 different checks of their own before starting game)", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                e.Handled = true;
+                if (sender is CheckBox cb)
+                {
+                    cb.IsChecked = true;
+                }
+            }
         }
     }
 }

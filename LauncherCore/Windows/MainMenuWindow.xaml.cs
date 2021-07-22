@@ -32,6 +32,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private CancellationTokenSource cancelSrc;
         private readonly ConfigurationFile config_main;
         private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
+        private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
 
         public MainMenuWindow()
         {
@@ -45,6 +46,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
+            this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
             InitializeComponent();
             string dir_root = this.config_main.PSO2_BIN,
                 dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
@@ -107,6 +109,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ThisWindow_Closed(object sender, EventArgs e)
         {
             // this.config_main.Save();
+            if (this.trayIcon.IsValueCreated)
+            {
+                this.trayIcon.Value.Visible = false;
+                this.trayIcon.Value.Dispose();
+            }
         }
 
         private void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)

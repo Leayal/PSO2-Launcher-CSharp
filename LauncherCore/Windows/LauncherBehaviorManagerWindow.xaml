@@ -34,12 +34,14 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
 
             <CheckBox Grid.Row="0" Grid.ColumnSpan="2" Content="Load the launcher website at startup" Margin="1" x:Name="checkbox_loadweblauncher" />
             <CheckBox Grid.Row="1" Grid.Column="0" Content="Check for PSO2 game updates at startup" Margin="1" x:Name="checkbox_checkpso2updatestartup" />
             <CheckBox Grid.Row="1" Grid.Column="1" Content="Prompt if found any updates" Margin="1" x:Name="checkbox_checkpso2updatestartup_prompt" />
+            <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="Check for PSO2 update before launching the game" Margin="1" x:Name="checkbox_checkpso2updatebeforegamestart" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">
