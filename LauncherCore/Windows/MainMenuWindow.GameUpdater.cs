@@ -85,7 +85,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
-                    this.TabMainMenu_ButtonManageGameDataClick(null, null);
+                    this.TabMainMenu_ButtonManageGameDataClick(this.TabMainMenu, null);
                 }
                 return;
             }
