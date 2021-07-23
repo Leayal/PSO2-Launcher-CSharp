@@ -30,7 +30,7 @@ namespace Leayal.PSO2Launcher.Core
                         using (var waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "pso2lealauncher-v2-waiter"))
                         {
                             var app = new App();
-                            var registered = ThreadPool.RegisterWaitForSingleObject(waitHandle, this.OnNextInstanceStarted, app, -1, true);
+                            var registered = ThreadPool.RegisterWaitForSingleObject(waitHandle, this.OnNextInstanceStarted, app, -1, false);
                             try
                             {
                                 if (Debugger.IsAttached)
@@ -86,7 +86,18 @@ namespace Leayal.PSO2Launcher.Core
             {
                 app.Dispatcher.BeginInvoke((Action)delegate
                 {
-                    app.MainWindow?.Activate();
+                    if (app.MainWindow is Windows.MainMenuWindow window)
+                    {
+                        if (window.IsMinimizedToTray)
+                        {
+                            window.IsMinimizedToTray = false;
+                        }
+                        else if (window.WindowState == System.Windows.WindowState.Minimized)
+                        {
+                            System.Windows.SystemCommands.RestoreWindow(window);
+                        }
+                        window.Activate();
+                    }
                 });
             }
         }
