@@ -30,7 +30,13 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonPSO2GameOptionClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2GameOptionClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameLauncherBehaviorClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherBehaviorClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         
-        public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true));
+        public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true, (obj, e) =>
+        {
+            if (obj is TabMainMenu tab)
+            {
+                tab.RaiseEvent(new RoutedEventArgs(GameStartEnabledChangedEvent));
+            }
+        }));
         public static readonly DependencyProperty ForgetLoginInfoEnabledProperty = DependencyProperty.Register("ForgetLoginInfoEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(false, (obj, val)=>
         {
             if (obj is TabMainMenu tab)
@@ -38,6 +44,18 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 tab.MenuItemForgetSavedLogin.IsEnabled = (bool)(val.NewValue);
             }
         }));
+        public static readonly RoutedEvent GameStartEnabledChangedEvent = EventManager.RegisterRoutedEvent("GameStartEnabledChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(MetroTabItem));
+        public event RoutedEventHandler GameStartEnabledChanged
+        {
+            add => this.AddHandler(GameStartEnabledChangedEvent, value);
+            remove => this.RemoveHandler(GameStartEnabledChangedEvent, value);
+        }
+        public static readonly RoutedEvent IsSelectedChangedEvent = EventManager.RegisterRoutedEvent("IsSelectedChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(MetroTabItem));
+        public event RoutedEventHandler IsSelectedChanged
+        {
+            add => this.AddHandler(IsSelectedChangedEvent, value);
+            remove => this.RemoveHandler(IsSelectedChangedEvent, value);
+        }
 
         public bool GameStartEnabled
         {
@@ -152,6 +170,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void ButtonManageGameLauncherBehavior_Click(object sender, RoutedEventArgs e)
         {
             this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherBehaviorClickedEvent));
+        }
+
+        private void MetroTabItem_SelectionChanged(object sender, RoutedEventArgs e)
+        {
+            this.RaiseEvent(new RoutedEventArgs(IsSelectedChangedEvent));
         }
     }
 }
