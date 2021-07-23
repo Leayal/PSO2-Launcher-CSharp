@@ -89,16 +89,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
             // var t = this._configR.GetType();
-            this.OptionsItems.Children.Clear();
-            this.OptionsItems.RowDefinitions.Clear();
             var props = this._configR.GetType().GetProperties();
             Type t_bool = typeof(bool),
                 t_int = typeof(int);
             this.listOfOptions.Clear();
-            int gridX = 0;
 
             // Hackish. Append the resolution selecting first.
-
+            // ResolutionOptionDOM
+            this.OnBeforeCreatingOptionDom(props, this.listOfOptions);
 
             for (int i = 0; i < props.Length; i++)
             {
@@ -143,7 +141,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         opt = _opt;
                     }
 
-                    this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
                     opt.Reload(this._configR);
                     if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
                     {
@@ -151,7 +148,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.listOfOptions.Add(categoryName, opts);
                     }
                     opts.Add(opt);
-                    gridX++;
                 }
             }
 
@@ -176,7 +172,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                             // list[i];
                             this.OptionsItems.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
-                            var text = new TextBlock() { Text = opt.DisplayName };
+                            var text = new TextBlock() { Text = opt.DisplayName, VerticalAlignment = VerticalAlignment.Center };
                             Grid.SetRow(text, gridX);
                             Grid.SetRow(opt.ValueController, gridX);
                             Grid.SetColumn(opt.ValueController, 1);
@@ -381,113 +377,5 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         private static System.Drawing.Color WPFColorToWFColor(Color color) => System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
-
-        abstract class OptionDOM
-        {
-            public string Name { get; }
-
-            public string DisplayName { get; }
-
-            protected OptionDOM(string name, string displayname)
-            {
-                this.Name = name;
-                this.DisplayName = displayname;
-            }
-
-            public abstract void Reload(PSO2RebootUserConfig conf);
-
-            public abstract FrameworkElement ValueController { get; }
-        }
-
-        class BooleanIntOptionDOM : OptionDOM
-        {
-            public readonly WeirdSlider CheckBox;
-            private static readonly IReadOnlyDictionary<int, string> lookupDictionary = new Dictionary<int, string>(2)
-            {
-                { 0, "Off" },
-                { 1, "On" }
-            };
-
-            public BooleanIntOptionDOM(string name, string displayName) : base(name, displayName) 
-            {
-                this.CheckBox = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name, ItemsSource = lookupDictionary };
-            }
-
-            public override void Reload(PSO2RebootUserConfig conf)
-            {
-                var prop = conf.GetType().GetProperty(this.Name);
-                if (prop != null)
-                {
-                    this.CheckBox.Value = Convert.ToInt32(prop.GetValue(conf), CultureInfo.InvariantCulture.NumberFormat);
-                }
-            }
-
-            public override FrameworkElement ValueController => this.CheckBox;
-        }
-
-        class IntOptionDOM : OptionDOM
-        {
-            public readonly WeirdValueSlider Slider;
-
-            public IntOptionDOM(string name, in int min, in int max, string displayName) : base(name, displayName)
-            {
-                this.Slider = new WeirdValueSlider() { Tag = this, Name = "PSO2GameOption_" + name };
-                this.Slider.slider.Minimum = min;
-                this.Slider.slider.Maximum = max;
-            }
-
-            public override void Reload(PSO2RebootUserConfig conf)
-            {
-                var prop = conf.GetType().GetProperty(this.Name);
-                if (prop != null)
-                {
-                    var safe_val = Math.Clamp(Convert.ToInt32(prop.GetValue(conf), CultureInfo.InvariantCulture.NumberFormat), Convert.ToInt32(this.Slider.slider.Minimum), Convert.ToInt32(this.Slider.slider.Maximum));
-                    this.Slider.Value = safe_val;
-                }
-            }
-
-            public override FrameworkElement ValueController => this.Slider;
-        }
-
-        class EnumOptionDOM : OptionDOM
-        {
-            public readonly WeirdSlider Slider;
-
-            public EnumOptionDOM(string name, string displayName, Type type) : base(name, displayName)
-            {
-                this.Slider = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name };
-                var mems = Enum.GetNames(type);
-                var d = new Dictionary<int, string>(mems.Length);
-                for (int i = 0; i < mems.Length; i++)
-                {
-                    string memName = mems[i];
-                    var mem = type.GetMember(memName)[0];
-                    if (!EnumVisibleInOptionAttribute.TryGetIsVisible(mem, out var visible) || visible)
-                    {
-                        var val = Convert.ToInt32(Enum.Parse(type, memName));
-                        if (!EnumDisplayNameAttribute.TryGetDisplayName(mem, out var displayname))
-                        {
-                            displayname = memName;
-                        }
-                        d.Add(val, displayname);
-                    }
-                }
-                this.Slider.ItemsSource = d;
-            }
-
-            public override void Reload(PSO2RebootUserConfig conf)
-            {
-                var t = conf.GetType();
-                var prop = t.GetProperty(this.Name);
-                if (prop != null)
-                {
-                    var val = prop.GetValue(conf);
-                    var converted = Convert.ToInt32(val);
-                    this.Slider.Value = converted;
-                }
-            }
-
-            public override FrameworkElement ValueController => this.Slider;
-        }
     }
 }

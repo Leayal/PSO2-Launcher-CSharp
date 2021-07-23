@@ -23,6 +23,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         ExclusiveFullsreen,
     }
 
+    public enum KnownRatio
+    {
+        Unknown = 0,
+        _4_3,
+        _16_9,
+        _16_10
+    }
+
     enum TextureFiltering
     {
         Bilinear,
