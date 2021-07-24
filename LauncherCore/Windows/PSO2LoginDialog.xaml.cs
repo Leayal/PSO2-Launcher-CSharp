@@ -29,9 +29,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private readonly PSO2HttpClient webclient;
 
-        public PSO2LoginDialog(PSO2HttpClient webclient) : this(webclient, null) { }
+        public PSO2LoginDialog(PSO2HttpClient webclient) : this(webclient, null, false) { }
 
-        public PSO2LoginDialog(PSO2HttpClient webclient, SecureString username)
+        public PSO2LoginDialog(PSO2HttpClient webclient, SecureString username, bool disposeUsername)
         {
             this._loginToken = null;
             this.webclient = webclient;
@@ -49,10 +49,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (username != null)
             {
                 this.checkbox_rememberusername.IsChecked = true;
-                username.UseAsString((in ReadOnlySpan<char> chars) =>
+                username.Reveal((in ReadOnlySpan<char> chars) =>
                 {
                     this.idBox.Text = new string(chars);
                 });
+                if (disposeUsername)
+                {
+                    username.Dispose();
+                }
             }
         }
 
@@ -111,6 +115,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     MessageBox.Show(this, ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
                 finally
                 {
                     btn.IsEnabled = true;
@@ -121,18 +129,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private PSO2LoginToken _loginToken;
         public PSO2LoginToken LoginToken => this._loginToken;
 
-        public SecureString GetPassword() => this.pwBox.SecurePassword;
+        public SecureString GetPassword()
+        {
+            var result = this.pwBox.SecurePassword;
+            result.MakeReadOnly();
+            return result;
+        }
 
         public SecureString GetUsername()
         {
-            var str = this.idBox.Text.ToArray();
+            var str = this.idBox.Text.AsSpan();
             var ss = new SecureString();
             for (int i = 0; i < str.Length; i++)
             {
                 ss.AppendChar(str[i]);
-                str[i] = '\0';
             }
-
+            ss.MakeReadOnly();
             return ss;
         }
 

@@ -4,12 +4,15 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.SharedInterfaces;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -197,37 +200,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             {
                                 if (File.Exists(usernamePath))
                                 {
-                                    using (var fs = File.OpenRead(usernamePath))
-                                    {
-                                        var bufferlength = fs.Length;
-                                        if (bufferlength != 0 && bufferlength < (128 * 2))
-                                        {
-                                            var buffer = new byte[bufferlength];
-                                            if (fs.Read(buffer, 0, buffer.Length) == buffer.Length)
-                                            {
-                                                for (int i = 0; i < buffer.Length; i++)
-                                                {
-                                                    buffer[i] ^= 0x55;
-                                                }
-                                                unsafe
-                                                {
-                                                    fixed (byte* b = buffer)
-                                                    {
-                                                        char* c = (char*)b;
-                                                        username = new SecureString(c, buffer.Length / 2);
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                username = null;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            username = null;
-                                        }
-                                    }
+                                    var data = File.ReadAllBytes(usernamePath);
+                                    username = SecureStringHelper.Import(data);
+                                    username.MakeReadOnly();
                                 }
                                 else
                                 {
@@ -239,7 +214,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 username = null;
                             }
                             
-                            using (var loginForm = new PSO2LoginDialog(this.pso2HttpClient, username))
+                            using (var loginForm = new PSO2LoginDialog(this.pso2HttpClient, username, true))
                             {
                                 loginForm.Owner = this;
                                 if (loginForm.ShowDialog() == true)
@@ -250,16 +225,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         using (var id = loginForm.GetUsername())
                                         using (var fs = File.Create(usernamePath))
                                         {
-                                            var buffer = new byte[id.Length * 2];
-                                            id.UseAsString((in ReadOnlySpan<char> chars) =>
+                                            byte[] buffer = id.Export();
+                                            try
                                             {
-                                                Encoding.Unicode.GetBytes(chars, buffer);
-                                            });
-                                            for (int i = 0; i < buffer.Length; i++)
-                                            {
-                                                buffer[i] ^= 0x55;
+                                                fs.Write(buffer, 0, buffer.Length);
                                             }
-                                            fs.Write(buffer, 0, buffer.Length);
+                                            finally
+                                            {
+                                                Array.Fill<byte>(buffer, 0);
+                                            }
+                                            
+                                            fs.Flush();
                                         }
                                     }
                                     if (loginForm.SelectedRememberOption == PSO2LoginDialog.RememberOption.RememberLoginInfo)

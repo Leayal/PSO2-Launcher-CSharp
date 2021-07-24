@@ -140,38 +140,37 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // {"id":"","password":""}
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
                 stream.Write(b_1);
-                this.username.EncodeTo(Encoding.UTF8, stream, out _, out var b_id);
+                this.username.EncodeTo(stream, out var b_id);
                 stream.Write(b_2);
-                this.password.EncodeTo(Encoding.UTF8, stream, out _, out var b_pw);
+                this.password.EncodeTo(stream, out var b_pw);
                 stream.Write(b_3);
 
                 if (!computedLength.HasValue)
                 {
                     computedLength = b_1.Length + b_2.Length + b_3.Length + b_id + b_pw;
                 }
-
-                return Task.CompletedTask;
             }
 
             protected override bool TryComputeLength(out long length)
             {
                 if (!computedLength.HasValue)
                 {
-                    var bufferLen = Math.Max(this.username.Length, this.password.Length) * 2;
+                    var bufferLen = Math.Max(this.username.Length, this.password.Length) * 2 + 1;
                     var buffer = new byte[bufferLen];
                     try
                     {
                         using (var mem = new MemoryStream(buffer, true))
                         {
                             mem.Position = 0;
-                            this.username.EncodeTo(Encoding.UTF8, mem, out _, out var b_id);
+                            this.username.EncodeTo(mem, out var b_id);
                             mem.Position = 0;
-                            this.password.EncodeTo(Encoding.UTF8, mem, out _, out var b_pw);
+                            this.password.EncodeTo(mem, out var b_pw);
                             computedLength = b_1.Length + b_2.Length + b_3.Length + b_id + b_pw;
                         }
+                        
                     }
                     finally
                     {

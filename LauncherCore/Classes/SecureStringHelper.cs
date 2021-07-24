@@ -4,27 +4,154 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     static class SecureStringHelper
     {
-        public static void UseAsString(this SecureString myself, SecretRevealedText revealed)
+        private static readonly byte[] _entropy = Encoding.ASCII.GetBytes("LeaTypicalEntro");
+
+        /// <summary>Invoke the <see cref="SecretRevealedText"/> delegate with the revealed password in form of an unmanaged array of <seealso cref="char"/>.</summary>
+        /// <param name="myself">The <seealso cref="SecureString"/> to reveal.</param>
+        /// <param name="revealed">The delegate to invoke.</param>
+        /// <remarks>The unmanaged array will be safelty cleared and deallocated after when the delegate exits for whatever reasons. (Unhandled exceptions or returned void).</remarks>
+        /// <exception cref="ObjectDisposedException">The <seealso cref="SecureString"/> has already been disposed.</exception>
+        public static void Reveal(this SecureString myself, SecretRevealedText revealed)
         {
-            UseRaw(myself, Encoding.Unicode, new SecretRevealedRaw((in ReadOnlySpan<byte> buffer) =>
+            IntPtr pointer = IntPtr.Zero;
+            try
             {
+                pointer = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                ReadOnlySpan<char> span;
                 unsafe
                 {
-                    fixed (byte* b = buffer)
-                    {
-                        var span = new ReadOnlySpan<char>(b, buffer.Length / 2);
-                        revealed.Invoke(in span);
-                    }
+                    span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
                 }
-            }));
+                revealed.Invoke(span);
+            }
+            finally
+            {
+                if (pointer != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer);
+                }
+            }
         }
 
-        public static void EncodeTo(this SecureString myself, System.Text.Encoding encoding, Stream stream, out int writtenChars, out int writtenBytes)
+        public static void Import(this SecureString myself, byte[] data) => Import(myself, data, null);
+
+        public static void Import(this SecureString myself, byte[] data, byte[] entropy)
+        {
+            byte[] buffer = null;
+            try
+            {
+                buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
+                char[] chars = null;
+                try
+                {
+                    chars = Encoding.Unicode.GetChars(buffer);
+                    var span = chars.AsSpan();
+                    myself.Clear();
+                    for (int i = 0; i < chars.Length; i++)
+                    {
+                        myself.AppendChar(chars[i]);
+                    }
+                }
+                finally
+                {
+                    if (chars != null)
+                    {
+                        Array.Fill<char>(chars, char.MinValue);
+                    }
+                }
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    Array.Fill<byte>(buffer, 0);
+                }
+            }
+        }
+
+        public static SecureString Import(byte[] data) => Import(data, null);
+
+        public static SecureString Import(byte[] data, byte[] entropy)
+        {
+            SecureString result = null;
+            byte[] buffer = null;
+            try
+            {
+                buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
+                char[] chars = null;
+                try
+                {
+                    chars = Encoding.Unicode.GetChars(buffer);
+                    var span = chars.AsSpan();
+                    result = new SecureString();
+                    for (int i = 0; i < chars.Length; i++)
+                    {
+                        result.AppendChar(chars[i]);
+                    }
+                }
+                catch
+                {
+                    if (result != null)
+                    {
+                        result.Dispose();
+                    }
+                    throw;
+                }
+                finally
+                {
+                    if (chars != null)
+                    {
+                        Array.Fill<char>(chars, char.MinValue);
+                    }   
+                }
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    Array.Fill<byte>(buffer, 0);
+                }
+            }
+            return result;
+        }
+
+        public static byte[] Export(this SecureString myself) => Export(myself, null);
+
+        public static byte[] Export(this SecureString myself, byte[] entropy)
+        {
+            byte[] result = null;
+            Reveal(myself, (in ReadOnlySpan<char> chars) =>
+            {
+                byte[] buffer = null;
+                try
+                {
+                    var writtenBytes = Encoding.Unicode.GetByteCount(chars);
+                    buffer = new byte[writtenBytes];
+                    Encoding.Unicode.GetBytes(chars, buffer);
+                    result = ProtectedData.Protect(buffer, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
+                }
+                finally
+                {
+                    if (buffer != null)
+                    {
+                        Array.Fill<byte>(buffer, 0);
+                    }
+                }
+                
+            });
+            return result;
+        }
+
+        public static void EncodeTo(this SecureString myself, Stream stream, out int writtenBytes)
+            => EncodeTo(myself, stream, Encoding.UTF8, out writtenBytes);
+
+        public static void EncodeTo(this SecureString myself, Stream stream, Encoding encoding, out int writtenBytes)
         {
             if (myself == null)
             {
@@ -35,110 +162,31 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 throw new ArgumentException(nameof(stream));
             }
 
-            var encoder = encoding.GetEncoder();
+            int byteWritten = 0;
+            Reveal(myself, (in ReadOnlySpan<char> span) =>
             {
-                int charUsed = 0, byteWritten = 0;
-                UseRaw(myself, Encoding.Unicode, new SecretRevealedRaw((in ReadOnlySpan<byte> buffer) =>
+                byteWritten = encoding.GetByteCount(span);
+                byte[] buffer = null;
+                try
                 {
-                    // Another copy
-                    IntPtr pointer = IntPtr.Zero;
-                    try
+                    buffer = new byte[byteWritten];
+                    encoding.GetBytes(span, buffer);
+                    stream.Write(buffer, 0, byteWritten);
+                }
+                finally
+                {
+                    if (buffer != null)
                     {
-                        int bufferLength = buffer.Length;
-                        pointer = Marshal.AllocHGlobal(bufferLength);
-                        Span<byte> tmpBuffer;
-                        unsafe
-                        {
-                            tmpBuffer = new Span<byte>(pointer.ToPointer(), bufferLength);
-                            bool c;
-                            fixed (byte* pinned = buffer)
-                            {
-                                char* cc = (char*)pinned;
-                                encoder.Convert(cc, myself.Length, (byte*)(pointer.ToPointer()), bufferLength, true, out charUsed, out byteWritten, out c);
-                            }
-                            stream.Write(tmpBuffer.Slice(0, byteWritten));
-                        }
-                        
+                        Array.Fill<byte>(buffer, 0);
                     }
-                    finally
-                    {
-                        if (pointer != IntPtr.Zero)
-                        {
-                            Marshal.ZeroFreeGlobalAllocUnicode(pointer);
-                        }
-                        encoder.Reset();
-                    }
-                }));
-                writtenBytes = byteWritten;
-                writtenChars = charUsed;
-            }
-            encoder = null;
-            // GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
-        }
+                }
+                
+            });
+            writtenBytes = byteWritten;
 
-        public static void UseRaw(this SecureString myself, Encoding encoding, SecretRevealedRaw revealed)
-        {
-            // SecureStringMarshal.SecureStringToGlobalAllocUnicode
-            IntPtr allocated;
-            switch (encoding)
-            {
-                case Encoding.Unicode:
-                    allocated = SecureStringMarshal.SecureStringToGlobalAllocUnicode(myself);
-                    break;
-                case Encoding.ANSI:
-                    allocated = SecureStringMarshal.SecureStringToGlobalAllocAnsi(myself);
-                    break;
-                default:
-                    throw new NotSupportedException();
-            }
-            if (allocated == IntPtr.Zero)
-            {
-                throw new ArgumentNullException();
-            }
-            try
-            {
-                ReadOnlySpan<byte> span;
-                unsafe
-                {
-                    switch (encoding)
-                    {
-                        case Encoding.Unicode:
-                            span = new ReadOnlySpan<byte>(allocated.ToPointer(), myself.Length * 2);
-                            break;
-                        case Encoding.ANSI:
-                            span = new ReadOnlySpan<byte>(allocated.ToPointer(), myself.Length);
-                            break;
-                        default:
-                            throw new NotSupportedException();
-                    }
-                }
-                revealed.Invoke(in span);
-            }
-            finally
-            {
-                switch (encoding)
-                {
-                    case Encoding.Unicode:
-                        Marshal.ZeroFreeGlobalAllocUnicode(allocated);
-                        break;
-                    case Encoding.ANSI:
-                        Marshal.ZeroFreeGlobalAllocAnsi(allocated);
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
-            }
         }
 
         // Would this create a copy of string?
         public delegate void SecretRevealedText(in ReadOnlySpan<char> characters);
-
-        public delegate void SecretRevealedRaw(in ReadOnlySpan<byte> data);
-
-        public enum Encoding
-        {
-            Unicode,
-            ANSI
-        }
     }
 }
