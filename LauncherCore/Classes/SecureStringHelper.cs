@@ -8,6 +8,8 @@ using System.Security.Cryptography;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
+    /// <summary>Provides convenient extended methods to deal with <seealso cref="SecureString"/>.</summary>
+    /// <remarks>It's highly inefficient in term of memory usage.</remarks>
     static class SecureStringHelper
     {
         private static readonly byte[] _entropy = Encoding.ASCII.GetBytes("LeaTypicalEntro");

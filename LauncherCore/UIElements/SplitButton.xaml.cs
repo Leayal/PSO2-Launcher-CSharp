@@ -20,15 +20,13 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for SplitButton.xaml
     /// </summary>
-    public partial class SplitButton : UserControl
+    public partial class SplitButton : ContentControlEx
     {
         public static readonly RoutedEvent DropDownClickEvent = EventManager.RegisterRoutedEvent("DropDownClick", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SplitButton));
         public static readonly RoutedEvent ClickEvent = EventManager.RegisterRoutedEvent("Click", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(SplitButton));
-        private readonly Dictionary<string, MenuItem> table;
 
         public SplitButton()
         {
-            this.table = new Dictionary<string, MenuItem>();
             InitializeComponent();
         }
 

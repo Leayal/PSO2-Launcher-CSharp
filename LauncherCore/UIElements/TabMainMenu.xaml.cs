@@ -1,4 +1,5 @@
-﻿using MahApps.Metro.Controls;
+﻿using Leayal.PSO2Launcher.Core.Classes;
+using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,8 +24,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     {
         public static readonly RoutedEvent ButtonCheckForPSO2UpdateClickedEvent = EventManager.RegisterRoutedEvent("ButtonCheckForPSO2UpdateClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameDataClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
-        public static readonly RoutedEvent ButtonGameStartClickedEvent = EventManager.RegisterRoutedEvent("ButtonGameStartClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
-        public static readonly RoutedEvent LoginAndPlayClickedEvent = EventManager.RegisterRoutedEvent("LoginAndPlayClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent GameStartRequestedEvent = EventManager.RegisterRoutedEvent("GameStartRequested", RoutingStrategy.Direct, typeof(GameStartRequestEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ForgetLoginInfoClickedEvent = EventManager.RegisterRoutedEvent("ForgetLoginInfoClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonScanFixGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonScanFixGameDataClicked", RoutingStrategy.Direct, typeof(ButtonScanFixGameDataClickRoutedEventHander), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonPSO2GameOptionClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2GameOptionClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
@@ -44,13 +44,45 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 tab.MenuItemForgetSavedLogin.IsEnabled = (bool)(val.NewValue);
             }
         }));
-        public static readonly RoutedEvent GameStartEnabledChangedEvent = EventManager.RegisterRoutedEvent("GameStartEnabledChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(MetroTabItem));
+        public static readonly RoutedEvent DefaultGameStartStyleChangedEvent = EventManager.RegisterRoutedEvent("DefaultGameStartStyleChanged", RoutingStrategy.Direct, typeof(ChangeDefaultGameStartStyleEventHandler), typeof(TabMainMenu));
+        public event ChangeDefaultGameStartStyleEventHandler DefaultGameStartStyleChanged
+        {
+            add => this.AddHandler(DefaultGameStartStyleChangedEvent, value);
+            remove => this.RemoveHandler(DefaultGameStartStyleChangedEvent, value);
+        }
+        public static readonly DependencyProperty DefaultGameStartStyleProperty = DependencyProperty.Register("DefaultGameStartStyle", typeof(GameStartStyle), typeof(TabMainMenu), new UIPropertyMetadata(GameStartStyle.Default, (obj, e) =>
+        {
+            if (obj is TabMainMenu tab && e.NewValue is GameStartStyle style)
+            {
+                foreach (var subItem in tab.MenuItemChangeDefaultGameStartMethod.Items)
+                {
+                    if (subItem is MenuItem subMenuItem && subMenuItem.Tag is GameStartStyle tagstyle)
+                    {
+                        if (tagstyle == style)
+                        {
+                            subMenuItem.IsChecked = true;
+                        }
+                        else
+                        {
+                            subMenuItem.IsChecked = false;
+                        }
+                    }
+                }
+                tab.RaiseEvent(new ChangeDefaultGameStartStyleEventArgs(style, DefaultGameStartStyleChangedEvent));
+            }
+        }));
+        public GameStartStyle DefaultGameStartStyle
+        {
+            get => (GameStartStyle)this.GetValue(DefaultGameStartStyleProperty);
+            set => this.SetValue(DefaultGameStartStyleProperty, value);
+        }
+        public static readonly RoutedEvent GameStartEnabledChangedEvent = EventManager.RegisterRoutedEvent("GameStartEnabledChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public event RoutedEventHandler GameStartEnabledChanged
         {
             add => this.AddHandler(GameStartEnabledChangedEvent, value);
             remove => this.RemoveHandler(GameStartEnabledChangedEvent, value);
         }
-        public static readonly RoutedEvent IsSelectedChangedEvent = EventManager.RegisterRoutedEvent("IsSelectedChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(MetroTabItem));
+        public static readonly RoutedEvent IsSelectedChangedEvent = EventManager.RegisterRoutedEvent("IsSelectedChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public event RoutedEventHandler IsSelectedChanged
         {
             add => this.AddHandler(IsSelectedChangedEvent, value);
@@ -70,13 +102,56 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
 
         private MenuItem MenuItemForgetSavedLogin;
+        private MenuItem MenuItemChangeDefaultGameStartMethod;
 
         public TabMainMenu()
         {
             InitializeComponent();
-            this.MenuItemForgetSavedLogin = new MenuItem() { Header = "Forget saved login", IsEnabled = false };
+
+            var contextMenu = this.ButtonGameStart.ContextMenu;
+            this.MenuItemChangeDefaultGameStartMethod = new MenuItem() { Header = "Change default GameStart method" };
+
+            var vals = Enum.GetValues<GameStartStyle>();
+            for (int i = 0; i < vals.Length; i++)
+            {
+                var val = vals[i];
+                string displayname;
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(val, out var isVisible) || isVisible)
+                {
+                    if (EnumDisplayNameAttribute.TryGetDisplayName(val, out var name))
+                    {
+                        displayname = name;
+                    }
+                    else
+                    {
+                        displayname = val.ToString();
+                    }
+
+                    var menuitem = new MenuItem() { Header = displayname, Tag = val };
+                    menuitem.Click += this.MenuItemChangeDefaultGameStartMethod_SubItemsClick;
+                    this.MenuItemChangeDefaultGameStartMethod.Items.Add(menuitem);
+
+                    menuitem = new MenuItem() { Header = displayname, Tag = val };
+                    menuitem.Click += this.MenuItemSpecificGameStartRequest_Click;
+                    contextMenu.Items.Add(menuitem);
+                }
+            }
+
+            this.MenuItemForgetSavedLogin = new MenuItem() { Header = "Forget remembered SEGA login", IsEnabled = false };
             this.MenuItemForgetSavedLogin.Click += this.MenuItemForgetSavedLogin_Click;
-            this.ButtonGameStart.ContextMenu.Items.Add(this.MenuItemForgetSavedLogin);
+            contextMenu.Items.Add(this.MenuItemForgetSavedLogin);
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(this.MenuItemChangeDefaultGameStartMethod);
+
+            this.DefaultGameStartStyle = GameStartStyle.StartWithoutToken;
+        }
+
+        private void MenuItemChangeDefaultGameStartMethod_SubItemsClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is GameStartStyle style)
+            {
+                this.DefaultGameStartStyle = style;
+            }
         }
 
         public event RoutedEventHandler ButtonCheckForPSO2UpdateClicked
@@ -98,22 +173,22 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.RaiseEvent(new RoutedEventArgs(ButtonManageGameDataClickedEvent));
         }
 
-        public event RoutedEventHandler ButtonGameStartClicked
-        {
-            add { this.AddHandler(ButtonGameStartClickedEvent, value); }
-            remove { this.RemoveHandler(ButtonGameStartClickedEvent, value); }
-        }
-
         private void ButtonGameStart_Click(object sender, RoutedEventArgs e) => this.TriggerButtonGameStart();
-        public void TriggerButtonGameStart() => this.RaiseEvent(new RoutedEventArgs(ButtonGameStartClickedEvent));
+        public void TriggerButtonGameStart() => this.RequestGameStart(this.DefaultGameStartStyle);
 
-        public event RoutedEventHandler LoginAndPlayClicked
+        public event GameStartRequestEventHandler GameStartRequested
         {
-            add { this.AddHandler(LoginAndPlayClickedEvent, value); }
-            remove { this.RemoveHandler(LoginAndPlayClickedEvent, value); }
+            add { this.AddHandler(GameStartRequestedEvent, value); }
+            remove { this.RemoveHandler(GameStartRequestedEvent, value); }
         }
-        private void MenuItemLoginAndPlay_Click(object sender, RoutedEventArgs e) => this.TriggerMenuItemLoginAndPlay();
-        public void TriggerMenuItemLoginAndPlay() => this.RaiseEvent(new RoutedEventArgs(LoginAndPlayClickedEvent));
+        private void MenuItemSpecificGameStartRequest_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is GameStartStyle style)
+            {
+                this.RequestGameStart(style);
+            }
+        }
+        public void RequestGameStart(GameStartStyle style) => this.RaiseEvent(new GameStartStyleEventArgs(style, GameStartRequestedEvent));
 
         public event RoutedEventHandler ForgetLoginInfoClicked
         {

@@ -48,12 +48,12 @@
             <localui:TabMainMenu x:Name="TabMainMenu"
                                  ButtonCheckForPSO2UpdateClicked="ButtonCheckForUpdate_Click"
                                  ButtonManageGameDataClicked="TabMainMenu_ButtonManageGameDataClick"
-                                 ButtonGameStartClicked="TabMainMenu_ButtonGameStartClick"
                                  ForgetLoginInfoClicked="TabMainMenu_ForgetLoginInfoClicked"
                                  ButtonScanFixGameDataClicked="TabMainMenu_ButtonScanFixGameDataClicked"
                                  ButtonManageGameLauncherBehaviorClicked="TabMainMenu_ButtonManageGameLauncherBehaviorClicked"
                                  ButtonPSO2GameOptionClicked="TabMainMenu_ButtonPSO2GameOptionClicked"
-                                 LoginAndPlayClicked="TabMainMenu_LoginAndPlayClicked" />
+                                 DefaultGameStartStyleChanged="TabMainMenu_DefaultGameStartStyleChanged"
+                                 GameStartRequested="TabMainMenu_GameStartRequested" />
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>

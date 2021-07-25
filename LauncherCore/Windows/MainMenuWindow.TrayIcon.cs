@@ -1,4 +1,5 @@
-﻿using Leayal.PSO2Launcher.Helper;
+﻿using Leayal.PSO2Launcher.Core.Classes;
+using Leayal.PSO2Launcher.Helper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,11 +56,28 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var typicalMenu = new ToolStripMenuItem("Quick menu");
 
             var typical_startGame = new ToolStripMenuItem("Start game");
-            var typical_startGame_NoLogin = new ToolStripMenuItem("Without login");
-            typical_startGame_NoLogin.Click += this.Typical_startGame_NoLogin_Click;
-            var typical_startGame_Login = new ToolStripMenuItem("With login");
-            typical_startGame_Login.Click += this.Typical_startGame_Login_Click;
-            typical_startGame.DropDownItems.AddRange(new ToolStripItem[] { typical_startGame_NoLogin, typical_startGame_Login });
+            typical_startGame.Click += this.Typical_startGame_Click;
+            var vals = Enum.GetValues<GameStartStyle>();
+            for (int i = 0; i < vals.Length; i++)
+            {
+                var val = vals[i];
+                string displayname;
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(val, out var isVisible) || isVisible)
+                {
+                    if (EnumDisplayNameAttribute.TryGetDisplayName(val, out var name))
+                    {
+                        displayname = name;
+                    }
+                    else
+                    {
+                        displayname = val.ToString();
+                    }
+
+                    var menuitem = new ToolStripMenuItem() { Text = displayname, Tag = val };
+                    menuitem.Click += this.Typical_startGame_SubItemsClick;
+                    typical_startGame.DropDownItems.Add(menuitem);
+                }
+            }
 
             var typical_checkforPSO2Updates = new ToolStripMenuItem("Check for PSO2 Updates");
             typical_checkforPSO2Updates.Click += this.Typical_checkforPSO2Updates_Click;
@@ -110,6 +128,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return ico;
         }
 
+        private void Typical_startGame_Click(object sender, EventArgs e)
+        {
+            if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
+            {
+                this.TabMainMenu.TriggerButtonGameStart();
+            }
+        }
+
         private void Typical_checkforPSO2Updates_Click(object sender, EventArgs e)
         {
             // Unnecessary 'if' but it doesn't hurt to use it.
@@ -119,21 +145,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Typical_startGame_NoLogin_Click(object sender, EventArgs e)
+        private void Typical_startGame_SubItemsClick(object sender, EventArgs e)
         {
-            // Unnecessary 'if' but it doesn't hurt to use it.
-            if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
+            if (sender is ToolStripMenuItem item && item.Tag is GameStartStyle style)
             {
-                this.TabMainMenu.TriggerButtonGameStart();
-            }
-        }
-
-        private void Typical_startGame_Login_Click(object sender, EventArgs e)
-        {
-            // Unnecessary 'if' but it doesn't hurt to use it.
-            if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
-            {
-                this.TabMainMenu.TriggerMenuItemLoginAndPlay();
+                // Unnecessary 'if' but it doesn't hurt to use it.
+                if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
+                {
+                    this.TabMainMenu.RequestGameStart(style);
+                }
             }
         }
 

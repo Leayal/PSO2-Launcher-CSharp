@@ -48,6 +48,30 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
             InitializeComponent();
+
+            try
+            {
+                if (App.Current.IsLightMode)
+                {
+                    this.BgImg.Source = lazybg_light.Value;
+                }
+                else
+                {
+                    this.BgImg.Source = lazybg_dark.Value;
+                }
+            }
+            catch { }
+        }
+
+        private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
+
+            this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
+            {
+                await FileCheckHashCache.ForceCloseAll();
+            }));
+
             string dir_root = this.config_main.PSO2_BIN,
                 dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
                 dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
@@ -61,26 +85,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.TabMainMenu.IsSelected = true;
         }
 
-        private async void ThisWindow_Loaded(object sender, RoutedEventArgs e)
+        protected override async void OnFirstShown(EventArgs e)
         {
-            this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
-            {
-                await FileCheckHashCache.ForceCloseAll();
-            }));
-            
-            try
-            {
-                if (App.Current.IsLightMode)
-                {
-                    this.BgImg.Source = lazybg_light.Value;
-                }
-                else
-                {
-                    this.BgImg.Source = lazybg_dark.Value;
-                }
-            }
-            catch { }
-
             if (this.config_main.LauncherLoadWebsiteAtStartup)
             {
                 this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -92,6 +98,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 // this.ButtonCheckForUpdate_Click(null, new RoutedEventArgs());
                 // this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             }
+
+            base.OnFirstShown(e);
         }
 
         protected override void OnThemeRefresh()
@@ -181,9 +189,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (sender is IWebViewCompatControl webview)
             {
+                webview.Navigated += this.Webview_Navigated;
                 webview.NavigateTo(new Uri("https://launcher.pso2.jp/ngs/01/"));
+            }
+        }
 
-                // Lock the view to the URL above.
+        private void Webview_Navigated(object sender, NavigationEventArgs e)
+        {
+            if (sender is IWebViewCompatControl webview)
+            {
+                webview.Navigated -= this.Webview_Navigated;
                 webview.Navigating += this.Webview_Navigating;
             }
         }
@@ -219,7 +234,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var dialog = new LauncherBehaviorManagerWindow(this.config_main);
                     dialog.Owner = this;
 
-                    dialog.ShowDialog();
+                    if (dialog.ShowDialog() == true)
+                    {
+                        this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
+                    }
                 }
                 finally
                 {

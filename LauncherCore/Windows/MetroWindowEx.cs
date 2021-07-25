@@ -24,7 +24,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private static readonly DependencyPropertyKey WindowCommandButtonsHeightPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsHeight", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
         public static readonly DependencyProperty WindowCommandButtonsHeightProperty = WindowCommandButtonsHeightPropertyKey.DependencyProperty;
 
-        private int flag_disposing;
+        private int flag_disposing, flag_firstshown;
         private readonly List<AsyncDisposeObject> _disposeThem;
 
         public bool IsMaximized => (bool)this.GetValue(IsMaximizedProperty);
@@ -36,6 +36,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public MetroWindowEx() : base() 
         {
             this.flag_disposing = 0;
+            this.flag_firstshown = 0;
             this._disposeThem = new List<AsyncDisposeObject>();
         }
 
@@ -60,6 +61,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public void RefreshTheme()
         {
             this.OnThemeRefresh();
+        }
+
+        public event EventHandler FirstShown;
+
+        protected override void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+
+            if (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0)
+            {
+                this.OnFirstShown(EventArgs.Empty);
+            }
+        }
+
+        protected virtual void OnFirstShown(EventArgs e)
+        {
+            this.FirstShown?.Invoke(this, e);
         }
 
         protected virtual void OnThemeRefresh() { }

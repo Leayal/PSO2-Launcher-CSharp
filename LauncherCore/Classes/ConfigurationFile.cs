@@ -251,6 +251,48 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_checkpso2updatestartupprompt", value);
         }
 
+        public GameStartStyle DefaultGameStartStyle
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2_defaultgamestartstyle", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    var num = (int)val.Value;
+                    var vals = Enum.GetValues<GameStartStyle>();
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        if (((int)vals[i]) == num)
+                        {
+                            return vals[i];
+                        }
+                    }
+                }
+                return GameStartStyle.StartWithoutToken;
+            }
+            set => this.Set("pso2_defaultgamestartstyle", (int)value);
+        }
+
+        public LoginPasswordRememberStyle DefaultLoginPasswordRemember
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2_defaultloginpasswordrememberstyle", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    var num = (int)val.Value;
+                    var vals = Enum.GetValues<LoginPasswordRememberStyle>();
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        if (((int)vals[i]) == num)
+                        {
+                            return vals[i];
+                        }
+                    }
+                }
+                return LoginPasswordRememberStyle.DoNotRemember;
+            }
+            set => this.Set("pso2_defaultloginpasswordrememberstyle", (int)value);
+        }
+
         public bool Load()
         {
             using (var fs = File.OpenRead(this.Filename))

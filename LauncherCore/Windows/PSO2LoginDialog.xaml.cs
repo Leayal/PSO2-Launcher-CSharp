@@ -28,23 +28,48 @@ namespace Leayal.PSO2Launcher.Core.Windows
     public partial class PSO2LoginDialog : MetroWindowEx, IDisposable
     {
         private readonly PSO2HttpClient webclient;
+        private readonly ConfigurationFile config;
 
-        public PSO2LoginDialog(PSO2HttpClient webclient) : this(webclient, null, false) { }
+        public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient) : this(conf, webclient, null, false) { }
 
-        public PSO2LoginDialog(PSO2HttpClient webclient, SecureString username, bool disposeUsername)
+        public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient, SecureString username, bool disposeUsername)
         {
             this._loginToken = null;
+            this.config = conf;
             this.webclient = webclient;
             InitializeComponent();
 
-            var defaultItem = new EnumComboBox.ValueDOM<RememberOption>(RememberOption.DoNotRememberLoginInfo);
-            var items = new List<EnumComboBox.ValueDOM<RememberOption>>(2)
+            var defaultVal = conf.DefaultLoginPasswordRemember;
+            EnumComboBox.ValueDOM<LoginPasswordRememberStyle> defaultItem = null;
+
+            var vals = Enum.GetValues<LoginPasswordRememberStyle>();
+            var items = new List<EnumComboBox.ValueDOM<LoginPasswordRememberStyle>>(vals.Length);
+            for (int i = 0; i < vals.Length; i++)
             {
-                defaultItem,
-                new EnumComboBox.ValueDOM<RememberOption>(RememberOption.RememberLoginInfo)
-            };
+                var val = vals[i];
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(val, out var isVisible) || isVisible)
+                {
+                    if (val == defaultVal)
+                    {
+                        defaultItem = new EnumComboBox.ValueDOM<LoginPasswordRememberStyle>(val);
+                        items.Add(defaultItem);
+                    }
+                    else
+                    {
+                        items.Add(new EnumComboBox.ValueDOM<LoginPasswordRememberStyle>(val));
+                    }
+                }
+            }
+
             this.rememberOption.ItemsSource = items;
-            this.rememberOption.SelectedItem = defaultItem;
+            if (defaultItem != null)
+            {
+                this.rememberOption.SelectedItem = defaultItem;
+            }
+            else
+            {
+                this.rememberOption.SelectedIndex = 0;
+            }
 
             if (username != null)
             {
@@ -60,18 +85,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        public RememberOption SelectedRememberOption
+        public LoginPasswordRememberStyle SelectedRememberOption
         {
             get
             {
                 var selected = this.rememberOption.SelectedItem;
-                if (selected == null)
+                if (selected is EnumComboBox.ValueDOM<LoginPasswordRememberStyle> dom)
                 {
-                    return RememberOption.DoNotRememberLoginInfo;
+                    return dom.Value;
                 }
                 else
                 {
-                    return ((EnumComboBox.ValueDOM<RememberOption>)selected).Value;
+                    return LoginPasswordRememberStyle.DoNotRemember;
                 }
             }
         }
@@ -155,13 +180,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.pwBox.Password = string.Empty;
         }
 
-        public enum RememberOption
+        private void RememberOption_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            [EnumDisplayName("Don't remember my login info")]
-            DoNotRememberLoginInfo,
-
-            [EnumDisplayName("Remember my login info until launcher exits")]
-            RememberLoginInfo
+            LoginPasswordRememberStyle val;
+            var selected = this.rememberOption.SelectedItem;
+            if (selected != null)
+            {
+                if (selected is EnumComboBox.ValueDOM<LoginPasswordRememberStyle> dom)
+                {
+                    val = dom.Value;
+                }
+                else
+                {
+                    val = LoginPasswordRememberStyle.DoNotRemember;
+                }
+                this.config.DefaultLoginPasswordRemember = val;
+                this.config.Save();
+            }
         }
     }
 }

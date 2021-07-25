@@ -37,6 +37,46 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.checkbox_checkpso2updatebeforegamestart.IsChecked = this._config.CheckForPSO2GameUpdateBeforeLaunchingGame;
             this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
+
+            var defaultval_GameStartStyle = this._config.DefaultGameStartStyle;
+            var vals_GameStartStyle = Enum.GetValues<GameStartStyle>();
+            var listOfGameStartStyles = new List<EnumComboBox.ValueDOM<GameStartStyle>>(vals_GameStartStyle.Length);
+            EnumComboBox.ValueDOM<GameStartStyle> default_GameStartStyle = null;
+            for (int i = 0; i < vals_GameStartStyle.Length; i++)
+            {
+                var val = vals_GameStartStyle[i];
+                string displayname;
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(val, out var isVisible) || isVisible)
+                {
+                    if (EnumDisplayNameAttribute.TryGetDisplayName(val, out var name))
+                    {
+                        displayname = name;
+                    }
+                    else
+                    {
+                        displayname = val.ToString();
+                    }
+
+                    if (val == defaultval_GameStartStyle)
+                    {
+                        default_GameStartStyle = new EnumComboBox.ValueDOM<GameStartStyle>(val);
+                        listOfGameStartStyles.Add(default_GameStartStyle);
+                    }
+                    else
+                    {
+                        listOfGameStartStyles.Add(new EnumComboBox.ValueDOM<GameStartStyle>(val));
+                    }
+                }
+            }
+            this.combobox_defaultgamestartstyle.ItemsSource = listOfGameStartStyles;
+            if (default_GameStartStyle == null)
+            {
+                this.combobox_defaultgamestartstyle.SelectedIndex = 0;
+            }
+            else
+            {
+                this.combobox_defaultgamestartstyle.SelectedItem = default_GameStartStyle;
+            }
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
@@ -45,6 +85,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
             this._config.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
+            if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
+            {
+                this._config.DefaultGameStartStyle = dom_GameStartStyle.Value;
+            }
 
             this._config.Save();
             this.DialogResult = true;

@@ -31,7 +31,7 @@
 
         <Label Grid.Row="3" Content="Password:" Margin="1" />
         <PasswordBox Grid.Row="3" Grid.Column="1" Margin="1" x:Name="pwBox" />
-        <localui:EnumComboBox Grid.Row="4" Grid.Column="1" Margin="1" x:Name="rememberOption" />
+        <localui:EnumComboBox Grid.Row="4" Grid.Column="1" Margin="1" x:Name="rememberOption" SelectionChanged="RememberOption_SelectionChanged" />
 
         <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="1">
             <Grid.ColumnDefinitions>

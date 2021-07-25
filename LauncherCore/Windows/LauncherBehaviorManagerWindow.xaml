@@ -29,9 +29,10 @@
         <Grid Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition  />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -42,6 +43,9 @@
             <CheckBox Grid.Row="1" Grid.Column="0" Content="Check for PSO2 game updates at startup" Margin="1" x:Name="checkbox_checkpso2updatestartup" />
             <CheckBox Grid.Row="1" Grid.Column="1" Content="Prompt if found any updates" Margin="1" x:Name="checkbox_checkpso2updatestartup_prompt" />
             <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="Check for PSO2 update before launching the game" Margin="1" x:Name="checkbox_checkpso2updatebeforegamestart" />
+
+            <TextBlock Grid.Row="3" Text="Default GameStart Method" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="3" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">
