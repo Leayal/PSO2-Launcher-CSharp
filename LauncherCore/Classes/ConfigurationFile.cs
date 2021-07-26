@@ -190,7 +190,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 {
                     if (val.ValueKind == System.Text.Json.JsonValueKind.False)
                     {
-                        return true;
+                        return false;
                     }
                     else
                     {

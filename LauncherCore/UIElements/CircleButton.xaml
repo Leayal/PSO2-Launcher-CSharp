@@ -1,0 +1,112 @@
+﻿<Button x:Class="Leayal.PSO2Launcher.Core.UIElements.CircleButton"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        d:DesignHeight="450" d:DesignWidth="450">
+    <Button.FocusVisualStyle>
+        <Style>
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Control}">
+                        <Grid Margin="8">
+                            <Ellipse
+                    Name="r1"
+                    Stroke="Black"
+                    StrokeDashArray="2 2"
+                    StrokeThickness="1"/>
+                            <Border
+                    Name="border"
+                    Width="{TemplateBinding ActualWidth}"
+                    Height="{TemplateBinding ActualHeight}"
+                    BorderThickness="1"
+                    CornerRadius="2"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Button.FocusVisualStyle>
+    <Button.Style>
+        <Style TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#666DB4EF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Ellipse Grid.RowSpan="3" Fill="{TemplateBinding Background}" IsHitTestVisible="False" />
+                            <Ellipse Grid.RowSpan="3" x:Name="mainCircle" IsHitTestVisible="False">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush>
+                                        <GradientStop Offset="0" Color="#00000000"/>
+                                        <GradientStop Offset="0.88" Color="#00000000"/>
+                                        <GradientStop Offset="1" Color="#80000000"/>
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Ellipse Grid.RowSpan="3" Margin="10" x:Name="highlightCircle" IsHitTestVisible="False">
+                                <Ellipse.Fill>
+                                    <LinearGradientBrush >
+                                        <GradientStop Offset="0" Color="#50FFFFFF"/>
+                                        <GradientStop Offset="0.5" Color="#00FFFFFF"/>
+                                        <GradientStop Offset="1" Color="#50FFFFFF"/>
+                                    </LinearGradientBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+
+                            <Border BorderBrush="{x:Null}" Background="Transparent" PreviewMouseLeftButtonDown="Button_Click">
+                                <ContentPresenter x:Name="content" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                            </Border>
+
+                            <Rectangle Grid.Row="1" Height="2" IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <SolidColorBrush Color="#CC000000" />
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <Border Grid.Row="2" Background="Transparent" BorderBrush="{x:Null}" PreviewMouseLeftButtonDown="Carret_Click">
+                                <iconPacks:PackIconFontAwesome VerticalAlignment="Center" HorizontalAlignment="Center" Kind="AngleDownSolid" Background="{x:Null}" Foreground="{TemplateBinding Foreground}" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#CC6DB4EF" />
+                                <Setter TargetName="mainCircle" Property="Fill">
+                                    <Setter.Value>
+                                        <RadialGradientBrush>
+                                            <GradientStop Offset="0" Color="#00000000"/>
+                                            <GradientStop Offset="0.88" Color="#00000000"/>
+                                            <GradientStop Offset="1" Color="{DynamicResource MahApps.Colors.AccentBase}"/>
+                                        </RadialGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#CC6DB4EF" />
+                                <Setter TargetName="highlightCircle" Property="Fill">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0.3,0" EndPoint="0.7,1">
+                                            <GradientStop Offset="0" Color="#50FFFFFF"/>
+                                            <GradientStop Offset="0.5" Color="#00FFFFFF"/>
+                                            <GradientStop Offset="1" Color="#50FFFFFF"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Button.Style>
+</Button>

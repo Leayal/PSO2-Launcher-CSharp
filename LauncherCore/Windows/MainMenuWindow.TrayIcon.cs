@@ -22,7 +22,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     var ico = window.trayIcon.Value;
                     ico.Visible = true;
-                    // this.WindowState = WindowState.Minimized;
                     window.Hide();
                     window.ShowInTaskbar = false;
                 }
@@ -94,9 +93,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var tab = this.TabMainMenu;
             RoutedEventHandler _IsSelectedOrGameStartEnabledChanged = (_tab, ev) =>
             {
-                bool istabselected = tab.IsSelected;
-                typical_startGame.Enabled = istabselected && tab.GameStartEnabled;
-                typical_checkforPSO2Updates.Enabled = istabselected && tab.GameStartEnabled;
+                bool isenabled = tab.IsSelected && tab.GameStartEnabled;
+                typical_startGame.Enabled = isenabled;
+                typical_checkforPSO2Updates.Enabled = isenabled;
+                foreach (var item in typical_startGame.DropDownItems)
+                {
+                    if (item is ToolStripMenuItem dropitem)
+                    {
+                        dropitem.Enabled = isenabled;
+                    }
+                }
             };
 
             ico_contextmenu.Opening += (sender, e) =>
