@@ -1,4 +1,6 @@
-﻿using Leayal.SharedInterfaces;
+﻿using Leayal.PSO2Launcher.Core.Interfaces;
+using Leayal.SharedInterfaces;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -291,6 +293,22 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 return LoginPasswordRememberStyle.DoNotRemember;
             }
             set => this.Set("pso2_defaultloginpasswordrememberstyle", (int)value);
+        }
+
+        /// <remarks>This is a special one. Migrating with Windows's app compatibility settings</remarks>
+        public bool LaunchLauncherAsAdmin
+        {
+            get
+            {
+                var regkey = new HKCU_AppCompatLayerWrapper(RuntimeValues.EntryExecutableFilename);
+                return regkey.RunAsAdmin;
+            }
+            set
+            {
+                var regkey = new HKCU_AppCompatLayerWrapper(RuntimeValues.EntryExecutableFilename);
+                regkey.RunAsAdmin = value;
+                regkey.Save();
+            }
         }
 
         public bool Load()

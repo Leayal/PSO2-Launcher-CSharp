@@ -28,10 +28,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void OnBeforeCreatingOptionDom(PropertyInfo[] propertyInfos, Dictionary<string, List<OptionDOM>> options)
         {
             // Inefficient
-            var t_res = typeof(ScreenResolution);
+            int count = 0; // Maybe premature optimization
             foreach (var item in propertyInfos)
             {
-                if (item.PropertyType == t_res)
+                if (item.PropertyType == typeof(MonitorCountWrapper))
+                {
+                    if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
+                    {
+                        categoryName = string.Empty;
+                    }
+                    if (!EnumDisplayNameAttribute.TryGetDisplayName(item, out var displayName))
+                    {
+                        displayName = item.Name;
+                    }
+                    var option = new MonitorCountOptionDOM(item.Name, displayName);
+                    option.Reload(this._configR);
+                    option.Slider.ValueChanged += this.SliderMonitorNo_ValueChanged;
+                    if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
+                    {
+                        opts = new List<OptionDOM>();
+                        this.listOfOptions.Add(categoryName, opts);
+                    }
+                    opts.Add(option);
+                    count++;
+                }
+                else if (item.PropertyType == typeof(ScreenResolution))
                 {
                     if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
                     {
@@ -50,7 +71,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.listOfOptions.Add(categoryName, opts);
                     }
                     opts.Add(option);
+                    count++;
+                }
+                if (count >= 2)
+                {
                     break;
+                }
+            }
+        }
+
+        private void SliderMonitorNo_ValueChanged(object sender, RoutedPropertyChangedEventArgs<int> e)
+        {
+            if (sender is WeirdValueSlider slider && slider.Tag is MonitorCountOptionDOM dom)
+            {
+                var t = this._configR.GetType();
+                var prop = t.GetProperty(dom.Name);
+                if (prop != null)
+                {
+                    prop.SetValue(this._configR, new MonitorCountWrapper(e.NewValue));
                 }
             }
         }
@@ -190,6 +228,34 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             public override FrameworkElement ValueController => this.Slider;
+        }
+
+        class MonitorCountOptionDOM : OptionDOM
+        {
+            public readonly WeirdSlider Slider;
+
+            public MonitorCountOptionDOM(string name, string displayName) : base(name, displayName)
+            {
+                var monitorCount = ScreenInformation.GetMonitorCount();
+                var dictionary = new Dictionary<int, string>(monitorCount);
+                for (int i = 0; i < monitorCount; i++)
+                {
+                    dictionary.Add(i, $"Display No.{i + 1}");
+                }
+                this.Slider = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name, ItemsSource = (IReadOnlyDictionary<int, string>)dictionary };
+            }
+
+            public override FrameworkElement ValueController => this.Slider;
+
+            public override void Reload(PSO2RebootUserConfig conf)
+            {
+                var prop = conf.GetType().GetProperty(this.Name);
+                if (prop != null && prop.GetValue(conf) is MonitorCountWrapper wrapper)
+                {
+                    var safe_val = Math.Clamp(wrapper.DisplayNo, Convert.ToInt32(this.Slider.Minimum), Convert.ToInt32(this.Slider.Maximum));
+                    this.Slider.Value = safe_val;
+                }
+            }
         }
 
         class EnumOptionDOM : OptionDOM

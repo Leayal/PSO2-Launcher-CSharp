@@ -47,7 +47,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
 
             min = default;
-            max = default;
+            max = int.MaxValue;
             return false;
         }
 
@@ -66,7 +66,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             }
 
             min = default;
-            max = default;
+            max = int.MaxValue;
             return false;
         }
     }

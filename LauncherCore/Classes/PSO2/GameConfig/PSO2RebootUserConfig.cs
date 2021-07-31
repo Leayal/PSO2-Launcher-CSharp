@@ -19,27 +19,55 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             this.conf = conf;
         }
 
+        [Category("Screen"), EnumDisplayName("Default display monitor")]
+        public MonitorCountWrapper DisplayNo
+        {
+            get
+            {
+
+                var obj = this.conf["Windows"] as ConfigToken;
+                if (obj["DisplayNo"] is long l)
+                {
+                    // Key not found
+                    return new MonitorCountWrapper((int)Math.Clamp(l, 0L, int.MaxValue));
+                }
+                else
+                {
+                    return new MonitorCountWrapper(0);
+                }
+            }
+            set
+            {
+                this.conf.CreateOrSelect("Windows")["DisplayNo"] = value.DisplayNo;
+            }
+        }
+
         [Category("Screen"), EnumDisplayName("Screen resolution")]
         public ScreenResolution ScreenResolution
         {
             get
             {
                 var obj = this.conf["Windows"] as ConfigToken;
-                if (obj == null)
+                if (obj != null)
                 {
-                    // Key not found
-                    return new ScreenResolution(1280, 720);
+                    if (obj["Width"] is long l_w && obj["Height"] is long l_h)
+                    {
+                        
+                        return new ScreenResolution((int)Math.Clamp(l_w, 0L, int.MaxValue), (int)Math.Clamp(l_h, 0L, int.MaxValue));
+                    }
+                    else if (obj["Width"] is double d_w && obj["Height"] is double d_h)
+                    {
+                        return new ScreenResolution((int)Math.Clamp(d_w, 0d, int.MaxValue), (int)Math.Clamp(d_h, 0d, int.MaxValue));
+                    }
                 }
-                var width = Convert.ToInt32(obj["Width"]);
-                var height = Convert.ToInt32(obj["Height"]);
 
-                return new ScreenResolution(width, height);
+                return new ScreenResolution(1280, 720);
             }
             set
             {
                 var obj = this.conf.CreateOrSelect("Windows");
-                obj["Width"] = value.Width;
-                obj["Height"] = value.Height;
+                obj["Width"] = (long)value.Width;
+                obj["Height"] = (long)value.Height;
             }
         }
 

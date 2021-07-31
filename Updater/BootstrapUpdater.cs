@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 // using System.Net.Http;
 using System.Text.Json;
@@ -17,7 +18,7 @@ namespace Leayal.PSO2Launcher.Updater
 {
     public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
-        private readonly WebClientEx wc;
+        private readonly HttpClient wc;
         private bool requireBootstrapUpdate, recommendBootstrapUpdate;
         private readonly AssemblyLoadContext? _loadedAssemblies;
 
@@ -44,14 +45,20 @@ namespace Leayal.PSO2Launcher.Updater
             this.requireBootstrapUpdate = false;
             this.recommendBootstrapUpdate = false;
             this._loadedAssemblies = loadedAssemblies;
-            this.wc = new WebClientEx()
+            this.wc = new HttpClient(new SocketsHttpHandler()
             {
                 Proxy = null,
-                CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore),
-                Credentials = null,
-                UseDefaultCredentials = false
-            };
-            this.wc.Headers.Add(HttpRequestHeader.UserAgent, "PSO2LeaLauncher");
+                UseProxy = false,
+                EnableMultipleHttp2Connections = true,
+                ConnectTimeout = TimeSpan.FromSeconds(10),
+                DefaultProxyCredentials = null,
+                UseCookies = true,
+                AutomaticDecompression = DecompressionMethods.All,
+                KeepAlivePingTimeout = TimeSpan.FromSeconds(5),
+                AllowAutoRedirect = true,
+                KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests
+            });
+            this.wc.DefaultRequestHeaders.Add("User-Agent", "PSO2LeaLauncher");
         }
 
         public event EventHandler<FileDownloadedEventArgs> FileDownloaded;
@@ -67,7 +74,7 @@ namespace Leayal.PSO2Launcher.Updater
                 string jsonData;
                 try
                 {
-                    jsonData = await this.wc.DownloadStringTaskAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
+                    jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
                 }
                 catch
                 {
@@ -195,27 +202,34 @@ namespace Leayal.PSO2Launcher.Updater
                             else
                             {
                                 // e_progressbarMax?.Invoke(itemv2.FileSize);
-                                using (var remoteStream = await this.wc.OpenReadTaskAsync(item.Value.DownloadUrl))
-                                using (var localStream = File.Create(tmpFilename))
+                                var request = new HttpRequestMessage(HttpMethod.Get, item.Value.DownloadUrl);
+                                using (var response = await this.wc.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
                                 {
-                                    long totalbyte = itemv2.FileSize;
-                                    long bytetoDownload = totalbyte;
-                                    long bytedownloaded = 0;
-                                    int byteread = remoteStream.Read(buffer, 0, buffer.Length);
-                                    while (byteread > 0 && bytetoDownload != 0)
+                                    response.EnsureSuccessStatusCode();
+                                    using (var remoteStream = response.Content.ReadAsStream())
                                     {
-                                        localStream.Write(buffer, 0, byteread);
-                                        bytedownloaded += byteread;
-                                        bytetoDownload -= byteread;
-                                        double val = bytedownloaded * 100 / totalbyte;
-                                        e_downloadProgress?.Invoke(Convert.ToInt32(Math.Floor(val)));
-                                        if (bytetoDownload > buffer.Length)
+                                        using (var localStream = File.Create(tmpFilename))
                                         {
-                                            byteread = remoteStream.Read(buffer, 0, buffer.Length);
-                                        }
-                                        else
-                                        {
-                                            byteread = remoteStream.Read(buffer, 0, (int)bytetoDownload);
+                                            long totalbyte = itemv2.FileSize;
+                                            long bytetoDownload = totalbyte;
+                                            long bytedownloaded = 0;
+                                            int byteread = remoteStream.Read(buffer, 0, buffer.Length);
+                                            while (byteread > 0 && bytetoDownload != 0)
+                                            {
+                                                localStream.Write(buffer, 0, byteread);
+                                                bytedownloaded += byteread;
+                                                bytetoDownload -= byteread;
+                                                double val = bytedownloaded * 100 / totalbyte;
+                                                e_downloadProgress?.Invoke(Convert.ToInt32(Math.Floor(val)));
+                                                if (bytetoDownload > buffer.Length)
+                                                {
+                                                    byteread = remoteStream.Read(buffer, 0, buffer.Length);
+                                                }
+                                                else
+                                                {
+                                                    byteread = remoteStream.Read(buffer, 0, (int)bytetoDownload);
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -306,6 +320,8 @@ namespace Leayal.PSO2Launcher.Updater
                 return shouldRestart;
             });
         }
+
+
 
         public void Dispose() => this.wc.Dispose();
     }

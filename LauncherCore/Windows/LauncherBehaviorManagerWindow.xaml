@@ -36,6 +36,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
 
@@ -46,6 +47,8 @@
 
             <TextBlock Grid.Row="3" Text="Default GameStart Method" VerticalAlignment="Center" />
             <localui:EnumComboBox Grid.Row="3" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
+
+            <CheckBox Grid.Row="4" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">
