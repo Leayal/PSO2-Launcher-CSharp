@@ -29,8 +29,8 @@
 **Please note that the launcher's theme will follow your Windows 10's Dark/Light theme.**
 | Dark theme      | Light theme     |
 | :-------------: | :-------------: |
-| ![Dark theme mainmenu](docs/imgs/preview/main-dark.png) | ![Light theme mainmenu](docs/imgs/preview/main-light.png) |
-| ![Dark theme behavior](docs/imgs/preview/behavior-dark.png) | ![Light theme behavior](docs/imgs/preview/behavior-light.png) |
-| ![Dark theme data manager](docs/imgs/preview/data-mgr-dark.png) | ![Light theme data manager](docs/imgs/preview/data-mgr-light.png) |
-| ![Dark theme PSO2 User Config](docs/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](docs/imgs/preview/pso2options--light.png) |
-| ![Dark theme PSO2 Advanced User Config](docs/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](docs/imgs/preview/pso2options-adv--light.png) |
+| ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/main-dark.png) | ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/main-light.png) |
+| ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-light.png) |
+| ![Dark theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-dark.png) | ![Light theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-light.png) |
+| ![Dark theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-light.png) |
+| ![Dark theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-light.png) |
