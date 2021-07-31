@@ -203,9 +203,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void WeirdButtonDropDownAble_Click(object sender, RoutedEventArgs e)
         {
             // It's okay, weird button is still a button
-            if (sender is Button btn && btn.ContextMenu != null)
+            if (sender is Button btn)
             {
-                btn.ContextMenu.IsOpen = true;
+                var ctm = btn.ContextMenu;
+                if (ctm != null)
+                {
+                    ctm.PlacementTarget = sender as UIElement;
+                    ctm.IsOpen = true;
+                }
             }
         }
 

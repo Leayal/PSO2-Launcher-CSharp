@@ -32,6 +32,7 @@
         <!--<local:CircleButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" Width="100" Height="100" />-->
 
         <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonPSO2GameOption_Click" />
+        
         <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
@@ -40,6 +41,7 @@
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
+        
         <local:WeirdButton Grid.Row="2" Grid.Column="2" Content="Troubleshooting" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
