@@ -25,7 +25,7 @@
 | Dark theme      | Light theme     |
 | :-------------: | :-------------: |
 | ![Dark theme mainmenu](docs/imgs/preview/main-dark.png) | ![Light theme mainmenu](docs/imgs/preview/main-light.png) |
-| ![Dark theme mainmenu](docs/imgs/preview/behavior-dark.png) | ![Light theme mainmenu](docs/imgs/preview/behavior-light.png) |
-| ![Dark theme mainmenu](docs/imgs/preview/data-mgr-dark.png) | ![Light theme mainmenu](docs/imgs/preview/data-mgr-light.png) |
-| ![Dark theme mainmenu](docs/imgs/preview/pso2options-dark.png) | ![Light theme mainmenu](docs/imgs/preview/pso2options-light.png) |
-| ![Dark theme mainmenu](docs/imgs/preview/pso2options-adv-dark.png) | ![Light theme mainmenu](docs/imgs/preview/pso2options-adv-light.png) |
+| ![Dark theme behavior](docs/imgs/preview/behavior-dark.png) | ![Light theme behavior](docs/imgs/preview/behavior-light.png) |
+| ![Dark theme data manager](docs/imgs/preview/data-mgr-dark.png) | ![Light theme data manager](docs/imgs/preview/data-mgr-light.png) |
+| ![Dark theme PSO2 User Config](docs/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](docs/imgs/preview/pso2options--light.png) |
+| ![Dark theme PSO2 Advanced User Config](docs/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](docs/imgs/preview/pso2options-adv--light.png) |
