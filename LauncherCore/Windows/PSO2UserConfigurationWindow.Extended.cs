@@ -82,7 +82,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void SliderMonitorNo_ValueChanged(object sender, RoutedPropertyChangedEventArgs<int> e)
         {
-            if (sender is WeirdValueSlider slider && slider.Tag is MonitorCountOptionDOM dom)
+            if (sender is WeirdSlider slider && slider.Tag is MonitorCountOptionDOM dom)
             {
                 var t = this._configR.GetType();
                 var prop = t.GetProperty(dom.Name);
