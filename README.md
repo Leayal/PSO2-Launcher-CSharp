@@ -20,6 +20,10 @@
     - Game start without SEGA login (Bypass user's setting).
     - Game start with SEGA login (Bypass user's setting).
     - Check for PSO2 updates.
+- Configure PSO2 Client's options.
+  - Only some NGS settings are supported in simple mode right now.
+  - Classic options are planned.
+  - More options are planned.
 
 # UI Previews
 | Dark theme      | Light theme     |
