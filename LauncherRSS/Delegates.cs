@@ -40,4 +40,15 @@ namespace Leayal.PSO2Launcher.RSS
         }
     }
     public delegate void RSSFeedItemClickEventHandler(RSSFeedItem sender, RSSFeedItemClickEventArgs e);
+
+    public class RSSFeedUpdatedEventArgs : EventArgs
+    {
+        public IReadOnlyList<RSSFeedItem> Items { get; }
+
+        public RSSFeedUpdatedEventArgs(IReadOnlyList<RSSFeedItem> items) : base()
+        {
+            this.Items = items;
+        }
+    }
+    public delegate void RSSFeedUpdatedEventHandler(RSSFeed sender, RSSFeedUpdatedEventArgs e);
 }

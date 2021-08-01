@@ -1,31 +1,28 @@
-﻿<Grid x:Class="Leayal.PSO2Launcher.Core.UIElements.RSSFeedPresenter"
+﻿<Border x:Class="Leayal.PSO2Launcher.Core.UIElements.RSSFeedPresenter"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-             mc:Ignorable="d"
+             mc:Ignorable="d" Background="#33FFFFFF" BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" CornerRadius="1"
              d:DesignHeight="200" d:DesignWidth="450">
-    <Grid.ColumnDefinitions>
-        <ColumnDefinition />
-        <ColumnDefinition Width="Auto" MinWidth="40" />
-    </Grid.ColumnDefinitions>
-    <ListView x:Name="FeedContent" />
-    <ListView Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.IsDeferredScrollingEnabled="False" x:Name="FeedList">
-        <ListView.ItemTemplate>
-            <DataTemplate>
-                <Button>
-                    <Image Source="{Binding ImgSrc}" />
-                    <Button.ToolTip>
-                        <ToolTip Content="{Binding Title}" />
-                    </Button.ToolTip>
-                </Button>
-            </DataTemplate>
-        </ListView.ItemTemplate>
-        <ListView.ItemContainerStyle>
-            <Style TargetType="ListViewItem" BasedOn="{StaticResource MahApps.Styles.ListViewItem}">
-                <Setter Property="Focusable" Value="False" />
-            </Style>
-        </ListView.ItemContainerStyle>
-    </ListView>
-</Grid>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="Auto" MinWidth="40" />
+        </Grid.ColumnDefinitions>
+        <RichTextBox x:Name="FeedContent" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=NoFeedLabel,Path=IsVisible,Mode=OneWay}" Background="{x:Null}"
+                     IsReadOnlyCaretVisible="False" IsReadOnly="True" IsDocumentEnabled="True"  Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" />
+        <ListBox Grid.Column="1" ScrollViewer.CanContentScroll="True" ScrollViewer.IsDeferredScrollingEnabled="False" x:Name="FeedList" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=NoFeedLabel,Path=IsVisible,Mode=OneWay}"
+             SelectionChanged="FeedList_SelectionChanged" SelectionMode="Single" Background="{x:Null}">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource MahApps.Styles.ListBoxItem}">
+                    <Setter Property="Focusable" Value="False" />
+                    <Setter Property="Margin" Value="1" />
+                </Style>
+            </ListBox.ItemContainerStyle>
+        </ListBox>
+        <TextBlock Text="No RSS feed available." Grid.ColumnSpan="2" TextAlignment="Center" VerticalAlignment="Center" x:Name="NoFeedLabel" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" />
+    </Grid>
+</Border>

@@ -9,4 +9,8 @@
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;$(SolutionDir)Test\rss&quot;&#xD;&#xA;copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\rss\$(TargetFileName)&quot;&#xD;&#xA;)" />
+  </Target>
+
 </Project>

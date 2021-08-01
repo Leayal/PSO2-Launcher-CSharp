@@ -8,9 +8,9 @@
                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                      xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                      mc:Ignorable="d" x:Name="thisWindow"
-                     MinHeight="600" MinWidth="850"
+                     MinHeight="600" MinWidth="860"
                      Loaded="ThisWindow_Loaded" Closed="ThisWindow_Closed"
-                     Title="PSO2 JP Launcher" Height="600" Width="850" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
+                     Title="PSO2 JP Launcher" Height="600" Width="860" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="25" />
@@ -72,7 +72,7 @@
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>
             </ToggleButton>
-            <ToggleButton Content="RSS Feeds" Grid.Row="1" HorizontalAlignment="Right" x:Name="ToggleBtn_RSSFeed" Checked="ToggleBtn_Checked">
+            <ToggleButton Content="RSS Feeds" Grid.Row="1" HorizontalAlignment="Right" x:Name="ToggleBtn_RSSFeed" Checked="ToggleBtn_RSSFeed_Checked">
                 <ToggleButton.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>
@@ -81,7 +81,7 @@
                     BorderBrush="{x:Null}" >
                 <localui:WeirdButton Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" />
             </Border>
-            <localui:RSSFeedPresenter Grid.RowSpan="2" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" />
+            <localui:RSSFeedPresenter Grid.RowSpan="2" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" x:Name="RSSFeedPresenter" />
         </Grid>
         <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>

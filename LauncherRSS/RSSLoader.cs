@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Reflection.PortableExecutable;
 using System.Xml;
+using System.Net.Http;
 
 namespace Leayal.PSO2Launcher.RSS
 {
@@ -20,19 +21,34 @@ namespace Leayal.PSO2Launcher.RSS
         private readonly ObservableCollection<RSSFeed> collection;
         private readonly RSSAssemblyLoadContext assemblies;
         private readonly bool unloadable;
+        private readonly HttpClient webclient;
 
         public RSSLoader() : this(false) { }
 
         public RSSLoader(bool unloadable)
         {
             this.unloadable = unloadable;
+            this.webclient = new HttpClient(new SocketsHttpHandler()
+            {
+                ConnectTimeout = TimeSpan.FromSeconds(5),
+                DefaultProxyCredentials = null,
+                Credentials = null,
+                EnableMultipleHttp2Connections = true,
+                AllowAutoRedirect = true,
+                UseProxy = false,
+                UseCookies = true,
+                Proxy = null,
+                MaxAutomaticRedirections = 10
+            }, true);
             this.assemblies = new RSSAssemblyLoadContext(unloadable);
             this.collection = new ObservableCollection<RSSFeed>();
             this.collection.CollectionChanged += Collection_CollectionChanged;
         }
 
         private void Collection_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-            => this.ItemsChanged?.Invoke(this, e);
+        {
+            this.ItemsChanged?.Invoke(this, e);
+        }
 
         public ICollection<RSSFeed> Items => this.collection;
 
@@ -60,6 +76,24 @@ namespace Leayal.PSO2Launcher.RSS
         public IReadOnlyList<RSSFeed> Load(params string[] filenames)
         {
             var asms = new List<Assembly>(filenames.Length);
+            foreach (var filename in filenames)
+            {
+                asms.Add(this.LoadFrom(filename));
+            }
+
+            if (asms.Count != 0)
+            {
+                return this.CreateFromAssemblies(asms);
+            }
+            else
+            {
+                return new ReadOnlyCollection<RSSFeed>(Array.Empty<RSSFeed>());
+            }
+        }
+
+        public IReadOnlyList<RSSFeed> Load(IEnumerable<string> filenames)
+        {
+            var asms = new List<Assembly>();
             foreach (var filename in filenames)
             {
                 asms.Add(this.LoadFrom(filename));
@@ -109,6 +143,7 @@ namespace Leayal.PSO2Launcher.RSS
                         if (obj is RSSFeed feed)
                         {
                             feeds.Add(feed);
+                            feed.webClient = this.webclient;
                             this.collection.Add(feed);
                         }
                         continue;
@@ -122,6 +157,7 @@ namespace Leayal.PSO2Launcher.RSS
                             if (obj is RSSFeed feed)
                             {
                                 feeds.Add(feed);
+                                feed.webClient = this.webclient;
                                 this.collection.Add(feed);
                             }
                             continue;

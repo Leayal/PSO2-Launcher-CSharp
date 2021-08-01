@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Leayal.SharedInterfaces;
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -10,8 +11,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private readonly RSS.RSSLoader rssloader;
-
         private void ToggleBtn_Checked(object sender, RoutedEventArgs e)
         {
             if (this.toggleButtons != null)
@@ -22,6 +21,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         btn.IsChecked = false;
                     }
+                }
+            }
+        }
+
+        private void ToggleBtn_RSSFeed_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton togglebtn)
+            {
+                togglebtn.Checked -= this.ToggleBtn_RSSFeed_Checked;
+                togglebtn.Checked += this.ToggleBtn_Checked;
+
+                this.ToggleBtn_Checked(sender, e);
+
+                this.RSSFeedPresenter_Loaded();
+            }
+        }
+
+        private void RSSFeedPresenter_Loaded()
+        {
+            var rssloader = this.RSSFeedPresenter.Loader;
+            var path = Path.GetFullPath("rss", RuntimeValues.RootDirectory);
+            if (Directory.Exists(path))
+            {
+                var listOfFiles = new List<string>(Directory.EnumerateFiles(path, "*.dll", SearchOption.TopDirectoryOnly));
+                if (listOfFiles.Count != 0)
+                {
+                    rssloader.Load(listOfFiles);
                 }
             }
         }

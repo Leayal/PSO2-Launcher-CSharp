@@ -9,6 +9,8 @@ using Leayal.SharedInterfaces;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Xml;
+using System.Xml.XPath;
 
 namespace PSUBlog
 {
@@ -18,101 +20,107 @@ namespace PSUBlog
         private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
 
         private bool isfirstfetch;
+        private string cached_abs_url_icon;
+        private readonly string IconPath;
+        private readonly string IconHashPath;
 
         public PSUBlogNGSRSSFeed(IRSSLoader loader) : base(loader, typeof(PSUBlogNGSRSSFeed).FullName)
         {
+            this.IconPath = Path.Combine(this.CacheDataDirectory, "icon");
+            this.IconHashPath = Path.Combine(this.CacheDataDirectory, "icon-hash");
+            if (File.Exists(this.IconHashPath))
+            {
+                this.cached_abs_url_icon = Leayal.PSO2Launcher.Helper.QuickFile.ReadFirstLine(this.IconHashPath);
+                this.SetDisplayImage(File.OpenRead(this.IconPath));
+            }
+            else
+            {
+                this.cached_abs_url_icon = null;
+            }
             this.isfirstfetch = true;
         }
 
         protected override async Task<IReadOnlyDictionary<string, Uri>> FetchFeed()
         {
             var data = await this.HttpClient.GetStringAsync(DefaultFeed);
-            var reader = XDocument.Parse(data);
-            var element_channel = reader.Root.Element("channel");
+            var reader = new XmlDocument();
+            reader.LoadXml(data);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(reader.NameTable);
+            foreach (var item in getNamespacesInScope(reader.DocumentElement))
+            {
+                nsmgr.AddNamespace(item.Key, item.Value);
+            }
+            var element_channel = reader.DocumentElement.SelectSingleNode("channel");
             var listOfItem = new Dictionary<string, Uri>();
             if (element_channel != null)
             {
                 TimeSpan timerOffset = TimeSpan.Zero;
-                var sy_updatefrequency = element_channel.Element("sy:updateFrequency");
-                if (sy_updatefrequency != null && !string.IsNullOrWhiteSpace(sy_updatefrequency.Value) && int.TryParse(sy_updatefrequency.Value, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var num))
+                var sy_updatefrequency = element_channel.SelectSingleNode(@"sy:updateFrequency", nsmgr);
+                if (sy_updatefrequency != null)
                 {
-                    var sy_updateperiod = element_channel.Element("sy:updatePeriod");
-                    if (sy_updateperiod != null)
+                    var val_frequency = sy_updatefrequency.InnerText;
+                    if (!string.IsNullOrWhiteSpace(val_frequency))
                     {
-                        var val = sy_updateperiod.Value;
-                        if (string.Equals(val, "hourly", StringComparison.OrdinalIgnoreCase))
+                        val_frequency = val_frequency.Trim();
+                        if (int.TryParse(val_frequency, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var num))
                         {
-                            timerOffset = TimeSpan.FromHours(num);
-                        }
-                        else if (string.Equals(val, "daily", StringComparison.OrdinalIgnoreCase) || string.Equals(val, "dayly", StringComparison.OrdinalIgnoreCase))
-                        {
-                            timerOffset = TimeSpan.FromDays(num);
-                        }
-                        else if (string.Equals(val, "minutely", StringComparison.OrdinalIgnoreCase))
-                        {
-                            timerOffset = TimeSpan.FromMinutes(num);
+                            var sy_updateperiod = element_channel.SelectSingleNode(@"sy:updatePeriod", nsmgr);
+                            if (sy_updateperiod != null)
+                            {
+                                var val = sy_updateperiod.InnerText;
+                                if (!string.IsNullOrWhiteSpace(val))
+                                {
+                                    val = val.Trim();
+                                    if (string.Equals(val, "hourly", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        timerOffset = TimeSpan.FromHours(num);
+                                    }
+                                    else if (string.Equals(val, "daily", StringComparison.OrdinalIgnoreCase) || string.Equals(val, "dayly", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        timerOffset = TimeSpan.FromDays(num);
+                                    }
+                                    else if (string.Equals(val, "minutely", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        timerOffset = TimeSpan.FromMinutes(num);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
-                if (isfirstfetch)
+                var title = element_channel.SelectSingleNode("title");
+                if (title != null && !string.IsNullOrWhiteSpace(title.InnerText))
                 {
-                    isfirstfetch = false;
-                    DateTime lastFetchTime;
-                    TimeSpan nextfetch;
-                    var lastbuilddate = element_channel.Element("lastBuildDate");
-                    if (lastbuilddate != null && !string.IsNullOrWhiteSpace(lastbuilddate.Value))
-                    {
-                        lastFetchTime = DateTime.Parse(lastbuilddate.Value);
-                        if (lastFetchTime.Add(timerOffset) > DateTime.Now)
-                        {
-                            // HOW!!!!?
-                            nextfetch = TimeSpan.Zero;
-                        }
-                        else
-                        {
-                            nextfetch = lastFetchTime.Add(timerOffset) - DateTime.Now;
-                        }
-                    }
-                    else
-                    {
-                        nextfetch = timerOffset;
-                    }
-                    this.SetRefeshTimer(nextfetch);
-                }
-                else
-                {
-                    this.SetRefeshTimer(timerOffset);
+                    this.SetDisplayName(title.InnerText.Trim());
                 }
 
-                var title = element_channel.Element("title");
-                if (title != null)
-                {
-                    this.SetDisplayName(title.Value);
-                }
-
-                var element_image = element_channel.Element("image");
+                var element_image = element_channel.SelectSingleNode("image");
                 if (element_image != null)
                 {
-                    var element_url = element_image.Element("url");
+                    var element_url = element_image.SelectSingleNode("url");
                     if (element_url != null)
                     {
-                        if (Uri.TryCreate(element_url.Value, UriKind.Absolute, out var uri))
+                        if (Uri.TryCreate(element_url.InnerText, UriKind.Absolute, out var uri))
                         {
                             var abs_url = uri.AbsoluteUri;
-                            var cache_filename = Sha1String(abs_url);
-                            var cache_filepath = Path.Combine(this.CacheDataDirectory, cache_filename);
-                            if (File.Exists(cache_filepath))
+                            bool isNew = false;
+                            lock (this)
                             {
-                                this.SetDisplayImage(File.OpenRead(cache_filepath)); // Who care about the file's lock?
+                                isNew = !string.Equals(this.cached_abs_url_icon, abs_url, StringComparison.Ordinal);
+                                if (isNew)
+                                {
+                                    this.cached_abs_url_icon = abs_url;
+                                }
                             }
-                            else
+                            if (isNew)
                             {
                                 _ = Task.Run(async delegate
                                 {
+                                    var cache_filename = Sha1String(abs_url);
                                     try
                                     {
-                                        using (var fs = File.Create(cache_filepath))
+                                        using (var fs = File.Create(this.IconPath))
                                         using (var remotestream = await this.HttpClient.GetStreamAsync(uri))
                                         {
                                             if (remotestream != null)
@@ -134,8 +142,9 @@ namespace PSUBlog
                                             }
                                             fs.Flush();
                                         }
+                                        File.WriteAllText(this.IconHashPath, cache_filename);
                                         await Task.Delay(1);
-                                        this.SetDisplayImage(File.OpenRead(cache_filepath)); // Who care about the file's lock
+                                        this.SetDisplayImage(File.OpenRead(this.IconPath)); // Who care about the file's lock
                                     }
                                     catch
                                     {
@@ -148,28 +157,35 @@ namespace PSUBlog
                 }
 
                 // Begin feed parsing here.
-                listOfItem.Add("", null);
-
-                var items = element_channel.Elements("item");
+                var items = element_channel.SelectNodes("item");
                 if (items != null)
                 {
-                    foreach (var item in items)
+                    foreach (XmlNode item in items)
                     {
-                        var element_link = item.Element("link");
+                        var element_link = item.SelectSingleNode("link");
                         if (element_link != null)
                         {
-                            string item_url = element_link.Value;
+                            string item_url = element_link.InnerText;
                             if (!string.IsNullOrWhiteSpace(item_url))
                             {
+                                item_url = item_url.Trim();
                                 string item_title;
-                                var element_title = item.Element("title");
+                                var element_title = item.SelectSingleNode("title");
                                 if (element_title == null)
                                 {
                                     item_title = item_url;
                                 }
                                 else
                                 {
-                                    item_title = element_title.Value;
+                                    item_title = element_title.InnerText;
+                                    if (string.IsNullOrWhiteSpace(item_title))
+                                    {
+                                        item_title = item_url;
+                                    }
+                                    else
+                                    {
+                                        item_title = item_title.Trim();
+                                    }
                                 }
 
                                 if (Uri.TryCreate(item_url, UriKind.Absolute, out var uri))
@@ -179,6 +195,38 @@ namespace PSUBlog
                             }
                         }
                     }
+                }
+
+
+                // Next tick.
+                if (isfirstfetch)
+                {
+                    isfirstfetch = false;
+                    DateTime lastFetchTime;
+                    TimeSpan nextfetch;
+                    var lastbuilddate = element_channel.SelectSingleNode("lastBuildDate");
+                    if (lastbuilddate != null && !string.IsNullOrWhiteSpace(lastbuilddate.InnerText))
+                    {
+                        lastFetchTime = DateTime.Parse(lastbuilddate.InnerText);
+                        if (lastFetchTime.Add(timerOffset) > DateTime.Now)
+                        {
+                            // HOW!!!!?
+                            nextfetch = TimeSpan.Zero;
+                        }
+                        else
+                        {
+                            nextfetch = lastFetchTime.Add(timerOffset) - DateTime.Now;
+                        }
+                    }
+                    else
+                    {
+                        nextfetch = timerOffset;
+                    }
+                    this.SetNextRefesh(nextfetch);
+                }
+                else
+                {
+                    this.SetNextRefesh(timerOffset);
                 }
             }
 
@@ -220,5 +268,28 @@ namespace PSUBlog
 
         protected override RSSFeedItem OnCreateRSSFeedItem(string displayName, Uri url)
             => new PSUBlogRSSFeedItem(displayName, url);
+
+        public static IDictionary<string, string> getNamespacesInScope(XmlNode xDoc)
+        {
+            IDictionary<string, string> AllNamespaces = new Dictionary<string, string>();
+            IDictionary<string, string> localNamespaces;
+
+            XmlNode temp = xDoc;
+            XPathNavigator xNav;
+            while (temp.ParentNode != null)
+            {
+                xNav = temp.CreateNavigator();
+                localNamespaces = xNav.GetNamespacesInScope(XmlNamespaceScope.Local);
+                foreach (var item in localNamespaces)
+                {
+                    if (!AllNamespaces.ContainsKey(item.Key))
+                    {
+                        AllNamespaces.Add(item);
+                    }
+                }
+                temp = temp.ParentNode;
+            }
+            return AllNamespaces;
+        }
     }
 }
