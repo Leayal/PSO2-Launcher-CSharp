@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows7.0</TargetFramework>
+    <RootNamespace>Leayal.PSO2Launcher.RSS</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+  </ItemGroup>
+
+</Project>

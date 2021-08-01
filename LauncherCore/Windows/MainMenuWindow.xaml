@@ -57,7 +57,32 @@
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>
-        <localui:WeirdButton Grid.Row="2" Margin="1" Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" x:Name="ButtonLoadLauncherWebView" />
+
+        <Grid Grid.Row="2" Margin="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <ToggleButton Content="PSO2's News" HorizontalAlignment="Right" x:Name="ToggleBtn_PSO2News" Checked="ToggleBtn_Checked" IsChecked="True">
+                <ToggleButton.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </ToggleButton.LayoutTransform>
+            </ToggleButton>
+            <ToggleButton Content="RSS Feeds" Grid.Row="1" HorizontalAlignment="Right" x:Name="ToggleBtn_RSSFeed" Checked="ToggleBtn_Checked">
+                <ToggleButton.LayoutTransform>
+                    <RotateTransform Angle="-90" />
+                </ToggleButton.LayoutTransform>
+            </ToggleButton>
+            <Border Grid.RowSpan="2" Grid.Column="1" x:Name="LauncherWebView" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_PSO2News,Mode=OneWay,Path=IsChecked}"
+                    BorderBrush="{x:Null}" >
+                <localui:WeirdButton Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" />
+            </Border>
+            <localui:RSSFeedPresenter Grid.RowSpan="2" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" />
+        </Grid>
         <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>
 </local:MetroWindowEx>

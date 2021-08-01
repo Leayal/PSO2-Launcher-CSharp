@@ -19,6 +19,7 @@ using Leayal.PSO2Launcher.Helper;
 using Leayal.PSO2Launcher.Core.Classes;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
+using System.Windows.Controls.Primitives;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -33,6 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly ConfigurationFile config_main;
         private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
+        private readonly ToggleButton[] toggleButtons;
 
         public MainMenuWindow()
         {
@@ -48,7 +50,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
             InitializeComponent();
-
+            this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed };
             try
             {
                 if (App.Current.IsLightMode)
@@ -89,7 +91,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (this.config_main.LauncherLoadWebsiteAtStartup)
             {
-                this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                if (this.LauncherWebView.Child is Button btn)
+                {
+                    btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                }
             }
 
             if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
@@ -170,13 +175,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         null);
                     var webview = (IWebViewCompatControl)obj;
                     webview.Initialized += this.WebViewCompatControl_Initialized;
-                    var grid = (Grid)this.Content;
-                    grid.Children.Remove(btn);
-                    
-                    var element = (Control)obj;
-                    Grid.SetRow(element, 2);
-                    element.Margin = new Thickness(1);
-                    grid.Children.Add(element);
+                    this.LauncherWebView.Child = (Control)obj;
                 }
                 catch (Exception ex)
                 {
