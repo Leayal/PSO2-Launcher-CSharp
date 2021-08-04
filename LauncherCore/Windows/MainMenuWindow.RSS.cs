@@ -83,7 +83,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonManageGameLauncherRSSFeedsClicked -= this.ButtonManageGameLauncherRSSFeeds_Clicked;
                 try
                 {
-                    var window = new RSSFeedsManagerWindow();
+                    var window = new RSSFeedsManagerWindow(null);
                     window.Owner = this;
                     if (window.ShowDialog() == true)
                     {

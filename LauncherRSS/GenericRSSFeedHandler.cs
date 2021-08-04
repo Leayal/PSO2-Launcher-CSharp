@@ -15,6 +15,10 @@ namespace Leayal.PSO2Launcher.RSS
         private readonly IRSSFeedChannelParser parser;
         private readonly IRSSFeedItemCreator itemmaker;
 
+        public IRSSFeedChannelDownloader Downloader => this.downloader;
+        public IRSSFeedChannelParser Parser => this.parser;
+        public IRSSFeedItemCreator FeedItemCreator => this.itemmaker;
+
         public override bool CanHandleDownloadChannel(Uri url)
         {
             if (this.downloader == null) return false;

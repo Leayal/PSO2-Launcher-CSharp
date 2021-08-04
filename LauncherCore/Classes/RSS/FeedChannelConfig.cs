@@ -1,15 +1,19 @@
-﻿using System;
+﻿using Leayal.PSO2Launcher.RSS;
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Leayal.PSO2Launcher.Core.Classes.RSS
 {
-    readonly struct FeedChannelConfig
+    readonly struct FeedChannelConfig : IEquatable<FeedChannelConfig>
     {
         public readonly string FeedChannelUrl { get; init; }
         public readonly string BaseHandler { get; init; }
         public readonly string DownloadHandler { get; init; }
         public readonly string ParserHandler { get; init; }
         public readonly string ItemCreatorHandler { get; init; }
+
+        public readonly bool IsDeferredUpdate { get; init; }
 
         public static FeedChannelConfig FromData(string data)
         {
@@ -19,9 +23,89 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
             }
         }
 
+        public static FeedChannelConfig FromHandler(RSSFeedHandler handler)
+        {
+            if (RSSFeedHandler.IsDefault(handler))
+            {
+                return new FeedChannelConfig()
+                {
+                    FeedChannelUrl = handler.FeedChannelUrl.IsAbsoluteUri ? handler.FeedChannelUrl.AbsoluteUri : handler.FeedChannelUrl.ToString(),
+                    BaseHandler = "Default",
+                    DownloadHandler = null,
+                    ItemCreatorHandler = null,
+                    ParserHandler = null
+                };
+            }
+            else if (handler is GenericRSSFeedHandler genericHandler)
+            {
+                var downloaderObj = genericHandler.Downloader;
+                var parserObj = genericHandler.Parser;
+                var itemcreatorObj = genericHandler.FeedItemCreator;
+                string downloader, itemcreator, parser;
+                if (downloaderObj is RSSFeedHandler feedhandler_downloader && (RSSFeedHandler.IsDefault(feedhandler_downloader) || RSSFeedHandler.IsGeneric(feedhandler_downloader)))
+                {
+                    downloader = null;
+                }
+                else
+                {
+                    downloader = downloaderObj.GetType().FullName;
+                }
+
+                if (parserObj is RSSFeedHandler feedhandler_parser && (RSSFeedHandler.IsDefault(feedhandler_parser) || RSSFeedHandler.IsGeneric(feedhandler_parser)))
+                {
+                    parser = null;
+                }
+                else
+                {
+                    parser = parserObj.GetType().FullName;
+                }
+
+                if (itemcreatorObj is RSSFeedHandler feedhandler_itemcreator && (RSSFeedHandler.IsDefault(feedhandler_itemcreator) || RSSFeedHandler.IsGeneric(feedhandler_itemcreator)))
+                {
+                    itemcreator = null;
+                }
+                else
+                {
+                    itemcreator = itemcreatorObj.GetType().FullName;
+                }
+
+                return new FeedChannelConfig()
+                {
+                    FeedChannelUrl = handler.FeedChannelUrl.IsAbsoluteUri ? handler.FeedChannelUrl.AbsoluteUri : handler.FeedChannelUrl.ToString(),
+                    BaseHandler = "Generic",
+                    DownloadHandler = downloader,
+                    ItemCreatorHandler = itemcreator,
+                    ParserHandler = parser
+                };
+            }
+            else
+            {
+                return new FeedChannelConfig()
+                {
+                    FeedChannelUrl = handler.FeedChannelUrl.IsAbsoluteUri ? handler.FeedChannelUrl.AbsoluteUri : handler.FeedChannelUrl.ToString(),
+                    BaseHandler = handler.GetType().FullName,
+                    DownloadHandler = null,
+                    ItemCreatorHandler = null,
+                    ParserHandler = null
+                };
+            }
+        }
+
         public void SaveTo(string filename)
         {
-
+            using (var fs = System.IO.File.Create(filename))
+            using (var writer = new Utf8JsonWriter(fs, new JsonWriterOptions() { Indented = true }))
+            {
+                writer.WriteStartObject();
+                writer.WriteString("FeedChannelUrl", this.FeedChannelUrl);
+                writer.WriteString("BaseHandler", this.BaseHandler);
+                writer.WriteString("DownloadHandler", this.DownloadHandler);
+                writer.WriteString("ItemCreatorHandler", this.ItemCreatorHandler);
+                writer.WriteBoolean("IsDeferredUpdate", this.IsDeferredUpdate);
+                writer.WriteEndObject();
+                writer.Flush();
+                fs.Flush();
+            }
         }
 
         private static FeedChannelConfig FromFile(JsonDocument jsonDoc)
@@ -33,6 +117,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                 if (!string.IsNullOrWhiteSpace(channelUrl))
                 {
                     string val_BaseHandler, val_DownloadHandler, val_ParserHandler, val_ItemCreatorHandler;
+                    bool deferredupdating = true;
                     if (root.TryGetProperty("BaseHandler", out var prop_BaseHandler) && prop_BaseHandler.ValueKind == JsonValueKind.String)
                     {
                         val_BaseHandler = prop_BaseHandler.GetString();
@@ -65,11 +150,33 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                     {
                         val_ItemCreatorHandler = null;
                     }
+                    if (root.TryGetProperty("IsDeferredUpdate", out var prop_IsDeferredUpdate) && prop_IsDeferredUpdate.ValueKind == JsonValueKind.False)
+                    {
+                        deferredupdating = false;
+                    }
 
-                    return new FeedChannelConfig() { FeedChannelUrl = channelUrl, BaseHandler = val_BaseHandler, DownloadHandler = val_DownloadHandler, ItemCreatorHandler = val_ItemCreatorHandler, ParserHandler = val_ParserHandler };
+                    return new FeedChannelConfig() { FeedChannelUrl = channelUrl, BaseHandler = val_BaseHandler, DownloadHandler = val_DownloadHandler, ItemCreatorHandler = val_ItemCreatorHandler, ParserHandler = val_ParserHandler, IsDeferredUpdate = deferredupdating };
                 }
             }
             return default;
         }
+
+        public override int GetHashCode() => this.FeedChannelUrl.GetHashCode() ^ this.BaseHandler.GetHashCode();
+
+        public override bool Equals(object obj)
+        {
+            if (obj is FeedChannelConfig conf)
+            {
+                return this.Equals(conf);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool Equals(FeedChannelConfig other)
+            => (string.Equals(this.FeedChannelUrl, other.FeedChannelUrl, StringComparison.Ordinal)
+                && string.Equals(this.BaseHandler, other.BaseHandler, StringComparison.Ordinal));
     }
 }

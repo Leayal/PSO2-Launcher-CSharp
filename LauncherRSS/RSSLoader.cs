@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.RSS
 {
@@ -27,7 +28,7 @@ namespace Leayal.PSO2Launcher.RSS
         private readonly Dictionary<string, IRSSFeedChannelParser> registeredparserhandlers;
         private readonly Dictionary<string, IRSSFeedItemCreator> registeredmakerhandlers;
         private readonly ConcurrentDictionary<string, Assembly> assemblies;
-        private readonly HttpClient webclient;
+        internal readonly HttpClient webclient;
 
         public RSSLoader()
         {
@@ -233,7 +234,6 @@ namespace Leayal.PSO2Launcher.RSS
                 if (ctor != null && ctor.Invoke(new object[] { url }) is RSSFeedHandler handler)
                 {
                     handler.loader = this;
-                    handler.webClient = this.webclient;
                     return handler;
                 }
                 else
@@ -285,7 +285,6 @@ namespace Leayal.PSO2Launcher.RSS
             }
 
             result.loader = this;
-            result.webClient = this.webclient;
 
             return result;
         }
@@ -293,6 +292,11 @@ namespace Leayal.PSO2Launcher.RSS
         /// <summary>The loader is not unloadable.</summary>
         public void UnloadAll()
         {
+            this.registeredhandlers.Clear();
+            this.registereddownloadhandlers.Clear();
+            this.registeredparserhandlers.Clear();
+            this.registeredmakerhandlers.Clear();
+            this.assemblies.Clear();
             this.loadcontext.Unload();
         }
 
@@ -305,6 +309,8 @@ namespace Leayal.PSO2Launcher.RSS
         protected virtual void Dispose(bool disposing)
         {
             this.UnloadAll();
+            this.webclient.CancelPendingRequests();
+            this.webclient.Dispose();
         }
 
         ~RSSLoader()

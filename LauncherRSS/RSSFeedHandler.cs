@@ -15,8 +15,10 @@ namespace Leayal.PSO2Launcher.RSS
     {
         public static readonly RSSFeedHandler Default = new DefaultRSSFeedHandler(null);
 
-        internal IRSSLoader loader;
-        internal HttpClient webClient;
+        public static bool IsDefault(RSSFeedHandler handler) => (handler is DefaultRSSFeedHandler);
+        public static bool IsGeneric(RSSFeedHandler handler) => (handler is GenericRSSFeedHandler);
+
+        internal RSSLoader loader;
 
         private string displayname;
         private CancellationTokenSource cancelSrc;
@@ -25,9 +27,9 @@ namespace Leayal.PSO2Launcher.RSS
         protected readonly string WorkspaceDirectory;
         protected readonly string CacheDataDirectory;
 
-        private int flag_fetch, flag_event;
+        private int flag_fetch, flag_event, flag_pendingrefresh, flag_isinrefresh;
         private Task<List<RSSFeedItem>> t_fetch;
-        protected HttpClient HttpClient => this.webClient;
+        protected HttpClient HttpClient => this.loader.webclient;
 
         public string FeedDisplayName => this.displayname;
         public event RSSFeedDisplayNameChangedEventHandler DisplayNameChanged;
@@ -49,12 +51,18 @@ namespace Leayal.PSO2Launcher.RSS
             this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(imageStream));
         }
 
+        public Uri FeedChannelUrl => this._feedchannelUrl;
+
+        public bool DeferRefresh { get; set; }
+
         public RSSFeedHandler(Uri feedchannelUrl)
         {
             this._feedchannelUrl = feedchannelUrl;
             this.t_fetch = null;
             this.flag_fetch = 0;
             this.flag_event = 0;
+            this.flag_isinrefresh = 0;
+            this.flag_pendingrefresh = 0;
             this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("rss", "data", this.GetType().FullName), SharedInterfaces.RuntimeValues.RootDirectory);
             this.CacheDataDirectory = Path.Combine(this.WorkspaceDirectory, "cache");
             Directory.CreateDirectory(this.CacheDataDirectory);
@@ -65,15 +73,22 @@ namespace Leayal.PSO2Launcher.RSS
         /// <param name="datetime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
         protected virtual async Task OnRefresh(DateTime dateTime)
         {
-            await this.Fetch();
+            if (Interlocked.CompareExchange(ref this.flag_isinrefresh, 1, 0) == 0)
+            {
+                await Task.Run(this.Fetch);
+                Interlocked.Exchange(ref this.flag_isinrefresh, 0);
+            }
         }
 
-        /// <summary>Force a feed refresh.</summary>
+        /// <summary>Perform a refresh if there's pending one. Otherwise does nothing.</summary>
         /// <remarks>Calling this method within <seealso cref="OnRefresh(in DateTime)"/> will cause an infinite loop. Hence, app crash.</remarks>
         /// <param name="datetime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
-        protected async Task Refresh(DateTime datetime)
+        public async Task Refresh()
         {
-            await this.OnRefresh(datetime);
+            if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 0, 1) == 1)
+            {
+                await this.OnRefresh(DateTime.Now);
+            }
         }
 
         private const int BeaconTickMS = 500;
@@ -95,7 +110,7 @@ namespace Leayal.PSO2Launcher.RSS
                 var src = new CancellationTokenSource();
                 this.cancelSrc?.Cancel();
                 this.cancelSrc = src;
-                Task.Run(async () =>
+                Task.Factory.StartNew(async () =>
                 {
                     var total = Convert.ToInt64(timespan.TotalMilliseconds);
                     while (total > 0)
@@ -118,9 +133,19 @@ namespace Leayal.PSO2Launcher.RSS
                     }
                     if (!src.IsCancellationRequested)
                     {
-                        await this.Refresh(DateTime.Now);
+                        if (this.DeferRefresh)
+                        {
+                            Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0);
+                        }
+                        else
+                        {
+                            if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0) == 0)
+                            {
+                                await this.Refresh();
+                            }
+                        }
                     }
-                }, src.Token);
+                }, src.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default);
             }
         }
 
