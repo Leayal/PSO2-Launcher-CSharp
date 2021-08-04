@@ -10,7 +10,7 @@ namespace PSUBlog
 {
     class PSUBlogRSSFeedItem : RSSFeedItem
     {
-        public PSUBlogRSSFeedItem(string item_display, Uri url) : base(null, item_display, url) { }
+        public PSUBlogRSSFeedItem(RSSFeedHandler handler, string item_display, string description, Uri url, DateTime? pubDate) : base(handler, item_display, description, url, pubDate) { }
 
         protected override void OnClick()
         {

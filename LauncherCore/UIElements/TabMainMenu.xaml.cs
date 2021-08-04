@@ -29,7 +29,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonScanFixGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonScanFixGameDataClicked", RoutingStrategy.Direct, typeof(ButtonScanFixGameDataClickRoutedEventHander), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonPSO2GameOptionClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2GameOptionClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameLauncherBehaviorClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherBehaviorClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
-        
+        public static readonly RoutedEvent ButtonManageGameLauncherRSSFeedsClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherRSSFeedsClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true, (obj, e) =>
         {
             if (obj is TabMainMenu tab)
@@ -250,6 +251,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void ButtonManageGameLauncherBehavior_Click(object sender, RoutedEventArgs e)
         {
             this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherBehaviorClickedEvent));
+        }
+
+        public event RoutedEventHandler ButtonManageGameLauncherRSSFeedsClicked
+        {
+            add { this.AddHandler(ButtonManageGameLauncherRSSFeedsClickedEvent, value); }
+            remove { this.RemoveHandler(ButtonManageGameLauncherRSSFeedsClickedEvent, value); }
+        }
+        private void ButtonManageGameLauncherRSSFeeds_Click(object sender, RoutedEventArgs e)
+        {
+            this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherRSSFeedsClickedEvent));
         }
 
         private void MetroTabItem_SelectionChanged(object sender, RoutedEventArgs e)

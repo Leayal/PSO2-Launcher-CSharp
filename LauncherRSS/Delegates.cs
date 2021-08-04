@@ -16,7 +16,7 @@ namespace Leayal.PSO2Launcher.RSS
         }
     }
 
-    public delegate void RSSFeedDisplayNameChangedEventHandler(RSSFeed sender, RSSFeedDisplayNameChangedEventArgs e);
+    public delegate void RSSFeedDisplayNameChangedEventHandler(RSSFeedHandler sender, RSSFeedDisplayNameChangedEventArgs e);
 
     public class RSSFeedDisplayImageChangedEventArgs : EventArgs
     {
@@ -28,13 +28,13 @@ namespace Leayal.PSO2Launcher.RSS
             this.ImageContentStream = contentStream;
         }
     }
-    public delegate void RSSFeedDisplayImageChangedEventHandler(RSSFeed sender, RSSFeedDisplayImageChangedEventArgs e);
+    public delegate void RSSFeedDisplayImageChangedEventHandler(RSSFeedHandler sender, RSSFeedDisplayImageChangedEventArgs e);
 
     public class RSSFeedItemClickEventArgs : EventArgs
     {
-        public RSSFeed RSSFeed { get; }
+        public RSSFeedHandler RSSFeed { get; }
 
-        public RSSFeedItemClickEventArgs(RSSFeed feed) : base()
+        public RSSFeedItemClickEventArgs(RSSFeedHandler feed) : base()
         {
             this.RSSFeed = feed;
         }
@@ -50,5 +50,5 @@ namespace Leayal.PSO2Launcher.RSS
             this.Items = items;
         }
     }
-    public delegate void RSSFeedUpdatedEventHandler(RSSFeed sender, RSSFeedUpdatedEventArgs e);
+    public delegate void RSSFeedUpdatedEventHandler(RSSFeedHandler sender, RSSFeedUpdatedEventArgs e);
 }

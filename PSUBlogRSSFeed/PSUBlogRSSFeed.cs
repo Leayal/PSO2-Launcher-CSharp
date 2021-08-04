@@ -11,27 +11,49 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Xml;
 using System.Xml.XPath;
+using System.Text.RegularExpressions;
 
 namespace PSUBlog
 {
     /// <remarks><para>This code is not official from PSUBlog. It was written by Dramiel Leayal. If PSUBlog is not happy with this, please tell <i><b>Dramiel Leayal@8799</b></i> on Discord to remove this from the launcher.</para></remarks>
-    public class PSUBlogNGSRSSFeed : RSSFeed
+    public class PSUBlogNGSRSSFeed : RSSFeedHandler
     {
-        private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
+        // private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
+
+        private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly Regex rg_removetags = new Regex(@"<\/?[\w\s]*>|<.+[\W]>.*?<.+[\W]>?", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         private bool isfirstfetch;
         private string cached_abs_url_icon;
         private readonly string IconPath;
         private readonly string IconHashPath;
 
-        public PSUBlogNGSRSSFeed(IRSSLoader loader) : base(loader, typeof(PSUBlogNGSRSSFeed).FullName)
+        public PSUBlogNGSRSSFeed(Uri url) : base(url)
         {
             this.IconPath = Path.Combine(this.CacheDataDirectory, "icon");
             this.IconHashPath = Path.Combine(this.CacheDataDirectory, "icon-hash");
-            if (File.Exists(this.IconHashPath))
+            if (File.Exists(this.IconHashPath) && File.Exists(this.IconPath))
             {
-                this.cached_abs_url_icon = Leayal.PSO2Launcher.Helper.QuickFile.ReadFirstLine(this.IconHashPath);
-                this.SetDisplayImage(File.OpenRead(this.IconPath));
+                var fs = File.OpenRead(this.IconPath);
+                var isnullFile = (fs.Length == 0L);
+                if (isnullFile)
+                {
+                    fs.Dispose();
+                    this.cached_abs_url_icon = null;
+                }
+                else
+                {
+                    this.cached_abs_url_icon = Leayal.PSO2Launcher.Helper.QuickFile.ReadFirstLine(this.IconHashPath);
+                    if (string.IsNullOrWhiteSpace(this.cached_abs_url_icon))
+                    {
+                        this.cached_abs_url_icon = null;
+                        fs.Dispose();
+                    }
+                    else
+                    {
+                        this.SetDisplayImage(fs);
+                    }
+                }
             }
             else
             {
@@ -40,18 +62,17 @@ namespace PSUBlog
             this.isfirstfetch = true;
         }
 
-        protected override async Task<IReadOnlyDictionary<string, Uri>> FetchFeed()
+        protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
         {
-            var data = await this.HttpClient.GetStringAsync(DefaultFeed);
             var reader = new XmlDocument();
             reader.LoadXml(data);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(reader.NameTable);
-            foreach (var item in getNamespacesInScope(reader.DocumentElement))
+            foreach (var item in GetNamespacesInScope(reader.DocumentElement))
             {
                 nsmgr.AddNamespace(item.Key, item.Value);
             }
             var element_channel = reader.DocumentElement.SelectSingleNode("channel");
-            var listOfItem = new Dictionary<string, Uri>();
+            var listOfItem = new List<FeedItemData>();
             if (element_channel != null)
             {
                 TimeSpan timerOffset = TimeSpan.Zero;
@@ -188,9 +209,55 @@ namespace PSUBlog
                                     }
                                 }
 
-                                if (Uri.TryCreate(item_url, UriKind.Absolute, out var uri))
+                                string item_description;
+                                var element_description = item.SelectSingleNode("description");
+                                if (element_description == null)
                                 {
-                                    listOfItem.Add(item_title, uri);
+                                    item_description = string.Empty;
+                                }
+                                else
+                                {
+                                    item_description = element_description.InnerText;
+                                    if (string.IsNullOrWhiteSpace(item_description))
+                                    {
+                                        item_description = string.Empty;
+                                    }
+                                    else
+                                    {
+                                        item_description = item_description.Trim();
+                                        if (rg_cdata.IsMatch(item_description))
+                                        {
+                                            var match = rg_cdata.Match(item_description);
+                                            item_description = match.Groups[0].Value;
+                                        }
+                                        if (rg_removetags.IsMatch(item_description))
+                                        {
+                                            item_description = rg_removetags.Replace(item_description, string.Empty);
+                                        }
+                                    }
+                                }
+
+                                DateTime? item_pubdate;
+                                var element_pubdate = item.SelectSingleNode("pubDate");
+                                if (element_pubdate == null)
+                                {
+                                    item_pubdate = null;
+                                }
+                                else
+                                {
+                                    if (!string.IsNullOrWhiteSpace(element_pubdate.InnerText) && DateTime.TryParse(element_pubdate.InnerText, out var time))
+                                    {
+                                        item_pubdate = time;
+                                    }
+                                    else
+                                    {
+                                        item_pubdate = null;
+                                    }
+                                }
+
+                                if (Uri.TryCreate(item_url, UriKind.Absolute, out _))
+                                {
+                                    listOfItem.Add(new FeedItemData(item_title, item_description, item_url, item_pubdate));
                                 }
                             }
                         }
@@ -230,7 +297,7 @@ namespace PSUBlog
                 }
             }
 
-            return listOfItem;
+            return Task.FromResult<IReadOnlyList<FeedItemData>>(listOfItem);
         }
 
         static bool duh = true;
@@ -261,35 +328,16 @@ namespace PSUBlog
             }
         }
 
-        protected override async Task OnRefresh(DateTime dateTime)
-        {
-            await this.Fetch();
-        }
+        protected override Task<string> OnDownloadFeedChannel(HttpClient webclient, Uri feedchannelUrl)
+            => Default.DownloadFeedChannel(webclient, feedchannelUrl);
 
-        protected override RSSFeedItem OnCreateRSSFeedItem(string displayName, Uri url)
-            => new PSUBlogRSSFeedItem(displayName, url);
+        protected override RSSFeedItem OnCreateFeedItem(in FeedItemData feeditemdata)
+            => new PSUBlogRSSFeedItem(this, feeditemdata.Title, feeditemdata.Description, new Uri(feeditemdata.Link), feeditemdata.PublishDate);
 
-        public static IDictionary<string, string> getNamespacesInScope(XmlNode xDoc)
-        {
-            IDictionary<string, string> AllNamespaces = new Dictionary<string, string>();
-            IDictionary<string, string> localNamespaces;
+        public override bool CanHandleParseFeedData(Uri url) => true;
 
-            XmlNode temp = xDoc;
-            XPathNavigator xNav;
-            while (temp.ParentNode != null)
-            {
-                xNav = temp.CreateNavigator();
-                localNamespaces = xNav.GetNamespacesInScope(XmlNamespaceScope.Local);
-                foreach (var item in localNamespaces)
-                {
-                    if (!AllNamespaces.ContainsKey(item.Key))
-                    {
-                        AllNamespaces.Add(item);
-                    }
-                }
-                temp = temp.ParentNode;
-            }
-            return AllNamespaces;
-        }
+        public override bool CanHandleFeedItemCreation(Uri url) => true;
+
+        public override bool CanHandleDownloadChannel(Uri url) => true;
     }
 }

@@ -3,10 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Collections.Concurrent;
 using System.Reflection;
-using System.Runtime.Loader;
-using System.Reflection.PortableExecutable;
-using System.Xml;
 using System.Net.Http;
 
 namespace Leayal.PSO2Launcher.RSS
@@ -15,19 +13,24 @@ namespace Leayal.PSO2Launcher.RSS
     /// <remarks>This class is not thread-safe.</remarks>
     public class RSSLoader : IDisposable, IRSSLoader
     {
-        private readonly static Type typeofRSSFeed = typeof(RSSFeed);
-        private readonly static Type typeofIRSSLoader = typeof(IRSSLoader);
+        private readonly static Type typeofUri = typeof(Uri),
+            typeofRSSFeed = typeof(RSSFeedHandler),
+            typeofIRSSFeedChannelDownloader = typeof(IRSSFeedChannelDownloader),
+            typeofIRSSFeedChannelParser = typeof(IRSSFeedChannelParser),
+            typeofIRSSFeedItemCreator = typeof(IRSSFeedItemCreator);
+        private readonly static Type[] constructorTarget = { typeofUri };
 
-        private readonly ObservableCollection<RSSFeed> collection;
-        private readonly RSSAssemblyLoadContext assemblies;
-        private readonly bool unloadable;
+        private readonly RSSAssemblyLoadContext loadcontext;
+
+        private readonly Dictionary<string, Type> registeredhandlers;
+        private readonly Dictionary<string, IRSSFeedChannelDownloader> registereddownloadhandlers;
+        private readonly Dictionary<string, IRSSFeedChannelParser> registeredparserhandlers;
+        private readonly Dictionary<string, IRSSFeedItemCreator> registeredmakerhandlers;
+        private readonly ConcurrentDictionary<string, Assembly> assemblies;
         private readonly HttpClient webclient;
 
-        public RSSLoader() : this(false) { }
-
-        public RSSLoader(bool unloadable)
+        public RSSLoader()
         {
-            this.unloadable = unloadable;
             this.webclient = new HttpClient(new SocketsHttpHandler()
             {
                 ConnectTimeout = TimeSpan.FromSeconds(5),
@@ -40,154 +43,273 @@ namespace Leayal.PSO2Launcher.RSS
                 Proxy = null,
                 MaxAutomaticRedirections = 10
             }, true);
-            this.assemblies = new RSSAssemblyLoadContext(unloadable);
-            this.collection = new ObservableCollection<RSSFeed>();
-            this.collection.CollectionChanged += Collection_CollectionChanged;
+            this.loadcontext = new RSSAssemblyLoadContext(Assembly.GetExecutingAssembly().Location);
+            this.assemblies = new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
+            this.registeredhandlers = new Dictionary<string, Type>(StringComparer.Ordinal);
+            this.registereddownloadhandlers = new Dictionary<string, IRSSFeedChannelDownloader>(StringComparer.Ordinal);
+            this.registeredparserhandlers = new Dictionary<string, IRSSFeedChannelParser>(StringComparer.Ordinal);
+            this.registeredmakerhandlers = new Dictionary<string, IRSSFeedItemCreator>(StringComparer.Ordinal);
         }
 
-        private void Collection_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        public IReadOnlyCollection<Type> RegisteredHandlers => this.registeredhandlers.Values;
+        public IReadOnlyCollection<IRSSFeedChannelDownloader> RegisteredDownloadHandlers => this.registereddownloadhandlers.Values;
+        public IReadOnlyCollection<IRSSFeedChannelParser> RegisteredParserHandlers => this.registeredparserhandlers.Values;
+        public IReadOnlyCollection<IRSSFeedItemCreator> RegisteredFeedItemCreatorHandlers => this.registeredmakerhandlers.Values;
+
+        private void LoadFrom(string filename)
         {
-            this.ItemsChanged?.Invoke(this, e);
-        }
-
-        public ICollection<RSSFeed> Items => this.collection;
-
-        public event NotifyCollectionChangedEventHandler ItemsChanged;
-
-        private Assembly LoadFrom(string filename)
-        {
-            Assembly asm;
-            try
+            this.assemblies.GetOrAdd(filename, (path) =>
             {
-                asm = this.assemblies.LoadFromNativeImagePath(filename, filename);
-            }
-            catch (BadImageFormatException)
-            {
-                asm = this.assemblies.LoadFromAssemblyPath(filename);
-            }
-            return asm;
+                var assembly = this.loadcontext.LoadFromAssemblyPath(path);
+                CreateFromAssemby(assembly);
+                return assembly;
+            });
         }
 
-        public IReadOnlyList<RSSFeed> Load(string filename)
+        public void Load(string filename)
         {
-            return CreateFromAssemby(this.LoadFrom(filename));
+            this.LoadFrom(filename);
         }
 
-        public IReadOnlyList<RSSFeed> Load(params string[] filenames)
+        public void Load(params string[] filenames)
         {
-            var asms = new List<Assembly>(filenames.Length);
             foreach (var filename in filenames)
             {
-                asms.Add(this.LoadFrom(filename));
-            }
-
-            if (asms.Count != 0)
-            {
-                return this.CreateFromAssemblies(asms);
-            }
-            else
-            {
-                return new ReadOnlyCollection<RSSFeed>(Array.Empty<RSSFeed>());
+                this.LoadFrom(filename);
             }
         }
 
-        public IReadOnlyList<RSSFeed> Load(IEnumerable<string> filenames)
+        public void Load(IEnumerable<string> filenames)
         {
-            var asms = new List<Assembly>();
             foreach (var filename in filenames)
             {
-                asms.Add(this.LoadFrom(filename));
-            }
-
-            if (asms.Count != 0)
-            {
-                return this.CreateFromAssemblies(asms);
-            }
-            else
-            {
-                return new ReadOnlyCollection<RSSFeed>(Array.Empty<RSSFeed>());
+                this.LoadFrom(filename);
             }
         }
 
-        private IReadOnlyList<RSSFeed> CreateFromAssemblies(List<Assembly> list)
+        private void CreateFromAssemby(Assembly asm)
         {
-            var results = new List<RSSFeed>();
-            foreach (var asm in list)
-            {
-                results.AddRange(CreateFromAssemby(asm));
-            }
-            if (results.Count != 0)
-            {
-                return new ReadOnlyCollection<RSSFeed>(results);
-            }
-            else
-            {
-                return new ReadOnlyCollection<RSSFeed>(Array.Empty<RSSFeed>());
-            }
-        }
-
-        private IReadOnlyList<RSSFeed> CreateFromAssemby(Assembly asm)
-        {
-            var feeds = new List<RSSFeed>();
             var types = asm.GetTypes();
-            var targetConstructor = new object[] { (IRSSLoader)this };
-            var targetConstructorTypes = new Type[] { typeofIRSSLoader };
             foreach (var t in types)
             {
+                string name = t.FullName;
                 if (t.IsSubclassOf(typeofRSSFeed))
                 {
-                    var constructor = t.GetConstructor(targetConstructorTypes);
+                    var constructor = t.GetConstructor(constructorTarget);
                     if (constructor != null)
                     {
-                        var obj = constructor.Invoke(targetConstructor);
-                        if (obj is RSSFeed feed)
-                        {
-                            feeds.Add(feed);
-                            feed.webClient = this.webclient;
-                            this.collection.Add(feed);
-                        }
-                        continue;
+                        this.registeredhandlers.Add(name, t);
                     }
-                    else
+                }
+                else
+                {
+                    var interfaces = t.GetInterfaces();
+                    object obj = null;
+                    if (Array.IndexOf(interfaces, typeofIRSSFeedChannelDownloader) != -1)
                     {
-                        constructor = t.GetConstructor(Type.EmptyTypes);
-                        if (constructor != null)
+                        var constructor = t.GetConstructor(Type.EmptyTypes);
+                        if (constructor != null && constructor.Invoke(null) is IRSSFeedChannelDownloader downloadhandler)
                         {
-                            var obj = constructor.Invoke(null);
-                            if (obj is RSSFeed feed)
-                            {
-                                feeds.Add(feed);
-                                feed.webClient = this.webclient;
-                                this.collection.Add(feed);
-                            }
-                            continue;
+                            obj = downloadhandler;
+                            this.registereddownloadhandlers.Add(name, downloadhandler);
                         }
+                    }
+                    if (obj == null)
+                    {
+                        if (Array.IndexOf(interfaces, typeofIRSSFeedChannelParser) != -1)
+                        {
+                            var constructor = t.GetConstructor(Type.EmptyTypes);
+                            if (constructor != null && constructor.Invoke(null) is IRSSFeedChannelParser parserhandler)
+                            {
+                                obj = parserhandler;
+                                this.registeredparserhandlers.Add(name, parserhandler);
+                            }
+                        }
+                    }
+                    else if (obj is IRSSFeedChannelParser parser)
+                    {
+                        this.registeredparserhandlers.Add(name, parser);
+                    }
+
+                    if (obj == null)
+                    {
+                        if (Array.IndexOf(interfaces, typeofIRSSFeedItemCreator) != -1)
+                        {
+                            var constructor = t.GetConstructor(Type.EmptyTypes);
+                            if (constructor != null && constructor.Invoke(null) is IRSSFeedItemCreator creatorhandler)
+                            {
+                                this.registeredmakerhandlers.Add(name, creatorhandler);
+                            }
+                        }
+                    }
+                    else if (obj is IRSSFeedItemCreator creator)
+                    {
+                        this.registeredmakerhandlers.Add(name, creator);
                     }
                 }
             }
-            if (feeds.Count != 0)
+        }
+
+        public IRSSFeedChannelDownloader GetDownloadHandlerByTypeName(string name)
+        {
+            if (this.registereddownloadhandlers.TryGetValue(name, out var value))
             {
-                return new ReadOnlyCollection<RSSFeed>(feeds);
+                return value;
             }
             else
             {
-                return new ReadOnlyCollection<RSSFeed>(Array.Empty<RSSFeed>());
+                return null;
             }
         }
 
-        /// <summary>The loader is not unloadable.</summary>
-        public void Unload()
+        public IRSSFeedItemCreator GetFeedItemCreatorHandlerByTypeName(string name)
         {
-            if (!this.unloadable) throw new InvalidOperationException();
-            this.assemblies.Unload();
+            if (this.registeredmakerhandlers.TryGetValue(name, out var value))
+            {
+                return value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public IRSSFeedChannelParser GetParserHandlerByTypeName(string name)
+        {
+            if (this.registeredparserhandlers.TryGetValue(name, out var value))
+            {
+                return value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public IEnumerable<IRSSFeedChannelDownloader> GetDownloadHandlerSuggesstion(Uri url)
+        {
+            foreach (var keypair in this.registereddownloadhandlers)
+            {
+                var item = keypair.Value;
+                if (item.CanHandleDownloadChannel(url))
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public IEnumerable<IRSSFeedItemCreator> GetItemCreatorHandlerSuggesstion(Uri url)
+        {
+            foreach (var keypair in this.registeredmakerhandlers)
+            {
+                var item = keypair.Value;
+                if (item.CanHandleFeedItemCreation(url))
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public IEnumerable<IRSSFeedChannelParser> GetParserHandlerSuggesstion(Uri url)
+        {
+            foreach (var keypair in this.registeredparserhandlers)
+            {
+                var item = keypair.Value;
+                if (item.CanHandleParseFeedData(url))
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public RSSFeedHandler CreateHandlerFromUri(Uri url)
+            => this.CreateHandlerFromUri(url, null, null, null);
+
+        public RSSFeedHandler CreateHandlerFromUri(Uri url, string handlerTypeName)
+        {
+            if (this.registeredhandlers.TryGetValue(handlerTypeName, out var t))
+            {
+                var ctor = t.GetConstructor(new Type[] { typeofUri });
+                if (ctor != null && ctor.Invoke(new object[] { url }) is RSSFeedHandler handler)
+                {
+                    handler.loader = this;
+                    handler.webClient = this.webclient;
+                    return handler;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            else
+            {
+                throw new ArgumentException(nameof(handlerTypeName));
+            }
+        }
+
+        public RSSFeedHandler CreateHandlerFromUri(Uri url, IRSSFeedChannelDownloader downloadHandler, IRSSFeedChannelParser parser, IRSSFeedItemCreator creator)
+        {
+            RSSFeedHandler result;
+            if (downloadHandler == null && parser == null && creator == null)
+            {
+                result = new DefaultRSSFeedHandler(url);
+            }
+            else
+            {
+                if (downloadHandler == null)
+                {
+                    downloadHandler = RSSFeedHandler.Default;
+                }
+                else if (!downloadHandler.CanHandleDownloadChannel(url))
+                {
+                    throw new ArgumentException(nameof(downloadHandler));
+                }
+                if (parser == null)
+                {
+                    parser = RSSFeedHandler.Default;
+                }
+                else if (!parser.CanHandleParseFeedData(url))
+                {
+                    throw new ArgumentException(nameof(parser));
+                }
+                if (creator == null)
+                {
+                    creator = RSSFeedHandler.Default;
+                }
+                else if (!creator.CanHandleFeedItemCreation(url))
+                {
+                    throw new ArgumentException(nameof(creator));
+                }
+
+                result = new GenericRSSFeedHandler(url, downloadHandler, parser, creator);
+            }
+
+            result.loader = this;
+            result.webClient = this.webclient;
+
+            return result;
+        }
+
+        /// <summary>The loader is not unloadable.</summary>
+        public void UnloadAll()
+        {
+            this.loadcontext.Unload();
         }
 
         public void Dispose()
         {
-            if (this.unloadable)
-            {
-                this.assemblies.Unload();
-            }
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            this.UnloadAll();
+        }
+
+        ~RSSLoader()
+        {
+            this.Dispose(false);
         }
     }
 }

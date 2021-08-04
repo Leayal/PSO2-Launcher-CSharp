@@ -8,6 +8,6 @@ namespace Leayal.PSO2Launcher.RSS
 {
     class GenericRSSFeedItem : RSSFeedItem
     {
-        public GenericRSSFeedItem(RSSFeed feed, string displayName, Uri url) : base(feed, displayName, url) { }
+        public GenericRSSFeedItem(RSSFeedHandler feed, string displayName, string shortdescription, Uri url, DateTime? publishDate) : base(feed, displayName, shortdescription, url, publishDate) { }
     }
 }

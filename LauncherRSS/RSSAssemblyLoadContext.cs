@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Leayal.SharedInterfaces;
 
@@ -13,15 +14,17 @@ namespace Leayal.PSO2Launcher.RSS
         private static readonly AssemblyLoadContext defaultone = AssemblyLoadContext.Default;
         private static readonly Assembly currentAsm = Assembly.GetExecutingAssembly();
         private readonly AssemblyDependencyResolver resolver;
-
-        public RSSAssemblyLoadContext(bool unloadable) : base(null, unloadable)
+        
+        public RSSAssemblyLoadContext(string assemblypath) : base(assemblypath, true)
         {
+            /*
             string path = currentAsm.Location;
             if (string.IsNullOrEmpty(path))
             {
                 path = RuntimeValues.RootDirectory;
             }
-            this.resolver = new AssemblyDependencyResolver(path);
+            */
+            this.resolver = new AssemblyDependencyResolver(assemblypath);
         }
 
         protected override Assembly Load(AssemblyName assemblyName)
@@ -47,8 +50,6 @@ namespace Leayal.PSO2Launcher.RSS
                 return this.LoadFromAssemblyPath(path);
             }
         }
-
-        
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {

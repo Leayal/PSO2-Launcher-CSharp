@@ -24,7 +24,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Label Content="Launcher behavior manager" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
+        <TextBlock Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=Title}" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
 
         <Grid Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>

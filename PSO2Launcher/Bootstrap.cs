@@ -166,8 +166,20 @@ namespace Leayal.PSO2Launcher
 
             try
             {
-                var duh = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory), "Leayal.PSO2Launcher.Core.GameLauncher");
-                if (duh is IWPFApp class_gameLauncher)
+                var asmPath = Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory);
+                Assembly asm_launcher;
+                try
+                {
+                    asm_launcher = AssemblyLoadContext.Default.LoadFromNativeImagePath(asmPath, asmPath);
+                }
+                catch (BadImageFormatException)
+                {
+                    asm_launcher = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
+                }
+                // asm_launcher.GetType("");
+                // asm_launcher.CreateInstance("Leayal.PSO2Launcher.Core.GameLauncher");
+                // var duh = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(Path.GetFullPath(Path.Combine("bin", "LauncherCore.dll"), rootDirectory), "Leayal.PSO2Launcher.Core.GameLauncher");
+                if (asm_launcher.CreateInstance("Leayal.PSO2Launcher.Core.GameLauncher") is IWPFApp class_gameLauncher)
                 {
                     Program.SwitchToWPF(class_gameLauncher);
                 }

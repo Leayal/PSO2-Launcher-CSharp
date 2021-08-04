@@ -8,17 +8,23 @@ namespace Leayal.PSO2Launcher.RSS
 {
     public abstract class RSSFeedItem
     {
-        private readonly RSSFeed feed;
+        private readonly RSSFeedHandler feed;
 
         public virtual string DisplayName { get; }
 
         public virtual Uri Url { get; }
 
-        protected RSSFeedItem(RSSFeed feed, string displayName, Uri url)
+        public virtual string ShortDescription { get; }
+
+        public virtual DateTime? PublishDate { get; }
+
+        protected RSSFeedItem(RSSFeedHandler feed, string displayName, string shortdescription, Uri url, DateTime? publishdate)
         {
             this.feed = feed;
             this.DisplayName = displayName;
             this.Url = url;
+            this.ShortDescription = shortdescription;
+            this.PublishDate = publishdate;
         }
 
         public event RSSFeedItemClickEventHandler Click;

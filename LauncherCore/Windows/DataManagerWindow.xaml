@@ -24,7 +24,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Label Content="PSO2 Data Manager" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
+        <TextBlock Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneWay}" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" />
 
         <Grid Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>

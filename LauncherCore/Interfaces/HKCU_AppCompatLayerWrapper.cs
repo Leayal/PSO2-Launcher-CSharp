@@ -67,7 +67,7 @@ namespace Leayal.PSO2Launcher.Core.Interfaces
             {
                 if (this.compatString.Count == 0)
                 {
-                    key.DeleteValue(this.app);
+                    key.DeleteValue(this.app, false);
                 }
                 else
                 {

@@ -6,21 +6,27 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Net.Http;
 using System.Collections.ObjectModel;
+using System.Xml;
+using System.Xml.XPath;
 
 namespace Leayal.PSO2Launcher.RSS
 {
-    public abstract class RSSFeed
+    public abstract class RSSFeedHandler : IDisposable, IRSSFeedChannelParser, IRSSFeedItemCreator, IRSSFeedChannelDownloader
     {
-        protected readonly IRSSLoader Loader;
+        public static readonly RSSFeedHandler Default = new DefaultRSSFeedHandler(null);
+
+        internal IRSSLoader loader;
+        internal HttpClient webClient;
+
         private string displayname;
         private CancellationTokenSource cancelSrc;
-        internal HttpClient webClient;
+        private readonly Uri _feedchannelUrl;
 
         protected readonly string WorkspaceDirectory;
         protected readonly string CacheDataDirectory;
 
         private int flag_fetch, flag_event;
-        private volatile Task<List<RSSFeedItem>> t_fetch;
+        private Task<List<RSSFeedItem>> t_fetch;
         protected HttpClient HttpClient => this.webClient;
 
         public string FeedDisplayName => this.displayname;
@@ -43,21 +49,24 @@ namespace Leayal.PSO2Launcher.RSS
             this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(imageStream));
         }
 
-        protected RSSFeed(IRSSLoader loader, string uniquename)
+        public RSSFeedHandler(Uri feedchannelUrl)
         {
+            this._feedchannelUrl = feedchannelUrl;
             this.t_fetch = null;
             this.flag_fetch = 0;
             this.flag_event = 0;
-            this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("rss", "data", uniquename), SharedInterfaces.RuntimeValues.RootDirectory);
+            this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("rss", "data", this.GetType().FullName), SharedInterfaces.RuntimeValues.RootDirectory);
             this.CacheDataDirectory = Path.Combine(this.WorkspaceDirectory, "cache");
             Directory.CreateDirectory(this.CacheDataDirectory);
-            this.Loader = loader;
         }
 
         /// <summary>When overriden, this method should contain code to re-fetch, re-parse the RSS Feed(s).</summary>
         /// <remarks>This method is called when <seealso cref="Refresh(in DateTime)"/> is called.</remarks>
         /// <param name="datetime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
-        protected abstract Task OnRefresh(DateTime dateTime);
+        protected virtual async Task OnRefresh(DateTime dateTime)
+        {
+            await this.Fetch();
+        }
 
         /// <summary>Force a feed refresh.</summary>
         /// <remarks>Calling this method within <seealso cref="OnRefresh(in DateTime)"/> will cause an infinite loop. Hence, app crash.</remarks>
@@ -150,14 +159,18 @@ namespace Leayal.PSO2Launcher.RSS
 
         private async Task<List<RSSFeedItem>> InnerFetch()
         {
-            var fetched = await this.FetchFeed();
+            var data = await this.DownloadFeedChannel(this.HttpClient, this._feedchannelUrl);
+            var fetched = await this.ParseFeedChannel(data);
             if (fetched != null && fetched.Count != 0)
             {
                 var list = new List<RSSFeedItem>(fetched.Count);
                 foreach (var item in fetched)
                 {
-                    var feeditem = this.OnCreateRSSFeedItem(item.Key, item.Value);
-                    list.Add(feeditem);
+                    var feeditem = this.CreateFeedItem(in item);
+                    if (feeditem != null)
+                    {
+                        list.Add(feeditem);
+                    }
                 }
                 return list;
             }
@@ -167,7 +180,7 @@ namespace Leayal.PSO2Launcher.RSS
             }
         }
 
-        public async Task<IReadOnlyList<RSSFeedItem>> GetPreviousFeedItems()
+        public virtual async Task<IReadOnlyList<RSSFeedItem>> GetPreviousFeedItems()
         {
             var t = this.t_fetch;
             if (t != null)
@@ -180,14 +193,73 @@ namespace Leayal.PSO2Launcher.RSS
             }
         }
 
+        public void Dispose()
+        {
+            this.SetNextRefesh(TimeSpan.Zero);
+        }
+
+        public Task<string> DownloadFeedChannel(HttpClient webclient, Uri feedchannelUrl)
+            => this.OnDownloadFeedChannel(webclient, feedchannelUrl);
+
+        protected abstract Task<string> OnDownloadFeedChannel(HttpClient webclient, Uri feedchannelUrl);
+
+        public Task<IReadOnlyList<FeedItemData>> ParseFeedChannel(string data)
+            => this.OnParseFeedChannel(data);
+
+        protected abstract Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data);
+
         public event RSSFeedUpdatedEventHandler FeedUpdated;
 
-        /// <summary>When overriden, it should contain code to fetch a raw rss feed data from a remote source.</summary>
-        protected abstract Task<IReadOnlyDictionary<string, Uri>> FetchFeed();
+        public RSSFeedItem CreateFeedItem(in FeedItemData feeditemdata)
+            => this.OnCreateFeedItem(in feeditemdata);
 
-        protected virtual RSSFeedItem OnCreateRSSFeedItem(string displayName, Uri url)
+        protected abstract RSSFeedItem OnCreateFeedItem(in FeedItemData feeditemdata);
+
+        protected static IDictionary<string, string> GetNamespacesInScope(XmlNode xDoc)
         {
-            return new GenericRSSFeedItem(this, displayName, url);
+            IDictionary<string, string> AllNamespaces = new Dictionary<string, string>();
+            IDictionary<string, string> localNamespaces;
+
+            XmlNode temp = xDoc;
+            XPathNavigator xNav;
+            while (temp.ParentNode != null)
+            {
+                xNav = temp.CreateNavigator();
+                localNamespaces = xNav.GetNamespacesInScope(XmlNamespaceScope.Local);
+                foreach (var item in localNamespaces)
+                {
+                    if (!AllNamespaces.ContainsKey(item.Key))
+                    {
+                        AllNamespaces.Add(item);
+                    }
+                }
+                temp = temp.ParentNode;
+            }
+            return AllNamespaces;
         }
+
+        /// <summary>When overriden, contains code to determine whether the plugin can handle parsing this feed's data.</summary>
+        /// <param name="url">The url to check for.</param>
+        /// <returns>
+        /// <para>True - The plugin can handle.</para>
+        /// <para>False - The plugin can not handle.</para>
+        /// </returns>
+        public abstract bool CanHandleParseFeedData(Uri url);
+
+        /// <summary>When overriden, contains code to determine whether the plugin can handle this feed's <seealso cref="RSSFeedItem"/> creation(s).</summary>
+        /// <param name="url">The url to check for.</param>
+        /// <returns>
+        /// <para>True - The plugin can handle.</para>
+        /// <para>False - The plugin can not handle.</para>
+        /// </returns>
+        public abstract bool CanHandleFeedItemCreation(Uri url);
+
+        /// <summary>When overriden, contains code to determine whether the plugin can handle this feed.</summary>
+        /// <param name="url">The url to check for.</param>
+        /// <returns>
+        /// <para>True - The plugin can handle.</para>
+        /// <para>False - The plugin can not handle.</para>
+        /// </returns>
+        public abstract bool CanHandleDownloadChannel(Uri url);
     }
 }

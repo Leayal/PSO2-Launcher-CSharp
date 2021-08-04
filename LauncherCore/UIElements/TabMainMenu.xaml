@@ -38,6 +38,7 @@
                 <ContextMenu>
                     <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click" />
                     <MenuItem Header="Manage launcher's behaviors" Click="ButtonManageGameLauncherBehavior_Click" />
+                    <MenuItem Header="Manage launcher's RSS Feeds" Click="ButtonManageGameLauncherRSSFeeds_Click" />
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
