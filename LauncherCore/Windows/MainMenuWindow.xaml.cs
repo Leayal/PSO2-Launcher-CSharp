@@ -349,14 +349,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (this.ConsoleLog.CheckAccess())
             {
-                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, this.ConsoleLog.Document.TextLength))
+                var textlength = this.ConsoleLog.Document.TextLength;
+                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, textlength))
                 {
                     // Is last line in view
                     bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
 
                     if (newline)
                     {
-                        writer.WriteLine();
+                        if (textlength != 0)
+                        {
+                            writer.WriteLine();
+                        }
                     }
                     callback.Invoke(writer);
                     if (isAlreadyInLastLineView)
@@ -377,12 +381,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             try
             {
-                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, this.ConsoleLog.Document.TextLength))
+                var textlength = this.ConsoleLog.Document.TextLength;
+                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, textlength))
                 {
                     bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
                     if (newline)
                     {
-                        writer.WriteLine();
+                        if (textlength != 0)
+                        {
+                            writer.WriteLine();
+                        }
                     }
                     callback.Invoke(writer);
                     if (isAlreadyInLastLineView)
@@ -399,6 +407,57 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         private delegate void _CreateNewParagraphInLog(TaskCompletionSource tSrc, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline, bool followLastLine);
+
+        private void ConsoleLog_ContextMenuOpening(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu menu)
+            {
+                var consoleui = this.ConsoleLog;
+                menu.PlacementTarget = consoleui;
+                foreach (var item in menu.Items)
+                {
+                    if (item is MenuItem menuitem)
+                    {
+                        if (menuitem.Tag is string str)
+                        {
+                            // Hardcoded for now
+                            if (string.Equals(str, "ConsoleLogMenuItemCopySelected", StringComparison.Ordinal))
+                            {
+                                if (consoleui.SelectionLength == 0)
+                                {
+                                    menuitem.Visibility = Visibility.Collapsed;
+                                }
+                                else
+                                {
+                                    menuitem.Visibility = Visibility.Visible;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ConsoleLogMenuItemCopySelected_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.ConsoleLog.SelectionLength == 0) return;
+            Clipboard.SetText(this.ConsoleLog.SelectedText, TextDataFormat.UnicodeText);
+        }
+
+        private void ConsoleLogMenuItemCopyAll_Click(object sender, RoutedEventArgs e)
+        {
+            var str = this.ConsoleLog.Text;
+            if (!string.IsNullOrEmpty(str))
+            {
+                Clipboard.SetText(str, TextDataFormat.UnicodeText);
+            }
+        }
+
+        private void ConsoleLogMenuItemClearAll_Click(object sender, RoutedEventArgs e)
+        {
+            this.ConsoleLog.Clear();
+        }
 
         #region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)

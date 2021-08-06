@@ -92,7 +92,15 @@
             </Border>
             <localui:RSSFeedPresenter Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" x:Name="RSSFeedPresenter" />
             <avalon:TextEditor Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF"
-                         IsReadOnly="True" WordWrap="True" x:Name="ConsoleLog" Margin="1,0,1,0" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" LineNumbersForeground="{DynamicResource MahApps.Brushes.ThemeForeground}" />
+                         IsReadOnly="True" WordWrap="True" x:Name="ConsoleLog" Margin="1,0,1,0" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" LineNumbersForeground="{DynamicResource MahApps.Brushes.ThemeForeground}">
+                <avalon:TextEditor.ContextMenu>
+                    <ContextMenu Opened="ConsoleLog_ContextMenuOpening">
+                        <MenuItem Header="Copy selected texts" Tag="ConsoleLogMenuItemCopySelected" Click="ConsoleLogMenuItemCopySelected_Click" />
+                        <MenuItem Header="Copy all texts" Click="ConsoleLogMenuItemCopyAll_Click" />
+                        <MenuItem Header="Clear all texts" Click="ConsoleLogMenuItemClearAll_Click" />
+                    </ContextMenu>
+                </avalon:TextEditor.ContextMenu>
+            </avalon:TextEditor>
         </Grid>
         <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>
