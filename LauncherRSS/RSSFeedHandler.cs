@@ -55,7 +55,7 @@ namespace Leayal.PSO2Launcher.RSS
 
         public bool DeferRefresh { get; set; }
 
-        public RSSFeedHandler(Uri feedchannelUrl)
+        internal RSSFeedHandler(Uri feedchannelUrl, bool createworkspace)
         {
             this._feedchannelUrl = feedchannelUrl;
             this.t_fetch = null;
@@ -63,10 +63,20 @@ namespace Leayal.PSO2Launcher.RSS
             this.flag_event = 0;
             this.flag_isinrefresh = 0;
             this.flag_pendingrefresh = 0;
-            this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("rss", "data", this.GetType().FullName), SharedInterfaces.RuntimeValues.RootDirectory);
-            this.CacheDataDirectory = Path.Combine(this.WorkspaceDirectory, "cache");
-            Directory.CreateDirectory(this.CacheDataDirectory);
+            if (createworkspace)
+            {
+                this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("data", "rss", this.GetType().FullName), SharedInterfaces.RuntimeValues.RootDirectory);
+                this.CacheDataDirectory = Path.Combine(this.WorkspaceDirectory, "cache");
+                Directory.CreateDirectory(this.CacheDataDirectory);
+            }
+            else
+            {
+                this.WorkspaceDirectory = null;
+                this.CacheDataDirectory = null;
+            }
         }
+
+        public RSSFeedHandler(Uri feedchannelUrl) : this(feedchannelUrl, true) { }
 
         /// <summary>When overriden, this method should contain code to re-fetch, re-parse the RSS Feed(s).</summary>
         /// <remarks>This method is called when <seealso cref="Refresh(in DateTime)"/> is called.</remarks>
@@ -81,8 +91,6 @@ namespace Leayal.PSO2Launcher.RSS
         }
 
         /// <summary>Perform a refresh if there's pending one. Otherwise does nothing.</summary>
-        /// <remarks>Calling this method within <seealso cref="OnRefresh(in DateTime)"/> will cause an infinite loop. Hence, app crash.</remarks>
-        /// <param name="datetime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
         public async Task Refresh()
         {
             if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 0, 1) == 1)
@@ -90,6 +98,8 @@ namespace Leayal.PSO2Launcher.RSS
                 await this.OnRefresh(DateTime.Now);
             }
         }
+
+        public event EventHandler DeferredRefreshReady;
 
         private const int BeaconTickMS = 500;
 
@@ -133,13 +143,15 @@ namespace Leayal.PSO2Launcher.RSS
                     }
                     if (!src.IsCancellationRequested)
                     {
-                        if (this.DeferRefresh)
+                        bool deferred = this.DeferRefresh;
+                        if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0) == 0)
                         {
-                            Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0);
-                        }
-                        else
-                        {
-                            if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0) == 0)
+                            if (deferred)
+                            {
+                                var stuff = this.DeferredRefreshReady;
+                                stuff?.Invoke(this, EventArgs.Empty);
+                            }
+                            else
                             {
                                 await this.Refresh();
                             }

@@ -30,23 +30,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void ToggleBtn_RSSFeed_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton togglebtn)
-            {
-                togglebtn.Checked -= this.ToggleBtn_RSSFeed_Checked;
-                togglebtn.Checked += this.ToggleBtn_Checked;
-
-                this.ToggleBtn_Checked(sender, e);
-
-                this.RSSFeedPresenter_Loaded();
-            }
-        }
-
         private async void RSSFeedPresenter_Loaded()
         {
             var rssloader = this.RSSFeedPresenter.Loader;
-            var path = Path.GetFullPath("rss", RuntimeValues.RootDirectory);
+            var path = Path.GetFullPath(Path.Combine("bin", "plugins", "rss"), RuntimeValues.RootDirectory);
             if (Directory.Exists(path))
             {
                 var listOfFiles = new List<string>(Directory.EnumerateFiles(path, "*.dll", SearchOption.TopDirectoryOnly));
@@ -55,7 +42,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     rssloader.Load(listOfFiles);
                 }
             }
-            await Task.Run(async () =>
+            await Task.Run(() =>
             {
                 path = Path.GetFullPath(Path.Combine("config", "rss"), RuntimeValues.RootDirectory);
                 if (Directory.Exists(path))
@@ -83,11 +70,59 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonManageGameLauncherRSSFeedsClicked -= this.ButtonManageGameLauncherRSSFeeds_Clicked;
                 try
                 {
-                    var window = new RSSFeedsManagerWindow(null);
+                    var window = new RSSFeedsManagerWindow(this.RSSFeedPresenter.Loader, this.RSSFeedPresenter.RSSFeedHandlers);
                     window.Owner = this;
                     if (window.ShowDialog() == true)
                     {
+                        this.RSSFeedPresenter.ClearAllFeeds();
+                        var included = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var path = Path.GetFullPath(Path.Combine("config", "rss"), RuntimeValues.RootDirectory);
+                        var dir = Directory.CreateDirectory(path);
+                        foreach (var dom in window.doms)
+                        {
+                            var conf = dom.Export();
+                            var filename = Shared.Sha1StringHelper.GenerateFromString(conf.FeedChannelUrl) + ".json";
+                            if (included.Add(filename))
+                            {   
+                                conf.SaveTo(Path.Combine(path, filename));
+                                this.RSSFeedPresenter.LoadFeedConfig(in conf);
+                            }
+                            else
+                            {
+                                // How!?
+                            }
+                        }
+                        if (included.Count == 0)
+                        {
+                            foreach (var filename in Directory.EnumerateFiles(path, "*.json", SearchOption.TopDirectoryOnly))
+                            {
+                                try
+                                {
+                                    File.Delete(filename);
+                                }
+                                catch
+                                {
 
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (var filename in Directory.EnumerateFiles(path, "*.json", SearchOption.TopDirectoryOnly))
+                            {
+                                if (!included.Contains(Path.GetFileName(filename)))
+                                {
+                                    try
+                                    {
+                                        File.Delete(filename);
+                                    }
+                                    catch
+                                    {
+
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 finally

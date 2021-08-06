@@ -20,6 +20,7 @@ using Leayal.PSO2Launcher.Core.Classes;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -50,19 +51,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
             InitializeComponent();
-            this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed };
-            try
+            this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed, this.ToggleBtn_ConsoleLog };
+            _ = this.CreateNewParagraphInLog(writer =>
             {
-                if (App.Current.IsLightMode)
-                {
-                    this.BgImg.Source = lazybg_light.Value;
-                }
-                else
-                {
-                    this.BgImg.Source = lazybg_dark.Value;
-                }
-            }
-            catch { }
+                writer.Write($"[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal");
+            }, false);
         }
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
@@ -85,6 +78,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
             }
             this.TabMainMenu.IsSelected = true;
+            RSSFeedPresenter_Loaded();
         }
 
         protected override async void OnFirstShown(EventArgs e)
@@ -112,10 +106,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (App.Current.IsLightMode)
             {
                 this.BgImg.Source = lazybg_light.Value;
+                _ = this.CreateNewParagraphInLog(writer =>
+                {
+                    writer.Write($"[ThemeManager] Detected Windows 10's theme change: Light Mode.");
+                });
             }
             else
             {
                 this.BgImg.Source = lazybg_dark.Value;
+                _ = this.CreateNewParagraphInLog(writer =>
+                {
+                    writer.Write($"[ThemeManager] Detected Windows 10's theme change: Dark Mode.");
+                });
             }
         }
 
@@ -176,6 +178,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var webview = (IWebViewCompatControl)obj;
                     webview.Initialized += this.WebViewCompatControl_Initialized;
                     this.LauncherWebView.Child = (Control)obj;
+                    _ = this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[WebView] PSO2's launcher news has been loaded.");
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -315,6 +321,61 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
+
+        private async Task CreateNewParagraphInLog(Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline = true, bool followLastLine = true)
+        {
+            if (this.ConsoleLog.CheckAccess())
+            {
+                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, this.ConsoleLog.Document.TextLength))
+                {
+                    // Is last line in view
+                    bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
+
+                    if (newline)
+                    {
+                        writer.WriteLine();
+                    }
+                    callback.Invoke(writer);
+                    if (isAlreadyInLastLineView)
+                    {
+                        this.ConsoleLog.ScrollToEnd();
+                    }
+                }
+            }
+            else
+            {
+                TaskCompletionSource duh = new TaskCompletionSource();
+                await this.ConsoleLog.Dispatcher.BeginInvoke(new _CreateNewParagraphInLog(this.CreateNewParagraphInLog2), new object[] { duh, callback, newline, followLastLine });
+                await duh.Task;
+            }
+        }
+
+        private void CreateNewParagraphInLog2(TaskCompletionSource tSrc, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline, bool followLastLine)
+        {
+            try
+            {
+                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, this.ConsoleLog.Document.TextLength))
+                {
+                    bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
+                    if (newline)
+                    {
+                        writer.WriteLine();
+                    }
+                    callback.Invoke(writer);
+                    if (isAlreadyInLastLineView)
+                    {
+                        this.ConsoleLog.ScrollToEnd();
+                    }
+                }
+                tSrc.SetResult();
+            }
+            catch (Exception ex)
+            {
+                tSrc.SetException(ex);
+            }
+        }
+
+        private delegate void _CreateNewParagraphInLog(TaskCompletionSource tSrc, Action<TextWriter> callback, bool newline, bool followLastLine);
 
         #region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)

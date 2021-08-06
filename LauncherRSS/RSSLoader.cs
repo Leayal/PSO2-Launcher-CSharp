@@ -223,6 +223,39 @@ namespace Leayal.PSO2Launcher.RSS
             }
         }
 
+        public IEnumerable<Type> GetRSSFeedHandlerSuggesstion(Uri url)
+        {
+            foreach (var keypair in this.registeredhandlers)
+            {
+                var item = keypair.Value;
+                if (SupportUriHostAttribute.TryGet(item, out var host))
+                {
+                    if (!string.Equals(host, url.Host, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                }
+                if (SupportUriRegexAttribute.TryGet(item, out var regex))
+                {
+                    if (url.IsAbsoluteUri)
+                    {
+                        if (!regex.IsMatch(url.AbsoluteUri))
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if (!regex.IsMatch(url.ToString()))
+                        {
+                            continue;
+                        }
+                    }
+                }
+                yield return item;
+            }
+        }
+
         public RSSFeedHandler CreateHandlerFromUri(Uri url)
             => this.CreateHandlerFromUri(url, null, null, null);
 
@@ -244,6 +277,18 @@ namespace Leayal.PSO2Launcher.RSS
             else
             {
                 throw new ArgumentException(nameof(handlerTypeName));
+            }
+        }
+
+        public Type GetRSSFeedHandlerTypeByTypeName(string name)
+        {
+            if (this.registeredhandlers.TryGetValue(name, out var t))
+            {
+                return t;
+            }
+            else
+            {
+                return null;
             }
         }
 

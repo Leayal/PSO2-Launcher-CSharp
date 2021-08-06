@@ -27,6 +27,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private readonly RSSLoader loader;
         private readonly ObservableCollection<RSSFeedHandler> rssfeedhandlers;
         private readonly ObservableCollection<RSSFeedDom> rssfeeds;
+        private readonly Dictionary<RSSFeedHandler, RSSFeedDom> linked;
         private RSSFeedHandler currentFeed;
 
         public RSSFeedPresenter()
@@ -35,12 +36,15 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.loader = new RSSLoader();
             this.rssfeeds = new ObservableCollection<RSSFeedDom>();
             this.rssfeedhandlers = new ObservableCollection<RSSFeedHandler>();
+            this.linked = new Dictionary<RSSFeedHandler, RSSFeedDom>();
 
             InitializeComponent();
 
             this.rssfeedhandlers.CollectionChanged += this.Loader_ItemsChanged;
             this.FeedList.ItemsSource = this.rssfeeds;
         }
+
+        public IEnumerable<RSSFeedHandler> RSSFeedHandlers => this.rssfeedhandlers;
 
         private void Loader_ItemsChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
@@ -51,7 +55,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     {
                         if (item is RSSFeedHandler feedAdded)
                         {
-                            var dom = RSSFeedDom.Create(feedAdded);
+                            var dom = new RSSFeedDom(feedAdded);
+                            this.linked.Add(feedAdded, dom);
                             this.rssfeeds.Add(dom);
                             if (this.NoFeedLabel.Visibility != Visibility.Collapsed)
                             {
@@ -74,7 +79,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         if (item is RSSFeedHandler feedRemoved)
                         {
                             feedRemoved.Dispose();
-                            if (RSSFeedDom.Destroy(feedRemoved) is RSSFeedDom dom)
+                            if (this.linked.Remove(feedRemoved, out var dom))
                             {
                                 this.rssfeeds.Remove(dom);
                                 if (this.rssfeeds.Count == 0)
@@ -175,6 +180,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     this.currentFeed = dom.Feed;
                     this.PrintFeed();
                     this.currentFeed.FeedUpdated += this.Feed_FeedUpdated;
+                    this.currentFeed.DeferredRefreshReady += this.CurrentFeed_DeferredRefreshReady;
                 }
             }
 
@@ -184,23 +190,49 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 {
                     if (item is RSSFeedDom dom)
                     {
-                        dom.Feed.FeedUpdated -= this.Feed_FeedUpdated;
+                        var feed = dom.Feed;
+                        feed.DeferredRefreshReady -= this.CurrentFeed_DeferredRefreshReady;
+                        feed.FeedUpdated -= this.Feed_FeedUpdated;
                     }
                 }
             }
         }
+
+        private async void CurrentFeed_DeferredRefreshReady(object sender, EventArgs e)
+        {
+            if (sender is RSSFeedHandler handler)
+            {
+                await handler.Refresh();
+            }
+        }
+
         private delegate void _FeedList_SelectionChanged(object sender, SelectionChangedEventArgs e);
+
+        public void ClearAllFeeds()
+        {
+            // this.rssfeedhandlers.Clear(); Must not clear because it will notify "Reset" changes.
+            while (this.rssfeedhandlers.Count != 0)
+            {
+                this.rssfeedhandlers.RemoveAt(0);
+            }
+        }
 
         public void LoadFeedConfig(string data)
         {
+            var conf = Classes.RSS.FeedChannelConfig.FromData(data);
+            this.LoadFeedConfig(in conf);
+        }
+
+        public void LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
+        {
             try
             {
-                var config = Classes.RSS.FeedChannelConfig.FromData(data);
                 if (!string.IsNullOrEmpty(config.FeedChannelUrl) && Uri.TryCreate(config.FeedChannelUrl, UriKind.Absolute, out var url))
                 {
                     if (string.IsNullOrWhiteSpace(config.BaseHandler))
                     {
                         var baseHandler = this.loader.CreateHandlerFromUri(url);
+                        baseHandler.DeferRefresh = config.IsDeferredUpdate;
                         if (this.CheckAccess())
                         {
                             this.rssfeedhandlers.Add(baseHandler);
@@ -222,7 +254,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         }
                         else if (string.Equals(config.BaseHandler, "Generic", StringComparison.OrdinalIgnoreCase))
                         {
-                            bool isOkay = false;
+                            bool isOkay = true;
                             IRSSFeedChannelDownloader handler_download = null;
                             IRSSFeedChannelParser handler_parser = null;
                             IRSSFeedItemCreator handler_creator = null;
@@ -301,6 +333,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         }
                         if (basehandler != null)
                         {
+                            basehandler.DeferRefresh = config.IsDeferredUpdate;
                             if (this.CheckAccess())
                             {
                                 this.rssfeedhandlers.Add(basehandler);
@@ -324,33 +357,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         class RSSFeedDom : Border
         {
-            private static readonly Dictionary<RSSFeedHandler, RSSFeedDom> createdones = new Dictionary<RSSFeedHandler, RSSFeedDom>();
             public RSSFeedHandler Feed { get; }
 
-            public static RSSFeedDom Create(RSSFeedHandler feed)
-            {
-                RSSFeedDom dom;
-                if (!createdones.TryGetValue(feed, out dom))
-                {
-                    dom = new RSSFeedDom(feed);
-                    createdones.Add(feed, dom);
-                }
-                return dom;
-            }
-
-            public static RSSFeedDom Destroy(RSSFeedHandler feed)
-            {
-                if (createdones.Remove(feed, out var dom))
-                {
-                    return dom;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            private RSSFeedDom(RSSFeedHandler feed) : base()
+            public RSSFeedDom(RSSFeedHandler feed) : base()
             {
                 this.MinWidth = 35;
                 this.MinHeight = 35;

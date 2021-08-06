@@ -16,9 +16,10 @@ using System.Text.RegularExpressions;
 namespace PSUBlog
 {
     /// <remarks><para>This code is not official from PSUBlog. It was written by Dramiel Leayal. If PSUBlog is not happy with this, please tell <i><b>Dramiel Leayal@8799</b></i> on Discord to remove this from the launcher.</para></remarks>
+    [SupportUriHost("www.bumped.org")]
     public class PSUBlogNGSRSSFeed : RSSFeedHandler
     {
-        // private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
+        private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
 
         private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex rg_removetags = new Regex(@"<\/?[\w\s]*>|<.+[\W]>.*?<.+[\W]>?", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -138,7 +139,7 @@ namespace PSUBlog
                             {
                                 _ = Task.Run(async delegate
                                 {
-                                    var cache_filename = Sha1String(abs_url);
+                                    var cache_filename = Leayal.Shared.Sha1StringHelper.GenerateFromString(abs_url);
                                     try
                                     {
                                         using (var fs = File.Create(this.IconPath))
@@ -300,44 +301,19 @@ namespace PSUBlog
             return Task.FromResult<IReadOnlyList<FeedItemData>>(listOfItem);
         }
 
-        static bool duh = true;
-
-        static string Sha1String(in string str)
-        {
-            
-            SHA1 sha1;
-            if (duh)
-            {
-                try
-                {
-                    sha1 = new SHA1Managed();
-                }
-                catch (InvalidOperationException)
-                {
-                    duh = false;
-                    sha1 = SHA1.Create();
-                }
-            }
-            else
-            {
-                sha1 = SHA1.Create();
-            }
-            using (sha1)
-            {
-                return Convert.ToHexString(sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str)));
-            }
-        }
-
         protected override Task<string> OnDownloadFeedChannel(HttpClient webclient, Uri feedchannelUrl)
             => Default.DownloadFeedChannel(webclient, feedchannelUrl);
 
         protected override RSSFeedItem OnCreateFeedItem(in FeedItemData feeditemdata)
             => new PSUBlogRSSFeedItem(this, feeditemdata.Title, feeditemdata.Description, new Uri(feeditemdata.Link), feeditemdata.PublishDate);
 
-        public override bool CanHandleParseFeedData(Uri url) => true;
+        public override bool CanHandleParseFeedData(Uri url)
+            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
 
-        public override bool CanHandleFeedItemCreation(Uri url) => true;
+        public override bool CanHandleFeedItemCreation(Uri url)
+            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
 
-        public override bool CanHandleDownloadChannel(Uri url) => true;
+        public override bool CanHandleDownloadChannel(Uri url)
+            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
     }
 }

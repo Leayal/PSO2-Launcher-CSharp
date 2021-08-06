@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher.RSS
     /// <summary></summary>
     class DefaultRSSFeedHandler : RSSFeedHandler
     {
-        public DefaultRSSFeedHandler(Uri url) : base(url) { }
+        public DefaultRSSFeedHandler(Uri url) : base(url, false) { }
 
         public override bool CanHandleDownloadChannel(Uri url) => true;
 

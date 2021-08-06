@@ -208,6 +208,7 @@ namespace Leayal.PSO2Launcher.Updater
                                     response.EnsureSuccessStatusCode();
                                     using (var remoteStream = response.Content.ReadAsStream())
                                     {
+                                        Directory.CreateDirectory(Path.GetDirectoryName(tmpFilename));
                                         using (var localStream = File.Create(tmpFilename))
                                         {
                                             long totalbyte = itemv2.FileSize;
@@ -320,8 +321,6 @@ namespace Leayal.PSO2Launcher.Updater
                 return shouldRestart;
             });
         }
-
-
 
         public void Dispose() => this.wc.Dispose();
     }

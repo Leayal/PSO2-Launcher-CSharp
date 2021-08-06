@@ -222,6 +222,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     }
                                 }
 
+                                await this.CreateNewParagraphInLog(writer =>
+                                {
+                                    writer.Write("[GameStart] Quick check executable files...");
+                                });
+
                                 // Safety reason => Balanced.
                                 await this.pso2Updater.ScanAndDownloadFilesAsync(GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
 
@@ -240,6 +245,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         proc.StartInfo.ArgumentList.Add("-optimize");
                                         proc.StartInfo.WorkingDirectory = dir_pso2bin;
                                         proc.Start();
+                                        await this.CreateNewParagraphInLog(writer =>
+                                        {
+                                            writer.Write("[GameStart] Starting game...");
+                                        });
                                     }
                                 }
                             }
@@ -254,6 +263,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     // Silent it as user press "No" themselves.
                     // MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameStart] User cancelled.");
+                    });
                 }
                 catch (Exception ex)
                 {

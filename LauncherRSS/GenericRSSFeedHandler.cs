@@ -11,6 +11,8 @@ namespace Leayal.PSO2Launcher.RSS
     /// <summary></summary>
     public class GenericRSSFeedHandler : RSSFeedHandler
     {
+        public GenericRSSFeedHandler(Uri feedchannelurl) : base(feedchannelurl) { }
+
         private readonly IRSSFeedChannelDownloader downloader;
         private readonly IRSSFeedChannelParser parser;
         private readonly IRSSFeedItemCreator itemmaker;

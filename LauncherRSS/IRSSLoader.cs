@@ -21,11 +21,15 @@ namespace Leayal.PSO2Launcher.RSS
         /// <summary>All found class types which implements the <seealso cref="IRSSFeedItemCreator"/> interface from assemblies.</summary>
         IReadOnlyCollection<IRSSFeedItemCreator> RegisteredFeedItemCreatorHandlers { get; }
 
+        IEnumerable<Type> GetRSSFeedHandlerSuggesstion(Uri url);
+
         IEnumerable<IRSSFeedChannelDownloader> GetDownloadHandlerSuggesstion(Uri url);
 
         IEnumerable<IRSSFeedItemCreator> GetItemCreatorHandlerSuggesstion(Uri url);
 
         IEnumerable<IRSSFeedChannelParser> GetParserHandlerSuggesstion(Uri url);
+
+        Type GetRSSFeedHandlerTypeByTypeName(string name);
 
         IRSSFeedChannelDownloader GetDownloadHandlerByTypeName(string name);
 

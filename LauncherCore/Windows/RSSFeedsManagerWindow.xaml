@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
-        mc:Ignorable="d" x:Name="thisSelf" ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" IsCloseButtonEnabled="False"
-        Title="RSS Feeds Manager" Height="250" Width="300">
+        mc:Ignorable="d" x:Name="thisSelf" ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" WindowButtonCommandsOverlayBehavior="Never"
+        Title="RSS Feeds Manager" Height="300" Width="500">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -31,7 +31,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
-            <ListBox Grid.RowSpan="4" />
+            <ListBox Grid.RowSpan="4" x:Name="FeedItemList" SelectionMode="Single" />
 
             <Button Grid.Column="1" Content="Add" Click="ButtonAdd_Click" />
             <Button Grid.Column="1" Grid.Row="1" Content="Edit" Click="ButtonEdit_Click" />

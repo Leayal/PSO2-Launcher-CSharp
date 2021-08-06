@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Leayal.PSO2Launcher.Core.Classes.RSS
 {
-    readonly struct FeedChannelConfig : IEquatable<FeedChannelConfig>
+    public readonly struct FeedChannelConfig : IEquatable<FeedChannelConfig>
     {
         public readonly string FeedChannelUrl { get; init; }
         public readonly string BaseHandler { get; init; }
@@ -19,7 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
         {
             using (var jsonDoc = JsonDocument.Parse(data))
             {
-                return FromFile(jsonDoc);
+                return FromJson(jsonDoc);
             }
         }
 
@@ -33,7 +33,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                     BaseHandler = "Default",
                     DownloadHandler = null,
                     ItemCreatorHandler = null,
-                    ParserHandler = null
+                    ParserHandler = null,
+                    IsDeferredUpdate = handler.DeferRefresh
                 };
             }
             else if (handler is GenericRSSFeedHandler genericHandler)
@@ -75,7 +76,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                     BaseHandler = "Generic",
                     DownloadHandler = downloader,
                     ItemCreatorHandler = itemcreator,
-                    ParserHandler = parser
+                    ParserHandler = parser,
+                    IsDeferredUpdate = handler.DeferRefresh
                 };
             }
             else
@@ -86,29 +88,45 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                     BaseHandler = handler.GetType().FullName,
                     DownloadHandler = null,
                     ItemCreatorHandler = null,
-                    ParserHandler = null
+                    ParserHandler = null,
+                    IsDeferredUpdate = handler.DeferRefresh
                 };
+            }
+        }
+
+        public void SaveTo(System.IO.Stream stream)
+        {
+            if (!stream.CanWrite)
+            {
+                throw new ArgumentException(nameof(stream));
+            }
+            else
+            {
+                using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions() { Indented = true }))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("FeedChannelUrl", this.FeedChannelUrl);
+                    writer.WriteString("BaseHandler", this.BaseHandler);
+                    writer.WriteString("DownloadHandler", this.DownloadHandler);
+                    writer.WriteString("ParserHandler", this.ParserHandler);
+                    writer.WriteString("ItemCreatorHandler", this.ItemCreatorHandler);
+                    writer.WriteBoolean("IsDeferredUpdate", this.IsDeferredUpdate);
+                    writer.WriteEndObject();
+                    writer.Flush();
+                    stream.Flush();
+                }
             }
         }
 
         public void SaveTo(string filename)
         {
             using (var fs = System.IO.File.Create(filename))
-            using (var writer = new Utf8JsonWriter(fs, new JsonWriterOptions() { Indented = true }))
             {
-                writer.WriteStartObject();
-                writer.WriteString("FeedChannelUrl", this.FeedChannelUrl);
-                writer.WriteString("BaseHandler", this.BaseHandler);
-                writer.WriteString("DownloadHandler", this.DownloadHandler);
-                writer.WriteString("ItemCreatorHandler", this.ItemCreatorHandler);
-                writer.WriteBoolean("IsDeferredUpdate", this.IsDeferredUpdate);
-                writer.WriteEndObject();
-                writer.Flush();
-                fs.Flush();
+                this.SaveTo(fs);
             }
         }
 
-        private static FeedChannelConfig FromFile(JsonDocument jsonDoc)
+        private static FeedChannelConfig FromJson(JsonDocument jsonDoc)
         {
             var root = jsonDoc.RootElement;
             if (root.TryGetProperty("FeedChannelUrl", out var prop_FeedChannelUrl) && prop_FeedChannelUrl.ValueKind == JsonValueKind.String)

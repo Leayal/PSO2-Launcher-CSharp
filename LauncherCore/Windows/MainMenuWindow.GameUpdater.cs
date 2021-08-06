@@ -193,6 +193,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameUpdater] Checking for PSO2 game client updates...");
+                    });
                     var version = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
                     ver = version;
                     newVer = await this.pso2Updater.CheckForPSO2Updates(version, cancelToken);
@@ -228,6 +232,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         // To ensure the accuracy of the fix. Don't use Cache Only.
                         downloaderProfile = FileScanFlags.Balanced;
                     }
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameUpdater] Begin game client's files scanning and downloading...");
+                    });
                     await this.pso2Updater.ScanAndDownloadFilesAsync(downloadType, downloaderProfile, cancelToken);
                 }
                 else
@@ -236,6 +244,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.cancelSrc = null;
                     this.pso2Updater.OperationCompleted -= completed;
                     this.TabMainMenu.IsSelected = true;
+                    if (!fixMode)
+                    {
+                        await this.CreateNewParagraphInLog(writer =>
+                        {
+                            writer.Write("[GameUpdater] PSO2 client is already up-to-date");
+                        });
+                    }
                 }
             }
             catch (TaskCanceledException)
@@ -298,6 +313,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                     }
                 }, System.Windows.Threading.DispatcherPriority.Send);
+                _ = this.CreateNewParagraphInLog(writer =>
+                {
+                    if (iscancelled)
+                    {
+                        writer.Write("[GameUpdater] User cancelled the updating progress");
+                    }
+                    else if (downloadedFileCount == totalFileToDownload)
+                    {
+                        writer.Write($"[GameUpdater] PSO2 game client has been updated successfully (All files downloaded).");
+                    }
+                    else
+                    {
+                        writer.Write($"[GameUpdater] PSO2 game client has been updated. However, with {downloadedFileCount}/{totalFileToDownload} files downloaded successfully.");
+                    }
+                });
             });
 
             result.ProgressReport += (PatchListItem file, in long value) =>

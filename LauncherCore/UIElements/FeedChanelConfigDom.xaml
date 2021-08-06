@@ -1,0 +1,57 @@
+﻿<ListBoxItem x:Class="Leayal.PSO2Launcher.Core.UIElements.FeedChanelConfigDom"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+             xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+             mc:Ignorable="d" x:Name="thisSelf" Unselected="ThisSelf_Unselected"
+             d:DesignHeight="150" d:DesignWidth="200">
+    <ListBoxItem.Style>
+        <Style TargetType="ListBoxItem" BasedOn="{StaticResource MahApps.Styles.ListBoxItem}" />
+    </ListBoxItem.Style>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBox Background="{x:Null}" BorderThickness="0" Grid.ColumnSpan="2" Margin="1" Text="{Binding ElementName=thisSelf,Path=FeedChannelUrl,Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap" x:Name="FeedName" />
+        <Grid Grid.Row="1" Margin="10, 1, 1, 1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsSelected}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="RSS Feed Handler:" />
+            <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Column="1" Text="{Binding ElementName=ComboBox_BaseHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" />
+            <ComboBox Grid.Column="1" x:Name="ComboBox_BaseHandler" SelectionChanged="ComboBox_BaseHandler_SelectionChanged" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" />
+
+            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="1" Text="RSS Feed Data Downloader:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=ComboBox_DownloadHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            </Border>
+            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ComboBox_DownloadHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
+
+            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="2" Text="RSS Feed Data Parser:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="2" Grid.Column="1" Text="{Binding ElementName=ComboBox_ParserHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            </Border>
+            <ComboBox Grid.Row="2" Grid.Column="1" x:Name="ComboBox_ParserHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
+
+            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="3" Text="RSS Feed Data Presenter:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=ComboBox_FeedItemCreatorHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            </Border>
+            <ComboBox Grid.Row="3" Grid.Column="1" x:Name="ComboBox_FeedItemCreatorHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
+
+            <CheckBox Grid.Row="4" Grid.ColumnSpan="2" x:Name="CheckBox_DeferredUpdating" IsEnabled="{Binding ElementName=thisSelf,Path=IsInEditing,Mode=OneWay}"
+                      Content="Deferred Refresh" ToolTip="Only refresh feed data if the RSS Feed is being focused in the UI" />
+        </Grid>
+    </Grid>
+</ListBoxItem>

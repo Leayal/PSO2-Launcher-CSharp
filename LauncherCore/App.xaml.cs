@@ -42,6 +42,7 @@ namespace Leayal.PSO2Launcher.Core
 
         public void ManuallySyncTheme()
         {
+            bool hasChange = false;
             var thememgr = ThemeManager.Current;
             thememgr.SyncTheme(ThemeSyncMode.SyncWithAppMode | ThemeSyncMode.SyncWithAccent);
             var themeInfo = thememgr.DetectTheme(this);
@@ -50,26 +51,39 @@ namespace Leayal.PSO2Launcher.Core
                 // In case the assembly is isolated.
                 // Currently enforce setting. Will do something about save/load later.
                 thememgr.ChangeTheme(this, ThemeManager.BaseColorDark, "Red");
-                this.isLightMode = false;
+                var mode = false;
+                hasChange = (this.isLightMode != mode);
+                if (hasChange)
+                {
+                    this.isLightMode = mode;
+                }
             }
             else
             {
-                this.isLightMode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
-                if (this.isLightMode)
+                var mode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
+                hasChange = (this.isLightMode != mode);
+                if (hasChange)
                 {
-                    thememgr.ChangeThemeColorScheme(this, "Blue");
-                }
-                else
-                {
-                    thememgr.ChangeThemeColorScheme(this, "Red");
+                    this.isLightMode = mode;
+                    if (mode)
+                    {
+                        thememgr.ChangeThemeColorScheme(this, "Blue");
+                    }
+                    else
+                    {
+                        thememgr.ChangeThemeColorScheme(this, "Red");
+                    }
                 }
             }
 
-            foreach (var window in this.Windows)
+            if (hasChange)
             {
-                if (window is Windows.MetroWindowEx windowex)
+                foreach (var window in this.Windows)
                 {
-                    windowex.RefreshTheme();
+                    if (window is Windows.MetroWindowEx windowex)
+                    {
+                        windowex.RefreshTheme();
+                    }
                 }
             }
         }
