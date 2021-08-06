@@ -91,7 +91,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
         public delegate void DownloadQueueAddedHandler(GameClientUpdater sender, in int total);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
-        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailure);
+        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailed);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
         public class BackupFileFoundEventArgs : EventArgs

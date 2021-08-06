@@ -37,7 +37,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
 
-        public MainMenuWindow()
+        public MainMenuWindow() : base()
         {
             this.ss_id = null;
             this.ss_pw = null;
@@ -52,6 +52,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
             InitializeComponent();
             this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed, this.ToggleBtn_ConsoleLog };
+            var pathlaststate_selectedtogglebuttons = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
+            if (File.Exists(pathlaststate_selectedtogglebuttons))
+            {
+                var line = QuickFile.ReadFirstLine(pathlaststate_selectedtogglebuttons);
+                foreach (var btn in this.toggleButtons)
+                {
+                    if (string.Equals(line, btn.Name, StringComparison.Ordinal))
+                    {
+                        btn.IsChecked = true;
+                        break;
+                    }
+                }
+            }
             _ = this.CreateNewParagraphInLog(writer =>
             {
                 writer.Write($"[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal");
@@ -128,6 +141,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.trayIcon.Value.Visible = false;
                 this.trayIcon.Value.Dispose();
+            }
+            foreach (var btn in this.toggleButtons)
+            {
+                if (btn.IsChecked == true)
+                {
+                    var path = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    File.WriteAllText(path, btn.Name);
+                    break;
+                }
             }
         }
 
@@ -375,7 +398,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private delegate void _CreateNewParagraphInLog(TaskCompletionSource tSrc, Action<TextWriter> callback, bool newline, bool followLastLine);
+        private delegate void _CreateNewParagraphInLog(TaskCompletionSource tSrc, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline, bool followLastLine);
 
         #region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)

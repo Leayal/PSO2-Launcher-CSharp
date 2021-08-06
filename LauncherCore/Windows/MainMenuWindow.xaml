@@ -70,29 +70,29 @@
                 <RowDefinition />
                 <RowDefinition />
             </Grid.RowDefinitions>
-            <ToggleButton Content="Console Log" HorizontalAlignment="Right" x:Name="ToggleBtn_ConsoleLog" Checked="ToggleBtn_Checked">
+            <ToggleButton Content="PSO2's News" HorizontalAlignment="Right" x:Name="ToggleBtn_PSO2News" Checked="ToggleBtn_Checked" IsChecked="True">
                 <ToggleButton.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>
             </ToggleButton>
-            <ToggleButton Content="PSO2's News" Grid.Row="1" HorizontalAlignment="Right" x:Name="ToggleBtn_PSO2News" Checked="ToggleBtn_Checked" IsChecked="True">
+            <ToggleButton Content="RSS Feeds" Grid.Row="1" HorizontalAlignment="Right" x:Name="ToggleBtn_RSSFeed" Checked="ToggleBtn_Checked">
                 <ToggleButton.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>
             </ToggleButton>
-            <ToggleButton Content="RSS Feeds" Grid.Row="3" HorizontalAlignment="Right" x:Name="ToggleBtn_RSSFeed" Checked="ToggleBtn_Checked">
+            <ToggleButton Content="Console Log" Grid.Row="2" HorizontalAlignment="Right" x:Name="ToggleBtn_ConsoleLog" Checked="ToggleBtn_Checked">
                 <ToggleButton.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>
             </ToggleButton>
-            <avalon:TextEditor Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF"
-                         IsReadOnly="True" WordWrap="True" x:Name="ConsoleLog" Margin="1,0,1,0" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" LineNumbersForeground="{DynamicResource MahApps.Brushes.ThemeForeground}" />
             <!--<RichTextBox Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF" IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" />-->
             <Border Grid.RowSpan="3" Grid.Column="1" x:Name="LauncherWebView" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_PSO2News,Mode=OneWay,Path=IsChecked}"
                     BorderBrush="{x:Null}" >
                 <localui:WeirdButton Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" />
             </Border>
             <localui:RSSFeedPresenter Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" x:Name="RSSFeedPresenter" />
+            <avalon:TextEditor Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF"
+                         IsReadOnly="True" WordWrap="True" x:Name="ConsoleLog" Margin="1,0,1,0" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" LineNumbersForeground="{DynamicResource MahApps.Brushes.ThemeForeground}" />
         </Grid>
         <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
     </Grid>

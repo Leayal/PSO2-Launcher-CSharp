@@ -137,19 +137,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         if (loginForm.checkbox_rememberusername.IsChecked == true)
                                         {
                                             using (var id = loginForm.GetUsername())
-                                            using (var fs = File.Create(usernamePath))
                                             {
-                                                byte[] buffer = id.Export();
-                                                try
+                                                Directory.CreateDirectory(configFolderPath); // Totally unneccessary but did it anyway.
+                                                using (var fs = File.Create(usernamePath))
                                                 {
-                                                    fs.Write(buffer, 0, buffer.Length);
-                                                }
-                                                finally
-                                                {
-                                                    Array.Fill<byte>(buffer, 0);
-                                                }
+                                                    byte[] buffer = id.Export();
+                                                    try
+                                                    {
+                                                        fs.Write(buffer, 0, buffer.Length);
+                                                    }
+                                                    finally
+                                                    {
+                                                        Array.Fill<byte>(buffer, 0);
+                                                    }
 
-                                                fs.Flush();
+                                                    fs.Flush();
+                                                }
                                             }
                                         }
                                         if (loginForm.SelectedRememberOption == LoginPasswordRememberStyle.NonPersistentRemember)
@@ -265,7 +268,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     // MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
                     await this.CreateNewParagraphInLog(writer =>
                     {
-                        writer.Write("[GameStart] User cancelled.");
+                        writer.Write("[GameStart] User cancelled");
                     });
                 }
                 catch (Exception ex)

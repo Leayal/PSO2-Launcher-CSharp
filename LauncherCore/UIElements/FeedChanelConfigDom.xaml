@@ -15,7 +15,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBox Background="{x:Null}" BorderThickness="0" Grid.ColumnSpan="2" Margin="1" Text="{Binding ElementName=thisSelf,Path=FeedChannelUrl,Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap" x:Name="FeedName" />
+        <TextBox Background="{x:Null}" BorderThickness="0" Grid.ColumnSpan="2" Margin="1" Text="{Binding ElementName=thisSelf,Path=FeedChannelUrl,Mode=OneWay}" IsReadOnly="True" TextWrapping="NoWrap" x:Name="FeedName" HorizontalAlignment="Left" />
         <Grid Grid.Row="1" Margin="10, 1, 1, 1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsSelected}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -33,20 +33,20 @@
             <ComboBox Grid.Column="1" x:Name="ComboBox_BaseHandler" SelectionChanged="ComboBox_BaseHandler_SelectionChanged" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" />
 
             <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="1" Text="RSS Feed Data Downloader:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
-            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
-                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=ComboBox_DownloadHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" Grid.Row="1" Grid.Column="1">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Text="{Binding ElementName=ComboBox_DownloadHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
             </Border>
             <ComboBox Grid.Row="1" Grid.Column="1" x:Name="ComboBox_DownloadHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
 
             <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="2" Text="RSS Feed Data Parser:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
-            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
-                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="2" Grid.Column="1" Text="{Binding ElementName=ComboBox_ParserHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" Grid.Row="2" Grid.Column="1">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Text="{Binding ElementName=ComboBox_ParserHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
             </Border>
             <ComboBox Grid.Row="2" Grid.Column="1" x:Name="ComboBox_ParserHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
 
             <TextBlock VerticalAlignment="Center" TextAlignment="Right" Grid.Row="3" Text="RSS Feed Data Presenter:" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
-            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}">
-                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=ComboBox_FeedItemCreatorHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
+            <Border mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInEditing}" Grid.Row="3" Grid.Column="1">
+                <TextBlock VerticalAlignment="Center" TextAlignment="Left" Text="{Binding ElementName=ComboBox_FeedItemCreatorHandler,Path=Text,Mode=OneWay}" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericSelected}" />
             </Border>
             <ComboBox Grid.Row="3" Grid.Column="1" x:Name="ComboBox_FeedItemCreatorHandler" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsGenericEditing}" />
 

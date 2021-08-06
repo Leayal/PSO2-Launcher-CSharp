@@ -29,16 +29,6 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 dom.SetValue(IsGenericEditingPropertyKey, e.NewValue);
             }
-        }, (obj, val) =>
-        {
-            if (obj is FeedChanelConfigDom dom)
-            {
-                if (dom.IsSelected)
-                {
-                    return val;
-                }
-            }
-            return false;
         }));
         public static readonly DependencyProperty IsGenericSelectedProperty = IsGenericSelectedPropertyKey.DependencyProperty;
         public bool IsGenericSelected => (bool)this.GetValue(IsGenericSelectedProperty);
@@ -61,7 +51,13 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly DependencyProperty FeedChannelUrlProperty = FeedChannelUrlPropertyKey.DependencyProperty;
         public string FeedChannelUrl => (string)this.GetValue(FeedChannelUrlProperty);
 
-        private static readonly DependencyProperty IsInEditingProperty = DependencyProperty.Register("IsInEditing", typeof(bool), typeof(FeedChanelConfigDom), new PropertyMetadata(false));
+        private static readonly DependencyProperty IsInEditingProperty = DependencyProperty.Register("IsInEditing", typeof(bool), typeof(FeedChanelConfigDom), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (obj is FeedChanelConfigDom dom)
+            {
+                dom.CoerceValue(IsGenericEditingProperty);
+            }
+        }));
         public bool IsInEditing
         {
             get => (bool)this.GetValue(IsInEditingProperty);
@@ -97,6 +93,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 this.ComboBox_BaseHandler.SelectedIndex = 0;
             }
+            this.SetValue(IsGenericSelectedPropertyKey, string.Equals(conf.BaseHandler, DisplayName_GenericHandler, StringComparison.OrdinalIgnoreCase));
 
             list.Clear();
             list.Add(DisplayName_DefaultHandler);
@@ -105,10 +102,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 list.Add(item.GetType().FullName);
             }
             arr = list.ToArray();
+            string handler = conf.DownloadHandler ?? DisplayName_DefaultHandler;
             this.ComboBox_DownloadHandler.ItemsSource = arr;
-            if (Array.IndexOf(arr, conf.DownloadHandler) != -1)
+            if (Array.IndexOf(arr, handler) != -1)
             {
-                this.ComboBox_DownloadHandler.SelectedItem = conf.DownloadHandler;
+                this.ComboBox_DownloadHandler.SelectedItem = handler;
             }
             else
             {
@@ -123,9 +121,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
             arr = list.ToArray();
             this.ComboBox_ParserHandler.ItemsSource = arr;
-            if (Array.IndexOf(arr, conf.ParserHandler) != -1)
+            handler = conf.ParserHandler ?? DisplayName_DefaultHandler;
+            if (Array.IndexOf(arr, handler) != -1)
             {
-                this.ComboBox_ParserHandler.SelectedItem = conf.ParserHandler;
+                this.ComboBox_ParserHandler.SelectedItem = handler;
             }
             else
             {
@@ -140,9 +139,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
             arr = list.ToArray();
             this.ComboBox_FeedItemCreatorHandler.ItemsSource = arr;
-            if (Array.IndexOf(arr, conf.ItemCreatorHandler) != -1)
+            handler = conf.ItemCreatorHandler ?? DisplayName_DefaultHandler;
+            if (Array.IndexOf(arr, handler) != -1)
             {
-                this.ComboBox_FeedItemCreatorHandler.SelectedItem = conf.ItemCreatorHandler;
+                this.ComboBox_FeedItemCreatorHandler.SelectedItem = handler;
             }
             else
             {
