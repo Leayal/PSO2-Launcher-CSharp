@@ -19,50 +19,25 @@ namespace Leayal.PSO2Launcher.Core
         public new static App Current => ((App)(Application.Current));
 
         private bool isLightMode;
-        private readonly UserPreferenceChangingEventHandler preferenceChangingEventHandler;
 
         public bool IsLightMode => this.isLightMode;
 
         public App() : base()
         {
-            this.preferenceChangingEventHandler = new UserPreferenceChangingEventHandler(this.SystemEvents_UserPreferenceChanging);
             this.InitializeComponent();
-            this.ManuallySyncTheme();
-            SystemEvents.UserPreferenceChanging += this.preferenceChangingEventHandler;
-            // ThemeManager.Current.ThemeSyncMode = ThemeSyncMode.DoNotSync;
-        }
 
-        private void SystemEvents_UserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
-        {
-            if (e.Category == UserPreferenceCategory.General || e.Category == UserPreferenceCategory.Color || e.Category == UserPreferenceCategory.VisualStyle)
-            {
-                this.ManuallySyncTheme();
-            }
-        }
-
-        public void ManuallySyncTheme()
-        {
-            bool hasChange = false;
             var thememgr = ThemeManager.Current;
-            thememgr.SyncTheme(ThemeSyncMode.SyncWithAppMode | ThemeSyncMode.SyncWithAccent);
-            var themeInfo = thememgr.DetectTheme(this);
-            if (themeInfo == null)
+            thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;
+            thememgr.ThemeChanged += this.Thememgr_ThemeChanged;
+            thememgr.SyncTheme();
+        }
+
+        private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
+        {
+            if (sender is ThemeManager thememgr)
             {
-                // In case the assembly is isolated.
-                // Currently enforce setting. Will do something about save/load later.
-                thememgr.ChangeTheme(this, ThemeManager.BaseColorDark, "Red");
-                var mode = false;
-                hasChange = (this.isLightMode != mode);
-                if (hasChange)
-                {
-                    this.isLightMode = mode;
-                }
-            }
-            else
-            {
-                var mode = ((themeInfo.BaseColorScheme) == ThemeManager.BaseColorLight);
-                hasChange = (this.isLightMode != mode);
-                if (hasChange)
+                var mode = string.Equals(e.NewTheme.BaseColorScheme, ThemeManager.BaseColorLight, StringComparison.OrdinalIgnoreCase);
+                if (this.isLightMode != mode)
                 {
                     this.isLightMode = mode;
                     if (mode)
@@ -73,16 +48,12 @@ namespace Leayal.PSO2Launcher.Core
                     {
                         thememgr.ChangeThemeColorScheme(this, "Red");
                     }
-                }
-            }
-
-            if (hasChange)
-            {
-                foreach (var window in this.Windows)
-                {
-                    if (window is Windows.MetroWindowEx windowex)
+                    foreach (var window in this.Windows)
                     {
-                        windowex.RefreshTheme();
+                        if (window is Windows.MetroWindowEx windowex)
+                        {
+                            windowex.RefreshTheme();
+                        }
                     }
                 }
             }
@@ -134,7 +105,7 @@ namespace Leayal.PSO2Launcher.Core
 
         private void Application_Exit(object sender, ExitEventArgs e)
         {
-            SystemEvents.UserPreferenceChanging -= this.preferenceChangingEventHandler;
+            ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
         }
     }
 }
