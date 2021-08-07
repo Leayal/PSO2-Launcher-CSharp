@@ -305,7 +305,7 @@ namespace PSUBlog
             => Default.DownloadFeedChannel(webclient, feedchannelUrl);
 
         protected override RSSFeedItem OnCreateFeedItem(in FeedItemData feeditemdata)
-            => new PSUBlogRSSFeedItem(this, feeditemdata.Title, feeditemdata.Description, new Uri(feeditemdata.Link), feeditemdata.PublishDate);
+            => Default.CreateFeedItem(in feeditemdata);
 
         public override bool CanHandleParseFeedData(Uri url)
             => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));

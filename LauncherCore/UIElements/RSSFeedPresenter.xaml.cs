@@ -115,6 +115,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 for (int i = 0; i < items.Count; i++)
                 {
                     var item = items[i];
+                    item.Click += this.FeedItem_Click;
                     var link = new Hyperlink(new Run(item.DisplayName)) { Tag = item };
                     if (!string.IsNullOrWhiteSpace(item.ShortDescription))
                     {
@@ -136,6 +137,22 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 blocks.Clear();
                 blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
+            }
+        }
+
+        private void FeedItem_Click(RSSFeedItem sender, RSSFeedItemClickEventArgs e)
+        {
+            var url = sender.Url;
+            if (url != null && url.IsAbsoluteUri)
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Process.Start("explorer.exe", @$"""{url.AbsoluteUri}""")?.Dispose();
+                    }
+                    catch { }
+                });
             }
         }
 
