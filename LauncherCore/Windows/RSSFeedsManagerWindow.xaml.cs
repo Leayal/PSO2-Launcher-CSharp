@@ -126,15 +126,30 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             var index = GetThisFeedIndex(uri);
                             if (index == -1)
                             {
-                                this.AddDom(new FeedChanelConfigDom(this.rssloader, new FeedChannelConfig() { FeedChannelUrl = uri.AbsoluteUri, BaseHandler = "Default" }));
+                                var dom = new FeedChanelConfigDom(this.rssloader, new FeedChannelConfig() { FeedChannelUrl = uri.AbsoluteUri, BaseHandler = "Default" });
+                                this.AddDom(dom);
+                                if (!this.collectionView.MoveCurrentTo(dom))
+                                {
+                                    this.FeedItemList.ScrollIntoView(dom);
+                                }
+                                this.FeedItemList.SelectedItem = dom;
+                                // dom.IsSelected = true;
+                                dom.IsInEditing = true;
                             }
                             else
                             {
-                                this.collectionView.MoveCurrentTo(index);
-                                var item = this.collectionView.CurrentItem;
-                                if (item != null)
+                                if (!this.collectionView.MoveCurrentToPosition(index))
                                 {
-                                    this.FeedItemList.ScrollIntoView(item);
+                                    var item = this.collectionView.CurrentItem;
+                                    if (item != null)
+                                    {
+                                        this.FeedItemList.ScrollIntoView(item);
+                                    }
+                                    this.FeedItemList.SelectedItem = item;
+                                }
+                                else
+                                {
+                                    this.FeedItemList.SelectedIndex = index;
                                 }
                                 await DialogManager.ShowMessageAsync(this, "Notice", "This feed has already been added in the list.");
                             }
