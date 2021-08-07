@@ -165,7 +165,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (hive != null)
                         {
-                            string filename = RuntimeValues.EntryExecutableFilename;
+                            string filename = Path.GetFileName(RuntimeValues.EntryExecutableFilename);
                             if (hive.GetValue(filename) is int verNum)
                             {
                                 if (verNum < 11001)
