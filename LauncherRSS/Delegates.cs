@@ -23,8 +23,13 @@ namespace Leayal.PSO2Launcher.RSS
         /// <summary>You willn need to call <seealso cref="Stream.Dispose"/> or wrap it within a "using" block.</summary>
         public Stream ImageContentStream { get; }
 
-        public RSSFeedDisplayImageChangedEventArgs(Stream contentStream) : base()
+        public char RepresentativeCharacter { get; }
+
+        public RSSFeedDisplayImageChangedEventArgs(char representativecharacter) : this(representativecharacter, null) { }
+
+        public RSSFeedDisplayImageChangedEventArgs(char representativecharacter, Stream contentStream) : base()
         {
+            this.RepresentativeCharacter = representativecharacter;
             this.ImageContentStream = contentStream;
         }
     }

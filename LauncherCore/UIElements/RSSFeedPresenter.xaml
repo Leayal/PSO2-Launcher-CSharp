@@ -18,7 +18,6 @@
              SelectionChanged="FeedList_SelectionChanged" SelectionMode="Single" Background="{x:Null}">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem" BasedOn="{StaticResource MahApps.Styles.ListBoxItem}">
-                    <Setter Property="Focusable" Value="False" />
                     <Setter Property="Margin" Value="1" />
                 </Style>
             </ListBox.ItemContainerStyle>

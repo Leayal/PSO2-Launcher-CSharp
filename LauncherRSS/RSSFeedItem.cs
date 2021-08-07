@@ -27,6 +27,40 @@ namespace Leayal.PSO2Launcher.RSS
             this.PublishDate = publishdate;
         }
 
+        /*
+        private event RSSFeedItemClickEventHandler _click;
+
+        // Avoid re-adding the same delegate
+        public event RSSFeedItemClickEventHandler Click
+        {
+            add
+            {
+                if (Array.IndexOf(this._click.GetInvocationList(), value) == -1)
+                {
+                    this._click += value;
+                }
+            }
+            remove
+            {
+                this._click -= value;
+            }
+        }
+        */
+
+        // This is extremely 
+        public bool HasClickHandler(RSSFeedItemClickEventHandler handler)
+        {
+            var _delegate = this.Click;
+            if (_delegate != null)
+            {
+                return (Array.IndexOf(_delegate.GetInvocationList(), handler) != -1);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public event RSSFeedItemClickEventHandler Click;
 
         public void PerformClick() => this.OnClick();

@@ -54,7 +54,9 @@ namespace Leayal.PSO2Launcher.RSS
                 var title = element_channel.SelectSingleNode("title");
                 if (title != null && !string.IsNullOrWhiteSpace(title.InnerText))
                 {
-                    this.SetDisplayName(title.InnerText.Trim());
+                    var val_title = title.InnerText.Trim();
+                    this.SetDisplayName(val_title);
+                    this.SetDisplayImage(val_title[0]);
                 }
 
                 // Begin feed parsing here.
@@ -132,7 +134,7 @@ namespace Leayal.PSO2Launcher.RSS
                     }
                 }
             }
-
+            this.SetNextRefesh(TimeSpan.FromHours(1));
             return Task.FromResult((IReadOnlyList<FeedItemData>)listOfItem);
         }
 

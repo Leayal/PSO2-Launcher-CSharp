@@ -42,13 +42,24 @@ namespace Leayal.PSO2Launcher.RSS
             }
         }
 
+        private char _representativeCharacter;
+        public char RepresentativeCharacter => this._representativeCharacter;
         private Stream _displayImageStream;
         public Stream DisplayImageStream => this._displayImageStream;
         public event RSSFeedDisplayImageChangedEventHandler DisplayImageChanged;
-        protected void SetDisplayImage(Stream imageStream)
+        protected void SetDisplayImage(char representativeCharacter, Stream imageStream)
         {
+            this._representativeCharacter = representativeCharacter;
             this._displayImageStream = imageStream;
-            this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(imageStream));
+            this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(representativeCharacter, imageStream));
+        }
+
+        protected void SetDisplayImage(char representativeCharacter)
+        {
+            this._representativeCharacter = representativeCharacter;
+            this._displayImageStream?.Dispose();
+            this._displayImageStream = null;
+            this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(representativeCharacter, null));
         }
 
         public Uri FeedChannelUrl => this._feedchannelUrl;

@@ -52,7 +52,7 @@ namespace PSUBlog
                     }
                     else
                     {
-                        this.SetDisplayImage(fs);
+                        this.SetDisplayImage('P', fs);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace PSUBlog
                                         }
                                         File.WriteAllText(this.IconHashPath, cache_filename);
                                         await Task.Delay(1);
-                                        this.SetDisplayImage(File.OpenRead(this.IconPath)); // Who care about the file's lock
+                                        this.SetDisplayImage('P', File.OpenRead(this.IconPath)); // Who care about the file's lock
                                     }
                                     catch
                                     {

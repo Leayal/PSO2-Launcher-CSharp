@@ -28,11 +28,12 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private readonly ObservableCollection<RSSFeedHandler> rssfeedhandlers;
         private readonly ObservableCollection<RSSFeedDom> rssfeeds;
         private readonly Dictionary<RSSFeedHandler, RSSFeedDom> linked;
-        private RSSFeedHandler currentFeed;
+        private static readonly RSSFeedItemClickEventHandler _RSSFeedItemClickEventHandler = new RSSFeedItemClickEventHandler(FeedItem_Click);
+        private RSSFeedDom currentFeedDom;
 
         public RSSFeedPresenter()
         {
-            this.currentFeed = null;
+            this.currentFeedDom = null;
             this.loader = new RSSLoader();
             this.rssfeeds = new ObservableCollection<RSSFeedDom>();
             this.rssfeedhandlers = new ObservableCollection<RSSFeedHandler>();
@@ -62,6 +63,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                             {
                                 this.NoFeedLabel.Visibility = Visibility.Collapsed;
                             }
+                            // Ignore "Deferred" setting because we need to poke the feed at least once.
                             _ = Task.Run(async () =>
                             {
                                 await feedAdded.Fetch();
@@ -107,40 +109,64 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         private async void PrintFeed()
         {
-            var items = await this.currentFeed.GetPreviousFeedItems();
             var blocks = this.FeedContent.Document.Blocks;
-            if (items != null && items.Count != 0)
+            var currentFeedDom = this.currentFeedDom;
+            try
             {
-                var list = new Paragraph[items.Count];
-                for (int i = 0; i < items.Count; i++)
+                var task = currentFeedDom.Feed.GetPreviousFeedItems();
+                if (!task.IsCompleted)
                 {
-                    var item = items[i];
-                    item.Click += this.FeedItem_Click;
-                    var link = new Hyperlink(new Run(item.DisplayName)) { Tag = item };
-                    if (!string.IsNullOrWhiteSpace(item.ShortDescription))
-                    {
-                        link.ToolTip = new ToolTip() { Content = new TextBlock() { Text = item.ShortDescription } };
-                    }
-                    link.SetResourceReference(Hyperlink.ForegroundProperty, "MahApps.Brushes.ThemeForeground");
-                    link.NavigateUri = item.Url;
-                    var para = new Paragraph();
-                    para.Inlines.Add(new Run("> "));
-                    para.Inlines.Add(new Bold(link));
-                    blocks.Add(para);
-                    link.Click += this.Link_Click;
-                    list[i] = para;
+                    blocks.Clear();
+                    blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
                 }
-                blocks.Clear();
-                blocks.AddRange(list);
+                var items = await task;
+                if (items != null && items.Count != 0)
+                {
+                    var list = new Paragraph[items.Count];
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        var item = items[i];
+                        /*
+                        There's also this trick to avoid overlapping delegate:
+                        item.Click -= _RSSFeedItemClickEventHandler; // Remove it before adding it. Won't throw error as it does nothing if delegate isn't within.
+                        item.Click += _RSSFeedItemClickEventHandler;
+                        */
+                        if (!item.HasClickHandler(_RSSFeedItemClickEventHandler))
+                        {
+                            item.Click += _RSSFeedItemClickEventHandler;
+                        }
+                        var link = new Hyperlink(new Run(item.DisplayName)) { Tag = item };
+                        if (!string.IsNullOrWhiteSpace(item.ShortDescription))
+                        {
+                            link.ToolTip = new ToolTip() { Content = new TextBlock() { Text = item.ShortDescription } };
+                        }
+                        link.SetResourceReference(Hyperlink.ForegroundProperty, "MahApps.Brushes.ThemeForeground");
+                        link.NavigateUri = item.Url;
+                        var para = new Paragraph();
+                        para.Inlines.Add(new Run("> "));
+                        para.Inlines.Add(new Bold(link));
+                        blocks.Add(para);
+                        link.Click += Link_Click;
+                        list[i] = para;
+                    }
+                    blocks.Clear();
+                    blocks.AddRange(list);
+                }
+                else
+                {
+                    blocks.Clear();
+                    blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
+                }
             }
-            else
+            catch (TaskCanceledException)
             {
                 blocks.Clear();
                 blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
+                _ = Task.Run(currentFeedDom.Feed.Fetch);
             }
         }
 
-        private void FeedItem_Click(RSSFeedItem sender, RSSFeedItemClickEventArgs e)
+        private static void FeedItem_Click(RSSFeedItem sender, RSSFeedItemClickEventArgs e)
         {
             var url = sender.Url;
             if (url != null && url.IsAbsoluteUri)
@@ -156,7 +182,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        private void Link_Click(object sender, RoutedEventArgs e)
+        private static void Link_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Hyperlink link)
             {
@@ -194,10 +220,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 if (e.AddedItems[0] is RSSFeedDom dom)
                 {
-                    this.currentFeed = dom.Feed;
+                    this.currentFeedDom = dom;
+                    var feed = dom.Feed;
                     this.PrintFeed();
-                    this.currentFeed.FeedUpdated += this.Feed_FeedUpdated;
-                    this.currentFeed.DeferredRefreshReady += this.CurrentFeed_DeferredRefreshReady;
+                    feed.FeedUpdated += this.Feed_FeedUpdated;
+                    feed.DeferredRefreshReady += this.CurrentFeed_DeferredRefreshReady;
                 }
             }
 
@@ -392,7 +419,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
                 else
                 {
-                    this.Child = new TextBlock() { Text = "?", TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                    string displayname;
+                    if (char.IsWhiteSpace(feed.RepresentativeCharacter))
+                    {
+                        displayname = "?";
+                    }
+                    else
+                    {
+                        displayname = char.ToUpper(feed.RepresentativeCharacter).ToString();
+                    }
+                    this.Child = new TextBlock() { Text = displayname, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 }
                 feed.DisplayImageChanged += this.Feed_DisplayImageChanged;
                 feed.DisplayNameChanged += this.Feed_DisplayNameChanged;
@@ -415,37 +451,66 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
             static BitmapImage CreateIconFromStream(System.IO.Stream stream)
             {
-                var bm = new BitmapImage();
-                using (stream)
+                if (stream == null)
                 {
-                    if (stream != null)
+                    return null;
+                }
+                else
+                {
+                    using (stream)
                     {
+                        var bm = new BitmapImage();
                         bm.BeginInit();
                         bm.DecodePixelWidth = 35;
                         bm.CacheOption = BitmapCacheOption.OnLoad;
                         bm.CreateOptions = BitmapCreateOptions.None;
                         bm.StreamSource = stream;
                         bm.EndInit();
+                        bm.Freeze();
+                        return bm;
                     }
                 }
-                bm.Freeze();
-                return bm;
             }
 
             private void Feed_DisplayImageChanged(RSSFeedHandler sender, RSSFeedDisplayImageChangedEventArgs e)
             {
                 var bm = CreateIconFromStream(e.ImageContentStream);
-                this.Dispatcher.BeginInvoke((Action)(() =>
+                if (bm == null)
                 {
-                    var img = this.Child as Image;
-                    if (img == null)
+                    this.Dispatcher.BeginInvoke((Action)(() =>
                     {
-                        img = new Image() { MaxWidth = 32 };
-                        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Fant);
+                        var img = this.Child as TextBlock;
+                        if (img == null)
+                        {
+                            img = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                        }
+                        string displayname;
+                        if (char.IsWhiteSpace(e.RepresentativeCharacter))
+                        {
+                            displayname = "?";
+                        }
+                        else
+                        {
+                            displayname = char.ToUpper(e.RepresentativeCharacter).ToString();
+                        }
+                        img.Text = displayname;
                         this.Child = img;
-                    }
-                    img.Source = bm;
-                }));
+                    }));
+                }
+                else
+                {
+                    this.Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        var img = this.Child as Image;
+                        if (img == null)
+                        {
+                            img = new Image() { MaxWidth = 32 };
+                            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Fant);
+                            this.Child = img;
+                        }
+                        img.Source = bm;
+                    }));
+                }
             }
         }
     }
