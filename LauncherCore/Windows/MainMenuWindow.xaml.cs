@@ -57,7 +57,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.pso2HttpClient = new PSO2HttpClient(this.webclient);
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
             {
-                var binDir = Path.Combine(SharedInterfaces.RuntimeValues.RootDirectory, "bin");
+                var binDir = Path.Combine(RuntimeValues.RootDirectory, "bin");
                 var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var removelen = binDir.Length + 1;
 
@@ -65,7 +65,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.AllDirectories))
                     {
-                        var sha1 = Helper.SHA1Hash.ComputeHashFromFile(filename);
+                        var sha1 = SHA1Hash.ComputeHashFromFile(filename);
                         dictionary.Add(filename.Remove(0, removelen), sha1);
                     }
                 }

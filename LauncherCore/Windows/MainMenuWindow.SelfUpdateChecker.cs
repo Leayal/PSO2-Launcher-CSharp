@@ -12,12 +12,28 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private async Task OnSelfUpdateFound(BackgroundSelfUpdateChecker sender)
+        private async Task OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
         {
             sender.Stop();
             await this.CreateNewParagraphInLog(writer =>
             {
-                writer.Write("[Launcher Updater] An update for this PSO2 Launcher has been found.");
+                writer.Write("[Launcher Updater] An update for this PSO2 Launcher has been found. These files need to be updated: ");
+                if (files != null)
+                {
+                    if (files.Count == 1)
+                    {
+                        writer.Write(files[0]);
+                    }
+                    else
+                    {
+                        writer.Write(files[0]);
+                        for (int i = 1; i < files.Count; i++)
+                        {
+                            writer.Write(", ");
+                            writer.Write(files[i]);
+                        }
+                    }
+                }
                 this.SelfUpdateNotification.Visibility = Visibility.Visible;
             });
         }

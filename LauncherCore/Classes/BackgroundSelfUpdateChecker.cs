@@ -83,11 +83,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                     datetime = DateTime.Now;
 
                                     var remotelist = await myself.GetFileList();
+                                    var theonewhoneedupdate = myself.CheckUpdate(remotelist);
 
-                                    if (myself.CheckUpdate(remotelist))
+                                    if (theonewhoneedupdate != null && theonewhoneedupdate.Count != 0)
                                     {
                                         var taskCompletionSource = new TaskCompletionSource(null);
-                                        myself.syncContext.Post(Post_OnUpdateFound, new UpdateFoundData(myself, taskCompletionSource));
+                                        myself.syncContext.Post(Post_OnUpdateFound, new UpdateFoundData(myself, taskCompletionSource, theonewhoneedupdate));
                                         await taskCompletionSource.Task;
                                     }
                                 }
@@ -167,16 +168,17 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return dictionary;
         }
 
-        private bool CheckUpdate(IReadOnlyDictionary<string, string> checkingfiles)
+        private List<string> CheckUpdate(IReadOnlyDictionary<string, string> checkingfiles)
         {
+            var result = new List<string>(checkingfiles.Count);
             foreach (var item in checkingfiles)
             {
                 if (!this.files.TryGetValue(item.Key, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
                 {
-                    return true;
+                    result.Add(item.Key);
                 }
             }
-            return false;
+            return result;
         }
 
         private static void OnUpdateFound(object obj)
@@ -187,7 +189,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 var tasksrc = data.TaskSource;
                 try
                 {
-                    sender.UpdateFound?.Invoke(sender);
+                    sender.UpdateFound?.Invoke(sender, data.NeedUpdated);
                     tasksrc.SetResult();
                 }
                 catch (Exception ex)
@@ -197,17 +199,19 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public event Func<BackgroundSelfUpdateChecker, Task> UpdateFound;
+        public event Func<BackgroundSelfUpdateChecker, IReadOnlyList<string>, Task> UpdateFound;
 
         class UpdateFoundData
         {
             public readonly BackgroundSelfUpdateChecker Sender;
             public readonly TaskCompletionSource TaskSource;
+            public readonly List<string> NeedUpdated;
 
-            public UpdateFoundData(BackgroundSelfUpdateChecker sender, TaskCompletionSource tasksrc)
+            public UpdateFoundData(BackgroundSelfUpdateChecker sender, TaskCompletionSource tasksrc, List<string> _needupdated)
             {
                 this.Sender = sender;
                 this.TaskSource = tasksrc;
+                this.NeedUpdated = _needupdated;
             }
         }
 
