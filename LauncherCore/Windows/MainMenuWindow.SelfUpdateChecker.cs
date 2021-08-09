@@ -35,6 +35,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
                 this.SelfUpdateNotification.Visibility = Visibility.Visible;
+                if (this.trayIcon.IsValueCreated)
+                {
+                    var _trayicon = this.trayIcon.Value;
+                    foreach (var item in _trayicon.ContextMenuStrip.Items)
+                    {
+                        if (item is System.Windows.Forms.ToolStripMenuItem menuitem)
+                        {
+                            if (menuitem.Tag is Uri uri && string.Equals(uri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/confirm", StringComparison.OrdinalIgnoreCase))
+                            {
+                                menuitem.Visible = true;
+                            }
+                        }
+                    }
+                }
             });
         }
 
@@ -42,19 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (sender is Hyperlink link)
             {
-                if (link.NavigateUri != null && link.NavigateUri.IsAbsoluteUri)
-                {
-                    if (string.Equals(link.NavigateUri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/confirm", StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.Close();
-                        App.Current.Shutdown();
-                        System.Windows.Forms.Application.Restart();
-                    }
-                    else if (string.Equals(link.NavigateUri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/ignore", StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.SelfUpdateNotification.Visibility = Visibility.Collapsed;
-                    }
-                }
+                this.ExecuteCommandUrl(link.NavigateUri);
             }
         }
     }

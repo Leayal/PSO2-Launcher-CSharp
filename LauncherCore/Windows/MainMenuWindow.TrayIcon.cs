@@ -123,15 +123,41 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             };
 
+            var hasupdatenotificationalready = (this.SelfUpdateNotification.Visibility == Visibility.Visible);
+            var selfupdate_separator = new ToolStripSeparator()
+            {
+                Visible = hasupdatenotificationalready
+            };
+            var performRestartToSelfUpdate = new ToolStripMenuItem("Restart launcher to update launcher")
+            {
+                Visible = hasupdatenotificationalready
+            };
+            performRestartToSelfUpdate.Tag = new Uri("pso2lealauncher://selfupdatechecker/confirm");
+            performRestartToSelfUpdate.VisibleChanged += (sender, e) =>
+            {
+                selfupdate_separator.Visible = performRestartToSelfUpdate.Visible;
+            };
+            performRestartToSelfUpdate.Click += this.PerformRestartToSelfUpdate_Click;
+
             ico_contextmenu.Items.AddRange(new ToolStripItem[] {
                 menuitem_showLauncher,
                 new ToolStripSeparator(),
                 typicalMenu,
+                selfupdate_separator,
+                performRestartToSelfUpdate,
                 new ToolStripSeparator(),
                 menuitem_exit,
             });
             ico.ContextMenuStrip = ico_contextmenu;
             return ico;
+        }
+
+        private void PerformRestartToSelfUpdate_Click(object sender, EventArgs e)
+        {
+            if (sender is ToolStripMenuItem menuitem && menuitem.Tag is Uri uri && uri.IsAbsoluteUri)
+            {
+                this.ExecuteCommandUrl(uri);
+            }
         }
 
         private void Typical_startGame_Click(object sender, EventArgs e)
