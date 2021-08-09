@@ -44,8 +44,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (string.Equals(link.NavigateUri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/confirm", StringComparison.OrdinalIgnoreCase))
                     {
                         this.Close();
-                        System.Windows.Forms.Application.Restart();
                         App.Current.Shutdown();
+                        System.Windows.Forms.Application.Restart();
                     }
                     else if (string.Equals(link.NavigateUri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/ignore", StringComparison.OrdinalIgnoreCase))
                     {
