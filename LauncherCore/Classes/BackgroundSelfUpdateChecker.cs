@@ -131,7 +131,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                     var item = objWalker.Current;
                                     if (item.Value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
-                                        dictionary.Add(item.Name, item_prop_sha1.GetString());
+                                        var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                                        if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                        {
+                                            item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                        }
+                                        dictionary.Add(item_name, item_prop_sha1.GetString());
                                     }
                                 }
                             }
@@ -153,9 +158,14 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                     var item = objWalker.Current;
                                     if (item.Value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
-                                        var item_name = item.Name;
+                                        var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                                        if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                        {
+                                            item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                        }
                                         if (!dictionary.ContainsKey(item_name))
                                         {
+                                            
                                             dictionary.Add(item_name, item_prop_sha1.GetString());
                                         }
                                     }
@@ -173,12 +183,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             var result = new List<string>(checkingfiles.Count);
             foreach (var item in checkingfiles)
             {
-                var filename = Path.TrimEndingDirectorySeparator(item.Key);
-                if (filename.IndexOf(Path.AltDirectorySeparatorChar) != -1)
-                {
-                    filename = filename.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                }
-                if (!this.files.TryGetValue(filename, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
+                if (!this.files.TryGetValue(item.Key, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
                 {
                     result.Add(item.Key);
                 }
