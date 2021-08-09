@@ -281,7 +281,7 @@ namespace Leayal.PSO2Launcher.Updater
                     }
 
                     var hash_downloaded = SHA1Hash.ComputeHashFromFile(tmpFilename);
-                    if (true || string.Equals(hash_downloaded, item.Value.SHA1Hash, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(hash_downloaded, item.Value.SHA1Hash, StringComparison.OrdinalIgnoreCase))
                     {
                         if (item.Value is UpdateItem_v2 itemv2)
                         {
