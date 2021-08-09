@@ -173,7 +173,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
             var result = new List<string>(checkingfiles.Count);
             foreach (var item in checkingfiles)
             {
-                if (!this.files.TryGetValue(item.Key, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
+                var filename = Path.TrimEndingDirectorySeparator(item.Key);
+                if (filename.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                {
+                    filename = filename.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                }
+                if (!this.files.TryGetValue(filename, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
                 {
                     result.Add(item.Key);
                 }

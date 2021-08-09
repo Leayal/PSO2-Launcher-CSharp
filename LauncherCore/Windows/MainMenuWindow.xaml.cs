@@ -158,7 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.config_main.LauncherCheckForSelfUpdates)
             {
                 var selfchecker = await this.backgroundselfupdatechecker.Value;
-                selfchecker.TickTime = TimeSpan.FromSeconds(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
+                selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
                 selfchecker.Start();
             }
         }
