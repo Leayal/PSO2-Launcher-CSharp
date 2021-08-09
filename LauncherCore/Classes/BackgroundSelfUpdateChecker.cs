@@ -167,18 +167,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return dictionary;
         }
 
-        private bool CheckUpdate(IReadOnlyDictionary<string, string> files)
+        private bool CheckUpdate(IReadOnlyDictionary<string, string> checkingfiles)
         {
-            foreach (var item in files)
+            foreach (var item in checkingfiles)
             {
-                if (this.files.TryGetValue(item.Key, out var current_sha1))
-                {
-                    if (!string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-                else
+                if (!this.files.TryGetValue(item.Key, out var current_sha1) || !string.Equals(item.Value, current_sha1, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

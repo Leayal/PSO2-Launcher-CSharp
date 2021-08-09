@@ -20,19 +20,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 writer.Write("[Launcher Updater] An update for this PSO2 Launcher has been found.");
                 this.SelfUpdateNotification.Visibility = Visibility.Visible;
             });
-            /*
-            if (this.SelfUpdateNotification.CheckAccess())
-            {
-                this.SelfUpdateNotification.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                await this.SelfUpdateNotification.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    this.SelfUpdateNotification.Visibility = Visibility.Visible;
-                }));
-            }
-            */
         }
 
         private void SelfUpdateNotificationHyperlink_Click(object sender, RoutedEventArgs e)

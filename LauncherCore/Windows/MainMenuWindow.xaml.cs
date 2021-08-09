@@ -137,7 +137,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 base.OnFirstShown(e);
             }
-            finally
+            catch
             {
 
             }
@@ -153,16 +153,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
             {
                 await StartGameClientUpdate(false, this.config_main.LauncherCheckForPSO2GameUpdateAtStartupPrompt);
-                // this.ButtonCheckForUpdate_Click(null, new RoutedEventArgs());
-                // this.ButtonLoadLauncherWebView.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             }
-
-            base.OnFirstShown(e);
 
             if (this.config_main.LauncherCheckForSelfUpdates)
             {
                 var selfchecker = await this.backgroundselfupdatechecker.Value;
-                selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
+                selfchecker.TickTime = TimeSpan.FromSeconds(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
                 selfchecker.Start();
             }
         }
