@@ -13,11 +13,16 @@ using Leayal.SharedInterfaces.Communication;
 using Leayal.SharedInterfaces;
 using System.Runtime.Loader;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Leayal.PSO2Launcher.Updater
 {
     public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
+        private readonly Assembly ThisAssembly;
+        private readonly string AssemblyFilenameOfMySelf;
+        private readonly string[] ReferencedAssemblyFilenameOfMySelf;
+
         private readonly HttpClient wc;
         private bool requireBootstrapUpdate, recommendBootstrapUpdate;
         private readonly AssemblyLoadContext? _loadedAssemblies;
@@ -40,6 +45,15 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
             }
+            this.ThisAssembly = Assembly.GetExecutingAssembly();
+            this.AssemblyFilenameOfMySelf = $"{this.ThisAssembly.GetName().Name}.dll";
+            var referenced = this.ThisAssembly.GetReferencedAssemblies();
+            this.ReferencedAssemblyFilenameOfMySelf = new string[referenced.Length];
+            for (int i = 0; i < referenced.Length; i++)
+            {
+                this.ReferencedAssemblyFilenameOfMySelf[i] = referenced[i].Name;
+            }
+
             this.failToCheck = false;
             this.bootstrapversion = bootstrapversion;
             this.requireBootstrapUpdate = false;
@@ -74,7 +88,11 @@ namespace Leayal.PSO2Launcher.Updater
                 string jsonData;
                 try
                 {
+#if DEBUG
+                    jsonData = File.ReadAllText(Path.Combine(rootDirectory, @"..\docs\publish\update.json"));
+#else
                     jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
+#endif
                 }
                 catch
                 {
@@ -84,6 +102,16 @@ namespace Leayal.PSO2Launcher.Updater
                         { string.Empty, new UpdateItem(string.Empty, string.Empty, string.Empty, string.Empty) }
                     }, false, false, null);
                 }
+
+                if (string.IsNullOrWhiteSpace(jsonData))
+                {
+                    this.failToCheck = true;
+                    return new BootstrapUpdater_CheckForUpdates(new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        { string.Empty, new UpdateItem(string.Empty, string.Empty, string.Empty, string.Empty) }
+                    }, false, false, null);
+                }
+
                 using (var doc = JsonDocument.Parse(jsonData))
                 {
                     if (doc.RootElement.TryGetProperty("rep-version", out var prop_response_ver) && prop_response_ver.TryGetInt32(out var response_ver))
@@ -181,6 +209,7 @@ namespace Leayal.PSO2Launcher.Updater
 
                 bool isNewBootstrap = this.bootstrapversion > 0;
                 bool shouldRestart = isNewBootstrap ? false : true;
+                bool shouldReload = updateinfo.RequireReload;
 
                 string filepath, tmpFilename;
                 e_progressbarMax?.Invoke(100);
@@ -188,6 +217,11 @@ namespace Leayal.PSO2Launcher.Updater
                 {
                     filepath = item.Value.LocalFilename;
                     tmpFilename = filepath + ".dtmp";
+
+                    if (!shouldRestart && !shouldReload)
+                    {
+                        shouldReload = string.Equals(filepath, item.Key, StringComparison.OrdinalIgnoreCase);
+                    }
 
                     e_step?.Invoke(this, new StringEventArgs($"Downloading '{item.Value.DisplayName}'"));
 
@@ -247,7 +281,7 @@ namespace Leayal.PSO2Launcher.Updater
                     }
 
                     var hash_downloaded = SHA1Hash.ComputeHashFromFile(tmpFilename);
-                    if (string.Equals(hash_downloaded, item.Value.SHA1Hash, StringComparison.OrdinalIgnoreCase))
+                    if (true || string.Equals(hash_downloaded, item.Value.SHA1Hash, StringComparison.OrdinalIgnoreCase))
                     {
                         if (item.Value is UpdateItem_v2 itemv2)
                         {
@@ -297,11 +331,12 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                     else
                     {
-                        throw new WebException();
+                        throw new WebException("The downloaded file has been download incorrectly.");
                     }
                     e_filedownload?.Invoke(this, new FileDownloadedEventArgs(item.Value));
                 }
 
+                // This take preceded so shouldreload is totally wasted
                 if (!shouldRestart)
                 {
                     if (this._loadedAssemblies != null)
@@ -318,7 +353,17 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
 
-                return shouldRestart;
+                if (shouldRestart)
+                {
+                    return true;
+                }
+
+                if (shouldReload)
+                {
+                    return false;
+                }
+
+                return null;
             });
         }
 

@@ -35,6 +35,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.checkbox_checkpso2updatestartup.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartup;
             this.checkbox_checkpso2updatestartup_prompt.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt;
 
+            this.checkbox_backgroundselfupdatechecker.IsChecked = this._config.LauncherCheckForSelfUpdates;
+            this.numbericbox_backgroundselfupdatechecker_intervalhour.Value = this._config.LauncherCheckForSelfUpdates_IntervalHour;
+
 
             this.checkbox_lauchlauncherasadmin.IsChecked = this._config.LaunchLauncherAsAdmin;
             this.checkbox_lauchlauncherasadmin.Checked += this.Checkbox_lauchlauncherasadmin_Checked;
@@ -90,6 +93,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
             this._config.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
             this._config.LaunchLauncherAsAdmin = (this.checkbox_lauchlauncherasadmin.IsChecked == true);
+
+            this._config.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
+            this._config.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
+
             if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
             {
                 this._config.DefaultGameStartStyle = dom_GameStartStyle.Value;
@@ -156,6 +163,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (sender is CheckBox cb)
                 {
                     cb.IsChecked = false;
+                }
+            }
+        }
+
+        private void Numbericbox_backgroundselfupdatechecker_intervalhour_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            var span = e.Text.AsSpan();
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsDigit(span[i]))
+                {
+                    e.Handled = true;
                 }
             }
         }

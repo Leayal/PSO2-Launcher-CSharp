@@ -21,6 +21,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
+using System.Net.Http;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -29,6 +30,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
+        private readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private GameClientUpdater pso2Updater;
         private CancellationTokenSource cancelSrc;
@@ -36,12 +38,42 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
+        private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
 
         public MainMenuWindow() : base()
         {
             this.ss_id = null;
             this.ss_pw = null;
-            this.pso2HttpClient = new PSO2HttpClient();
+            this.webclient = new HttpClient(new SocketsHttpHandler()
+            {
+                AllowAutoRedirect = true,
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
+                ConnectTimeout = TimeSpan.FromSeconds(30),
+                UseProxy = false,
+                UseCookies = false,
+                Credentials = null,
+                DefaultProxyCredentials = null
+            }, true);
+            this.pso2HttpClient = new PSO2HttpClient(this.webclient);
+            this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
+            {
+                var binDir = Path.Combine(SharedInterfaces.RuntimeValues.RootDirectory, "bin");
+                var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var removelen = binDir.Length + 1;
+
+                if (Directory.Exists(binDir))
+                {
+                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.AllDirectories))
+                    {
+                        var sha1 = Helper.SHA1Hash.ComputeHashFromFile(filename);
+                        dictionary.Add(filename.Remove(0, removelen), sha1);
+                    }
+                }
+                var selfupdatecheck = new BackgroundSelfUpdateChecker(this.webclient, dictionary);
+                selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
+                return selfupdatecheck;
+            }));
+
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             if (File.Exists(this.config_main.Filename))
             {
@@ -78,6 +110,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
             {
                 await FileCheckHashCache.ForceCloseAll();
+                if (this.backgroundselfupdatechecker.IsValueCreated)
+                {
+                    var checker = await this.backgroundselfupdatechecker.Value;
+                    checker.Dispose();
+                }
             }));
 
             string dir_root = this.config_main.PSO2_BIN,
@@ -96,6 +133,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override async void OnFirstShown(EventArgs e)
         {
+            try
+            {
+                base.OnFirstShown(e);
+            }
+            finally
+            {
+
+            }
+
             if (this.config_main.LauncherLoadWebsiteAtStartup)
             {
                 if (this.LauncherWebView.Child is Button btn)
@@ -112,6 +158,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             base.OnFirstShown(e);
+
+            if (this.config_main.LauncherCheckForSelfUpdates)
+            {
+                var selfchecker = await this.backgroundselfupdatechecker.Value;
+                selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
+                selfchecker.Start();
+            }
         }
 
         protected override void OnThemeRefresh()
@@ -252,7 +305,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void TabMainMenu_ButtonManageGameLauncherBehaviorClicked(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonManageGameLauncherBehaviorClicked(object sender, RoutedEventArgs e)
         {
             if (sender is TabMainMenu tab)
             {
@@ -265,6 +318,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (dialog.ShowDialog() == true)
                     {
                         this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
+
+                        if (this.config_main.LauncherCheckForSelfUpdates)
+                        {
+                            var isnewselfchecker = this.backgroundselfupdatechecker.IsValueCreated;
+                            var selfchecker = await this.backgroundselfupdatechecker.Value;
+                            if (!isnewselfchecker)
+                            {
+                                selfchecker.Stop();
+                            }
+                            selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
+                            selfchecker.Start();
+                        }
+                        else
+                        {
+                            if (this.backgroundselfupdatechecker.IsValueCreated)
+                            {
+                                (await this.backgroundselfupdatechecker.Value).Stop();
+                            }
+                        }
                     }
                 }
                 finally

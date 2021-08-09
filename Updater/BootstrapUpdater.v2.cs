@@ -3,6 +3,7 @@ using Leayal.SharedInterfaces.Communication;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -10,6 +11,43 @@ namespace Leayal.PSO2Launcher.Updater
 {
     public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
+        private static async Task<bool> FileCheck_2(Dictionary<string, UpdateItem> needtobeupdated, Uri rootUrl, string displayName, JsonElement prop_val, string rootDirectory, bool iscritical, string entryExecutableName)
+        {
+            if (prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
+            {
+                var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
+                var remotehash = item_prop_sha1.GetString();
+                long size;
+                if (prop_val.TryGetProperty("size", out var item_prop_size) && item_prop_size.ValueKind == JsonValueKind.Number)
+                {
+                    size = item_prop_size.GetInt64();
+                }
+                else
+                {
+                    size = -1;
+                }
+                if (File.Exists(localFilename))
+                {
+                    var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
+                    if (!string.Equals(hash, remotehash, StringComparison.OrdinalIgnoreCase))
+                    {
+                        bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
+                        bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
+                        needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, iscritical, isEntry));
+                        return true;
+                    }
+                }
+                else
+                {
+                    bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
+                    bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
+                    needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, iscritical, isEntry));
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private async Task<BootstrapUpdater_CheckForUpdates> ParseFileList_2(JsonDocument document, string rootDirectory, string entryExecutableName)
         {
             var needtobeupdated = new Dictionary<string, UpdateItem>(StringComparer.OrdinalIgnoreCase);
@@ -27,44 +65,15 @@ namespace Leayal.PSO2Launcher.Updater
                         {
                             while (objWalker.MoveNext())
                             {
-                                var item_prop = objWalker.Current;
-                                var displayName = item_prop.Name;
-                                var prop_val = item_prop.Value;
-                                if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String))
-                                {
-                                    var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
-                                    var remotehash = item_prop_sha1.GetString();
-                                    long size;
-                                    if (prop_val.TryGetProperty("size", out var item_prop_size) && item_prop_size.ValueKind == JsonValueKind.Number)
-                                    {
-                                        size = item_prop_size.GetInt64();
-                                    }
-                                    else
-                                    {
-                                        size = -1;
-                                    }
-                                    if (File.Exists(localFilename))
-                                    {
-                                        var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
-                                        if (!string.Equals(hash, remotehash, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                            bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                            needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, true, isEntry));
-                                        }
-                                    }
-                                    else
-                                    {
-                                        bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                        bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                        needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, true, isEntry));
-                                    }
-                                }
+                                var item = objWalker.Current;
+                                await FileCheck_2(needtobeupdated, rootUrl, item.Name, item.Value, rootDirectory, true, entryExecutableName);
                             }
                         }
                     }
                 }
             }
+
+            bool shouldReload = false;
 
             if (rootelement.TryGetProperty("files", out var prop_files))
             {
@@ -73,41 +82,42 @@ namespace Leayal.PSO2Launcher.Updater
                     if (rootelement.TryGetProperty("root-url", out var prop_rootUrl) && prop_rootUrl.ValueKind == JsonValueKind.String &&
                         Uri.TryCreate(prop_rootUrl.GetString(), UriKind.Absolute, out var rootUrl))
                     {
-                        using (var objWalker = prop_files.EnumerateObject())
+                        // This is no-good and roundabout way.
+                        var avoidRecheck = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (prop_files.TryGetProperty(AssemblyFilenameOfMySelf, out var prop_thisself) && prop_thisself.ValueKind == JsonValueKind.Object)
                         {
-                            while (objWalker.MoveNext())
+                            avoidRecheck.Add(AssemblyFilenameOfMySelf);
+                            if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName))
                             {
-                                var item_prop = objWalker.Current;
-                                var displayName = item_prop.Name;
-                                var prop_val = item_prop.Value;
-                                if ((prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String))
+                                shouldReload = true;
+                            }
+                        }
+                        for (int i = 0; i < this.ReferencedAssemblyFilenameOfMySelf.Length; i++)
+                        {
+                            var asm_name = this.ReferencedAssemblyFilenameOfMySelf[i];
+                            if (prop_files.TryGetProperty(asm_name, out var prop_depend) && prop_depend.ValueKind == JsonValueKind.Object)
+                            {
+                                if (avoidRecheck.Add(AssemblyFilenameOfMySelf))
                                 {
-                                    var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
-                                    var remotehash = item_prop_sha1.GetString();
-                                    long size;
-                                    if (prop_val.TryGetProperty("size", out var item_prop_size) && item_prop_size.ValueKind == JsonValueKind.Number)
+                                    if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName))
                                     {
-                                        size = item_prop_size.GetInt64();
+                                        shouldReload = true;
                                     }
-                                    else
+                                }
+                            }
+                        }
+
+                        if (!shouldReload)
+                        {
+                            using (var objWalker = prop_files.EnumerateObject())
+                            {
+                                while (objWalker.MoveNext())
+                                {
+                                    var item = objWalker.Current;
+                                    var asm_name = item.Name;
+                                    if (avoidRecheck.Add(asm_name))
                                     {
-                                        size = -1;
-                                    }
-                                    if (File.Exists(localFilename))
-                                    {
-                                        var hash = await SHA1Hash.ComputeHashFromFileAsync(localFilename);
-                                        if (!string.Equals(hash, remotehash, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                            bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                            needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, false, isEntry));
-                                        }
-                                    }
-                                    else
-                                    {
-                                        bool isArchive = prop_val.TryGetProperty("archive", out var item_prop_archive) ? (item_prop_archive.ValueKind == JsonValueKind.True) : false;
-                                        bool isEntry = prop_val.TryGetProperty("entry", out var item_prop_entry) ? (item_prop_entry.ValueKind == JsonValueKind.True) : false;
-                                        needtobeupdated.Add(displayName, new UpdateItem_v2(localFilename, remotehash, (new Uri(rootUrl, displayName)).AbsoluteUri, displayName, isArchive, size, false, isEntry));
+                                        await FileCheck_2(needtobeupdated, rootUrl, asm_name, item.Value, rootDirectory, false, entryExecutableName);
                                     }
                                 }
                             }
@@ -119,7 +129,7 @@ namespace Leayal.PSO2Launcher.Updater
             {
                 throw new BootstrapUpdaterException();
             }
-            return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, false, null);
+            return new BootstrapUpdater_CheckForUpdates(needtobeupdated, false, shouldReload, null);
         }
     }
 }

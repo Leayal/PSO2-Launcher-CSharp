@@ -112,7 +112,7 @@ namespace Leayal.PSO2Launcher.RSS
 
         public event EventHandler DeferredRefreshReady;
 
-        private const int BeaconTickMS = 500;
+        private const int BeaconTickMS = (int.MaxValue - 1);
 
         /// <summary>
         /// 
@@ -131,28 +131,30 @@ namespace Leayal.PSO2Launcher.RSS
                 var src = new CancellationTokenSource();
                 this.cancelSrc?.Cancel();
                 this.cancelSrc = src;
+                var canceltoken = src.Token;
                 Task.Factory.StartNew(async () =>
                 {
+                    var copiedtoken = canceltoken;
                     var total = Convert.ToInt64(timespan.TotalMilliseconds);
                     while (total > 0)
                     {
-                        if (src.IsCancellationRequested)
+                        if (copiedtoken.IsCancellationRequested || src.IsCancellationRequested)
                         {
                             break;
                         }
                         if (total >= BeaconTickMS)
                         {
                             total -= BeaconTickMS;
-                            await Task.Delay(BeaconTickMS);
+                            await Task.Delay(BeaconTickMS, copiedtoken);
                         }
                         else
                         {
                             var convert = Convert.ToInt32(total);
                             total -= convert;
-                            await Task.Delay(convert);
+                            await Task.Delay(convert, copiedtoken);
                         }
                     }
-                    if (!src.IsCancellationRequested)
+                    if (!copiedtoken.IsCancellationRequested && !src.IsCancellationRequested)
                     {
                         bool deferred = this.DeferRefresh;
                         if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0) == 0)
@@ -168,7 +170,7 @@ namespace Leayal.PSO2Launcher.RSS
                             }
                         }
                     }
-                }, src.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default);
+                }, canceltoken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default);
             }
         }
 

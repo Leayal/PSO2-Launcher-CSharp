@@ -198,7 +198,7 @@ namespace Leayal.SharedInterfaces.Communication
         /// <returns>
         /// <para>Null: Continue</para>
         /// <para>True: Need restart</para>
-        /// <para>False: Cancelled</para>
+        /// <para>False: Reload</para>
         /// </returns>
         Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo);
 

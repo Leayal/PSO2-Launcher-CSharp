@@ -17,6 +17,7 @@
             <RowDefinition Height="25" />
             <RowDefinition />
             <RowDefinition MaxHeight="300" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Image x:Name="BgImg" Grid.RowSpan="3" IsHitTestVisible="False" Focusable="False" RenderOptions.BitmapScalingMode="Fant" Stretch="UniformToFill" />
         <Grid HorizontalAlignment="Right">
@@ -102,6 +103,18 @@
                 </avalon:TextEditor.ContextMenu>
             </avalon:TextEditor>
         </Grid>
-        <!--<webviewcompat:WebViewCompatControl Grid.Row="2" Margin="1" Initialized="WebViewCompatControl_Initialized" />-->
+
+        <Border Grid.Row="3" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" BorderThickness="1" Background="#33FFFFFF" x:Name="SelfUpdateNotification" Visibility="Collapsed">
+            <RichTextBox IsReadOnly="True" IsReadOnlyCaretVisible="False" IsDocumentEnabled="True" BorderThickness="0" BorderBrush="{x:Null}">
+                <FlowDocument>
+                    <Paragraph TextAlignment="Center">
+                        <Run>A launcher update has been found.</Run>
+                        <Hyperlink NavigateUri="pso2lealauncher://selfupdatechecker/confirm" Click="SelfUpdateNotificationHyperlink_Click">Click here to restart and update</Hyperlink>
+                        <Run>or</Run>
+                        <Hyperlink NavigateUri="pso2lealauncher://selfupdatechecker/ignore" Click="SelfUpdateNotificationHyperlink_Click">Click here to ignore and hide this notification</Hyperlink>
+                    </Paragraph>
+                </FlowDocument>
+            </RichTextBox>
+        </Border>
     </Grid>
 </local:MetroWindowEx>

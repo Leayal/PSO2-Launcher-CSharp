@@ -26,18 +26,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Do it later.
 
 
-        public PSO2HttpClient()
+        public PSO2HttpClient(HttpClient client)
         {
-            this.client = new HttpClient(new SocketsHttpHandler()
-            {
-                AllowAutoRedirect = true,
-                AutomaticDecompression = DecompressionMethods.All,
-                ConnectTimeout = TimeSpan.FromSeconds(30),
-                UseProxy = false,
-                UseCookies = false,
-                Credentials = null,
-                DefaultProxyCredentials = null
-            }, true);
+            this.client = client;
         }
 
         #region | Convenient private methods |
