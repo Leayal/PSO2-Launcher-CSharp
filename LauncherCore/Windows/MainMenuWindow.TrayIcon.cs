@@ -81,7 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var typical_checkforPSO2Updates = new ToolStripMenuItem("Check for PSO2 Updates");
             typical_checkforPSO2Updates.Click += this.Typical_checkforPSO2Updates_Click;
 
-            typicalMenu.DropDownItems.AddRange(new ToolStripItem[] { typical_startGame, typical_checkforPSO2Updates });
+            typicalMenu.DropDownItems.Add(typical_checkforPSO2Updates);
 
             var menuitem_showLauncher = new ToolStripMenuItem("Show launcher") { Font = new System.Drawing.Font(typicalMenu.Font, System.Drawing.FontStyle.Bold) };
             menuitem_showLauncher.Tag = ico;
@@ -142,7 +142,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             ico_contextmenu.Items.AddRange(new ToolStripItem[] {
                 menuitem_showLauncher,
                 new ToolStripSeparator(),
+                typical_startGame,
                 typicalMenu,
+                new ToolStripSeparator(),
                 selfupdate_separator,
                 performRestartToSelfUpdate,
                 new ToolStripSeparator(),

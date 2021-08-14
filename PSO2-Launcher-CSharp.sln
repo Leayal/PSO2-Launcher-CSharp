@@ -23,9 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.Shared", "Leayal.Sha
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackOverflow.Core", "StackOverflow.Core\StackOverflow.Core.csproj", "{F799D3F1-A31D-4F58-BEAC-B7F6134FB146}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherRSS", "LauncherRSS\LauncherRSS.csproj", "{BBDF19BE-970D-4A3D-8856-B14E1031E655}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherRSS", "LauncherRSS\LauncherRSS.csproj", "{BBDF19BE-970D-4A3D-8856-B14E1031E655}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSUBlogRSSFeed", "PSUBlogRSSFeed\PSUBlogRSSFeed.csproj", "{460F03AC-D59E-450C-8D6C-8D174646358C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSUBlogRSSFeed", "PSUBlogRSSFeed\PSUBlogRSSFeed.csproj", "{460F03AC-D59E-450C-8D6C-8D174646358C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.PSO2Installer", "Leayal.PSO2Installer\Leayal.PSO2Installer.csproj", "{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{460F03AC-D59E-450C-8D6C-8D174646358C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{460F03AC-D59E-450C-8D6C-8D174646358C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{460F03AC-D59E-450C-8D6C-8D174646358C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

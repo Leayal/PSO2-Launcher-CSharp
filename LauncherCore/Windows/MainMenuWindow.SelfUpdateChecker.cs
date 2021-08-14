@@ -42,7 +42,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (item is System.Windows.Forms.ToolStripMenuItem menuitem)
                         {
-                            if (menuitem.Tag is Uri uri && string.Equals(uri.AbsoluteUri, "pso2lealauncher://selfupdatechecker/confirm", StringComparison.OrdinalIgnoreCase))
+                            if (menuitem.Tag is Uri uri && uri.Equals(StaticResources.Url_ConfirmSelfUpdate))
                             {
                                 menuitem.Visible = true;
                             }

@@ -10,13 +10,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (url != null && url.IsAbsoluteUri)
             {
                 var urlstr = url.AbsoluteUri;
-                if (string.Equals(urlstr, "pso2lealauncher://selfupdatechecker/confirm", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(urlstr, StaticResources.Url_ConfirmSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.Close();
                     App.Current.Shutdown();
                     System.Windows.Forms.Application.Restart();
                 }
-                else if (string.Equals(urlstr, "pso2lealauncher://selfupdatechecker/ignore", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(urlstr, StaticResources.Url_ConfirmSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.SelfUpdateNotification.Visibility = Visibility.Collapsed;
                 }

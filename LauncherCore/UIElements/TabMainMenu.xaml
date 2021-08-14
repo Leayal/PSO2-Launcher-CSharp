@@ -51,6 +51,7 @@
                         <MenuItem Header="Scan for NGS files only" Click="ButtonScanFixGameData_NGSOnly_Click" />
                         <MenuItem Header="Scan for Classic files only" Click="ButtonScanFixGameData_ClassicOnly_Click" />
                     </MenuItem>
+                    <MenuItem Header="Install PSO2" Click="MenuItemInstallPSO2_Click" />
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
