@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <RootNamespace>Leayal.PSO2.Installer</RootNamespace>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
 </Project>

@@ -6,14 +6,14 @@ using System.Runtime.CompilerServices;
 
 namespace Leayal.PSO2.Installer
 {
-    public static class Requirements
+    public static partial class Requirements
     {
         // HRESULT WINAPI D3DX11CheckVersion(UINT D3DSdkVersion, UINT D3DX11SdkVersion);
         // D3DX11_SDK_VERSION 43
         // D3D11_SDK_VERSION = 7
         // D3D_SDK_VERSION 32
 
-        /// <summary>Check if DirectX11 (June 2010) runtime is installed.</summary>
+        /// <summary>Check if DirectX11 (From June 2010) runtime is installed.</summary>
         public static bool HasDirectX11()
         {
             var dllpath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "d3dx11_43.dll");
