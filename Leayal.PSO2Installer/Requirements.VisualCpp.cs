@@ -42,7 +42,7 @@ namespace Leayal.PSO2.Installer
                         var obj_minor = subkey.GetValue("Minor");
                         if (obj_minor is int minor)
                         {
-                            if (minor == 0)
+                            if (minor < 10)
                             {
                                 return VCRedistVersion.VC2015;
                             }

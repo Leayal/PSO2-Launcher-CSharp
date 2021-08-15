@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core"
-             xmlns:uielements="clr-namespace:Leayal.PSO2Launcher.Core.Classes"
+             xmlns:localclasses="clr-namespace:Leayal.PSO2Launcher.Core.Classes"
              Exit="Application_Exit"
              Startup="Application_Startup" DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
@@ -13,8 +13,9 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Red.xaml" />
 
                 <ResourceDictionary>
-                    <uielements:NumberToStringConverter x:Key="NumberToStringConverter" />
-                    <uielements:StringToNumberConverter x:Key="StringToNumberConverter" />
+                    <localclasses:NumberToStringConverter x:Key="NumberToStringConverter" />
+                    <localclasses:StringToNumberConverter x:Key="StringToNumberConverter" />
+                    <localclasses:PreventDefaultCommand x:Key="PreventDefault" />
                 </ResourceDictionary>
                 <!--<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />-->
             </ResourceDictionary.MergedDictionaries>

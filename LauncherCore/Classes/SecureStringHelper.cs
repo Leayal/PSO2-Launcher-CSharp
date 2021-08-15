@@ -182,13 +182,25 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         Array.Fill<byte>(buffer, 0);
                     }
                 }
-                
             });
             writtenBytes = byteWritten;
-
         }
 
-        // Would this create a copy of string?
+        public static int GetByteCount(this SecureString myself, Encoding encoding)
+        {
+            if (myself == null)
+            {
+                throw new ArgumentNullException(nameof(myself));
+            }
+
+            int byteWritten = 0;
+            Reveal(myself, (in ReadOnlySpan<char> span) =>
+            {
+                byteWritten = encoding.GetByteCount(span);
+            });
+            return byteWritten;
+        }
+
         public delegate void SecretRevealedText(in ReadOnlySpan<char> characters);
     }
 }

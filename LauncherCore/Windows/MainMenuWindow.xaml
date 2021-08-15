@@ -57,7 +57,8 @@
                                  DefaultGameStartStyleChanged="TabMainMenu_DefaultGameStartStyleChanged"
                                  GameStartRequested="TabMainMenu_GameStartRequested"
                                  ButtonManageGameLauncherRSSFeedsClicked="ButtonManageGameLauncherRSSFeeds_Clicked"
-                                 ButtonInstallPSO2Clicked="ButtonInstallPSO2_Clicked" />
+                                 ButtonInstallPSO2Clicked="ButtonInstallPSO2_Clicked"
+                                 ButtonPSO2TroubleshootingClicked="ButtonPSO2Troubleshooting_Clicked" />
             <localui:TabGameUpdateProgress x:Name="TabGameClientUpdateProgressBar"
                                            UpdateCancelClicked="TabGameClientUpdateProgressBar_UpdateCancelClicked" />
         </mah:MetroAnimatedTabControl>

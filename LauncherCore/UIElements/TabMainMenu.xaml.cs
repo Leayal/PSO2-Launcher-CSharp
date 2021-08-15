@@ -31,7 +31,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonManageGameLauncherBehaviorClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherBehaviorClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameLauncherRSSFeedsClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherRSSFeedsClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonInstallPSO2ClickedEvent = EventManager.RegisterRoutedEvent("ButtonInstallPSO2Clicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
-        
+        public static readonly RoutedEvent ButtonPSO2TroubleshootingClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2TroubleshootingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true, (obj, e) =>
         {
             if (obj is TabMainMenu tab)
@@ -261,5 +262,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         private void MenuItemInstallPSO2_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ButtonInstallPSO2ClickedEvent));
+
+        public event RoutedEventHandler ButtonPSO2TroubleshootingClicked
+        {
+            add => this.AddHandler(ButtonPSO2TroubleshootingClickedEvent, value);
+            remove => this.RemoveHandler(ButtonPSO2TroubleshootingClickedEvent, value);
+        }
+
+        private void MenuItemPSO2Troubleshooting_Click(object sender, RoutedEventArgs e)
+            => this.RaiseEvent(new RoutedEventArgs(ButtonPSO2TroubleshootingClickedEvent));
     }
 }

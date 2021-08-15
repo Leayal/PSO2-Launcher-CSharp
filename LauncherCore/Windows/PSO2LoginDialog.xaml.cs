@@ -29,6 +29,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private readonly PSO2HttpClient webclient;
         private readonly ConfigurationFile config;
+        private readonly CancellationTokenSource cancelsrc;
 
         public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient) : this(conf, webclient, null, false) { }
 
@@ -37,6 +38,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._loginToken = null;
             this.config = conf;
             this.webclient = webclient;
+            this.cancelsrc = new CancellationTokenSource();
+            this.cancelsrc.Token.Register(this.cancelsrc.Dispose);
+
             InitializeComponent();
 
             var defaultVal = conf.DefaultLoginPasswordRemember;
@@ -103,8 +107,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = false;
-            this.Close();
+            var anothertoken = this.cancelsrc.Token;
+            anothertoken.Register(() =>
+            {
+                this.DialogResult = false;
+                this.Close();
+            });
+            try
+            {
+                if (!this.cancelsrc.IsCancellationRequested)
+                {
+                    this.cancelsrc.Cancel();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Shouldn't be here
+            }
         }
 
         private async void ButtonLogin_Click(object sender, RoutedEventArgs e)
@@ -119,15 +138,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (id.Length == 0)
                         {
-                            await this.ShowMessageAsync("Notice", "Username field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
+                            this.ShowModalMessageExternal("Notice", "Username field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
                             return;
                         }
                         else if (pw.Length == 0)
                         {
-                            await this.ShowMessageAsync("Notice", "Password field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
+                            this.ShowModalMessageExternal("Notice", "Password field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
                             return;
                         }
-                        this._loginToken = await this.webclient.LoginPSO2Async(id, pw, CancellationToken.None);
+
+                        CancellationToken canceltoken;
+                        try
+                        {
+                            canceltoken = this.cancelsrc.Token;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            this.DialogResult = false;
+                            this.Close();
+                            return;
+                        }
+                        this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken);
                     }
                     this.DialogResult = true;
                     this.Close();

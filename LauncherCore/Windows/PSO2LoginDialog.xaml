@@ -38,8 +38,8 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Button HorizontalAlignment="Center" VerticalAlignment="Center" Content="Login" IsDefault="True" Click="ButtonLogin_Click" />
-            <Button Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Cancel" IsCancel="True" Click="ButtonCancel_Click" />
+            <Button HorizontalAlignment="Center" VerticalAlignment="Center" Content="Login" IsDefault="True" Command="{StaticResource PreventDefault}" Click="ButtonLogin_Click" />
+            <Button Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Content="Cancel" Command="{StaticResource PreventDefault}" IsCancel="True" Click="ButtonCancel_Click" />
         </Grid>
 
     </Grid>
