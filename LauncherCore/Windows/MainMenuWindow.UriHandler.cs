@@ -16,7 +16,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     App.Current.Shutdown();
                     System.Windows.Forms.Application.Restart();
                 }
-                else if (string.Equals(urlstr, StaticResources.Url_ConfirmSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.SelfUpdateNotification.Visibility = Visibility.Collapsed;
                 }

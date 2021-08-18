@@ -16,6 +16,7 @@
                     <localclasses:NumberToStringConverter x:Key="NumberToStringConverter" />
                     <localclasses:StringToNumberConverter x:Key="StringToNumberConverter" />
                     <localclasses:PreventDefaultCommand x:Key="PreventDefault" />
+                    <localclasses:InverseBooleanConverter x:Key="InverseBooleanConverter" />
                 </ResourceDictionary>
                 <!--<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.FlatButton.xaml" />-->
             </ResourceDictionary.MergedDictionaries>

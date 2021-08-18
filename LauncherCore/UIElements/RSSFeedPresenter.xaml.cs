@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -196,7 +197,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     {
                         if (link.NavigateUri != null)
                         {
-                            Process.Start("explorer.exe", @$"""{link.NavigateUri}""")?.Dispose();
+                            Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), @$"""{link.NavigateUri}""")?.Dispose();
                         }
                     }
                     catch

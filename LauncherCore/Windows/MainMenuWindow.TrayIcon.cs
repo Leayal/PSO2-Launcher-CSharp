@@ -144,8 +144,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 new ToolStripSeparator(),
                 typical_startGame,
                 typicalMenu,
-                new ToolStripSeparator(),
-                selfupdate_separator,
+                selfupdate_separator, // This is already a separator
                 performRestartToSelfUpdate,
                 new ToolStripSeparator(),
                 menuitem_exit,

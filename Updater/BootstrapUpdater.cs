@@ -360,7 +360,7 @@ namespace Leayal.PSO2Launcher.Updater
 
                 if (shouldReload)
                 {
-                    return false;
+                    return true;
                 }
 
                 return null;

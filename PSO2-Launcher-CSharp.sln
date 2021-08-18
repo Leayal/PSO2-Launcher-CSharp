@@ -27,7 +27,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherRSS", "LauncherRSS\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSUBlogRSSFeed", "PSUBlogRSSFeed\PSUBlogRSSFeed.csproj", "{460F03AC-D59E-450C-8D6C-8D174646358C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.PSO2Installer", "Leayal.PSO2Installer\Leayal.PSO2Installer.csproj", "{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.PSO2Installer", "Leayal.PSO2Installer\Leayal.PSO2Installer.csproj", "{A8F6D19D-8C29-42C1-AFF9-D417CC3AFF61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

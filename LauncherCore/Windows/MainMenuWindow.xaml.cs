@@ -290,11 +290,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (e.Uri.IsAbsoluteUri)
                     {
-                        Process.Start("explorer.exe", "\"" + e.Uri.AbsoluteUri + "\"")?.Dispose();
+                        Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "\"" + e.Uri.AbsoluteUri + "\"")?.Dispose();
                     }
                     else if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
                     {
-                        Process.Start("explorer.exe", "\"" + absUri.AbsoluteUri + "\"")?.Dispose();
+                        Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "\"" + absUri.AbsoluteUri + "\"")?.Dispose();
                     }
                 }
                 catch { }

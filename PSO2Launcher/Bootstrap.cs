@@ -125,6 +125,7 @@ namespace Leayal.PSO2Launcher
                                     else
                                     {
                                         Program.Reload();
+                                        return;
                                     }
                                 }
                             }
