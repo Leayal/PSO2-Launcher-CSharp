@@ -68,7 +68,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     await connection.ScheduleCloseAsync().ContinueWith(t =>
                     {
-                        _connectionPool.TryRemove(db.filepath, out connection);
+                        if (t.IsCompleted && !t.IsCanceled)
+                        {
+                            _connectionPool.TryRemove(db.filepath, out connection);
+                        }
                     });
                 }
             }
@@ -237,9 +240,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var state = Interlocked.CompareExchange(ref this.flag_state, 2, 1);
             if (state == 1)
             {
-                this.cancelSchedule = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                this.cancelSchedule = new CancellationTokenSource();
                 var token = this.cancelSchedule.Token;
-                await Task.Delay(TimeSpan.FromSeconds(30), token).ContinueWith(async t =>
+                await Task.Delay(TimeSpan.FromSeconds(10), token).ContinueWith(async t =>
                 {
                     if (!token.IsCancellationRequested && !t.IsCanceled)
                     {
@@ -250,7 +253,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     this.cancelSchedule?.Dispose();
                     this.cancelSchedule = null;
-                }).Unwrap();
+                }, token).Unwrap();
             }
         }
 

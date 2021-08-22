@@ -94,7 +94,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        protected bool RegistryDisposeObject(AsyncDisposeObject disposeObj)
+        protected bool RegisterDisposeObject(AsyncDisposeObject disposeObj)
         {
             lock (this._disposeThem)
             {

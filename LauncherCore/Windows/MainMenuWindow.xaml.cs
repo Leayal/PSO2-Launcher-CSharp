@@ -107,9 +107,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
 
-            this.RegistryDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
+            this.RegisterDisposeObject(AsyncDisposeObject.CreateFrom(FileCheckHashCache.ForceCloseAll));
+
+            this.RegisterDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
             {
-                await FileCheckHashCache.ForceCloseAll();
                 if (this.backgroundselfupdatechecker.IsValueCreated)
                 {
                     var checker = await this.backgroundselfupdatechecker.Value;
@@ -390,7 +391,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             if (oldUpdater == null)
                             {
                                 this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                                this.RegistryDisposeObject(this.pso2Updater);
+                                this.RegisterDisposeObject(this.pso2Updater);
                             }
                             else
                             {
@@ -399,7 +400,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
                                 {
                                     this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                                    this.RegistryDisposeObject(this.pso2Updater);
+                                    this.RegisterDisposeObject(this.pso2Updater);
                                     await oldUpdater.DisposeAsync();
                                 }
                             }
