@@ -4,7 +4,7 @@
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                   xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                  xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                  xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                   mc:Ignorable="d" Name="thisSelf"
                   Background="Transparent" Selector.Selected="MetroTabItem_SelectionChanged" Selector.Unselected="MetroTabItem_SelectionChanged"
                   d:DesignHeight="450" d:DesignWidth="800">
@@ -36,9 +36,21 @@
         <local:WeirdButton Grid.Row="1" Grid.Column="2" Content="Launcher Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonDropDownAble_Click">
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click" />
-                    <MenuItem Header="Manage launcher's behaviors" Click="ButtonManageGameLauncherBehavior_Click" />
-                    <MenuItem Header="Manage launcher's RSS Feeds" Click="ButtonManageGameLauncherRSSFeeds_Click" />
+                    <MenuItem Header="Manage PSO2 game data's location and downloader" Click="ButtonManageGameData_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="LaptopSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Manage launcher's behaviors" Click="ButtonManageGameLauncherBehavior_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="LaptopCodeSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Manage launcher's RSS Feeds" Click="ButtonManageGameLauncherRSSFeeds_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="RssSquareSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
@@ -47,12 +59,23 @@
             <local:WeirdButton.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Scan and download missing, modified or damaged game files">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="BriefcaseMedicalSolid" />
+                        </MenuItem.Icon>
                         <MenuItem Header="Scan according to your launcher settings" Click="ButtonScanFixGameData_Click" />
                         <MenuItem Header="Scan for NGS files only" Click="ButtonScanFixGameData_NGSOnly_Click" />
                         <MenuItem Header="Scan for Classic files only" Click="ButtonScanFixGameData_ClassicOnly_Click" />
                     </MenuItem>
-                    <MenuItem Header="PSO2 Game Client Troubleshooting" Click="MenuItemPSO2Troubleshooting_Click" />
-                    <MenuItem Visibility="Collapsed" Header="Install PSO2" Click="MenuItemInstallPSO2_Click" />
+                    <MenuItem Header="PSO2 Game Client Troubleshooting" Click="MenuItemPSO2Troubleshooting_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="AmbulanceSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Deploy New PSO2 Installation" Click="MenuItemInstallPSO2_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="HammerSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>

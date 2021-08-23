@@ -4,6 +4,7 @@ using Leayal.PSO2Launcher.Core.UIElements;
 using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,7 +33,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
-            var gameSelection_list = EnumToDictionary<GameClientSelection>();
+            var gameSelection_list = EnumComboBox.EnumToDictionary<GameClientSelection>();
             this.combobox_downloadselection.ItemsSource = gameSelection_list.Values;
             var selectedDownload = this._config.DownloadSelection;
             if (gameSelection_list.TryGetValue(selectedDownload, out var item_gameSelection))
@@ -44,7 +45,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.combobox_downloadselection.SelectedItem = gameSelection_list[GameClientSelection.NGS_Prologue_Only];
             }
 
-            var downloaderPreset_list = EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy, FileScanFlags.CacheOnly });
+            var downloaderPreset_list = EnumComboBox.EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy, FileScanFlags.CacheOnly });
             this.combobox_downloadpreset.ItemsSource = downloaderPreset_list.Values;
             var selectedPreset = this._config.DownloaderProfile;
             if (downloaderPreset_list.TryGetValue(selectedPreset, out var item_selectedPreset))
@@ -152,53 +153,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     dialog.SelectedPath = str;
                 }
-                if (dialog.ShowDialog(new WhyDidYouDoThis(this)) == System.Windows.Forms.DialogResult.OK)
+                if (dialog.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
                 {
                     this.textbox_pso2_bin.Text = dialog.SelectedPath;
                 }
             }
-        }
-
-        readonly struct WhyDidYouDoThis : IWin32Window
-        {
-            public WhyDidYouDoThis(Window window)
-            {
-                var helper = new System.Windows.Interop.WindowInteropHelper(window);
-                this.Handle = helper.Handle;
-            }
-
-            public IntPtr Handle { get; }
-        }
-
-
-        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
-        {
-            var _enum = Enum.GetNames<T>();
-            return EnumToDictionary<T>(_enum);
-        }
-
-        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>(T[] values) where T : struct, Enum
-        {
-            var strs = new string[values.Length];
-            for (int i = 0; i < values.Length; i++)
-            {
-                strs[i] = values[i].ToString();
-            }
-            return EnumToDictionary<T>(strs);
-        }
-
-        private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>(params string[] names) where T : struct, Enum
-        {
-            var _list = new Dictionary<T, EnumComboBox.ValueDOM<T>>(names.Length);
-            for (int i = 0; i < names.Length; i++)
-            {
-                var member = Enum.Parse<T>(names[i]);
-                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(member, out var isVisible) || isVisible)
-                {
-                    _list.Add(member, new EnumComboBox.ValueDOM<T>(member));
-                }
-            }
-            return _list;
         }
 
         private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)

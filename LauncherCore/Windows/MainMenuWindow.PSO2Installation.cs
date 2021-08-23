@@ -12,9 +12,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private void ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
         {
-            var hasDx11 = Requirements.HasDirectX11();
-            var hasVC14_x86 = Requirements.GetVC14RedistVersion(false);
-            var hasVC14_x64 = Requirements.GetVC14RedistVersion(true);
+            var dialog = new PSO2DeploymentWindow();
+            dialog.Owner = this;
+            if (dialog.ShowDialog() == true)
+            {
+
+            }
+            // var hasDx11 = Requirements.HasDirectX11();
+            // var hasVC14_x86 = Requirements.GetVC14RedistVersion(false);
+            // var hasVC14_x64 = Requirements.GetVC14RedistVersion(true);
         }
     }
 }

@@ -1,0 +1,139 @@
+﻿<local:MetroWindowEx x:Class="Leayal.PSO2Launcher.Core.Windows.PSO2DeploymentWindow"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                     mc:Ignorable="d" TitleCharacterCasing="Normal" ShowTitleBar="False" ResizeMode="NoResize" x:Name="thisSelf" WindowStartupLocation="CenterOwner"
+        Title="PSO2 JP Client Deployment" Height="450" Width="800">
+    <Grid Margin="1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="{Binding ElementName=thisSelf,Mode=OneWay,Path=WindowCommandButtonsHeight}" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.ColumnSpan="2" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=Title}" TextAlignment="Center" IsHitTestVisible="False" FontSize="20" />
+
+        <mah:MetroAnimatedTabControl Grid.Row="1" Grid.ColumnSpan="2" x:Name="TabControl" TabPanelVisibility="Collapsed">
+            <mah:MetroTabItem IsSelected="True" x:Name="TabOpening">
+                <TextBlock TextWrapping="WrapWithOverflow">
+                    Before starting, please note that "Deployment" is not necessarily be the same as "installation". This "Deployment" will not create any uninstallers (or "uninstallation programs").
+                    <LineBreak />
+                    <LineBreak />
+                    To delete the deployed PSO2 client, you can just delete the game's directory and everything within. That's all you need to do to remove the game client.
+                    <LineBreak />
+                    <LineBreak />
+                    If you continue, this means you've agreed that you understand the note above.
+                </TextBlock>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="TabConfiguration" Selector.Selected="TabConfiguration_Selected">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Deployment directory: " VerticalAlignment="Center" TextAlignment="Right" />
+                    <TextBox Grid.Column="1" x:Name="TextBox_DeploymentDestination" TextChanged="TextBox_DeploymentDestination_TextChanged" />
+                    <Button Grid.Column="2" Content="Browse..." Click="ButtonDeploymentDestinationBrowse_Click" />
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="Clarification Details" TextAlignment="Center" FontSize="16" />
+
+                    <ScrollViewer CanContentScroll="True" IsDeferredScrollingEnabled="False" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="PSO2 game client deployment path: " TextAlignment="Right" />
+                            <TextBlock Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2DeploymentDirectory}" />
+
+                            <TextBlock Grid.Row="1" Text="PSO2 game client's 'pso2_bin' directory path: " TextAlignment="Right" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2BinDirectory}" />
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="TabConfigureDeployment" Selector.Selected="TabConfigureDeployment_Selected">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="PSO2 Download Type: " TextAlignment="Right" VerticalAlignment="Center" />
+                    <localui:EnumComboBox Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloadselection" SelectionChanged="ComboBox_downloadselection_SelectionChanged" />
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="TabOverviewsBeforeDeploy" Selector.Selected="TabOverviewsBeforeDeploy_Selected">
+                <ScrollViewer CanContentScroll="True" IsDeferredScrollingEnabled="False" Grid.Row="2" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Auto">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.ColumnSpan="2" Text="Overview details" TextAlignment="Center" FontSize="16" />
+                        
+                        <TextBlock Grid.Row="1" Text="PSO2 game client deployment path: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2DeploymentDirectory}" />
+
+                        <TextBlock Grid.Row="2" Text="PSO2 game client's 'pso2_bin' directory path: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2BinDirectory}" />
+
+                        <TextBlock Grid.Row="3" Text="PSO2 game client's download type: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=GameClientDownloadSelectionText}" />
+                    </Grid>
+                </ScrollViewer>
+            </mah:MetroTabItem>
+        </mah:MetroAnimatedTabControl>
+
+        <Button Grid.Column="0" Grid.Row="2" Style="{StaticResource MahApps.Styles.Button.Circle}" Width="40" Height="40" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabOpening,Mode=OneWay,Path=IsSelected}"
+                Click="ButtonBack_Click">
+            <iconPacks:PackIconFontAwesome Kind="AngleDoubleLeftSolid" />
+        </Button>
+        <Button Grid.Column="1" Grid.Row="2" Width="40" Height="40"
+                IsEnabled="{Binding ElementName=thisSelf,Mode=OneWay,Path=CanGoNext}"
+                Click="ButtonNext_Click">
+            <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Circle}">
+                    <Setter Property="Content">
+                        <Setter.Value>
+                            <iconPacks:PackIconFontAwesome Kind="AngleDoubleRightSolid" />
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsAtFinalStep,Mode=OneWay}" Value="True">
+                            <Setter Property="Content">
+                                <Setter.Value>
+                                    <iconPacks:PackIconFontAwesome Kind="CheckSolid" />
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+    </Grid>
+</local:MetroWindowEx>

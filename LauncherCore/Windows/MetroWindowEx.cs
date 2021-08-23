@@ -13,7 +13,7 @@ using System.Windows.Data;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
-    public class MetroWindowEx : MetroWindow
+    public class MetroWindowEx : MetroWindow, System.Windows.Interop.IWin32Window, System.Windows.Forms.IWin32Window
     {
         private static readonly DependencyPropertyKey IsMaximizedPropertyKey = DependencyProperty.RegisterReadOnly("IsMaximized", typeof(bool), typeof(MetroWindowEx), new UIPropertyMetadata(false));
         public static readonly DependencyProperty IsMaximizedProperty = IsMaximizedPropertyKey.DependencyProperty;
@@ -32,6 +32,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public double WindowCommandButtonsWidth => (double)this.GetValue(WindowCommandButtonsWidthProperty);
 
         public double WindowCommandButtonsHeight => (double)this.GetValue(WindowCommandButtonsHeightProperty);
+
+        public IntPtr Handle => this.CriticalHandle;
 
         public MetroWindowEx() : base() 
         {

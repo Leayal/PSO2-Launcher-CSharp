@@ -150,7 +150,7 @@ namespace Leayal.PSO2.UserConfig
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException(nameof(path));
 
             var found = this;
-            foreach (var name in Shared.PathWalker.Walk(path))
+            foreach (var name in Shared.PathHelper.Walk(path))
             {
                 if (found.TryGetProperty(name, out var val))
                 {

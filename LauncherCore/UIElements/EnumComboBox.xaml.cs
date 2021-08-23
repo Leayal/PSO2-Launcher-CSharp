@@ -59,5 +59,35 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 this.Value = value;
             }
         }
+
+        public static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
+        {
+            var _enum = Enum.GetNames<T>();
+            return EnumToDictionary<T>(_enum);
+        }
+
+        public static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>(T[] values) where T : struct, Enum
+        {
+            var strs = new string[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                strs[i] = values[i].ToString();
+            }
+            return EnumToDictionary<T>(strs);
+        }
+
+        public static Dictionary<T, ValueDOM<T>> EnumToDictionary<T>(params string[] names) where T : struct, Enum
+        {
+            var _list = new Dictionary<T, ValueDOM<T>>(names.Length);
+            for (int i = 0; i < names.Length; i++)
+            {
+                var member = Enum.Parse<T>(names[i]);
+                if (!EnumVisibleInOptionAttribute.TryGetIsVisible(member, out var isVisible) || isVisible)
+                {
+                    _list.Add(member, new ValueDOM<T>(member));
+                }
+            }
+            return _list;
+        }
     }
 }
