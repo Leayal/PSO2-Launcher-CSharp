@@ -5,7 +5,9 @@
 - All functions related to update PSO2 JP client.
   - Check for PSO2 Updates.
   - Perform game client update with some customizable settings (see the UI previews below).
-- ~~Installing PSO2 JP client.~~ (This is planned)
+- ~~Installing~~ Deploying PSO2 JP client:
+  - This is actually a little different from an installation. There will be no uninstaller created.
+  - To remove the deployed game client, you just need to delete the game's directory. That's pretty much all you need to do.
 - Launch PSO2 JP game (traditional method and new method supported):
   - Traditional method: launch game without asking for login info. Then player will login in-game.
     - This is the old way to launch PSO2 game before NGS release.
@@ -40,3 +42,8 @@
 | Dialog: RSS Feeds Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-light.png) |
 | Dialog: PSO2 Configuration | ![Dark theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-light.png) |
 | Dialog: PSO2 Configuration (Advanced) | ![Dark theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-light.png) |
+
+# Development
+As of writing this `README.md`, I am using: `Visual Studio 2019` (stable channel) with `.NET cross-platform development` bundle. Specifically, the launcher was written with `C# 8.0` of `.NET5` and `.NET Standard 2.0`.
+- Any IDEs supporting `.NET5 SDK` and `.NET Standard` development should be usable to develop this launcher.
+
