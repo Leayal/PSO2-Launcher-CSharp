@@ -18,8 +18,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for ExtendedProgressBar.xaml
     /// </summary>
-    public partial class ExtendedProgressBar : UserControl
+    public class ExtendedProgressBar : Grid
     {
+        private readonly static SolidColorBrush textbg;
+
+        static ExtendedProgressBar()
+        {
+            textbg = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
+            textbg.Freeze();
+        }
+
         private static readonly DependencyProperty TextProperty = DependencyProperty.Register("Text", typeof(string), typeof(ExtendedProgressBar), new UIPropertyMetadata(string.Empty, (sender, value) =>
         {
             if (sender is ExtendedProgressBar epb)
@@ -34,11 +42,42 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             set => this.SetValue(TextProperty, value);
         }
 
-        public bool ShowDetailedProgressPercentage { get; set; }
-
-        public ExtendedProgressBar()
+        private bool _showDetailedProgressPercentage;
+        public bool ShowDetailedProgressPercentage
         {
-            InitializeComponent();
+            get => this._showDetailedProgressPercentage;
+            set
+            {
+                if (this._showDetailedProgressPercentage != value)
+                {
+                    this._showDetailedProgressPercentage = value;
+                    this.RedrawProgressString(this.progressbar.Value);
+                }
+            }
+        }
+
+        public bool ShowProgressText
+        {
+            get => (this.progresstext.Visibility == Visibility.Visible);
+            set => this.progresstext.Visibility = (value ? Visibility.Visible : Visibility.Collapsed);
+        }
+
+        private readonly GradientProgressBar progressbar;
+        private readonly TextBlock progresstext;
+
+        public ExtendedProgressBar() : base()
+        {
+            /*
+            <local:GradientProgressBar x:Name="progressbar" />
+    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Background="#7FFFFFFF" Foreground="Black" x:Name="progresstext" />
+            */
+            this.progresstext = new TextBlock() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Background = textbg, Foreground = Brushes.Black };
+            this.progressbar = new GradientProgressBar();
+            this.ShowProgressText = true;
+
+            this.Children.Add(this.progressbar);
+            this.Children.Add(this.progresstext);
+
             this.ShowDetailedProgressPercentage = false;
             this.progressbar.ValueChanged += this.GradientProgressBar_ValueChanged;
         }

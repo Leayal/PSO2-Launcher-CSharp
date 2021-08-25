@@ -195,6 +195,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PatchListMemory> GetPatchListNGSFullAsync(CancellationToken cancellationToken)
             => this.GetPatchListNGSFullAsync(null, cancellationToken);
 
+        public Task<PatchListMemory> GetLauncherListAsync(CancellationToken cancellationToken)
+            => this.GetLauncherListAsync(null, cancellationToken);
+
         public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
             var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
@@ -211,16 +214,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         public Task<PatchListMemory> GetPatchListAlwaysAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_always.txt", null, cancellationToken);
+            => this.InnerGetPatchListAsync(rootInfo, "patchlist_always.txt", null, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListClassicAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_classic.txt", false, cancellationToken);
+            => this.InnerGetPatchListAsync(rootInfo, "patchlist_classic.txt", false, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListNGSPrologueAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_prologue.txt", true, cancellationToken);
+            => this.InnerGetPatchListAsync(rootInfo, "patchlist_prologue.txt", true, cancellationToken);
 
         public Task<PatchListMemory> GetPatchListNGSFullAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
-            => InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken);
+            => this.InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken);
+
+        public Task<PatchListMemory> GetLauncherListAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+            => this.InnerGetPatchListAsync(rootInfo, "launcherlist.txt", null, cancellationToken);
         #endregion
 
         #region | Advanced public APIs |

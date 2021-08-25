@@ -35,11 +35,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public IntPtr Handle => this.CriticalHandle;
 
+        public bool? CustomDialogResult { get; set; }
+
         public MetroWindowEx() : base() 
         {
+            this.CustomDialogResult = null;
             this.flag_disposing = 0;
             this.flag_firstshown = 0;
             this._disposeThem = new List<AsyncDisposeObject>();
+        }
+
+        public bool? ShowCustomDialog(Window window)
+        {
+            this.Owner = window;
+            this.ShowDialog();
+            return this.CustomDialogResult;
         }
 
         protected override void OnStateChanged(EventArgs e)
@@ -141,11 +151,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (Interlocked.CompareExchange(ref this.flag_disposing, 2, 1) == 1)
                         {
-                            Task.Factory.StartNew(this.DisposeAsyncStuffs, TaskCreationOptions.LongRunning).Unwrap().ContinueWith(t =>
+                            Task.Factory.StartNew(this.DisposeAsyncStuffs, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously).Unwrap().ContinueWith(t =>
                             {
                                 if (Interlocked.CompareExchange(ref this.flag_disposing, 3, 2) == 2)
                                 {
-                                    this.Dispatcher.BeginInvoke(new Action(this.Close), null);
+                                    this.Dispatcher.InvokeAsync(this.Close);
                                 }
                             });
                         }

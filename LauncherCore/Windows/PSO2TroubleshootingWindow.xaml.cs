@@ -10,6 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using Leayal.PSO2.Installer;
 using Leayal.PSO2Launcher.Core.Classes;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -139,12 +140,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var vc14_x64 = await Task.Run(() => Requirements.GetVC14RedistVersion(true));
             var vc14_x86 = await Task.Run(() => Requirements.GetVC14RedistVersion(false));
 
-            var list = new List<Paragraph>(4);
+            var list = GetRtfOfRequirements(hasDirectX, vc14_x64, vc14_x86, true, false);
+
+            this.ResultBox.Document.Blocks.Clear();
+            this.ResultBox.Document.Blocks.AddRange(list);
+
+            this.SetValue(IsInResultPropertyKey, true);
+        }
+
+        public static List<Paragraph> GetRtfOfRequirements(bool hasDirectX, VCRedistVersion vc14_x64, VCRedistVersion vc14_x86, bool show_advice_lastline, bool isInInstallation)
+        {
+            var list = new List<Paragraph>(show_advice_lastline ? 4 : 3);
             bool isOkay = true;
 
             Hyperlink link;
 
-            var paragraph = new Paragraph(new Bold(new Run("> DirectX11 (From DirectX Runtime Redistribution June 2010):")));
+            var paragraph = new Paragraph(new Bold(new Run("> DirectX11 (From DirectX Runtime Redistribution June 2010): ")));
             if (!hasDirectX)
             {
                 // https://www.microsoft.com/en-us/download/details.aspx?id=8109
@@ -160,13 +171,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             list.Add(paragraph);
 
-            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x64):")));
+            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x64): ")));
             switch (vc14_x64)
             {
                 case VCRedistVersion.None:
                     isOkay = false;
                     paragraph.Inlines.Add(new Run("Not Installed") { Foreground = Brushes.Red });
-                    link = new Hyperlink(new Run("(Download VC2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
+                    link = new Hyperlink(new Run("(Download VC++ 2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     break;
@@ -175,21 +186,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     break;
                 default:
                     isOkay = false;
-                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x64.ToString()} Installed") { Foreground = Brushes.Yellow });
-                    link = new Hyperlink(new Run("(Recommended to update to VC2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
+                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x64.ToString().Substring(2)} Installed") { Foreground = Brushes.Yellow });
+                    link = new Hyperlink(new Run("(Recommended to update to VC++ 2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     break;
             }
             list.Add(paragraph);
 
-            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x86):")));
+            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x86): ")));
             switch (vc14_x86)
             {
                 case VCRedistVersion.None:
                     isOkay = false;
                     paragraph.Inlines.Add(new Run("Not Installed") { Foreground = Brushes.Red });
-                    link = new Hyperlink(new Run("(Download VC2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x86.exe") };
+                    link = new Hyperlink(new Run("(Download VC++ 2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x86.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     break;
@@ -198,7 +209,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     break;
                 default:
                     isOkay = false;
-                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x86.ToString()} Installed") { Foreground = Brushes.Yellow });
+                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x86.ToString().Substring(2)} Installed") { Foreground = Brushes.Yellow });
                     link = new Hyperlink(new Run("(Recommended to update to VC2019 from Microsoft)")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x86.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
@@ -206,19 +217,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             list.Add(paragraph);
 
-            if (isOkay)
+            if (show_advice_lastline)
             {
-                list.Add(new Paragraph(new Run("All requirements for the game appears to be installed. I recommend you to scan for missing or damaged files to see whether all files are okay.")));
-            }
-            else
-            {
-                list.Add(new Paragraph(new Run("Some requirements for the game appears to be missing or not up-to-date. I recommend you to install latest version. You can click on the link(s) above to download from Microsoft's server.")));
+                if (isInInstallation)
+                {
+                    if (isOkay)
+                    {
+                        list.Add(new Paragraph(new Run("All requirements for the game appears to be installed and up-to-date. You can start the game without having to install anything else.")));
+                    }
+                    else
+                    {
+                        list.Add(new Paragraph(new Run("Some requirements for the game appears to be missing or not up-to-date. I recommend you to install latest version of the required softwares as the game may not be working correctly without them. You can click on the link(s) above to download from Microsoft's server.")));
+                    }
+                }
+                else
+                {
+                    if (isOkay)
+                    {
+                        list.Add(new Paragraph(new Run("All requirements for the game appears to be installed. I recommend you to scan for missing or damaged files to see whether all files are okay.")));
+                    }
+                    else
+                    {
+                        list.Add(new Paragraph(new Run("Some requirements for the game appears to be missing or not up-to-date. I recommend you to install latest version. You can click on the link(s) above to download from Microsoft's server.")));
+                    }
+                }
             }
 
-            this.ResultBox.Document.Blocks.Clear();
-            this.ResultBox.Document.Blocks.AddRange(list);
-
-            this.SetValue(IsInResultPropertyKey, true);
+            return list;
         }
 
         private static void Hyperlink_Clicked(object sender, RoutedEventArgs e)
@@ -234,7 +259,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             try
                             {
-                                Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "\"" + url.AbsoluteUri + "\"")?.Dispose();
+                                WindowsExplorerHelper.OpenUrlWithDefaultBrowser(url.AbsoluteUri);
                             }
                             catch
                             {

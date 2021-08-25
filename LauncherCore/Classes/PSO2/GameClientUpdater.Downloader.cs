@@ -41,6 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 // Check whether the launcher has the access right or able to create file at the destination
                 bool isSuccess = false;
 
+                Directory.CreateDirectory(Path.GetDirectoryName(localFilePath));
                 var localStream = File.Create(tmpFilePath); // Sync it is
                 try
                 {

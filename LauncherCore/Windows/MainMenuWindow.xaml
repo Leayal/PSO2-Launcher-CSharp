@@ -109,7 +109,7 @@
         <Border Grid.Row="3" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" BorderThickness="1" Background="#33FFFFFF" x:Name="SelfUpdateNotification" Visibility="Collapsed">
             <TextBlock TextAlignment="Center" Padding="3" Background="{x:Null}">
                 <Run Background="{x:Null}">A launcher update has been found.</Run>
-                <Hyperlink NavigateUri="pso2lealauncher://selfupdatechecker/confirm" Click="SelfUpdateNotificationHyperlink_Click">
+                <localui:CommandHyperlink NavigateUri="pso2lealauncher://selfupdatechecker/confirm">
                     <Hyperlink.Style>
                         <Style TargetType="Hyperlink" BasedOn="{StaticResource MahApps.Styles.Hyperlink}">
                             <Setter Property="Background" Value="{x:Null}" />
@@ -121,9 +121,9 @@
                         </Style>
                     </Hyperlink.Style>
                     Click here to restart and update
-                </Hyperlink>
+                </localui:CommandHyperlink>
                 <Run Background="{x:Null}">or</Run>
-                <Hyperlink NavigateUri="pso2lealauncher://selfupdatechecker/ignore" Click="SelfUpdateNotificationHyperlink_Click">
+                <localui:CommandHyperlink NavigateUri="pso2lealauncher://selfupdatechecker/ignore">
                     <Hyperlink.Style>
                         <Style TargetType="Hyperlink" BasedOn="{StaticResource MahApps.Styles.Hyperlink}">
                             <Setter Property="Background" Value="{x:Null}" />
@@ -135,7 +135,7 @@
                         </Style>
                     </Hyperlink.Style>
                     Click here to ignore and hide this notification
-                </Hyperlink>
+                </localui:CommandHyperlink>
             </TextBlock>
         </Border>
     </Grid>

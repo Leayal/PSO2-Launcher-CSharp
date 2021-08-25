@@ -1,4 +1,5 @@
-﻿using MahApps.Metro.Controls;
+﻿using Leayal.PSO2Launcher.Core.Classes;
+using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -56,6 +57,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             remove { this.RemoveHandler(UpdateCancelClickedEvent, value); }
         }
 
+        private readonly DebounceDispatcher debounceDispatcher1, debounceDispatcher2;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
         private int downloadedCount, totalDownloadCount;
 
@@ -64,6 +66,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.downloadedCount = 0;
             this.totalDownloadCount = 0;
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
+            this.debounceDispatcher1 = new DebounceDispatcher(this.Dispatcher);
+            this.debounceDispatcher2 = new DebounceDispatcher(this.Dispatcher);
             InitializeComponent();
             this.TopProgressBar.ShowDetailedProgressPercentage = true;
             this.DownloadFileTable.ItemsSource = this.indexing;
@@ -72,14 +76,20 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public int IncreaseDownloadedCount()
         {
             var num = Interlocked.Increment(ref this.downloadedCount);
-            this.SetValue(TotalDownloadedPropertyKey, num);
+            this.debounceDispatcher1.ThrottleEx(10, delegate
+            {
+                this.SetValue(TotalDownloadedPropertyKey, num);
+            }, System.Windows.Threading.DispatcherPriority.Render);
             return num;
         }
 
         public void IncreaseNeedToDownloadCount()
         {
             var num = Interlocked.Increment(ref this.totalDownloadCount);
-            this.SetValue(TotalFileNeedToDownloadPropertyKey, num);
+            this.debounceDispatcher2.ThrottleEx(10, delegate
+            {
+                this.SetValue(TotalFileNeedToDownloadPropertyKey, num);
+            }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
         public void ResetDownloadCount()
@@ -107,8 +117,32 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
 
         public void SetProgressText(int index, string text) => this.indexing[index].Text = text;
+        public void SetProgressTextVisible(int index, bool value) => this.indexing[index].ShowProgressText = value;
         public void SetProgressValue(int index, in double value) => this.indexing[index].ProgressBar.Value = value;
         public void SetProgressMaximum(int index, in double value) => this.indexing[index].ProgressBar.Maximum = value;
+
+        private void ThisSelf_Unselected(object sender, RoutedEventArgs e)
+        {
+            this.debounceDispatcher1.Stop();
+            this.debounceDispatcher2.Stop();
+        }
+
+        private void ThisSelf_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is bool b)
+            {
+                if (!b)
+                {
+                    this.debounceDispatcher1.Stop();
+                    this.debounceDispatcher2.Stop();
+                }
+            }
+            else
+            {
+                this.debounceDispatcher1.Stop();
+                this.debounceDispatcher2.Stop();
+            }
+        }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e) => this.RaiseEvent(new RoutedEventArgs(UpdateCancelClickedEvent));
     }

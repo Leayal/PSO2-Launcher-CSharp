@@ -157,7 +157,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (sender is ToolStripMenuItem menuitem && menuitem.Tag is Uri uri && uri.IsAbsoluteUri)
             {
-                this.ExecuteCommandUrl(uri);
+                App.Current.ExecuteCommandUrl(uri);
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Helper;
+using Leayal.Shared;
 using SymbolicLinkSupport;
 using System;
 using System.Collections.Concurrent;
@@ -28,24 +29,31 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 fileCheckThrottleFactor = 0;
             }
 
+            static void AddToPatchListTasks(Task<PatchListMemory> t, System.Collections.Generic.List<Task<PatchListMemory>> list)
+            {
+                if (t.Status == TaskStatus.Created)
+                {
+                    t.Start();
+                }
+                list.Add(t);
+            }
+
             // Acquire patch list.
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             bool bakExist_classic = false;
             bool bakExist_reboot = false;
-            Task<PatchListMemory> t_addition = null, t_fulllist;
+            var tasksOfLists = new System.Collections.Generic.List<Task<PatchListMemory>>(4);
             BackupFileFoundEventArgs e_onBackup = null;
 
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
-                    t_fulllist = this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken);
-                    if (t_fulllist.Status == TaskStatus.Created)
-                    {
-                        t_fulllist.Start();
-                    }
-                    bakExist_classic = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
-                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    AddToPatchListTasks(this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+
+                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot || bakExist_classic)
                     {
                         e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, bakExist_classic);
@@ -54,12 +62,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.NGS_Prologue_Only:
-                    t_fulllist = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
-                    if (t_fulllist.Status == TaskStatus.Created)
-                    {
-                        t_fulllist.Start();
-                    }
-                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
                         e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
@@ -68,12 +74,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.Classic_Only:
-                    t_fulllist = this.webclient.GetPatchListClassicAsync(patchInfoRoot, cancellationToken);
-                    if (t_fulllist.Status == TaskStatus.Created)
-                    {
-                        t_fulllist.Start();
-                    }
-                    bakExist_classic = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
+                    AddToPatchListTasks(this.webclient.GetPatchListClassicAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
                     if (bakExist_classic)
                     {
                         e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, false, bakExist_classic);
@@ -82,26 +85,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.Always_Only:
-                    t_fulllist = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
-                    if (t_fulllist.Status == TaskStatus.Created)
-                    {
-                        t_fulllist.Start();
-                    }
+                    AddToPatchListTasks(this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     break;
 
                 case GameClientSelection.NGS_Only:
-                    // Download both files at the same time.
-                    t_addition = this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken);
-                    if (t_addition.Status == TaskStatus.Created)
-                    {
-                        t_addition.Start();
-                    }
-                    t_fulllist = this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken);
-                    if (t_fulllist.Status == TaskStatus.Created)
-                    {
-                        t_fulllist.Start();
-                    }
-                    bakExist_reboot = IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    // Download 3 files at the same time.
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
                         e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
@@ -191,16 +183,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
 
-            PatchListBase headacheMatterAgain;
-            if (t_addition == null)
+            await Task.WhenAll(tasksOfLists);
+            var arr_PatchListBase = new PatchListBase[tasksOfLists.Count];
+            for (int i = 0; i < arr_PatchListBase.Length; i++)
             {
-                headacheMatterAgain = await t_fulllist;
+                arr_PatchListBase[i] = await tasksOfLists[i];
             }
-            else
-            {
-                await Task.WhenAll(t_addition, t_fulllist);
-                headacheMatterAgain = PatchListBase.Create(await t_addition, await t_fulllist);
-            }
+            var headacheMatterAgain = PatchListBase.Create(arr_PatchListBase);
 
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {

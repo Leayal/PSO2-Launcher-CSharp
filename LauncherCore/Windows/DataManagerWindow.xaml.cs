@@ -115,7 +115,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            this._config.PSO2_BIN = this.textbox_pso2_bin.Text;
+            var pso2bin = this.textbox_pso2_bin.Text;
+            if (!string.IsNullOrWhiteSpace(pso2bin) && !Shared.PathHelper.IsValid(pso2bin))
+            {
+                System.Windows.MessageBox.Show(this, "The 'pso2_bin' path is invalid.", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return;
+            }
+            this._config.PSO2_BIN = pso2bin;
             this._config.DownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
             this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
             this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
@@ -129,13 +135,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this._config.Save();
             this.DialogResult = true;
-            SystemCommands.CloseWindow(this);
+            // SystemCommands.CloseWindow(this);
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
-            SystemCommands.CloseWindow(this);
+            // SystemCommands.CloseWindow(this);
         }
 
         private void ButtonBrowsePSO2Bin_Click(object sender, RoutedEventArgs e)

@@ -8,6 +8,8 @@ using ControlzEx.Theming;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
+using System.Diagnostics;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -101,6 +103,53 @@ namespace Leayal.PSO2Launcher.Core
                 MessageBox.Show(str, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             e.Handled = true;
+        }
+
+        public void ExecuteCommandUrl(Uri url)
+        {
+            if (url != null && url.IsAbsoluteUri)
+            {
+                var urlstr = url.AbsoluteUri;
+                if (string.Equals(urlstr, StaticResources.Url_ConfirmSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    this.Dispatcher.InvokeAsync(delegate
+                    {
+                        this.MainWindow?.Close();
+                        this.Shutdown();
+                        System.Windows.Forms.Application.Restart();
+                    });
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    this.Dispatcher.InvokeAsync(delegate
+                    {
+                        if (this.MainWindow is Windows.MainMenuWindow window)
+                        {
+                            window.SelfUpdateNotification.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_ShowPathInExplorer_SpecialFolder_JP_PSO2Config.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        var directory = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                        var filepath = Path.Combine(directory, "user.pso2");
+                        try
+                        {
+                            if (File.Exists(filepath))
+                            {
+                                WindowsExplorerHelper.SelectPathInExplorer(filepath);
+                            }
+                            else if (Directory.Exists(directory))
+                            {
+                                WindowsExplorerHelper.ShowPathInExplorer(directory);
+                            }
+                        }
+                        catch { }
+                    });
+                }
+            }
         }
 
         private void Application_Exit(object sender, ExitEventArgs e)

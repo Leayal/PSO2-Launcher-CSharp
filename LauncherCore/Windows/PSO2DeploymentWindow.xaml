@@ -4,14 +4,13 @@
                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks" xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+                     xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+                     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                     xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                      mc:Ignorable="d" TitleCharacterCasing="Normal" ShowTitleBar="False" ResizeMode="NoResize" x:Name="thisSelf" WindowStartupLocation="CenterOwner"
         Title="PSO2 JP Client Deployment" Height="450" Width="800">
     <Grid Margin="1">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="{Binding ElementName=thisSelf,Mode=OneWay,Path=WindowCommandButtonsHeight}" />
             <RowDefinition />
@@ -25,10 +24,18 @@
                     Before starting, please note that "Deployment" is not necessarily be the same as "installation". This "Deployment" will not create any uninstallers (or "uninstallation programs").
                     <LineBreak />
                     <LineBreak />
-                    To delete the deployed PSO2 client, you can just delete the game's directory and everything within. That's all you need to do to remove the game client.
+                    - To delete the deployed PSO2 client, you can just delete the game's directory and everything within. That's all you need to do to remove the game client.
+                    <LineBreak />
+                    - This deployment will only download the official game launcher and check for the game's prerequisites (softwares that must be installed in order to run the game). 
+                    You will need to download the required game's data files separately from this deployment progress.
+                    <LineBreak />
+                    - You can download the game's data files by using this launcher or the official game launcher afterward if the deployment is successful.
+                    <TextBlock mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneTime,Path=PSO2ConfigExist}" TextWrapping="Wrap">
+                        - You shouldn't deploy multiple instances. All PSO2 JP instances are using the same configuration file in <localui:CommandHyperlink NavigateUri="pso2lealauncher://showpathinexplorer/specialfolder/jp/pso2config">My documents</localui:CommandHyperlink>. Thus, multiple JP deployments may overwrite each other's game configuration.
+                    </TextBlock>
                     <LineBreak />
                     <LineBreak />
-                    If you continue, this means you've agreed that you understand the note above.
+                    If you continue, this means you've agreed that you understand the notes above.
                 </TextBlock>
             </mah:MetroTabItem>
             <mah:MetroTabItem x:Name="TabConfiguration" Selector.Selected="TabConfiguration_Selected">
@@ -107,33 +114,100 @@
                     </Grid>
                 </ScrollViewer>
             </mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="TabDeployProgress">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Deploying PSO2 client" TextAlignment="Center" FontSize="16" />
+                    <TextBlock Grid.Row="1" Text="Total progress:" />
+                    <localui:ExtendedProgressBar Grid.Row="2" x:Name="ProgressBar_DeployProgressFirst" ShowDetailedProgressPercentage="True" />
+                    <TextBlock Grid.Row="3" Text="Current progress:" />
+                    <localui:ExtendedProgressBar Grid.Row="4" x:Name="ProgressBar_DeployProgressSecondary" ShowDetailedProgressPercentage="True" />
+                    <avalon:TextEditor Grid.Row="5" IsReadOnly="True" ShowLineNumbers="False" Foreground="{DynamicResource MahApps.Brushes.IdealForeground}" Background="{DynamicResource MahApps.Brushes.Window.Background}"
+                                       x:Name="TextEditor_DeploymentLog" />
+                    <Button Grid.Row="6" Content="Cancel" Click="ButtonCancelDeployProgress_Click" />
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="TabCompleted">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="7*" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <RichTextBox Grid.ColumnSpan="3" x:Name="RichTextBox_FinishingWords"
+                                 IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" IsUndoEnabled="False" >
+                        <FlowDocument />
+                    </RichTextBox>
+                    <Button Grid.Row="1" Grid.Column="1" Click="ButtonFinish_Click" Margin="1">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Flat}">
+                                <Setter Property="Content" Value="Close this dialog and perform game client update" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsDeploymentSuccessful,Mode=OneWay}" Value="False">
+                                        <Setter Property="Content" Value="Go back to overview before deployment" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Grid.Row="3" Grid.Column="1" Click="ButtonFinishClose_Click" Style="{StaticResource MahApps.Styles.Button.Flat}" Margin="1"
+                            Content="Close this dialog" />
+                </Grid>
+            </mah:MetroTabItem>
         </mah:MetroAnimatedTabControl>
 
-        <Button Grid.Column="0" Grid.Row="2" Style="{StaticResource MahApps.Styles.Button.Circle}" Width="40" Height="40" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabOpening,Mode=OneWay,Path=IsSelected}"
+        <Grid Grid.Row="2">
+            <mah:VisibilityHelper.IsCollapsed>
+                <MultiBinding Converter="{StaticResource BooleanUnifyOrOperatorConverter}">
+                    <Binding ElementName="TabDeployProgress" Mode="OneWay" Path="IsSelected" />
+                    <Binding ElementName="TabCompleted" Mode="OneWay" Path="IsSelected" />
+                </MultiBinding>
+            </mah:VisibilityHelper.IsCollapsed>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Button Style="{StaticResource MahApps.Styles.Button.Circle}" Width="40" Height="40"
+                mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabOpening,Mode=OneWay,Path=IsSelected}"
                 Click="ButtonBack_Click">
-            <iconPacks:PackIconFontAwesome Kind="AngleDoubleLeftSolid" />
-        </Button>
-        <Button Grid.Column="1" Grid.Row="2" Width="40" Height="40"
+                <iconPacks:PackIconFontAwesome Kind="AngleDoubleLeftSolid" />
+            </Button>
+            <Button Grid.Column="1" Width="40" Height="40"
+                mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabDeployProgress,Mode=OneWay,Path=IsSelected}"
                 IsEnabled="{Binding ElementName=thisSelf,Mode=OneWay,Path=CanGoNext}"
                 Click="ButtonNext_Click">
-            <Button.Style>
-                <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Circle}">
-                    <Setter Property="Content">
-                        <Setter.Value>
-                            <iconPacks:PackIconFontAwesome Kind="AngleDoubleRightSolid" />
-                        </Setter.Value>
-                    </Setter>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsAtFinalStep,Mode=OneWay}" Value="True">
-                            <Setter Property="Content">
-                                <Setter.Value>
-                                    <iconPacks:PackIconFontAwesome Kind="CheckSolid" />
-                                </Setter.Value>
-                            </Setter>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Button.Style>
-        </Button>
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Circle}">
+                        <Setter Property="Content">
+                            <Setter.Value>
+                                <iconPacks:PackIconFontAwesome Kind="AngleDoubleRightSolid" />
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsAtFinalStep,Mode=OneWay}" Value="True">
+                                <Setter Property="Content">
+                                    <Setter.Value>
+                                        <iconPacks:PackIconFontAwesome Kind="CheckSolid" />
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
     </Grid>
 </local:MetroWindowEx>

@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Leayal.PSO2Launcher.RSS;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
@@ -176,7 +177,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 {
                     try
                     {
-                        Process.Start("explorer.exe", @$"""{url.AbsoluteUri}""")?.Dispose();
+                        WindowsExplorerHelper.OpenUrlWithDefaultBrowser(url.AbsoluteUri);
                     }
                     catch { }
                 });
@@ -197,7 +198,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     {
                         if (link.NavigateUri != null)
                         {
-                            Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), @$"""{link.NavigateUri}""")?.Dispose();
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser(link.NavigateUri);
                         }
                     }
                     catch
@@ -478,7 +479,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 var bm = CreateIconFromStream(e.ImageContentStream);
                 if (bm == null)
                 {
-                    this.Dispatcher.BeginInvoke((Action)(() =>
+                    this.Dispatcher.InvokeAsync(() =>
                     {
                         var img = this.Child as TextBlock;
                         if (img == null)
@@ -496,11 +497,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         }
                         img.Text = displayname;
                         this.Child = img;
-                    }));
+                    });
                 }
                 else
                 {
-                    this.Dispatcher.BeginInvoke((Action)(() =>
+                    this.Dispatcher.InvokeAsync(() =>
                     {
                         var img = this.Child as Image;
                         if (img == null)
@@ -510,7 +511,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                             this.Child = img;
                         }
                         img.Source = bm;
-                    }));
+                    });
                 }
             }
         }

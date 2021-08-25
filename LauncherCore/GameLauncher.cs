@@ -84,7 +84,7 @@ namespace Leayal.PSO2Launcher.Core
         {
             if (sender is App app)
             {
-                app.Dispatcher.BeginInvoke((Action)delegate
+                app.Dispatcher.InvokeAsync(delegate
                 {
                     if (app.MainWindow is Windows.MainMenuWindow window)
                     {

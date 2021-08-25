@@ -66,10 +66,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var dir_pso2bin = this.config_main.PSO2_BIN;
                     if (string.IsNullOrEmpty(dir_pso2bin))
                     {
+                        var aaa = new Prompt_PSO2BinIsNotSet();
+                        switch (aaa.ShowCustomDialog(this))
+                        {
+                            case true:
+                                this.ButtonInstallPSO2_Clicked(tab, null);
+                                break;
+                            case false:
+                                this.TabMainMenu_ButtonManageGameDataClick(tab, null);
+                                break;
+                        }
+                        /*
                         if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                         {
                             this.TabMainMenu_ButtonManageGameDataClick(null, null);
                         }
+                        */
                         return;
                     }
                     else
@@ -83,7 +95,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                         else if (!File.Exists(filename))
                         {
-                            MessageBox.Show(this, "The file 'pso2.exe' doesn't exist.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox.Show(this, "The file 'pso2.exe' doesn't exist. Please download game's data files if you haven't done it.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
 
@@ -160,7 +172,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             this.ss_id = loginForm.GetUsername();
                                             this.ss_pw = loginForm.GetPassword();
 
-                                            await this.TabMainMenu.Dispatcher.BeginInvoke((Action)delegate
+                                            await this.TabMainMenu.Dispatcher.InvokeAsync(delegate
                                             {
                                                 this.TabMainMenu.ForgetLoginInfoEnabled = true;
                                             });
@@ -174,7 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                             else
                             {
-                                await this.Dispatcher.BeginInvoke((Action)delegate
+                                await this.Dispatcher.InvokeAsync(delegate
                                 {
                                     this.TabGameClientUpdateProgressBar.IsSelected = true;
                                 });
@@ -278,7 +290,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 finally
                 {
                     currentCancelSrc?.Dispose();
-                    await this.Dispatcher.BeginInvoke(new Action(() =>
+                    await this.Dispatcher.InvokeAsync(new Action(() =>
                     {
                         tab.GameStartEnabled = true;
                     }));

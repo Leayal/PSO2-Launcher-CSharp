@@ -22,6 +22,7 @@ using System.Windows.Media;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Net.Http;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -291,11 +292,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (e.Uri.IsAbsoluteUri)
                     {
-                        Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "\"" + e.Uri.AbsoluteUri + "\"")?.Dispose();
+                        WindowsExplorerHelper.OpenUrlWithDefaultBrowser(e.Uri.AbsoluteUri);
                     }
                     else if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
                     {
-                        Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "\"" + absUri.AbsoluteUri + "\"")?.Dispose();
+                        WindowsExplorerHelper.OpenUrlWithDefaultBrowser(absUri);
                     }
                 }
                 catch { }
@@ -373,38 +374,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     dialog.Owner = this;
                     if (dialog.ShowDialog() == true)
                     {
-                        string dir_root = this.config_main.PSO2_BIN,
-                            dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
-                        if (string.IsNullOrEmpty(dir_root))
-                        {
-                            var oldUpdater = this.pso2Updater;
-                            this.pso2Updater = null;
-                            await oldUpdater.DisposeAsync();
-                        }
-                        else
-                        {
-                            dir_root = Path.GetFullPath(dir_root);
-                            dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data);
-                            dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data);
-                            var oldUpdater = this.pso2Updater;
-                            if (oldUpdater == null)
-                            {
-                                this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                                this.RegisterDisposeObject(this.pso2Updater);
-                            }
-                            else
-                            {
-                                if (!string.Equals(oldUpdater.Path_PSO2BIN, dir_root, StringComparison.OrdinalIgnoreCase) ||
-                                    !string.Equals(oldUpdater.Path_PSO2RebootData, dir_reboot_data, StringComparison.OrdinalIgnoreCase) ||
-                                    !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                                    this.RegisterDisposeObject(this.pso2Updater);
-                                    await oldUpdater.DisposeAsync();
-                                }
-                            }
-                        }
+                        await this.RefreshGameClientUpdaterDirectory();
                     }
                 }
                 finally
@@ -414,68 +384,77 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        private async Task RefreshGameClientUpdaterDirectory()
+        {
+            string dir_root = this.config_main.PSO2_BIN,
+                            dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
+                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
+            if (string.IsNullOrEmpty(dir_root))
+            {
+                var oldUpdater = this.pso2Updater;
+                this.pso2Updater = null;
+                await oldUpdater.DisposeAsync();
+            }
+            else
+            {
+                dir_root = Path.GetFullPath(dir_root);
+                dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data);
+                dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data);
+                var oldUpdater = this.pso2Updater;
+                if (oldUpdater == null)
+                {
+                    this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
+                    this.RegisterDisposeObject(this.pso2Updater);
+                }
+                else
+                {
+                    if (!string.Equals(oldUpdater.Path_PSO2BIN, dir_root, StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(oldUpdater.Path_PSO2RebootData, dir_reboot_data, StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
+                        this.RegisterDisposeObject(this.pso2Updater);
+                        await oldUpdater.DisposeAsync();
+                    }
+                }
+            }
+        }
+
         private async Task CreateNewParagraphInLog(Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline = true, bool followLastLine = true)
         {
             if (this.ConsoleLog.CheckAccess())
             {
-                var textlength = this.ConsoleLog.Document.TextLength;
-                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, textlength))
-                {
-                    // Is last line in view
-                    bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
-
-                    if (newline)
-                    {
-                        if (textlength != 0)
-                        {
-                            writer.WriteLine();
-                        }
-                    }
-                    callback.Invoke(writer);
-                    if (isAlreadyInLastLineView)
-                    {
-                        this.ConsoleLog.ScrollToEnd();
-                    }
-                }
+                CreateNewParagraphInLog2(this.ConsoleLog, callback, newline, followLastLine);
             }
             else
             {
-                TaskCompletionSource duh = new TaskCompletionSource();
-                await this.ConsoleLog.Dispatcher.BeginInvoke(new _CreateNewParagraphInLog(this.CreateNewParagraphInLog2), new object[] { duh, callback, newline, followLastLine });
-                await duh.Task;
-            }
-        }
-
-        private void CreateNewParagraphInLog2(TaskCompletionSource tSrc, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline, bool followLastLine)
-        {
-            try
-            {
-                var textlength = this.ConsoleLog.Document.TextLength;
-                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(this.ConsoleLog.Document, textlength))
+                await this.ConsoleLog.Dispatcher.InvokeAsync(delegate
                 {
-                    bool isAlreadyInLastLineView = (followLastLine ? ((this.ConsoleLog.VerticalOffset + this.ConsoleLog.ViewportHeight) >= (this.ConsoleLog.ExtentHeight - 1d)) : false);
-                    if (newline)
+                    CreateNewParagraphInLog2(this.ConsoleLog, callback, newline, followLastLine);
+                });
+            }
+
+            static void CreateNewParagraphInLog2(ICSharpCode.AvalonEdit.TextEditor consolelog, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> _callback, bool _newline, bool _followLastLine)
+            {
+                var textlength = consolelog.Document.TextLength;
+                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(consolelog.Document, textlength))
+                {
+                    bool isAlreadyInLastLineView = (_followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
+                    if (_newline)
                     {
                         if (textlength != 0)
                         {
                             writer.WriteLine();
                         }
                     }
-                    callback.Invoke(writer);
+                    _callback.Invoke(writer);
                     if (isAlreadyInLastLineView)
                     {
-                        this.ConsoleLog.ScrollToEnd();
+                        consolelog.ScrollToEnd();
                     }
                 }
-                tSrc.SetResult();
-            }
-            catch (Exception ex)
-            {
-                tSrc.SetException(ex);
             }
         }
-
-        private delegate void _CreateNewParagraphInLog(TaskCompletionSource tSrc, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline, bool followLastLine);
 
         private void ConsoleLog_ContextMenuOpening(object sender, RoutedEventArgs e)
         {

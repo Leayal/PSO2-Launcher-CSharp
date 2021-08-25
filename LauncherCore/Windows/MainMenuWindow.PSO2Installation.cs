@@ -5,22 +5,38 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Leayal.PSO2.Installer;
+using Leayal.PSO2Launcher.Core.UIElements;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private void ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
+        private async void ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
         {
-            var dialog = new PSO2DeploymentWindow();
-            dialog.Owner = this;
-            if (dialog.ShowDialog() == true)
+            if (sender is TabMainMenu tab)
             {
-
+                tab.ButtonInstallPSO2Clicked -= this.ButtonInstallPSO2_Clicked;
+                try
+                {
+                    var dialog = new PSO2DeploymentWindow(this.pso2HttpClient);
+                    var installation_result = dialog.ShowCustomDialog(this);
+                    if (installation_result.HasValue)
+                    {
+                        this.config_main.PSO2_BIN = dialog.PSO2BinDirectory;
+                        this.config_main.DownloadSelection = dialog.GameClientDownloadSelection;
+                        this.config_main.Save();
+                        await this.RefreshGameClientUpdaterDirectory();
+                        if (installation_result.Value)
+                        {
+                            await StartGameClientUpdate(false, false);
+                        }
+                    }
+                }
+                finally
+                {
+                    tab.ButtonInstallPSO2Clicked += this.ButtonInstallPSO2_Clicked;
+                }
             }
-            // var hasDx11 = Requirements.HasDirectX11();
-            // var hasVC14_x86 = Requirements.GetVC14RedistVersion(false);
-            // var hasVC14_x64 = Requirements.GetVC14RedistVersion(true);
         }
     }
 }

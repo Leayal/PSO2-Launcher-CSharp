@@ -51,13 +51,5 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             });
         }
-
-        private void SelfUpdateNotificationHyperlink_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Hyperlink link)
-            {
-                this.ExecuteCommandUrl(link.NavigateUri);
-            }
-        }
     }
 }

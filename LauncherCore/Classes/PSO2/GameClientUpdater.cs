@@ -206,21 +206,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private static string _prefix_data_classic = Path.Combine("data", "win32");
         private static string _prefix_data_reboot = Path.Combine("data", "win32reboot");
 
-        public static bool IsDirectoryExistsAndNotEmpty(in string path)
-        {
-            if (Directory.Exists(path))
-            {
-                using (var walker = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).GetEnumerator())
-                {
-                    if (walker.MoveNext())
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
         /// <returns>Full path to a directory.</returns>
         private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, in string? rebootData, out bool isLink)
         {

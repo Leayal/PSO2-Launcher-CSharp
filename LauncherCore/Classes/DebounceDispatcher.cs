@@ -30,9 +30,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this._dispatcher = dispatcher ?? Dispatcher.CurrentDispatcher;
         }
 
-        public void Dispose()
+        public void Dispose() => this.Stop();
+
+        public void Stop()
         {
-            this.timer?.Stop();
+            var timer = this.timer;
+            this.timer = null;
+            timer?.Stop();
         }
 
         /// <summary>
@@ -80,6 +84,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             timer.Start();
         }
 
+        /*
         /// <summary>
         /// This method throttles events by allowing only 1 event to fire for the given
         /// timeout period. Only the last event fired is handled - all others are ignored.
@@ -124,6 +129,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             timer.Start();
             timerStarted = curTime;
         }
+        */
 
         private Action lastKnownAction;
 
@@ -132,14 +138,51 @@ namespace Leayal.PSO2Launcher.Core.Classes
            // if timeout is not up yet - adjust timeout to fire 
             // with potentially new Action parameters
 
+            Interlocked.Exchange<Action>(ref this.lastKnownAction, action);
+            if (timer == null)
+            {
+                timer = new DispatcherTimer(TimeSpan.FromMilliseconds(interval), priority, (s, e) =>
+                {
+                    var okayToGo = Interlocked.Exchange<Action>(ref this.lastKnownAction, null);
+                    if (okayToGo != null && this._dispatcher != null)
+                    {
+                        this._dispatcher.InvokeAsync(okayToGo);
+                    }
+                    else
+                    {
+                        okayToGo?.Invoke();
+                    }
+                }, disp ?? this._dispatcher);
+            }
+            if (!timer.IsEnabled)
+            {
+                timer.Start();
+            }
+        }
+
+        public void Throttle(int interval, Action action, DispatcherPriority priority = DispatcherPriority.Normal, Dispatcher disp = null)
+        {
+            // if timeout is not up yet - adjust timeout to fire 
+            // with potentially new Action parameters
+
             Interlocked.CompareExchange<Action>(ref this.lastKnownAction, action, null);
             if (timer == null)
             {
                 timer = new DispatcherTimer(TimeSpan.FromMilliseconds(interval), priority, (s, e) =>
                 {
                     var okayToGo = Interlocked.Exchange<Action>(ref this.lastKnownAction, null);
-                    okayToGo?.Invoke();
+                    if (okayToGo != null && this._dispatcher != null)
+                    {
+                        this._dispatcher.InvokeAsync(okayToGo);
+                    }
+                    else
+                    {
+                        okayToGo?.Invoke();
+                    }
                 }, disp ?? this._dispatcher);
+            }
+            if (!timer.IsEnabled)
+            {
                 timer.Start();
             }
         }

@@ -83,10 +83,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var dir_pso2bin = this.config_main.PSO2_BIN;
             if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
             {
+                var aaa = new Prompt_PSO2BinIsNotSet();
+                switch (aaa.ShowCustomDialog(this))
+                {
+                    case true:
+                        this.ButtonInstallPSO2_Clicked(this.TabMainMenu, null);
+                        break;
+                    case false:
+                        this.TabMainMenu_ButtonManageGameDataClick(this.TabMainMenu, null);
+                        break;
+                }
+                /*
                 if (MessageBox.Show(this, "You have not set the 'pso2_bin' directory.\r\nDo you want to set it now?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
                     this.TabMainMenu_ButtonManageGameDataClick(this.TabMainMenu, null);
                 }
+                */
                 return;
             }
 
@@ -357,10 +369,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         var debouncer = debouncers[index + 1];
                         debouncer.ThrottleEx(30, delegate
                         {
+                            this.TabGameClientUpdateProgressBar.SetProgressValue(index, val);
+                            /*
                             this.Dispatcher.BeginInvoke(new GameClientUpdater.ProgressReportHandler((PatchListItem _file, in long _value) =>
                             {
                                 this.TabGameClientUpdateProgressBar.SetProgressValue(index, _value);
                             }), file, val);
+                            */
                         });
                     }
                 }
@@ -373,8 +388,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         if (dictionaryInUse.TryAdd(_file, index))
                         {
+                            // this.TabGameClientUpdateProgressBar.SetProgressValue(index, 0);
                             this.TabGameClientUpdateProgressBar.SetProgressText(index, _file.GetFilenameWithoutAffix());
                             this.TabGameClientUpdateProgressBar.SetProgressMaximum(index, _maximum);
+                            this.TabGameClientUpdateProgressBar.SetProgressTextVisible(index, true);
                         }
                     }
                 }), file, maximum);
@@ -384,9 +401,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.Dispatcher.Invoke(new GameClientUpdater.ProgressEndHandler((PatchListItem _file, in bool _success) =>
                 {
-                    this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount();
+                    if (_success)
+                    {
+                        this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount();
+                    }
                     if (dictionaryInUse.TryRemove(_file, out var index))
                     {
+                        debouncers[index].Stop();
+                        this.TabGameClientUpdateProgressBar.SetProgressTextVisible(index, false);
                         this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
                         this.TabGameClientUpdateProgressBar.SetProgressValue(index, 0);
                         bagFree.Add(index);
@@ -411,26 +433,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         debouncers[i] = new DebounceDispatcher(this.Dispatcher);
                     }
                     this.TabGameClientUpdateProgressBar.ResetDownloadCount();
+                    for (int index = 0; index < result.ConcurrentDownloadCount; index++)
+                    {
+                        this.TabGameClientUpdateProgressBar.SetProgressTextVisible(index, false);
+                        this.TabGameClientUpdateProgressBar.SetProgressText(index, string.Empty);
+                        this.TabGameClientUpdateProgressBar.SetProgressValue(index, 0);
+                    }
                     this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking file";
-                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = 0;
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Value = 0;
                     this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
                     if (_total == -1)
                     {
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = 100;
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Maximum = 100;
                     }
                     else
                     {
-                        this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum = _total;
+                        this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Maximum = _total;
                         this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = true;
                         result.FileCheckReport += (sender, currentfilecount) =>
                         {
                             var debouncer = debouncers[0];
-                            debouncer.ThrottleEx(30, delegate
+                            debouncer.Throttle(30, delegate
                             {
+                                this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Value = currentfilecount;
+                                /*
                                 this.Dispatcher.BeginInvoke(new GameClientUpdater.FileCheckBeginHandler((_sender, _current) =>
                                 {
-                                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = _current;
+                                    this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Value = _current;
                                 }), sender, currentfilecount);
+                                */
                             });
                             
                         };
@@ -441,19 +472,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             result.DownloadQueueAdded += (GameClientUpdater sender, in int total) =>
             {
-                this.Dispatcher.BeginInvoke((Action<int>)((_total) =>
+                this.TabGameClientUpdateProgressBar.IncreaseNeedToDownloadCount();
+                /*
+                this.Dispatcher.InvokeAsync(delegate
                 {
                     this.TabGameClientUpdateProgressBar.IncreaseNeedToDownloadCount();
-                }), total);
+                });
+                */
             };
 
             result.FileCheckEnd += (sender) =>
             {
                 this.Dispatcher.Invoke(new GameClientUpdater.FileCheckEndHandler((_sender) =>
                 {
+                    var debouncer = debouncers[0];
+                    debouncer?.Stop();
                     this.TabGameClientUpdateProgressBar.TopProgressBar.Text = "Checking completed. Waiting for downloads to complete.";
                     // this.TabGameClientUpdateProgressBar.TopProgressBar.ShowDetailedProgressPercentage = false;
-                    this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Value = this.TabGameClientUpdateProgressBar.TopProgressBar.progressbar.Maximum;
+                    this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Value = this.TabGameClientUpdateProgressBar.TopProgressBar.ProgressBar.Maximum;
                 }), sender);
             };
             return result;
@@ -462,7 +498,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)
         {
             TaskCompletionSource<bool?> tsrc = new TaskCompletionSource<bool?>();
-            _ = this.Dispatcher.BeginInvoke((Action)delegate
+            _ = this.Dispatcher.InvokeAsync(delegate
             {
                 string msg;
                 if (e.HasClassicBackup && e.HasRebootBackup)

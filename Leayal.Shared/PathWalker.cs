@@ -100,7 +100,7 @@ namespace Leayal.Shared
                         var index = current.IndexOfAny(seperators);
                         if (index == -1)
                         {
-                            return (path.IndexOfAny(_invalid_filename) == -1);
+                            return (current.IndexOfAny(_invalid_filename) == -1);
                         }
                         else
                         {
