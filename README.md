@@ -29,9 +29,11 @@
 - Customizable RSS Feeds:
   - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler should be sufficient for most cases).
   - Plugin system is available to add more handler to handle special RSS Feeds.
+  - `Deferred Refresh` setting per-feed allows the user to customize which feed will be actively refreshed: If enabled, this `deferred refresh` will stop any unfocused RSS feeds (in UI) from refreshing the feed data, only when they're focused (or being in the UI view) that they start to refresh data.
 
 # UI Previews
-**Please note that the launcher's theme will follow your Windows 10's Dark/Light theme.**
+- Theming: User can let the launcher sync with Windows 10's `Dark|Light App Mode` setting or manually select a theme that you prefer.
+
 | | Dark theme      | Light theme     |
 | :-- | :-------------: | :-------------: |
 | Main menu | ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-dark.png) | ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-light.png) |
@@ -40,6 +42,7 @@
 | Dialog: Launcher Behavior Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-light.png) |
 | Dialog: PSO2 Data Manager | ![Dark theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-dark.png) | ![Light theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-light.png) |
 | Dialog: RSS Feeds Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-light.png) |
+| Dialog: Launcher Theming Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-light.png) |
 | Dialog: PSO2 Configuration | ![Dark theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-light.png) |
 | Dialog: PSO2 Configuration (Advanced) | ![Dark theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-light.png) |
 
