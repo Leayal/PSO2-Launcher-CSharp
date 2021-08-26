@@ -44,7 +44,7 @@
 | Dialog: PSO2 Configuration (Advanced) | ![Dark theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-light.png) |
 
 # Download Releases
-- If you are interested in using this launcher, please check out the [Release section of this repositity](https://github.com/Leayal/PSO2-Launcher-CSharp/releases/).
+- If you are interested in using this launcher, please check out the [Release section of this repository](https://github.com/Leayal/PSO2-Launcher-CSharp/releases/).
 - If you are curious about what changes are made (or `change log`), please check out the [Git commit log](https://github.com/Leayal/PSO2-Launcher-CSharp/commits/main):
   - "Checkpoint" commits are non-release commits. Their main purpose is to make a revertible point (in case I mess things up).
   - Anything else is self-explained, such as `minor updates`, `bugfixes` and `feature update`. They are the releases which are published and so they contain short description to summarize the changes. If you are curious about what's the changes, these commits are what you're probably looking for.
