@@ -6,7 +6,8 @@
                      xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                      mc:Ignorable="d"
-                     WindowStartupLocation="CenterOwner" x:Name="thisSelf" SizeToContent="WidthAndHeight"
+                     WindowStartupLocation="CenterOwner" x:Name="thisSelf" SizeToContent="WidthAndHeight" ShowTitleBar="False" WindowButtonCommandsOverlayBehavior="Never"
+                     ResizeMode="NoResize"
                      Loaded="ThisSelf_Loaded"
                      Title="Launcher Theming Manager" Height="150" Width="300">
     <Grid Margin="5,0,5,5">
@@ -41,7 +42,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" Click="ButtonSave_Click" />
+            <Button Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Save" Click="ButtonSave_Click" IsDefault="True" />
             <Button Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Content="Close" Click="ButtonClose_Click" IsCancel="True" />
         </Grid>
     </Grid>

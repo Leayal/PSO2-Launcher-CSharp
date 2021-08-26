@@ -147,7 +147,7 @@ namespace Leayal.PSO2Launcher.RSS
             foreach (var t in types)
             {
                 string name = t.FullName;
-                if (t.IsSubclassOf(typeofRSSFeed))
+                if (!t.Equals(typeofRSSFeed) && t.IsAssignableTo(typeofRSSFeed))
                 {
                     var constructor = t.GetConstructor(constructorTarget);
                     if (constructor != null)
