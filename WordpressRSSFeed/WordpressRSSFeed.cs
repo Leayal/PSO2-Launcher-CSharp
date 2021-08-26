@@ -16,11 +16,8 @@ using System.Text.RegularExpressions;
 namespace PSUBlog
 {
     /// <remarks><para>This code is not official from PSUBlog. It was written by Dramiel Leayal. If PSUBlog is not happy with this, please tell <i><b>Dramiel Leayal@8799</b></i> on Discord to remove this from the launcher.</para></remarks>
-    [SupportUriHost("www.bumped.org")]
-    public class PSUBlogNGSRSSFeed : RSSFeedHandler
+    public class WordpressRSSFeed : RSSFeedHandler
     {
-        private static readonly Uri DefaultFeed = new Uri("https://www.bumped.org/phantasy/rss/");
-
         private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex rg_removetags = new Regex(@"<\/?[\w\s]*>|<.+[\W]>.*?<.+[\W]>?", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -29,7 +26,7 @@ namespace PSUBlog
         private readonly string IconPath;
         private readonly string IconHashPath;
 
-        public PSUBlogNGSRSSFeed(Uri url) : base(url)
+        public WordpressRSSFeed(Uri url) : base(url)
         {
             this.IconPath = Path.Combine(this.CacheDataDirectory, "icon");
             this.IconHashPath = Path.Combine(this.CacheDataDirectory, "icon-hash");
@@ -52,7 +49,7 @@ namespace PSUBlog
                     }
                     else
                     {
-                        this.SetDisplayImage('P', fs);
+                        this.SetDisplayImage(fs);
                     }
                 }
             }
@@ -62,6 +59,8 @@ namespace PSUBlog
             }
             this.isfirstfetch = true;
         }
+
+        
 
         protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
         {
@@ -166,7 +165,7 @@ namespace PSUBlog
                                         }
                                         File.WriteAllText(this.IconHashPath, cache_filename);
                                         await Task.Delay(1);
-                                        this.SetDisplayImage('P', File.OpenRead(this.IconPath)); // Who care about the file's lock
+                                        this.SetDisplayImage(File.OpenRead(this.IconPath)); // Who care about the file's lock
                                     }
                                     catch
                                     {
@@ -307,13 +306,10 @@ namespace PSUBlog
         protected override RSSFeedItem OnCreateFeedItem(in FeedItemData feeditemdata)
             => Default.CreateFeedItem(in feeditemdata);
 
-        public override bool CanHandleParseFeedData(Uri url)
-            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
+        public override bool CanHandleParseFeedData(Uri url) => true;
 
-        public override bool CanHandleFeedItemCreation(Uri url)
-            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
+        public override bool CanHandleFeedItemCreation(Uri url) => true;
 
-        public override bool CanHandleDownloadChannel(Uri url)
-            => (url.Equals(DefaultFeed) || string.Equals(url.Host, DefaultFeed.Host, StringComparison.OrdinalIgnoreCase));
+        public override bool CanHandleDownloadChannel(Uri url) => true;
     }
 }

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <RootNamespace>Leayal.RSS.Wordpress</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
+    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;$(SolutionDir)Test\bin\plugins\rss&quot;&#xD;&#xA;copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\bin\plugins\rss\$(TargetFileName)&quot;&#xD;&#xA;)" />
+  </Target>
+
+</Project>

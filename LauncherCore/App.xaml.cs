@@ -24,14 +24,39 @@ namespace Leayal.PSO2Launcher.Core
 
         public bool IsLightMode => this.isLightMode;
 
+        private readonly Classes.ConfigurationFile config_main;
+
         public App() : base()
         {
             this.InitializeComponent();
 
+            this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
+            if (File.Exists(this.config_main.Filename))
+            {
+                this.config_main.Load();
+            }
+
             var thememgr = ThemeManager.Current;
             thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;
             thememgr.ThemeChanged += this.Thememgr_ThemeChanged;
-            thememgr.SyncTheme();
+
+            this.RefreshThemeSetting();
+        }
+
+        public void RefreshThemeSetting()
+        {
+            var thememgr = ThemeManager.Current;
+            if (this.config_main.SyncThemeWithOS)
+            {
+                thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;
+                thememgr.SyncTheme();
+            }
+            else
+            {
+                thememgr.ThemeSyncMode = ThemeSyncMode.DoNotSync;
+                thememgr.SyncTheme();
+                this.ChangeThemeMode(this.config_main.ManualSelectedThemeIndex != 0);
+            }
         }
 
         private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
@@ -63,7 +88,7 @@ namespace Leayal.PSO2Launcher.Core
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            this.MainWindow = new Windows.MainMenuWindow();
+            this.MainWindow = new Windows.MainMenuWindow(this.config_main);
             this.MainWindow.Show();
         }
 
@@ -71,7 +96,7 @@ namespace Leayal.PSO2Launcher.Core
         {
             if (this.isLightMode != isLightMode)
             {
-                this.isLightMode = isLightMode;
+                // this.isLightMode = isLightMode;
                 if (isLightMode)
                 {
                     ThemeManager.Current.ChangeTheme(this, ThemeManager.BaseColorLight, "Blue");

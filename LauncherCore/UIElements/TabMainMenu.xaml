@@ -51,6 +51,11 @@
                             <iconPacks:PackIconFontAwesome Kind="RssSquareSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <MenuItem Header="Manage launcher's theming" Click="ButtonManageGameLauncherTheming_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="PaintBrushSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>

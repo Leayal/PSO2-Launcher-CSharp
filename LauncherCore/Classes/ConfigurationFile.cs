@@ -357,6 +357,52 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_checkselfupdates_intervalhour", value);
         }
 
+        public bool SyncThemeWithOS
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_syncthemewithos", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_syncthemewithos", value);
+        }
+
+        public int ManualSelectedThemeIndex
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_manualselectedthemeindex", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.Number && val.Value is int num)
+                    {
+                        return Math.Clamp(num, 0, 1);
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            set => this.Set("launcher_manualselectedthemeindex", value);
+        }
+
         public bool Load()
         {
             using (var fs = File.OpenRead(this.Filename))

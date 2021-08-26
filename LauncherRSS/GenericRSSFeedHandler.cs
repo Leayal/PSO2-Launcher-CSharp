@@ -37,7 +37,16 @@ namespace Leayal.PSO2Launcher.RSS
         }
 
         protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
-            => this.parser.ParseFeedChannel(data);
+        {
+            if (this.parser is DefaultRSSFeedHandler defaultOne)
+            {
+                return defaultOne.ParseFeedChannelWithInstance(this, data);
+            }
+            else
+            {
+                return this.parser.ParseFeedChannel(data);
+            }
+        }
 
         public override bool CanHandleFeedItemCreation(Uri url)
         {

@@ -59,11 +59,63 @@ namespace Leayal.PSO2Launcher.RSS
 
         private void LoadFrom(string filename)
         {
-            this.assemblies.GetOrAdd(filename, (path) =>
+            this.assemblies.AddOrUpdate(filename, (path) =>
             {
-                var assembly = this.loadcontext.LoadFromAssemblyPath(path);
-                CreateFromAssemby(assembly);
-                return assembly;
+                if (Shared.FileHelper.IsNotExistsOrZeroLength(path))
+                {
+                    return null;
+                }
+                try
+                {
+                    var assembly = this.loadcontext.LoadFromNativeImagePath(path, path);
+                    CreateFromAssemby(assembly);
+                    return assembly;
+                }
+                catch 
+                {
+                    try
+                    {
+                        var assembly = this.loadcontext.LoadFromAssemblyPath(path);
+                        CreateFromAssemby(assembly);
+                        return assembly;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }, (path, asm) =>
+            {
+                if (asm == null)
+                {
+                    if (Shared.FileHelper.IsNotExistsOrZeroLength(path))
+                    {
+                        return null;
+                    }
+                    try
+                    {
+                        var assembly = this.loadcontext.LoadFromNativeImagePath(path, path);
+                        CreateFromAssemby(assembly);
+                        return assembly;
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var assembly = this.loadcontext.LoadFromAssemblyPath(path);
+                            CreateFromAssemby(assembly);
+                            return assembly;
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    }
+                }
+                else
+                {
+                    return asm;
+                }
             });
         }
 
@@ -90,6 +142,7 @@ namespace Leayal.PSO2Launcher.RSS
 
         private void CreateFromAssemby(Assembly asm)
         {
+            if (asm == null) return;
             var types = asm.GetTypes();
             foreach (var t in types)
             {

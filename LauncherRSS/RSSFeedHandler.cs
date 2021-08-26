@@ -26,6 +26,9 @@ namespace Leayal.PSO2Launcher.RSS
 
         protected readonly string WorkspaceDirectory;
         protected readonly string CacheDataDirectory;
+        protected readonly char DefaultRepresentativeCharacter;
+
+        internal char GetDefaultRepresentativeCharacter() => this.DefaultRepresentativeCharacter;
 
         private int flag_fetch, flag_event, flag_pendingrefresh, flag_isinrefresh;
         private Task<List<RSSFeedItem>> t_fetch;
@@ -54,6 +57,8 @@ namespace Leayal.PSO2Launcher.RSS
             this.DisplayImageChanged?.Invoke(this, new RSSFeedDisplayImageChangedEventArgs(representativeCharacter, imageStream));
         }
 
+        protected void SetDisplayImage(Stream imageStream) => this.SetDisplayImage(this.DefaultRepresentativeCharacter, imageStream);
+
         protected void SetDisplayImage(char representativeCharacter)
         {
             this._representativeCharacter = representativeCharacter;
@@ -74,9 +79,13 @@ namespace Leayal.PSO2Launcher.RSS
             this.flag_event = 0;
             this.flag_isinrefresh = 0;
             this.flag_pendingrefresh = 0;
+            this.DefaultRepresentativeCharacter = GetRepresentativeCharacterFromHostName(feedchannelUrl);
+
+            this.SetDisplayImage(this.DefaultRepresentativeCharacter);
+
             if (createworkspace)
             {
-                this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("data", "rss", this.GetType().FullName), SharedInterfaces.RuntimeValues.RootDirectory);
+                this.WorkspaceDirectory = Path.GetFullPath(Path.Combine("data", "rss", this.GetType().FullName, Shared.Sha1StringHelper.GenerateFromString(feedchannelUrl.IsAbsoluteUri ? feedchannelUrl.AbsoluteUri : feedchannelUrl.ToString())), SharedInterfaces.RuntimeValues.RootDirectory);
                 this.CacheDataDirectory = Path.Combine(this.WorkspaceDirectory, "cache");
                 Directory.CreateDirectory(this.CacheDataDirectory);
             }
@@ -311,5 +320,26 @@ namespace Leayal.PSO2Launcher.RSS
         /// <para>False - The plugin can not handle.</para>
         /// </returns>
         public abstract bool CanHandleDownloadChannel(Uri url);
+
+        protected static char GetRepresentativeCharacterFromHostName(Uri url)
+        {
+            if (url != null && url.IsAbsoluteUri && url.HostNameType == UriHostNameType.Dns)
+            {
+                const string worldwideweb = "www.";
+                var str = url.Host;
+                if (str.StartsWith(worldwideweb))
+                {
+                    return char.ToUpper(str[worldwideweb.Length]);
+                }
+                else
+                {
+                    return char.ToUpper(str[0]);
+                }
+            }
+            else
+            {
+                return '?';
+            }
+        }
     }
 }

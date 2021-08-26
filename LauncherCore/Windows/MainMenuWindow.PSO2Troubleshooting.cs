@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private void ButtonPSO2Troubleshooting_Clicked(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonPSO2Troubleshooting_Clicked(object sender, RoutedEventArgs e)
         {
             var dialog = new PSO2TroubleshootingWindow()
             {

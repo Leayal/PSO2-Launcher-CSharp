@@ -7,6 +7,21 @@ namespace Leayal.Shared
 {
     public static class FileHelper
     {
+        public static bool IsNotExistsOrZeroLength(string filepath)
+        {
+            if (File.Exists(filepath))
+            {
+                using (var fs = File.OpenRead(filepath))
+                {
+                    return (fs.Length == 0L);
+                }
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         public static ReadOnlyMemory<char> ReadAllTexts(string filepath, Encoding encoding)
         {
             using (var fs = File.OpenRead(filepath))

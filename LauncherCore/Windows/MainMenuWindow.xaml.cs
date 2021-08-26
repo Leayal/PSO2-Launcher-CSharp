@@ -41,8 +41,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
 
-        public MainMenuWindow() : base()
+        public MainMenuWindow(ConfigurationFile conf) : base()
         {
+            this.config_main = conf;
             this.ss_id = null;
             this.ss_pw = null;
             this.webclient = new HttpClient(new SocketsHttpHandler()
@@ -75,14 +76,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 return selfupdatecheck;
             }));
 
+            /*
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();
             }
+            */
             this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
+
             InitializeComponent();
             this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed, this.ToggleBtn_ConsoleLog };
             var pathlaststate_selectedtogglebuttons = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
@@ -172,7 +176,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.BgImg.Source = lazybg_light.Value;
                 _ = this.CreateNewParagraphInLog(writer =>
                 {
-                    writer.Write($"[ThemeManager] Detected Windows 10's theme change: Light Mode.");
+                    if (this.config_main.SyncThemeWithOS)
+                    {
+                        writer.Write($"[ThemeManager] Detected Windows 10's theme change: Light Mode.");
+                    }
+                    else
+                    {
+                        writer.Write($"[ThemeManager] User changed theme setting: Light Mode.");
+                    }
                 });
             }
             else
@@ -180,7 +191,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.BgImg.Source = lazybg_dark.Value;
                 _ = this.CreateNewParagraphInLog(writer =>
                 {
-                    writer.Write($"[ThemeManager] Detected Windows 10's theme change: Dark Mode.");
+                    if (this.config_main.SyncThemeWithOS)
+                    {
+                        writer.Write($"[ThemeManager] Detected Windows 10's theme change: Dark Mode.");
+                    }
+                    else
+                    {
+                        writer.Write($"[ThemeManager] User changed theme setting: Dark Mode.");
+                    }
                 });
             }
         }
@@ -483,6 +501,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
                     }
+                }
+            }
+        }
+
+        private void TabMainMenu_ButtonManageLauncherThemingClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is TabMainMenu tab)
+            {
+                tab.ButtonManageLauncherThemingClicked -= this.TabMainMenu_ButtonManageLauncherThemingClicked;
+                try
+                {
+                    var dialog = new LauncherThemingManagerWindow(this.config_main);
+                    dialog.Owner = this;
+                    if (dialog.ShowDialog() == true)
+                    {
+                        App.Current?.RefreshThemeSetting();
+                    }
+                }
+                finally
+                {
+                    tab.ButtonManageLauncherThemingClicked += this.TabMainMenu_ButtonManageLauncherThemingClicked;
                 }
             }
         }

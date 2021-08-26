@@ -11,11 +11,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private async void ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
         {
             if (sender is TabMainMenu tab)
             {
-                tab.ButtonInstallPSO2Clicked -= this.ButtonInstallPSO2_Clicked;
+                tab.ButtonInstallPSO2Clicked -= this.TabMainMenu_ButtonInstallPSO2_Clicked;
                 try
                 {
                     var dialog = new PSO2DeploymentWindow(this.pso2HttpClient);
@@ -34,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 finally
                 {
-                    tab.ButtonInstallPSO2Clicked += this.ButtonInstallPSO2_Clicked;
+                    tab.ButtonInstallPSO2Clicked += this.TabMainMenu_ButtonInstallPSO2_Clicked;
                 }
             }
         }

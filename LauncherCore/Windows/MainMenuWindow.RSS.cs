@@ -63,11 +63,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             });
         }
 
-        private void ButtonManageGameLauncherRSSFeeds_Clicked(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonManageGameLauncherRSSFeeds_Clicked(object sender, RoutedEventArgs e)
         {
             if (sender is TabMainMenu tab)
             {
-                tab.ButtonManageGameLauncherRSSFeedsClicked -= this.ButtonManageGameLauncherRSSFeeds_Clicked;
+                tab.ButtonManageGameLauncherRSSFeedsClicked -= this.TabMainMenu_ButtonManageGameLauncherRSSFeeds_Clicked;
                 try
                 {
                     var window = new RSSFeedsManagerWindow(this.RSSFeedPresenter.Loader, this.RSSFeedPresenter.RSSFeedHandlers);
@@ -127,7 +127,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 finally
                 {
-                    tab.ButtonManageGameLauncherRSSFeedsClicked += this.ButtonManageGameLauncherRSSFeeds_Clicked;
+                    tab.ButtonManageGameLauncherRSSFeedsClicked += this.TabMainMenu_ButtonManageGameLauncherRSSFeeds_Clicked;
                 }
             }
         }

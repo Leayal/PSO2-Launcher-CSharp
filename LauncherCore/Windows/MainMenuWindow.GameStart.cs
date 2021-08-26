@@ -70,7 +70,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         switch (aaa.ShowCustomDialog(this))
                         {
                             case true:
-                                this.ButtonInstallPSO2_Clicked(tab, null);
+                                this.TabMainMenu_ButtonInstallPSO2_Clicked(tab, null);
                                 break;
                             case false:
                                 this.TabMainMenu_ButtonManageGameDataClick(tab, null);

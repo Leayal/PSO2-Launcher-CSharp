@@ -7,11 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
-    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
+    <ProjectReference Include="..\WordpressRSSFeed\WordpressRSSFeed.csproj" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;$(SolutionDir)Test\bin\plugins\rss&quot;&#xD;&#xA;copy /B /L /Y &quot;$(TargetPath)&quot; &quot;$(SolutionDir)Test\bin\plugins\rss\$(TargetFileName)&quot;&#xD;&#xA;)" />
-  </Target>
 
 </Project>

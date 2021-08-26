@@ -22,7 +22,8 @@ namespace Leayal.PSO2Launcher.RSS
 
         public override bool CanHandleParseFeedData(Uri url) => true;
 
-        protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
+        // Currently useless and has no differences from old one.
+        public Task<IReadOnlyList<FeedItemData>> ParseFeedChannelWithInstance(RSSFeedHandler instance, string data)
         {
             var reader = new XmlDocument();
             reader.LoadXml(data);
@@ -55,6 +56,7 @@ namespace Leayal.PSO2Launcher.RSS
                 if (title != null && !string.IsNullOrWhiteSpace(title.InnerText))
                 {
                     var val_title = title.InnerText.Trim();
+
                     this.SetDisplayName(val_title);
                     this.SetDisplayImage(val_title[0]);
                 }
@@ -137,6 +139,9 @@ namespace Leayal.PSO2Launcher.RSS
             this.SetNextRefesh(TimeSpan.FromHours(1));
             return Task.FromResult((IReadOnlyList<FeedItemData>)listOfItem);
         }
+
+        protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
+            => this.ParseFeedChannelWithInstance(null, data);
 
         public override bool CanHandleFeedItemCreation(Uri url) => true;
 

@@ -104,13 +104,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this._config.Save();
             this.DialogResult = true;
-            SystemCommands.CloseWindow(this);
+            // SystemCommands.CloseWindow(this);
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
-            SystemCommands.CloseWindow(this);
+            // SystemCommands.CloseWindow(this);
         }
 
         private static Dictionary<T, EnumComboBox.ValueDOM<T>> EnumToDictionary<T>() where T : struct, Enum
