@@ -21,6 +21,7 @@
     - Game start (using default method which is set by user).
       - Game start without SEGA login (Bypass user's setting).
       - Game start with SEGA login (Bypass user's setting).
+      - Forget SEGA Login (Forget the SEGA login if user logged in with `remember the login info`).
     - Check for PSO2 updates.
 - Configure PSO2 Client's options.
   - Only some NGS settings are supported in simple mode right now.
@@ -30,6 +31,9 @@
   - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler should be sufficient for most cases).
   - Plugin system is available to add more handler to handle special RSS Feeds.
   - `Deferred Refresh` setting per-feed allows the user to customize which feed will be actively refreshed: If enabled, this `deferred refresh` will stop any unfocused RSS feeds (in UI) from refreshing the feed data, only when they're focused (or being in the UI view) that they start to refresh data.
+
+### Launcher arguments:
+- `--tray`: Launch the launcher and minimize to tray immediately.
 
 # UI Previews
 - Theming: User can let the launcher sync with Windows 10's `Dark|Light App Mode` setting or manually select a theme that you prefer.
