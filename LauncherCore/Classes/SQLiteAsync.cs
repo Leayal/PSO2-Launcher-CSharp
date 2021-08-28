@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2019 Krueger Systems, Inc.
+// Copyright (c) 2012-2021 Krueger Systems, Inc.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -460,8 +460,8 @@ namespace SQLite
 		}
 
 		/// <summary>
-		/// Inserts the given object and retrieves its
-		/// auto incremented primary key if it has one.
+        /// Inserts the given object and (and updates its
+		/// auto incremented primary key if it has one).
 		/// </summary>
 		/// <param name="obj">
 		/// The object to insert.

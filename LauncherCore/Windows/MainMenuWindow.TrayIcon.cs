@@ -142,7 +142,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 Visible = hasupdatenotificationalready
             };
-            performRestartToSelfUpdate.Tag = new Uri("pso2lealauncher://selfupdatechecker/confirm");
+            performRestartToSelfUpdate.Tag = StaticResources.Url_ConfirmSelfUpdate;
             performRestartToSelfUpdate.VisibleChanged += (sender, e) =>
             {
                 selfupdate_separator.Visible = performRestartToSelfUpdate.Visible;

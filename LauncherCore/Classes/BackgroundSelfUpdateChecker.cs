@@ -18,7 +18,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private readonly SynchronizationContext syncContext;
         private DateTime lastchecktime;
         private readonly HttpClient webclient;
-        private BackgroundSelfUpdateChecker c;
 
         private TimeSpan _ticktime;
         public TimeSpan TickTime
@@ -26,7 +25,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             get => this._ticktime;
             set
             {
-                var onesec = TimeSpan.FromSeconds(1);
+                var onesec = TimeSpan.FromSeconds(10);
                 if (value < onesec)
                 {
                     this._ticktime = onesec;
@@ -87,7 +86,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
                                     if (theonewhoneedupdate != null && theonewhoneedupdate.Count != 0)
                                     {
-                                        var taskCompletionSource = new TaskCompletionSource(null);
+                                        var taskCompletionSource = new TaskCompletionSource();
                                         myself.syncContext.Post(Post_OnUpdateFound, new UpdateFoundData(myself, taskCompletionSource, theonewhoneedupdate));
                                         await taskCompletionSource.Task;
                                     }
