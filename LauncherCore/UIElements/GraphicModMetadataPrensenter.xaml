@@ -1,0 +1,81 @@
+﻿<ListBox x:Class="Leayal.PSO2Launcher.Core.UIElements.GraphicModMetadataPrensenter"
+         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+         xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+         mc:Ignorable="d" 
+         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.CacheLength="10" VirtualizingPanel.ScrollUnit="Pixel"
+         ScrollViewer.VerticalScrollBarVisibility="Visible"
+         d:DesignHeight="450" d:DesignWidth="800">
+    <ListBox.Style>
+        <Style TargetType="ListBox" BasedOn="{StaticResource {x:Type ListBox}}" />
+    </ListBox.Style>
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Text="{Binding FileNameOnly}" />
+                <TextBlock Grid.Column="1">
+                    <Run Text=" (Action:" />
+                    <Hyperlink NavigateUri="{Binding Filepath}" Click="HyperlinkShoWFile_Click">Show in file explorer</Hyperlink>
+                    <Run Text="or" />
+                    <Hyperlink NavigateUri="{Binding Filepath}" Click="HyperlinkDeleteFile_Click">Remove</Hyperlink>
+                    <Run Text=")" />
+                </TextBlock>
+                
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" mah:VisibilityHelper.IsVisible="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type ListBoxItem}},Path=IsSelected}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="ProductName: " />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductName}" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="1" VerticalAlignment="Center" TextAlignment="Right" Text="Summary: " />
+                    <TextBlock Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding Summary}" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2" VerticalAlignment="Center" TextAlignment="Right" Text="File Version: " />
+                    <TextBlock Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Text="{Binding FileVersion}" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="3" VerticalAlignment="Center" TextAlignment="Right" Text="Product Version: " />
+                    <TextBlock Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductVersion}" TextWrapping="Wrap" />
+
+                    <Grid Grid.Row="4" Grid.ColumnSpan="2">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Advice}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="Advice: " FontSize="14" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding Advice}" FontSize="14" TextWrapping="Wrap" />
+                    </Grid>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+</ListBox>

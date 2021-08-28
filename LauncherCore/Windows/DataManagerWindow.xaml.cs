@@ -154,14 +154,34 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 UseDescriptionForTitle = true
             })
             {
-                var str = this.textbox_pso2_bin.Text;
+                string str = this.textbox_pso2_bin.Text;
                 if (!string.IsNullOrWhiteSpace(str))
                 {
                     dialog.SelectedPath = str;
                 }
-                if (dialog.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
+                while (true)
                 {
-                    this.textbox_pso2_bin.Text = dialog.SelectedPath;
+                    if (dialog.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
+                    {
+                        var selected = dialog.SelectedPath;
+                        if (System.IO.File.Exists(System.IO.Path.Combine(selected, "pso2launcher.exe")) || System.IO.File.Exists(System.IO.Path.Combine(selected, "pso2.exe")))
+                        {
+                            this.textbox_pso2_bin.Text = selected;
+                            break;
+                        }
+                        else
+                        {
+                            if (System.Windows.MessageBox.Show(this, $"The selected directory seems to not be a practical 'pso2_bin'.{Environment.NewLine}Do you still want to continue and select this folder?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+                            {
+                                this.textbox_pso2_bin.Text = selected;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }

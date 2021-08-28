@@ -72,11 +72,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         displayname = val.ToString();
                     }
 
-                    var menuitem = new ToolStripMenuItem() { Text = displayname, Tag = val };
+                    var menuitem = new ToolStripMenuItem(displayname) { Tag = val };
                     menuitem.Click += this.Typical_startGame_SubItemsClick;
                     typical_startGame.DropDownItems.Add(menuitem);
                 }
             }
+
+            var forgetSEGALogin = new ToolStripMenuItem("Forget remembered SEGA login");
+            forgetSEGALogin.Click += this.MenuItemForgetSEGALogin_Click;
+            typical_startGame.DropDownItems.Add(forgetSEGALogin);
 
             var typical_checkforPSO2Updates = new ToolStripMenuItem("Check for PSO2 Updates");
             typical_checkforPSO2Updates.Click += this.Typical_checkforPSO2Updates_Click;
@@ -103,6 +107,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         dropitem.Enabled = isenabled;
                     }
                 }
+            }, _ForgetSegaLoginStateRefresh = (sender, e) =>
+            {
+                forgetSEGALogin.Enabled = tab.ForgetLoginInfoEnabled;
             };
 
             ico_contextmenu.Opening += (sender, e) =>
@@ -110,8 +117,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (!e.Cancel)
                 {
                     _IsSelectedOrGameStartEnabledChanged.Invoke(tab, null);
+                    _ForgetSegaLoginStateRefresh.Invoke(tab, null);
                     tab.GameStartEnabledChanged += _IsSelectedOrGameStartEnabledChanged;
                     tab.IsSelectedChanged += _IsSelectedOrGameStartEnabledChanged;
+                    tab.ForgetLoginInfoEnabledChanged += _ForgetSegaLoginStateRefresh;
                 }
             };
             ico_contextmenu.Closing += (sender, e) =>
@@ -120,6 +129,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     tab.GameStartEnabledChanged -= _IsSelectedOrGameStartEnabledChanged;
                     tab.IsSelectedChanged -= _IsSelectedOrGameStartEnabledChanged;
+                    tab.ForgetLoginInfoEnabledChanged -= _ForgetSegaLoginStateRefresh;
                 }
             };
 
@@ -152,6 +162,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             ico.ContextMenuStrip = ico_contextmenu;
             return ico;
         }
+
+        private void MenuItemForgetSEGALogin_Click(object sender, EventArgs e)
+            => this.ForgetSEGALogin();
 
         private void PerformRestartToSelfUpdate_Click(object sender, EventArgs e)
         {

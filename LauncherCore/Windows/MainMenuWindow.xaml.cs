@@ -92,15 +92,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var pathlaststate_selectedtogglebuttons = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
             if (File.Exists(pathlaststate_selectedtogglebuttons))
             {
-                var line = QuickFile.ReadFirstLine(pathlaststate_selectedtogglebuttons);
-                foreach (var btn in this.toggleButtons)
+                var line = QuickFile.ReadFirstLine(pathlaststate_selectedtogglebuttons).AsSpan();
+                if (!line.IsWhiteSpace())
                 {
-                    if (string.Equals(line, btn.Name, StringComparison.Ordinal))
+                    foreach (var btn in this.toggleButtons)
                     {
-                        btn.IsChecked = true;
-                        break;
+                        if (line.Equals(btn.Name, StringComparison.Ordinal))
+                        {
+                            btn.IsChecked = true;
+                            break;
+                        }
                     }
                 }
+            }
+            else
+            {
+                this.ToggleBtn_PSO2News.IsChecked = true;
             }
             _ = this.CreateNewParagraphInLog(writer =>
             {
@@ -267,13 +274,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         new object[] { "PSO2Launcher" },
                         null,
                         null);
-                    var webview = (IWebViewCompatControl)obj;
-                    webview.Initialized += this.WebViewCompatControl_Initialized;
-                    this.LauncherWebView.Child = (Control)obj;
-                    _ = this.CreateNewParagraphInLog(writer =>
+                    if (obj is IWebViewCompatControl webview)
                     {
-                        writer.Write("[WebView] PSO2's launcher news has been loaded.");
-                    });
+                        webview.Initialized += this.WebViewCompatControl_Initialized;
+                        this.LauncherWebView.Child = (Control)obj;
+                        _ = this.CreateNewParagraphInLog(writer =>
+                        {
+                            writer.Write("[WebView] PSO2's launcher news has been loaded.");
+                        });
+                    }
+                    else
+                    {
+                        if (obj is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                        else if (obj is IAsyncDisposable asyncdisposable)
+                        {
+                            asyncdisposable.DisposeAsync();
+                        }
+                        MessageBox.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -282,12 +303,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        private readonly static Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");
         private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
                 webview.Navigated += this.Webview_Navigated;
-                webview.NavigateTo(new Uri("https://launcher.pso2.jp/ngs/01/"));
+                webview.NavigateTo(SEGALauncherNewsUrl);
             }
         }
 
@@ -310,10 +332,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (e.Uri.IsAbsoluteUri)
                     {
+                        if (string.Equals(e.Uri.AbsoluteUri, SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
                         WindowsExplorerHelper.OpenUrlWithDefaultBrowser(e.Uri.AbsoluteUri);
                     }
                     else if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
                     {
+                        if (string.Equals(absUri.AbsoluteUri, SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
                         WindowsExplorerHelper.OpenUrlWithDefaultBrowser(absUri);
                     }
                 }

@@ -9,7 +9,7 @@
                      xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                      mc:Ignorable="d" TitleCharacterCasing="Normal" ShowTitleBar="False" ResizeMode="NoResize" x:Name="thisSelf" WindowStartupLocation="CenterOwner"
-        Title="PSO2 JP Client Deployment" Height="450" Width="800">
+        Title="PSO2 JP Client Deployment" Height="600" Width="800">
     <Grid Margin="1">
         <Grid.RowDefinitions>
             <RowDefinition Height="{Binding ElementName=thisSelf,Mode=OneWay,Path=WindowCommandButtonsHeight}" />
@@ -86,6 +86,9 @@
                     </Grid.RowDefinitions>
                     <TextBlock Text="PSO2 Download Type: " TextAlignment="Right" VerticalAlignment="Center" />
                     <localui:EnumComboBox Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloadselection" SelectionChanged="ComboBox_downloadselection_SelectionChanged" />
+
+                    <TextBlock Grid.Row="1" Text="PSO2 Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" />
+                    <localui:EnumComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofile" SelectionChanged="ComboBox_downloaderprofile_SelectionChanged" />
                 </Grid>
             </mah:MetroTabItem>
             <mah:MetroTabItem x:Name="TabOverviewsBeforeDeploy" Selector.Selected="TabOverviewsBeforeDeploy_Selected">
@@ -99,6 +102,8 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="Overview details" TextAlignment="Center" FontSize="16" />
@@ -109,8 +114,11 @@
                         <TextBlock Grid.Row="2" Text="PSO2 game client's 'pso2_bin' directory path: " TextAlignment="Right" />
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2BinDirectory}" />
 
-                        <TextBlock Grid.Row="3" Text="PSO2 game client's download type: " TextAlignment="Right" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=GameClientDownloadSelectionText}" />
+                        <TextBlock Grid.Row="4" Text="PSO2 game client's download type: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=GameClientDownloadSelectionText}" />
+
+                        <TextBlock Grid.Row="5" Text="PSO2 game client's downloader profile: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=DownloaderProfileSelectionText}" />
                     </Grid>
                 </ScrollViewer>
             </mah:MetroTabItem>
@@ -147,11 +155,28 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <RichTextBox Grid.ColumnSpan="3" x:Name="RichTextBox_FinishingWords"
+                    <Grid Grid.ColumnSpan="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <RichTextBox x:Name="RichTextBox_FinishingWords"
                                  IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" IsUndoEnabled="False" >
-                        <FlowDocument />
-                    </RichTextBox>
-                    <Button Grid.Row="1" Grid.Column="1" Click="ButtonFinish_Click" Margin="1">
+                            <FlowDocument />
+                        </RichTextBox>
+                        <Grid Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="Below are file(s) which could potentially break the game:" FontSize="14" IsHitTestVisible="False" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
+                            <TextBlock Grid.Row="1" Text="(Click on the item to show more info)" IsHitTestVisible="False" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
+                            <localui:GraphicModMetadataPrensenter Grid.Row="2" x:Name="GraphicModMetadataPrensenter" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
+                        </Grid>
+                    </Grid>
+                    
+                    <Button Grid.Row="1" Grid.Column="1" Click="ButtonFinish_Click" Margin="2">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Flat}">
                                 <Setter Property="Content" Value="Close this dialog and perform game client update" />
@@ -163,7 +188,7 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Grid.Row="3" Grid.Column="1" Click="ButtonFinishClose_Click" Style="{StaticResource MahApps.Styles.Button.Flat}" Margin="1"
+                    <Button Grid.Row="2" Grid.Column="1" Click="ButtonFinishClose_Click" Style="{StaticResource MahApps.Styles.Button.Flat}" Margin="2"
                             Content="Close this dialog" />
                 </Grid>
             </mah:MetroTabItem>

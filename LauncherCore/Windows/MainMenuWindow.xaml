@@ -74,7 +74,7 @@
                 <RowDefinition />
                 <RowDefinition />
             </Grid.RowDefinitions>
-            <ToggleButton Content="PSO2's News" HorizontalAlignment="Right" x:Name="ToggleBtn_PSO2News" Checked="ToggleBtn_Checked" IsChecked="True">
+            <ToggleButton Content="PSO2's News" HorizontalAlignment="Right" x:Name="ToggleBtn_PSO2News" Checked="ToggleBtn_Checked">
                 <ToggleButton.LayoutTransform>
                     <RotateTransform Angle="-90" />
                 </ToggleButton.LayoutTransform>

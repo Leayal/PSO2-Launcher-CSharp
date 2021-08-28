@@ -8,7 +8,7 @@
                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                      mc:Ignorable="d" x:Name="thisSelf" ShowTitleBar="False" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
                      Title="PSO2 Troubleshooting Assistant (BETA)" Height="450" Width="800">
-    <Grid>
+    <Grid Margin="5,0,5,5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition />
@@ -19,19 +19,45 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.ColumnSpan="2" Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneWay}" FontSize="20" TextAlignment="Center" />
+        <TextBlock Grid.ColumnSpan="2" Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneWay}" FontSize="20" TextAlignment="Center" IsHitTestVisible="False" />
 
         <Grid Grid.ColumnSpan="2" Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Text="{Binding ElementName=AnswerSelectionList,Path=CurrentAnswerTitle,Mode=OneWay}" FontSize="16" TextAlignment="Center" />
+            <TextBlock FontSize="16" TextAlignment="Center" IsHitTestVisible="False">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
+                        <Setter Property="Text">
+                            <Setter.Value>
+                                <Binding ElementName="AnswerSelectionList" Path="CurrentAnswerTitle" Mode="OneWay" />
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsInResult,Mode=OneWay}" Value="True">
+                                <Setter Property="Text" Value="Diagnostic Result" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
             <mah:ProgressRing Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInLoading,Mode=OneWay}" VerticalAlignment="Center" HorizontalAlignment="Center" />
             <localui:TroubleshootingAnswerPresenter Grid.Row="1" x:Name="AnswerSelectionList" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsInLoading,Mode=OneWay}"
                                                     CurrentAnswerChanged="AnswerSelectionList_CurrentAnswerChanged" />
 
-            <RichTextBox x:Name="ResultBox" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsDocumentEnabled="True" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResult,Mode=OneWay}" />
+            <RichTextBox Grid.Row="1" x:Name="ResultBox" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False" IsDocumentEnabled="True" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResult,Mode=OneWay}" />
+            <Grid Grid.Row="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResultWithGraphicModPresenter,Mode=OneWay}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Below are file(s) which could potentially break the game:" FontSize="14" IsHitTestVisible="False" />
+                <TextBlock Grid.Row="1" Text="(Click on the item to show more info)" IsHitTestVisible="False" />
+                <localui:GraphicModMetadataPrensenter Grid.Row="2" x:Name="GraphicModMetadataPrensenter" />
+            </Grid>
         </Grid>
 
         <Button Grid.Column="0" Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" IsCancel="True" Command="{StaticResource PreventDefault}" x:Name="ButtonBack" Click="ButtonBack_Click">

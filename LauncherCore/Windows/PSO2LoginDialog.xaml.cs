@@ -27,6 +27,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class PSO2LoginDialog : MetroWindowEx, IDisposable
     {
+        public readonly static DependencyProperty IsInLoadingProperty = DependencyProperty.Register("IsInLoading", typeof(bool), typeof(PSO2LoginDialog), new PropertyMetadata(false));
+        public bool IsInLoading
+        {
+            get => (bool)this.GetValue(IsInLoadingProperty);
+            set => this.SetValue(IsInLoadingProperty, value);
+        }
+
         private readonly PSO2HttpClient webclient;
         private readonly ConfigurationFile config;
         private readonly CancellationTokenSource cancelsrc;
@@ -131,6 +138,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is Button btn)
             {
                 btn.IsEnabled = false;
+                this.IsInLoading = true;
                 try
                 {
                     using (var id = this.GetUsername())
@@ -139,33 +147,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         if (id.Length == 0)
                         {
                             this.ShowModalMessageExternal("Notice", "Username field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
-                            return;
                         }
                         else if (pw.Length == 0)
                         {
                             this.ShowModalMessageExternal("Notice", "Password field cannot be emptied.", MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = false, AnimateShow = false });
-                            return;
                         }
+                        else
+                        {
+                            CancellationToken canceltoken;
+                            try
+                            {
+                                canceltoken = this.cancelsrc.Token;
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                this.DialogResult = false;
+                                this.Close();
+                                return;
+                            }
+                            this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken);
 
-                        CancellationToken canceltoken;
-                        try
-                        {
-                            canceltoken = this.cancelsrc.Token;
+                            this.DialogResult = true;
                         }
-                        catch (ObjectDisposedException)
-                        {
-                            this.DialogResult = false;
-                            this.Close();
-                            return;
-                        }
-                        this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken);
                     }
-                    this.DialogResult = true;
-                    this.Close();
                 }
                 catch (PSO2LoginException ex)
                 {
-                    await this.ShowMessageAsync("Login failure", "Failed to login.\r\nError code: " + ex.ErrorCode.ToString(), MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = true, AnimateShow = false });
+                    this.ShowModalMessageExternal("Login failure", "Failed to login.\r\nError code: " + ex.ErrorCode.ToString(), MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = true, AnimateShow = false });
                 }
                 catch (UnexpectedDataFormatException ex)
                 {
@@ -178,6 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 finally
                 {
                     btn.IsEnabled = true;
+                    this.IsInLoading = false;
                 }
             }
         }
@@ -227,6 +236,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 this.config.DefaultLoginPasswordRemember = val;
                 this.config.Save();
+            }
+        }
+
+        private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(this.idBox.Text))
+            {
+                this.idBox.Focus();
+            }
+            else
+            {
+                this.pwBox.Focus();
             }
         }
     }

@@ -25,17 +25,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private SecureString? ss_id, ss_pw;
 
         private void TabMainMenu_ForgetLoginInfoClicked(object sender, RoutedEventArgs e)
+            => this.ForgetSEGALogin();
+
+        private void ForgetSEGALogin()
         {
-            if (this.ss_id != null)
-            {
-                this.ss_id.Dispose();
-                this.ss_id = null;
-            }
-            if (this.ss_pw != null)
-            {
-                this.ss_pw.Dispose();
-                this.ss_pw = null;
-            }
+            Interlocked.Exchange<SecureString>(ref this.ss_id, null)?.Dispose();
+            Interlocked.Exchange<SecureString>(ref this.ss_pw, null)?.Dispose();
             this.TabMainMenu.ForgetLoginInfoEnabled = false;
         }
 
@@ -119,8 +114,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             if (this.ss_id == null || this.ss_pw == null)
                             {
-                                this.ss_id?.Dispose();
-                                this.ss_pw?.Dispose();
+                                this.ForgetSEGALogin();
                                 SecureString username;
                                 try
                                 {

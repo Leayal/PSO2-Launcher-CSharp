@@ -46,13 +46,20 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (obj is TabMainMenu tab)
             {
                 tab.MenuItemForgetSavedLogin.IsEnabled = (bool)(val.NewValue);
+                tab.RaiseEvent(new RoutedEventArgs(ForgetLoginInfoEnabledChangedEvent));
             }
         }));
+        public static readonly RoutedEvent ForgetLoginInfoEnabledChangedEvent = EventManager.RegisterRoutedEvent("ForgetLoginInfoEnabledChanged", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent DefaultGameStartStyleChangedEvent = EventManager.RegisterRoutedEvent("DefaultGameStartStyleChanged", RoutingStrategy.Direct, typeof(ChangeDefaultGameStartStyleEventHandler), typeof(TabMainMenu));
         public event ChangeDefaultGameStartStyleEventHandler DefaultGameStartStyleChanged
         {
             add => this.AddHandler(DefaultGameStartStyleChangedEvent, value);
             remove => this.RemoveHandler(DefaultGameStartStyleChangedEvent, value);
+        }
+        public event RoutedEventHandler ForgetLoginInfoEnabledChanged
+        {
+            add => this.AddHandler(ForgetLoginInfoEnabledChangedEvent, value);
+            remove => this.RemoveHandler(ForgetLoginInfoEnabledChangedEvent, value);
         }
         public static readonly DependencyProperty DefaultGameStartStyleProperty = DependencyProperty.Register("DefaultGameStartStyle", typeof(GameStartStyle), typeof(TabMainMenu), new UIPropertyMetadata(GameStartStyle.Default, (obj, e) =>
         {

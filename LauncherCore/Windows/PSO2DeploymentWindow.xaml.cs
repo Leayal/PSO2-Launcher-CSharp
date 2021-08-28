@@ -47,6 +47,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public static readonly DependencyProperty IsDeploymentSuccessfulProperty = IsDeploymentSuccessfulPropertyKey.DependencyProperty;
         public bool IsDeploymentSuccessful => (bool)this.GetValue(IsDeploymentSuccessfulProperty);
 
+        private static readonly DependencyPropertyKey IsDeploymentSuccessfulWithGraphicModWarningPropertyKey = DependencyProperty.RegisterReadOnly("IsDeploymentSuccessfulWithGraphicModWarning", typeof(bool), typeof(PSO2DeploymentWindow), new PropertyMetadata(false));
+        public static readonly DependencyProperty IsDeploymentSuccessfulWithGraphicModWarningProperty = IsDeploymentSuccessfulWithGraphicModWarningPropertyKey.DependencyProperty;
+        public bool IsDeploymentSuccessfulWithGraphicModWarning => (bool)this.GetValue(IsDeploymentSuccessfulWithGraphicModWarningProperty);
+
         public static readonly DependencyProperty GameClientSelectionProperty = DependencyProperty.Register("GameClientDownloadSelection", typeof(GameClientSelection), typeof(PSO2DeploymentWindow), new PropertyMetadata(GameClientSelection.Auto, (obj, e) =>
         {
             if (obj is PSO2DeploymentWindow window)
@@ -76,8 +80,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(GameClientSelectionProperty, value);
         }
 
+        public static readonly DependencyProperty DownloaderProfileSelectionProperty = DependencyProperty.Register("DownloaderProfileSelection", typeof(FileScanFlags), typeof(PSO2DeploymentWindow), new PropertyMetadata(FileScanFlags.None, (obj, e) =>
+        {
+            if (obj is PSO2DeploymentWindow window)
+            {
+                if (e.NewValue is FileScanFlags newselection && window.profileFlags_list.TryGetValue(newselection, out var newdom))
+                {
+                    window.ComboBox_downloaderprofile.SelectedItem = newdom;
+                }
+                else if (e.OldValue is FileScanFlags oldselection && window.profileFlags_list.TryGetValue(oldselection, out var olddom))
+                {
+                    window.ComboBox_downloaderprofile.SelectedItem = olddom;
+                }
+                else
+                {
+                    window.ComboBox_downloaderprofile.SelectedItem = window.profileFlags_list[FileScanFlags.Balanced];
+                }
+            }
+        }));
+        private static readonly DependencyPropertyKey DownloaderProfileSelectionTextPropertyKey = DependencyProperty.RegisterReadOnly("DownloaderProfileSelectionText", typeof(string), typeof(PSO2DeploymentWindow), new PropertyMetadata(string.Empty));
+        public static readonly DependencyProperty DownloaderProfileSelectionTextProperty = DownloaderProfileSelectionTextPropertyKey.DependencyProperty;
+        public string DownloaderProfileSelectionText => (string)this.GetValue(DownloaderProfileSelectionTextProperty);
+
+        public FileScanFlags DownloaderProfileSelection
+        {
+            get => (FileScanFlags)this.GetValue(DownloaderProfileSelectionProperty);
+            set => this.SetValue(DownloaderProfileSelectionProperty, value);
+        }
+
         private readonly PSO2HttpClient httpclient;
         private readonly Dictionary<GameClientSelection, EnumComboBox.ValueDOM<GameClientSelection>> gameSelection_list;
+        private readonly Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>> profileFlags_list;
         private CancellationTokenSource cancelSrc;
         private bool closeformaftercancel;
         private readonly string directory_pso2conf, path_pso2conf;
@@ -87,6 +120,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.closeformaftercancel = false;
             this.httpclient = webclient;
             this.gameSelection_list = EnumComboBox.EnumToDictionary<GameClientSelection>();
+            this.profileFlags_list = EnumComboBox.EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy, FileScanFlags.CacheOnly });
             this.directory_pso2conf = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             this.path_pso2conf = Path.Combine(this.directory_pso2conf, "user.pso2");
 
@@ -94,8 +128,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             InitializeComponent();
 
+            this.ComboBox_downloaderprofile.ItemsSource = this.profileFlags_list.Values;
             this.ComboBox_downloadselection.ItemsSource = this.gameSelection_list.Values;
             this.GameClientDownloadSelection = GameClientSelection.NGS_Only;
+            this.DownloaderProfileSelection = FileScanFlags.Balanced;
 
             // this.GameClientDownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
         }
@@ -180,6 +216,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 return await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, canceltoken);
                             }, canceltoken);
 
+                            // Useless if but it's safe
+                            if (Directory.Exists(dir_pso2_bin))
+                            {
+                                var mods = await PSO2TroubleshootingWindow.CheckGraphicMods(dir_pso2_bin);
+                                if (mods != null && mods.Count != 0)
+                                {
+                                    this.GraphicModMetadataPrensenter.MetadataSource = mods;
+                                    this.SetValue(IsDeploymentSuccessfulWithGraphicModWarningPropertyKey, true);
+                                }
+                                else
+                                {
+                                    this.SetValue(IsDeploymentSuccessfulWithGraphicModWarningPropertyKey, false);
+                                }
+                            }
                             this.SetValue(IsDeploymentSuccessfulPropertyKey, deploymentsuccess);
                         }
                         catch (TaskCanceledException)
@@ -538,6 +588,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void TabOverviewsBeforeDeploy_Selected(object sender, RoutedEventArgs e)
         {
             this.SetValue(IsAtFinalStepPropertyKey, true);
+        }
+
+        private void ComboBox_downloaderprofile_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems != null && e.AddedItems.Count != 0)
+            {
+                if (e.AddedItems[0] is EnumComboBox.ValueDOM<FileScanFlags> dom)
+                {
+                    this.DownloaderProfileSelection = dom.Value;
+                    this.SetValue(DownloaderProfileSelectionTextPropertyKey, dom.Name);
+                }
+            }
         }
 
         private void ComboBox_downloadselection_SelectionChanged(object sender, SelectionChangedEventArgs e)

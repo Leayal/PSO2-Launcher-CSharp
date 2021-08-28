@@ -16,8 +16,10 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock TextWrapping="WrapWithOverflow" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=Title}" TextAlignment="Center" FontSize="15" Margin="1" />
-        <TextBlock Grid.Row="1" TextWrapping="WrapWithOverflow" Text="You have not set the 'pso2_bin' directory." TextAlignment="Center" FontSize="13" />
-        <Button Grid.Row="2" Content="I don't have the game client. Let me deploy an PSO2 JP client" Margin="2" Click="ButtonDeployRequest_Click" />
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="You have not set the 'pso2_bin' directory." TextAlignment="Center" FontSize="13" />
+        <Button Grid.Row="2" Margin="2" Click="ButtonDeployRequest_Click">
+            <TextBlock Text="I don't have the game client. Let me deploy an PSO2 JP client" />
+        </Button>
         <Button Grid.Row="3" Margin="2" Click="ButtonSelectDirectory_Click">
             <TextBlock Text="I have the game client installed. Let me select 'pso2_bin' directory" />
         </Button>

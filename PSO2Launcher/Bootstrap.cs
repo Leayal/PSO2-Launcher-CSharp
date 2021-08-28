@@ -173,6 +173,10 @@ namespace Leayal.PSO2Launcher
                 {
                     asm_launcher = AssemblyLoadContext.Default.LoadFromNativeImagePath(asmPath, asmPath);
                 }
+                catch (FileLoadException)
+                {
+                    asm_launcher = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
+                }
                 catch (BadImageFormatException)
                 {
                     asm_launcher = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);

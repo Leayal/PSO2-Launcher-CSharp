@@ -88,8 +88,36 @@ namespace Leayal.PSO2Launcher.Core
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            this.MainWindow = new Windows.MainMenuWindow(this.config_main);
-            this.MainWindow.Show();
+            var mainmenuwindow = new Windows.MainMenuWindow(this.config_main);
+            this.MainWindow = mainmenuwindow;
+
+            // this.MainWindow.Show();
+            bool starttotray = false;
+
+            var args = e.Args;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (string.Equals(args[i], "--tray", StringComparison.OrdinalIgnoreCase))
+                {
+                    starttotray = true;
+                    break;
+                }
+            }
+
+            if (starttotray)
+            {
+                mainmenuwindow.ShowActivated = false;
+                mainmenuwindow.ShowInTaskbar = false;
+                mainmenuwindow.Visibility = Visibility.Hidden;
+                mainmenuwindow.Show();
+                mainmenuwindow.Visibility = Visibility.Visible;
+                mainmenuwindow.IsMinimizedToTray = true;
+                mainmenuwindow.ShowActivated = true;
+            }
+            else
+            {
+                mainmenuwindow.Show();
+            }
         }
 
         public void ChangeThemeMode(bool isLightMode)
