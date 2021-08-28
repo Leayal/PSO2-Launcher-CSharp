@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
-    <RootNamespace>Leayal.RSS.Wordpress</RootNamespace>
+    <RootNamespace>Leayal.PSO2Launcher.RSS.Handlers</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

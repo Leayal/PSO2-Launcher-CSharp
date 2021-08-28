@@ -3,8 +3,6 @@ using System.IO;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Leayal.PSO2Launcher.RSS;
 using Leayal.SharedInterfaces;
 using System.Net.Http;
 using System.Collections.Generic;
@@ -13,9 +11,8 @@ using System.Xml;
 using System.Xml.XPath;
 using System.Text.RegularExpressions;
 
-namespace PSUBlog
+namespace Leayal.PSO2Launcher.RSS.Handlers
 {
-    /// <remarks><para>This code is not official from PSUBlog. It was written by Dramiel Leayal. If PSUBlog is not happy with this, please tell <i><b>Dramiel Leayal@8799</b></i> on Discord to remove this from the launcher.</para></remarks>
     public class WordpressRSSFeed : RSSFeedHandler
     {
         private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);

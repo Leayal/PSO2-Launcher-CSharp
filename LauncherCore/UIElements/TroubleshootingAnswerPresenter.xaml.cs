@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for TroubleshootingAnswerPresenter.xaml
     /// </summary>
-    public partial class TroubleshootingAnswerPresenter : ListView
+    public partial class TroubleshootingAnswerPresenter : ListBox
     {
         public readonly static DependencyProperty AnswersSourceProperty = DependencyProperty.Register("AnswersSource", typeof(PSO2TroubleshootingAnswer), typeof(TroubleshootingAnswerPresenter), new PropertyMetadata(null, (obj, e) =>
         {
