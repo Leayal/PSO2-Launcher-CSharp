@@ -23,56 +23,93 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition />
                 </Grid.RowDefinitions>
-                <TextBlock Text="{Binding FileNameOnly}" />
+                <TextBlock Text="{Binding FileNameOnly,Mode=OneTime}" FontSize="14" mah:VisibilityHelper.IsCollapsed="{Binding WrongCPUTarget,Mode=OneTime}" />
+                <TextBlock FontSize="14" mah:VisibilityHelper.IsVisible="{Binding WrongCPUTarget,Mode=OneTime}">
+                    <Run Text="{Binding FileNameOnly,Mode=OneTime}" />
+                    <Run Text="(WARNING!!!)" />
+                </TextBlock>
                 <TextBlock Grid.Column="1">
                     <Run Text=" (Action:" />
-                    <Hyperlink NavigateUri="{Binding Filepath}" Click="HyperlinkShoWFile_Click">Show in file explorer</Hyperlink>
+                    <Hyperlink NavigateUri="{Binding Filepath,Mode=OneTime}" Click="HyperlinkShoWFile_Click">Show in file explorer</Hyperlink>
                     <Run Text="or" />
-                    <Hyperlink NavigateUri="{Binding Filepath}" Click="HyperlinkDeleteFile_Click">Remove</Hyperlink>
+                    <Hyperlink NavigateUri="{Binding Filepath,Mode=OneTime}" Click="HyperlinkDeleteFile_Click">Remove</Hyperlink>
                     <Run Text=")" />
                 </TextBlock>
-                
-                <Grid Grid.Row="1" Grid.ColumnSpan="2" mah:VisibilityHelper.IsVisible="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type ListBoxItem}},Path=IsSelected}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="ProductName: " />
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductName}" TextWrapping="Wrap" />
-
-                    <TextBlock Grid.Row="1" VerticalAlignment="Center" TextAlignment="Right" Text="Summary: " />
-                    <TextBlock Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding Summary}" TextWrapping="Wrap" />
-
-                    <TextBlock Grid.Row="2" VerticalAlignment="Center" TextAlignment="Right" Text="File Version: " />
-                    <TextBlock Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Text="{Binding FileVersion}" TextWrapping="Wrap" />
-
-                    <TextBlock Grid.Row="3" VerticalAlignment="Center" TextAlignment="Right" Text="Product Version: " />
-                    <TextBlock Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductVersion}" TextWrapping="Wrap" />
-
-                    <Grid Grid.Row="4" Grid.ColumnSpan="2">
-                        <Grid.Style>
-                            <Style TargetType="Grid">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Advice}" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Grid.Style>
+                <!--WrongCPUTarget-->
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" mah:VisibilityHelper.IsVisible="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type ListBoxItem}},Path=IsSelected,Mode=OneWay}">
+                    <Grid mah:VisibilityHelper.IsVisible="{Binding WrongCPUTarget,Mode=OneTime}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
-                        <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="Advice: " FontSize="14" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding Advice}" FontSize="14" TextWrapping="Wrap" />
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="CPU Architecture: " />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding TargetCPU,Mode=OneWay}" TextWrapping="Wrap" />
+
+                        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Advice,Mode=OneTime}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="Advice: " FontSize="14" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding Advice,Mode=OneTime}" FontSize="14" TextWrapping="Wrap" />
+                        </Grid>
+                    </Grid>
+                    <Grid mah:VisibilityHelper.IsCollapsed="{Binding WrongCPUTarget,Mode=OneTime}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="ProductName: " />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductName,Mode=OneTime}" TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="1" VerticalAlignment="Center" TextAlignment="Right" Text="Summary: " />
+                        <TextBlock Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding Summary,Mode=OneTime}" TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="2" VerticalAlignment="Center" TextAlignment="Right" Text="File Version: " />
+                        <TextBlock Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Text="{Binding FileVersion,Mode=OneTime}" TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="3" VerticalAlignment="Center" TextAlignment="Right" Text="Product Version: " />
+                        <TextBlock Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductVersion,Mode=OneTime}" TextWrapping="Wrap" />
+
+                        <Grid Grid.Row="4" Grid.ColumnSpan="2">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Advice,Mode=OneTime}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="Advice: " FontSize="14" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding Advice,Mode=OneTime}" FontSize="14" TextWrapping="Wrap" />
+                        </Grid>
                     </Grid>
                 </Grid>
             </Grid>

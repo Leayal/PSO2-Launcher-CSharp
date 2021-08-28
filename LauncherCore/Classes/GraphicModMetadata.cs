@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Reflection.PortableExecutable;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     readonly struct GraphicModMetadata
     {
-        const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>";
+        const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
         
         const string Text_Advice_RemoveIfNotKnown = "If you don't know what {graphic-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this graphic mod.";
         private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {graphic-mod-name} and if {graphic-mod-name} isn't at latest version, please update {graphic-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod." + Environment.NewLine + "- " + Text_Advice_RemoveIfNotKnown;
@@ -16,6 +17,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private static readonly string Text_Advice_RemoveTranslationPatchIfNotUsing = "- If you are using PSO2 Tweaker's 'item translate' plugin from Arks-Layer, please launch PSO2 Tweaker to update the patch to latest version if it isn't latest yet."
             + Environment.NewLine + "- If you don't use PSO2 Tweaker's 'item translate' plugin from Arks-Layer, please disable the plugin in Tweaker's plugin setting or remove the file by clicking 'Remove'."
             + Environment.NewLine + "- If you don't know what this file is or where it's from, please remove it to avoid crashes or bugs caused by this patch.";
+
+        const string Text_Advice_RemoveImmediately = "Please remove this file because it will likely cause problem due to wrong target CPU architecture. PSO2 client is 'AMD64' (or 'x64_x86') and it will crash if the game loads this file.";
 
         public readonly string Filepath { get; }
         public readonly string ProductName { get; }
@@ -27,51 +30,73 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public readonly string Advice { get; }
 
+        public readonly bool WrongCPUTarget { get; }
+        public readonly Machine TargetCPU { get; }
+
         public GraphicModMetadata(string filepath)
         {
             this.Filepath = filepath;
 
-            if (IsArksLayerItemTranslationPatch(this.Filepath))
+            using (var fs = File.OpenRead(filepath))
+            using (var pereader = new PEReader(fs, PEStreamOptions.LeaveOpen))
             {
-                this.ProductName = "Item translation patch";
-                this.Summary = "PSO2 Tweaker's item translation patch from Arks-Layer";
-                this.FileVersion = Text_NotGiven;
-                this.ProductVersion = Text_NotGiven;
+                this.TargetCPU = pereader.PEHeaders.CoffHeader.Machine;
+            }
+            if (this.TargetCPU != Machine.Amd64)
+            {
+                this.WrongCPUTarget = true;
+                this.ProductName = Text_Ignored;
+                this.Summary = Text_Ignored;
+                this.FileVersion = Text_Ignored;
+                this.ProductVersion = Text_Ignored;
 
-                this.Advice = Text_Advice_RemoveTranslationPatchIfNotUsing;
+                this.Advice = Text_Advice_RemoveImmediately;
             }
             else
             {
-                var info = FileVersionInfo.GetVersionInfo(filepath);
-                this.ProductName = info.ProductName;
-                if (string.IsNullOrWhiteSpace(this.ProductName))
+                this.WrongCPUTarget = false;
+                if (IsArksLayerItemTranslationPatch(this.Filepath))
                 {
-                    this.ProductName = Text_Unknown; // Path.GetFileNameWithoutExtension(this.ProductName);
-                }
-                this.Summary = info.FileDescription;
-                if (string.IsNullOrWhiteSpace(this.Summary))
-                {
-                    this.Summary = Text_NotGiven;
-                }
-                this.FileVersion = info.FileVersion;
-                if (string.IsNullOrEmpty(this.FileVersion))
-                {
-                    this.FileVersion = Text_Unknown;
-                }
-                this.ProductVersion = info.ProductVersion;
-                if (string.IsNullOrEmpty(this.ProductVersion))
-                {
-                    this.ProductVersion = Text_Unknown;
-                }
-                info = null;
+                    this.ProductName = "Item translation patch";
+                    this.Summary = "PSO2 Tweaker's item translation patch from Arks-Layer";
+                    this.FileVersion = Text_NotGiven;
+                    this.ProductVersion = Text_NotGiven;
 
-                if (string.Equals(this.ProductName, "gshade", StringComparison.OrdinalIgnoreCase) || string.Equals(this.ProductName, "reshade", StringComparison.OrdinalIgnoreCase))
-                {
-                    this.Advice = Text_Advice_UpdateToLatestPossible.Replace("{graphic-mod-name}", this.ProductName);
+                    this.Advice = Text_Advice_RemoveTranslationPatchIfNotUsing;
                 }
                 else
                 {
-                    this.Advice = Text_Advice_RemoveIfNotKnown.Replace("{graphic-mod-name}", "this");
+                    var info = FileVersionInfo.GetVersionInfo(filepath);
+                    this.ProductName = info.ProductName;
+                    if (string.IsNullOrWhiteSpace(this.ProductName))
+                    {
+                        this.ProductName = Text_Unknown; // Path.GetFileNameWithoutExtension(this.ProductName);
+                    }
+                    this.Summary = info.FileDescription;
+                    if (string.IsNullOrWhiteSpace(this.Summary))
+                    {
+                        this.Summary = Text_NotGiven;
+                    }
+                    this.FileVersion = info.FileVersion;
+                    if (string.IsNullOrEmpty(this.FileVersion))
+                    {
+                        this.FileVersion = Text_Unknown;
+                    }
+                    this.ProductVersion = info.ProductVersion;
+                    if (string.IsNullOrEmpty(this.ProductVersion))
+                    {
+                        this.ProductVersion = Text_Unknown;
+                    }
+                    info = null;
+
+                    if (string.Equals(this.ProductName, "gshade", StringComparison.OrdinalIgnoreCase) || string.Equals(this.ProductName, "reshade", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.Advice = Text_Advice_UpdateToLatestPossible.Replace("{graphic-mod-name}", this.ProductName);
+                    }
+                    else
+                    {
+                        this.Advice = Text_Advice_RemoveIfNotKnown.Replace("{graphic-mod-name}", "this");
+                    }
                 }
             }
         }
