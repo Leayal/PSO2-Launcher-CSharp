@@ -2,6 +2,8 @@
  An alternative game launcher for Phantasy Star Online 2 (JP) written in C# (.NET5).
 
 # Feature Overviews
+- The launcher is designed to be left running for a very long time. Therefore, it is not necessary to close the launcher shortly after using, but it's totally okay to do it, too.
+  - If leaving the launcher's window visible on the screen is not a good taste for you, please try `Minimize to tray` feature (read below).
 - All functions related to update PSO2 JP client.
   - Check for PSO2 Updates.
   - Perform game client update with some customizable settings (see the UI previews below).
@@ -31,6 +33,11 @@
   - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler should be sufficient for most cases).
   - Plugin system is available to add more handler to handle special RSS Feeds.
   - `Deferred Refresh` setting per-feed allows the user to customize which feed will be actively refreshed: If enabled, this `deferred refresh` will stop any unfocused RSS feeds (in UI) from refreshing the feed data, only when they're focused (or being in the UI view) that they start to refresh data.
+- \[BETA\] PSO2 Client Troubleshooting:
+  - The feature is currently in beta, but it's not changing anything to the system or any files so it's perfectly safe to try. Any technical advices, fixes and explanations are welcomed to share, but please do so by [Creating issues](https://github.com/Leayal/PSO2-Launcher-CSharp/issues) with `label` including `enhancement`. The more you explain about how and why the problem is there, and how the fix works is valuable information.
+  - Main purpose is to help player who has technical issue(s) with the game client. However, anything outside of the game client is not mentioned, such as Internet's problem, damaged OS's important files, etc...
+  - Most of results and words are "advices", it is not a 'must' to follow accordingly unless stated.
+
 
 ### Launcher arguments:
 - `--tray`: Launch the launcher and minimize to tray immediately.
