@@ -8,7 +8,7 @@
     <ApplicationIcon />
     <OutputType>Library</OutputType>
     <StartupObject />
-    <Configurations>Debug;Release;Publish</Configurations>
+    <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

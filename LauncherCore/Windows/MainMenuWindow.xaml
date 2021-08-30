@@ -94,7 +94,8 @@
                     BorderBrush="{x:Null}" >
                 <localui:WeirdButton Click="LoadLauncherWebView_Click" Content="Click to load launcher web view" />
             </Border>
-            <localui:RSSFeedPresenter Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" x:Name="RSSFeedPresenter" />
+            <Border x:Name="RSSFeedPresenterBorder" Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" />
+            <!--<localui:RSSFeedPresenter Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" x:Name="RSSFeedPresenter" />-->
             <avalon:TextEditor Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF"
                          IsReadOnly="True" WordWrap="True" x:Name="ConsoleLog" Margin="1,0,1,0" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}" LineNumbersForeground="{DynamicResource MahApps.Brushes.ThemeForeground}">
                 <avalon:TextEditor.ContextMenu>

@@ -42,21 +42,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     rssloader.Load(listOfFiles);
                 }
             }
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
-                path = Path.GetFullPath(Path.Combine("config", "rss"), RuntimeValues.RootDirectory);
+                var rootdir = RuntimeValues.RootDirectory;
+                path = Path.GetFullPath(Path.Combine("config", "rss"), rootdir);
                 if (Directory.Exists(path))
                 {
                     foreach (var filename in Directory.EnumerateFiles(path, "*.json", SearchOption.TopDirectoryOnly))
                     {
+                        Classes.RSS.FeedChannelConfig conf = default;
                         try
                         {
+                            conf = default;
                             var data = File.ReadAllText(filename);
-                            this.RSSFeedPresenter.LoadFeedConfig(data);
+                            conf = Classes.RSS.FeedChannelConfig.FromData(data);
+                            this.RSSFeedPresenter.LoadFeedConfig(in conf);
+                        }
+                        catch (HandlerNotRegisteredException ex)
+                        {
+                            if (!string.IsNullOrWhiteSpace(conf.FeedChannelUrl))
+                            {
+                                var str = Path.GetRelativePath(rootdir, filename);
+                                await this.CreateNewParagraphInLog(writer =>
+                                {
+                                    writer.Write($"[RSS Feed Loader] Fail to load feed config for URL '{conf.FeedChannelUrl}'. Reason: The target RSS Handler '{ex.TargetHandlerName}' cannot be found");
+                                });
+                            }
                         }
                         catch
                         {
-
+                            if (!string.IsNullOrWhiteSpace(conf.FeedChannelUrl))
+                            {
+                                var str = Path.GetRelativePath(rootdir, filename);
+                                await this.CreateNewParagraphInLog(writer =>
+                                {
+                                    writer.Write($"[RSS Feed Loader] Fail to load feed config for URL '{conf.FeedChannelUrl}' from file '{str}'");
+                                });
+                            }
                         }
                     }
                 }

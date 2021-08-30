@@ -31,7 +31,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
-        private readonly HttpClient webclient;
+        internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private GameClientUpdater pso2Updater;
         private CancellationTokenSource cancelSrc;
@@ -40,6 +40,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
+        private readonly RSSFeedPresenter RSSFeedPresenter;
 
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
@@ -51,11 +52,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 AllowAutoRedirect = true,
                 AutomaticDecompression = System.Net.DecompressionMethods.All,
                 ConnectTimeout = TimeSpan.FromSeconds(30),
+#if DEBUGHTTPREQUEST
+                UseProxy = true,
+                Proxy = new System.Net.WebProxy(System.Net.IPAddress.Loopback.ToString(), 8866),
+#else
                 UseProxy = false,
-                UseCookies = false,
+                Proxy = null,
+#endif
+                EnableMultipleHttp2Connections = true,
+                UseCookies = true,
                 Credentials = null,
                 DefaultProxyCredentials = null
             }, true);
+            this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.pso2HttpClient = new PSO2HttpClient(this.webclient);
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
             {
@@ -88,6 +97,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
 
             InitializeComponent();
+
+            this.RSSFeedPresenterBorder.Child = this.RSSFeedPresenter;
+
             this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed, this.ToggleBtn_ConsoleLog };
             var pathlaststate_selectedtogglebuttons = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
             if (File.Exists(pathlaststate_selectedtogglebuttons))
@@ -570,7 +582,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.ConsoleLog.Clear();
         }
 
-        #region | WindowsCommandButtons |
+#region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -595,6 +607,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             SystemCommands.MinimizeWindow(this);
         }
 
-        #endregion
+#endregion
     }
 }

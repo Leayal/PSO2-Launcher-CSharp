@@ -15,7 +15,7 @@ namespace Leayal.PSO2Launcher.RSS
         private static readonly Assembly currentAsm = Assembly.GetExecutingAssembly();
         private readonly AssemblyDependencyResolver resolver;
         
-        public RSSAssemblyLoadContext(string assemblypath) : base(assemblypath, true)
+        public RSSAssemblyLoadContext() : base(null, true)
         {
             /*
             string path = currentAsm.Location;
@@ -24,7 +24,7 @@ namespace Leayal.PSO2Launcher.RSS
                 path = RuntimeValues.RootDirectory;
             }
             */
-            this.resolver = new AssemblyDependencyResolver(assemblypath);
+            this.resolver = new AssemblyDependencyResolver(currentAsm.Location);
         }
 
         protected override Assembly Load(AssemblyName assemblyName)

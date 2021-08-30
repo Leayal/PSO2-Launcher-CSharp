@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Xml;
 using System.Xml.XPath;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Leayal.PSO2Launcher.RSS.Handlers
 {
@@ -18,7 +19,7 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
         private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex rg_removetags = new Regex(@"<\/?[\w\s]*>|<.+[\W]>.*?<.+[\W]>?", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private bool isfirstfetch;
+        private int isfirstfetch;
         private string cached_abs_url_icon;
         private readonly string IconPath;
         private readonly string IconHashPath;
@@ -54,7 +55,7 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
             {
                 this.cached_abs_url_icon = null;
             }
-            this.isfirstfetch = true;
+            this.isfirstfetch = 1;
         }
 
         
@@ -263,9 +264,8 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
 
 
                 // Next tick.
-                if (isfirstfetch)
+                if (Interlocked.CompareExchange(ref this.isfirstfetch, 0, 1) == 1)
                 {
-                    isfirstfetch = false;
                     DateTime lastFetchTime;
                     TimeSpan nextfetch;
                     var lastbuilddate = element_channel.SelectSingleNode("lastBuildDate");
@@ -287,9 +287,11 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
                         nextfetch = timerOffset;
                     }
                     this.SetNextRefesh(nextfetch);
+                    // this.SetNextRefesh(TimeSpan.FromSeconds(5));
                 }
                 else
                 {
+                    // this.SetNextRefesh(TimeSpan.FromSeconds(5));
                     this.SetNextRefesh(timerOffset);
                 }
             }

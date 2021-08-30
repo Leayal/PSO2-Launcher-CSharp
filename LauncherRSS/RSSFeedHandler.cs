@@ -100,7 +100,7 @@ namespace Leayal.PSO2Launcher.RSS
 
         /// <summary>When overriden, this method should contain code to re-fetch, re-parse the RSS Feed(s).</summary>
         /// <remarks>This method is called when <seealso cref="Refresh(in DateTime)"/> is called.</remarks>
-        /// <param name="datetime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
+        /// <param name="dateTime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
         protected virtual async Task OnRefresh(DateTime dateTime)
         {
             if (Interlocked.CompareExchange(ref this.flag_isinrefresh, 1, 0) == 0)
@@ -121,7 +121,7 @@ namespace Leayal.PSO2Launcher.RSS
 
         public event EventHandler DeferredRefreshReady;
 
-        private const int BeaconTickMS = (int.MaxValue - 1);
+        // private const int BeaconTickMS = (int.MaxValue - 1);
 
         /// <summary>
         /// 
@@ -138,40 +138,22 @@ namespace Leayal.PSO2Launcher.RSS
             else
             {
                 var src = new CancellationTokenSource();
-                this.cancelSrc?.Cancel();
+                this.cancelSrc?.Dispose();
                 this.cancelSrc = src;
                 var canceltoken = src.Token;
                 Task.Factory.StartNew(async () =>
                 {
                     var copiedtoken = canceltoken;
                     var total = Convert.ToInt64(timespan.TotalMilliseconds);
-                    while (total > 0)
-                    {
-                        if (copiedtoken.IsCancellationRequested || src.IsCancellationRequested)
-                        {
-                            break;
-                        }
-                        if (total >= BeaconTickMS)
-                        {
-                            total -= BeaconTickMS;
-                            await Task.Delay(BeaconTickMS, copiedtoken);
-                        }
-                        else
-                        {
-                            var convert = Convert.ToInt32(total);
-                            total -= convert;
-                            await Task.Delay(convert, copiedtoken);
-                        }
-                    }
-                    if (!copiedtoken.IsCancellationRequested && !src.IsCancellationRequested)
+                    await Task.Delay(timespan, copiedtoken);
+                    if (!copiedtoken.IsCancellationRequested)
                     {
                         bool deferred = this.DeferRefresh;
                         if (Interlocked.CompareExchange(ref this.flag_pendingrefresh, 1, 0) == 0)
                         {
                             if (deferred)
                             {
-                                var stuff = this.DeferredRefreshReady;
-                                stuff?.Invoke(this, EventArgs.Empty);
+                                this.DeferredRefreshReady?.Invoke(this, EventArgs.Empty);
                             }
                             else
                             {

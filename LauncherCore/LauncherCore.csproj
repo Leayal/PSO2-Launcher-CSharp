@@ -7,19 +7,12 @@
     <ApplicationIcon />
     <StartupObject />
     <RootNamespace>Leayal.PSO2Launcher.Core</RootNamespace>
-    <Configurations>Debug;Release;Publish</Configurations>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
+    <DefineConstants>DEBUGHTTPREQUEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -84,7 +77,7 @@
   
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( &#xD;&#xA;copy /B /L /Y &quot;$(OutDir)*.dll&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;copy /B /L /Y &quot;$(OutDir)runtimes\win-x64\native\*&quot; &quot;$(SolutionDir)Test\bin\&quot;&#xD;&#xA;)" />
+    <Exec Command="setlocal EnableDelayedExpansion&#xD;&#xA;&#xD;&#xA;SET &quot;localvar_buildconfigname=$(ConfigurationName)&quot;&#xD;&#xA;SET &quot;localvar_solutiondir=$(SolutionDir)&quot;&#xD;&#xA;SET &quot;localvar_targetpath=$(TargetPath)&quot;&#xD;&#xA;SET &quot;localvar_outdir=$(OutDir)&quot;&#xD;&#xA;&#xD;&#xA;if &quot;%25localvar_buildconfigname:~0,5%25&quot;==&quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!*.dll&quot; &quot;!localvar_solutiondir!Test\bin\&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!runtimes\win-x64\native\*&quot; &quot;!localvar_solutiondir!Test\bin\&quot;&#xD;&#xA;)&#xD;&#xA;endlocal" />
   </Target>
 
 </Project>

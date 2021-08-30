@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Runtime.Loader;
 
 namespace Leayal.PSO2Launcher.RSS
 {
@@ -30,8 +31,10 @@ namespace Leayal.PSO2Launcher.RSS
         private readonly ConcurrentDictionary<string, Assembly> assemblies;
         internal readonly HttpClient webclient;
 
-        public RSSLoader()
+        public RSSLoader(HttpClient httpclient)
         {
+            this.webclient = httpclient;
+            /*
             this.webclient = new HttpClient(new SocketsHttpHandler()
             {
                 ConnectTimeout = TimeSpan.FromSeconds(5),
@@ -44,7 +47,8 @@ namespace Leayal.PSO2Launcher.RSS
                 Proxy = null,
                 MaxAutomaticRedirections = 10
             }, true);
-            this.loadcontext = new RSSAssemblyLoadContext(Assembly.GetExecutingAssembly().Location);
+            */
+            this.loadcontext = new RSSAssemblyLoadContext();
             this.assemblies = new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
             this.registeredhandlers = new Dictionary<string, Type>(StringComparer.Ordinal);
             this.registereddownloadhandlers = new Dictionary<string, IRSSFeedChannelDownloader>(StringComparer.Ordinal);
@@ -57,8 +61,24 @@ namespace Leayal.PSO2Launcher.RSS
         public IReadOnlyCollection<IRSSFeedChannelParser> RegisteredParserHandlers => this.registeredparserhandlers.Values;
         public IReadOnlyCollection<IRSSFeedItemCreator> RegisteredFeedItemCreatorHandlers => this.registeredmakerhandlers.Values;
 
-        private void LoadFrom(string filename)
+        private static Assembly LoadWithFallback(AssemblyLoadContext loadcontext, string path)
         {
+            try
+            {
+                return loadcontext.LoadFromNativeImagePath(path, path);
+            }
+            catch (System.IO.FileLoadException)
+            {
+                return loadcontext.LoadFromAssemblyPath(path);
+            }
+            catch (BadImageFormatException)
+            {
+                return loadcontext.LoadFromAssemblyPath(path);
+            }
+        }
+
+        private void LoadFrom(string filename)
+        {   
             this.assemblies.AddOrUpdate(filename, (path) =>
             {
                 if (Shared.FileHelper.IsNotExistsOrZeroLength(path))
@@ -67,22 +87,24 @@ namespace Leayal.PSO2Launcher.RSS
                 }
                 try
                 {
-                    var assembly = this.loadcontext.LoadFromNativeImagePath(path, path);
+                    var assembly = LoadWithFallback(this.loadcontext, path);
+                    var assemblyResolver = new AssemblyDependencyResolver(path);
+                    var referenced = assembly.GetReferencedAssemblies();
+                    for (int i = 0; i < referenced.Length; i++)
+                    {
+                        var referencedpath = assemblyResolver.ResolveAssemblyToPath(referenced[i]);
+                        if (!string.IsNullOrEmpty(referencedpath))
+                        {
+                            LoadFrom(referencedpath);
+                        }
+                    }
+
                     CreateFromAssemby(assembly);
                     return assembly;
                 }
                 catch 
                 {
-                    try
-                    {
-                        var assembly = this.loadcontext.LoadFromAssemblyPath(path);
-                        CreateFromAssemby(assembly);
-                        return assembly;
-                    }
-                    catch
-                    {
-                        return null;
-                    }
+                    return null;
                 }
             }, (path, asm) =>
             {
@@ -94,22 +116,24 @@ namespace Leayal.PSO2Launcher.RSS
                     }
                     try
                     {
-                        var assembly = this.loadcontext.LoadFromNativeImagePath(path, path);
+                        var assembly = LoadWithFallback(this.loadcontext, path);
+                        var assemblyResolver = new AssemblyDependencyResolver(path);
+                        var referenced = assembly.GetReferencedAssemblies();
+                        for (int i = 0; i < referenced.Length; i++)
+                        {
+                            var referencedpath = assemblyResolver.ResolveAssemblyToPath(referenced[i]);
+                            if (!string.IsNullOrEmpty(referencedpath))
+                            {
+                                LoadFrom(referencedpath);
+                            }
+                        }
+
                         CreateFromAssemby(assembly);
                         return assembly;
                     }
                     catch
                     {
-                        try
-                        {
-                            var assembly = this.loadcontext.LoadFromAssemblyPath(path);
-                            CreateFromAssemby(assembly);
-                            return assembly;
-                        }
-                        catch
-                        {
-                            return null;
-                        }
+                        return null;
                     }
                 }
                 else
@@ -329,7 +353,7 @@ namespace Leayal.PSO2Launcher.RSS
             }
             else
             {
-                throw new ArgumentException(nameof(handlerTypeName));
+                throw new HandlerNotRegisteredException(handlerTypeName);
             }
         }
 
@@ -390,12 +414,12 @@ namespace Leayal.PSO2Launcher.RSS
         /// <summary>The loader is not unloadable.</summary>
         public void UnloadAll()
         {
-            this.registeredhandlers.Clear();
-            this.registereddownloadhandlers.Clear();
-            this.registeredparserhandlers.Clear();
-            this.registeredmakerhandlers.Clear();
-            this.assemblies.Clear();
-            this.loadcontext.Unload();
+            this.registeredhandlers?.Clear();
+            this.registereddownloadhandlers?.Clear();
+            this.registeredparserhandlers?.Clear();
+            this.registeredmakerhandlers?.Clear();
+            this.assemblies?.Clear();
+            this.loadcontext?.Unload();
         }
 
         public void Dispose()
@@ -408,7 +432,7 @@ namespace Leayal.PSO2Launcher.RSS
         {
             this.UnloadAll();
             this.webclient.CancelPendingRequests();
-            this.webclient.Dispose();
+            // this.webclient.Dispose();
         }
 
         ~RSSLoader()

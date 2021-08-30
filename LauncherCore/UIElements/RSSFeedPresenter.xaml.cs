@@ -16,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using Leayal.PSO2Launcher.Core.Windows;
 using Leayal.PSO2Launcher.RSS;
 using Leayal.Shared;
 
@@ -33,10 +34,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private static readonly RSSFeedItemClickEventHandler _RSSFeedItemClickEventHandler = new RSSFeedItemClickEventHandler(FeedItem_Click);
         private RSSFeedDom currentFeedDom;
 
-        public RSSFeedPresenter()
+        public RSSFeedPresenter(System.Net.Http.HttpClient webclient)
         {
             this.currentFeedDom = null;
-            this.loader = new RSSLoader();
+            this.loader = new RSSLoader(webclient);
+            
             this.rssfeeds = new ObservableCollection<RSSFeedDom>();
             this.rssfeedhandlers = new ObservableCollection<RSSFeedHandler>();
             this.linked = new Dictionary<RSSFeedHandler, RSSFeedDom>();
@@ -227,6 +229,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     this.PrintFeed();
                     feed.FeedUpdated += this.Feed_FeedUpdated;
                     feed.DeferredRefreshReady += this.CurrentFeed_DeferredRefreshReady;
+                    Task.Run(feed.Refresh);
                 }
             }
 
@@ -271,133 +274,126 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public void LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
         {
-            try
+            if (!string.IsNullOrEmpty(config.FeedChannelUrl) && Uri.TryCreate(config.FeedChannelUrl, UriKind.Absolute, out var url))
             {
-                if (!string.IsNullOrEmpty(config.FeedChannelUrl) && Uri.TryCreate(config.FeedChannelUrl, UriKind.Absolute, out var url))
+                if (string.IsNullOrWhiteSpace(config.BaseHandler))
                 {
-                    if (string.IsNullOrWhiteSpace(config.BaseHandler))
+                    var baseHandler = this.loader.CreateHandlerFromUri(url);
+                    baseHandler.DeferRefresh = config.IsDeferredUpdate;
+                    if (this.CheckAccess())
                     {
-                        var baseHandler = this.loader.CreateHandlerFromUri(url);
-                        baseHandler.DeferRefresh = config.IsDeferredUpdate;
+                        this.rssfeedhandlers.Add(baseHandler);
+                    }
+                    else
+                    {
+                        this.Dispatcher.BeginInvoke(new Action<RSSFeedHandler>((handler) =>
+                        {
+                            this.rssfeedhandlers.Add(handler);
+                        }), baseHandler);
+                    }
+                }
+                else
+                {
+                    RSSFeedHandler basehandler = null;
+                    if (string.Equals(config.BaseHandler, "Default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        basehandler = this.loader.CreateHandlerFromUri(url);
+                    }
+                    else if (string.Equals(config.BaseHandler, "Generic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        bool isOkay = true;
+                        IRSSFeedChannelDownloader handler_download = null;
+                        IRSSFeedChannelParser handler_parser = null;
+                        IRSSFeedItemCreator handler_creator = null;
+                        if (string.IsNullOrWhiteSpace(config.DownloadHandler))
+                        {
+                            handler_download = RSSFeedHandler.Default;
+                        }
+                        else
+                        {
+                            foreach (var item in this.loader.GetDownloadHandlerSuggesstion(url))
+                            {
+                                if (string.Equals(item.GetType().FullName, config.DownloadHandler, StringComparison.Ordinal))
+                                {
+                                    handler_download = item;
+                                    break;
+                                }
+                            }
+                            if (handler_download == null)
+                            {
+                                isOkay = false;
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(config.ParserHandler))
+                        {
+                            handler_parser = RSSFeedHandler.Default;
+                        }
+                        else
+                        {
+                            foreach (var item in this.loader.GetParserHandlerSuggesstion(url))
+                            {
+                                if (string.Equals(item.GetType().FullName, config.ParserHandler, StringComparison.Ordinal))
+                                {
+                                    handler_parser = item;
+                                    break;
+                                }
+                            }
+                            if (handler_parser == null)
+                            {
+                                isOkay = false;
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(config.ItemCreatorHandler))
+                        {
+                            handler_creator = RSSFeedHandler.Default;
+                        }
+                        else
+                        {
+                            foreach (var item in this.loader.GetItemCreatorHandlerSuggesstion(url))
+                            {
+                                if (string.Equals(item.GetType().FullName, config.ItemCreatorHandler, StringComparison.Ordinal))
+                                {
+                                    handler_creator = item;
+                                    break;
+                                }
+                            }
+                            if (handler_creator == null)
+                            {
+                                isOkay = false;
+                            }
+                        }
+                        if (isOkay)
+                        {
+                            basehandler = this.loader.CreateHandlerFromUri(url, handler_download, handler_parser, handler_creator);
+                        }
+                    }
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(config.BaseHandler))
+                        {
+                            basehandler = RSSFeedHandler.Default;
+                        }
+                        else
+                        {
+                            basehandler = this.loader.CreateHandlerFromUri(url, config.BaseHandler);
+                        }
+                    }
+                    if (basehandler != null)
+                    {
+                        basehandler.DeferRefresh = config.IsDeferredUpdate;
                         if (this.CheckAccess())
                         {
-                            this.rssfeedhandlers.Add(baseHandler);
+                            this.rssfeedhandlers.Add(basehandler);
                         }
                         else
                         {
                             this.Dispatcher.BeginInvoke(new Action<RSSFeedHandler>((handler) =>
                             {
                                 this.rssfeedhandlers.Add(handler);
-                            }), baseHandler);
-                        }
-                    }
-                    else
-                    {
-                        RSSFeedHandler basehandler = null;
-                        if (string.Equals(config.BaseHandler, "Default", StringComparison.OrdinalIgnoreCase))
-                        {
-                            basehandler = this.loader.CreateHandlerFromUri(url);
-                        }
-                        else if (string.Equals(config.BaseHandler, "Generic", StringComparison.OrdinalIgnoreCase))
-                        {
-                            bool isOkay = true;
-                            IRSSFeedChannelDownloader handler_download = null;
-                            IRSSFeedChannelParser handler_parser = null;
-                            IRSSFeedItemCreator handler_creator = null;
-                            if (string.IsNullOrWhiteSpace(config.DownloadHandler))
-                            {
-                                handler_download = RSSFeedHandler.Default;
-                            }
-                            else
-                            {
-                                foreach (var item in this.loader.GetDownloadHandlerSuggesstion(url))
-                                {
-                                    if (string.Equals(item.GetType().FullName, config.DownloadHandler, StringComparison.Ordinal))
-                                    {
-                                        handler_download = item;
-                                        break;
-                                    }
-                                }
-                                if (handler_download == null)
-                                {
-                                    isOkay = false;
-                                }
-                            }
-                            if (string.IsNullOrWhiteSpace(config.ParserHandler))
-                            {
-                                handler_parser = RSSFeedHandler.Default;
-                            }
-                            else
-                            {
-                                foreach (var item in this.loader.GetParserHandlerSuggesstion(url))
-                                {
-                                    if (string.Equals(item.GetType().FullName, config.ParserHandler, StringComparison.Ordinal))
-                                    {
-                                        handler_parser = item;
-                                        break;
-                                    }
-                                }
-                                if (handler_parser == null)
-                                {
-                                    isOkay = false;
-                                }
-                            }
-                            if (string.IsNullOrWhiteSpace(config.ItemCreatorHandler))
-                            {
-                                handler_creator = RSSFeedHandler.Default;
-                            }
-                            else
-                            {
-                                foreach (var item in this.loader.GetItemCreatorHandlerSuggesstion(url))
-                                {
-                                    if (string.Equals(item.GetType().FullName, config.ItemCreatorHandler, StringComparison.Ordinal))
-                                    {
-                                        handler_creator = item;
-                                        break;
-                                    }
-                                }
-                                if (handler_creator == null)
-                                {
-                                    isOkay = false;
-                                }
-                            }
-                            if (isOkay)
-                            {
-                                basehandler = this.loader.CreateHandlerFromUri(url, handler_download, handler_parser, handler_creator);
-                            }
-                        }
-                        else
-                        {
-                            if (string.IsNullOrWhiteSpace(config.BaseHandler))
-                            {
-                                basehandler = RSSFeedHandler.Default;
-                            }
-                            else
-                            {
-                                basehandler = this.loader.CreateHandlerFromUri(url, config.BaseHandler);
-                            }
-                        }
-                        if (basehandler != null)
-                        {
-                            basehandler.DeferRefresh = config.IsDeferredUpdate;
-                            if (this.CheckAccess())
-                            {
-                                this.rssfeedhandlers.Add(basehandler);
-                            }
-                            else
-                            {
-                                this.Dispatcher.BeginInvoke(new Action<RSSFeedHandler>((handler) =>
-                                {
-                                    this.rssfeedhandlers.Add(handler);
-                                }), basehandler);
-                            }
+                            }), basehandler);
                         }
                     }
                 }
-            }
-            catch (Exception ex) when (Debugger.IsAttached)
-            {
-                var aa = ex.ToString();
             }
         }
 
