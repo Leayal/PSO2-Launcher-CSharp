@@ -172,7 +172,7 @@
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Text="Below are file(s) which could potentially break the game:" FontSize="14" IsHitTestVisible="False" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
                             <TextBlock Grid.Row="1" Text="(Click on the item to show more info)" IsHitTestVisible="False" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
-                            <localui:GraphicModMetadataPrensenter Grid.Row="2" x:Name="GraphicModMetadataPrensenter" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}" />
+                            <localui:LibraryModMetadataPrensenter Grid.Row="2" x:Name="LibraryModMetadataPrensenter" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithLibraryModWarning}" />
                         </Grid>
                     </Grid>
                     

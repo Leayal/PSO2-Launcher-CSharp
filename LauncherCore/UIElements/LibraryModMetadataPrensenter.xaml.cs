@@ -21,15 +21,15 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for GraphicModMetadataPrensenter.xaml
     /// </summary>
-    public partial class GraphicModMetadataPrensenter : ListBox
+    public partial class LibraryModMetadataPrensenter : ListBox
     {
-        internal ObservableCollection<GraphicModMetadata> MetadataSource
+        internal ObservableCollection<CustomLibraryModMetadata> MetadataSource
         {
-            get => this.ItemsSource as ObservableCollection<GraphicModMetadata>;
+            get => this.ItemsSource as ObservableCollection<CustomLibraryModMetadata>;
             set => this.ItemsSource = value;
         }
 
-        public GraphicModMetadataPrensenter()
+        public LibraryModMetadataPrensenter()
         {
             InitializeComponent();
         }
@@ -66,7 +66,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     try
                     {
                         File.Delete(filepath);
-                        if (link.DataContext is GraphicModMetadata metadata)
+                        if (link.DataContext is CustomLibraryModMetadata metadata)
                         {
                             var collection = this.MetadataSource;
                             if (collection != null)

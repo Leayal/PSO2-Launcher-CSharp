@@ -25,6 +25,11 @@ namespace Leayal.PSO2Launcher.RSS
         // Currently useless and has no differences from old one.
         public Task<IReadOnlyList<FeedItemData>> ParseFeedChannelWithInstance(RSSFeedHandler instance, string data)
         {
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                this.SetNextRefesh(TimeSpan.FromHours(1));
+                return null;
+            }
             var reader = new XmlDocument();
             reader.LoadXml(data);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(reader.NameTable);

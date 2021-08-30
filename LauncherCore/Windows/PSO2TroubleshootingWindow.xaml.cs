@@ -64,7 +64,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public readonly static DependencyProperty IsInResultProperty = IsInResultPropertyKey.DependencyProperty;
         public bool IsInResult => (bool)this.GetValue(IsInResultProperty);
 
-        private readonly static DependencyPropertyKey IsInResultWithGraphicModPresenterPropertyKey = DependencyProperty.RegisterReadOnly("IsInResultWithGraphicModPresenter", typeof(bool), typeof(PSO2TroubleshootingWindow), new PropertyMetadata(false, null, (obj, val) =>
+        private readonly static DependencyPropertyKey IsInResultWithLibraryModPresenterPropertyKey = DependencyProperty.RegisterReadOnly("IsInResultWithLibraryModPresenter", typeof(bool), typeof(PSO2TroubleshootingWindow), new PropertyMetadata(false, null, (obj, val) =>
         {
             if (obj is PSO2TroubleshootingWindow presenter)
             {
@@ -75,8 +75,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             return false;
         }));
-        public readonly static DependencyProperty IsInResultWithGraphicModPresenterProperty = IsInResultWithGraphicModPresenterPropertyKey.DependencyProperty;
-        public bool IsInResultWithGraphicModPresenter => (bool)this.GetValue(IsInResultWithGraphicModPresenterProperty);
+        public readonly static DependencyProperty IsInResultWithLibraryModPresenterProperty = IsInResultWithLibraryModPresenterPropertyKey.DependencyProperty;
+        public bool IsInResultWithLibraryModPresenter => (bool)this.GetValue(IsInResultWithLibraryModPresenterProperty);
 
         private readonly ConfigurationFile _config;
 
@@ -104,9 +104,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.SetValue(IsInResultWithGraphicModPresenterPropertyKey, false);
+                this.SetValue(IsInResultWithLibraryModPresenterPropertyKey, false);
                 this.SetValue(IsInResultPropertyKey, false);
-                this.GraphicModMetadataPrensenter.ItemsSource = null;
+                this.LibraryModMetadataPrensenter.ItemsSource = null;
                 this.AnswerSelectionList.GoBackPreviousAnswer();
             }
         }
@@ -173,13 +173,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                 if (metadatas != null && metadatas.Count != 0)
                 {
-                    this.GraphicModMetadataPrensenter.MetadataSource = metadatas;
-                    this.SetValue(IsInResultWithGraphicModPresenterPropertyKey, true);
+                    this.LibraryModMetadataPrensenter.MetadataSource = metadatas;
+                    this.SetValue(IsInResultWithLibraryModPresenterPropertyKey, true);
                 }
             }
             else
             {
-                this.SetValue(IsInResultWithGraphicModPresenterPropertyKey, false);
+                this.SetValue(IsInResultWithLibraryModPresenterPropertyKey, false);
             }
 
             var block = this.ResultBox.Document.Blocks;
@@ -189,27 +189,36 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.SetValue(IsInResultPropertyKey, true);
         }
 
-        internal static Task<ObservableCollection<GraphicModMetadata>> CheckGraphicMods(string pso2bin)
+        internal static Task<ObservableCollection<CustomLibraryModMetadata>> CheckGraphicMods(string pso2bin)
         {
-            static void TryAddMetadata(ObservableCollection<GraphicModMetadata> list, in string bin, string filename)
+            static void TryAddMetadata(List<CustomLibraryModMetadata> list, in string bin, in string filename)
             {
                 var path = Path.Combine(bin, filename);
                 if (File.Exists(path))
                 {
-                    list.Add(new GraphicModMetadata(path));
+                    list.Add(new CustomLibraryModMetadata(path));
                 }
             }
 
-            return Task.Run<ObservableCollection<GraphicModMetadata>>(() =>
+            return Task.Run<ObservableCollection<CustomLibraryModMetadata>>(() =>
             {
                 var localvar_pso2bin = pso2bin;
-                var result = new ObservableCollection<GraphicModMetadata>();
 
-                TryAddMetadata(result, in localvar_pso2bin, "dxgi.dll");
-                TryAddMetadata(result, in localvar_pso2bin, "d3d11.dll");
-                TryAddMetadata(result, in localvar_pso2bin, "d3dx11.dll");
+                var directXfiles = new string[] { "dxgi.dll", "d3d11.dll", "d3dx11.dll" };
+                var vcredistfiles = new string[] { "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vccorlib140.dll", "vcruntime140.dll", "msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vcruntime140_1.dll" };
 
-                return result;
+                var result = new List<CustomLibraryModMetadata>(directXfiles.Length + vcredistfiles.Length);
+                foreach (var name in directXfiles)
+                {
+                    TryAddMetadata(result, in localvar_pso2bin, in name);
+                }
+
+                foreach (var name in vcredistfiles)
+                {
+                    TryAddMetadata(result, in localvar_pso2bin, in name);
+                }
+
+                return new ObservableCollection<CustomLibraryModMetadata>(result);
             });
         }
 

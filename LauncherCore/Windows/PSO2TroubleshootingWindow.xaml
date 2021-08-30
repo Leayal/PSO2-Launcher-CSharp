@@ -48,7 +48,7 @@
                                                     CurrentAnswerChanged="AnswerSelectionList_CurrentAnswerChanged" />
 
             <RichTextBox Grid.Row="1" x:Name="ResultBox" IsReadOnly="True" IsReadOnlyCaretVisible="False" IsUndoEnabled="False" IsDocumentEnabled="True" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResult,Mode=OneWay}" />
-            <Grid Grid.Row="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResultWithGraphicModPresenter,Mode=OneWay}">
+            <Grid Grid.Row="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInResultWithLibraryModPresenter,Mode=OneWay}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -56,7 +56,7 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="Below are file(s) which could potentially break the game:" FontSize="14" IsHitTestVisible="False" />
                 <TextBlock Grid.Row="1" Text="(Click on the item to show more info)" IsHitTestVisible="False" />
-                <localui:GraphicModMetadataPrensenter Grid.Row="2" x:Name="GraphicModMetadataPrensenter" />
+                <localui:LibraryModMetadataPrensenter Grid.Row="2" x:Name="LibraryModMetadataPrensenter" />
             </Grid>
         </Grid>
 

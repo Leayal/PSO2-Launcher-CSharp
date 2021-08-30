@@ -200,7 +200,23 @@ namespace Leayal.PSO2Launcher.RSS
 
         private async Task<List<RSSFeedItem>> InnerFetch()
         {
-            var data = await this.DownloadFeedChannel(this.HttpClient, this._feedchannelUrl);
+            string data;
+
+            while (true)
+            {
+                try
+                {
+                    data = await this.DownloadFeedChannel(this.HttpClient, this._feedchannelUrl).ConfigureAwait(false);
+                    break;
+                }
+                catch (HttpRequestException)
+                {
+                    // Wait for 5 minutes before retry
+                    await Task.Delay(TimeSpan.FromMinutes(5)).ConfigureAwait(false);
+                }
+                catch (Exception) { data = null; break; } // should include TaskCanceledException
+            }
+
             var fetched = await this.ParseFeedChannel(data);
             if (fetched != null && fetched.Count != 0)
             {

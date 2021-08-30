@@ -7,18 +7,19 @@ using System.Reflection.PortableExecutable;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    readonly struct GraphicModMetadata
+    readonly struct CustomLibraryModMetadata
     {
         const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
         
-        const string Text_Advice_RemoveIfNotKnown = "If you don't know what {graphic-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this graphic mod.";
-        private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {graphic-mod-name} and if {graphic-mod-name} isn't at latest version, please update {graphic-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod." + Environment.NewLine + "- " + Text_Advice_RemoveIfNotKnown;
+        const string Text_Advice_RemoveIfNotKnown = "If you don't know what {library-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this custom library file.";
+        private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {library-mod-name} and if {library-mod-name} isn't at latest version, please update {library-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod." + Environment.NewLine + "- " + Text_Advice_RemoveIfNotKnown;
 
         private static readonly string Text_Advice_RemoveTranslationPatchIfNotUsing = "- If you are using PSO2 Tweaker's 'item translate' plugin from Arks-Layer, please launch PSO2 Tweaker to update the patch to latest version if it isn't latest yet."
             + Environment.NewLine + "- If you don't use PSO2 Tweaker's 'item translate' plugin from Arks-Layer, please disable the plugin in Tweaker's plugin setting or remove the file by clicking 'Remove'."
             + Environment.NewLine + "- If you don't know what this file is or where it's from, please remove it to avoid crashes or bugs caused by this patch.";
 
         const string Text_Advice_RemoveImmediately = "Please remove this file because it will likely cause problem due to wrong target CPU architecture. PSO2 client is 'AMD64' (or 'x64_x86') and it will crash if the game loads this file.";
+        const string Text_Advice_RemoveVCRedistImmediately = "Please remove this file and install VC++ Redist properly by using the installation setup from Microsoft Download Center (or Microsoft Support Center) if you haven't installed the VC++ Redist yet.";
 
         public readonly string Filepath { get; }
         public readonly string ProductName { get; }
@@ -33,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public readonly bool WrongCPUTarget { get; }
         public readonly Machine TargetCPU { get; }
 
-        public GraphicModMetadata(string filepath)
+        public CustomLibraryModMetadata(string filepath)
         {
             this.Filepath = filepath;
 
@@ -91,11 +92,17 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
                     if (string.Equals(this.ProductName, "gshade", StringComparison.OrdinalIgnoreCase) || string.Equals(this.ProductName, "reshade", StringComparison.OrdinalIgnoreCase))
                     {
-                        this.Advice = Text_Advice_UpdateToLatestPossible.Replace("{graphic-mod-name}", this.ProductName);
+                        this.Advice = Text_Advice_UpdateToLatestPossible.Replace("{library-mod-name}", this.ProductName);
+                    }
+                    else if (string.Equals(this.ProductName, "Microsoft® Visual Studio®", StringComparison.OrdinalIgnoreCase)
+                        && this.Summary.StartsWith("Microsoft®", StringComparison.OrdinalIgnoreCase)
+                        && this.Summary.Contains("Runtime", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.Advice = Text_Advice_RemoveVCRedistImmediately;
                     }
                     else
                     {
-                        this.Advice = Text_Advice_RemoveIfNotKnown.Replace("{graphic-mod-name}", "this");
+                        this.Advice = Text_Advice_RemoveIfNotKnown.Replace("{library-mod-name}", "this");
                     }
                 }
             }

@@ -14,6 +14,7 @@ using Leayal.SharedInterfaces;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Diagnostics;
+using System.Text;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -45,6 +46,7 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
             }
+
             this.ThisAssembly = Assembly.GetExecutingAssembly();
             this.AssemblyFilenameOfMySelf = $"{this.ThisAssembly.GetName().Name}.dll";
             var referenced = this.ThisAssembly.GetReferencedAssemblies();
@@ -179,6 +181,11 @@ namespace Leayal.PSO2Launcher.Updater
                 }
                 else
                 {
+                    var args = new HashSet<string>(Environment.GetCommandLineArgs(), StringComparer.OrdinalIgnoreCase);
+                    if (args.Contains("--no-self-update-prompt"))
+                    {
+                        return true;
+                    }
                     if (parent == null)
                     {
                         result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
@@ -355,11 +362,25 @@ namespace Leayal.PSO2Launcher.Updater
 
                 if (shouldRestart)
                 {
+                    var args = new List<string>(Environment.GetCommandLineArgs());
+                    args.RemoveAt(0);
+                    if (!args.Contains("--no-self-update-prompt"))
+                    {
+                        args.Add("--no-self-update-prompt");
+                    }
+                    RestartWithArgs(args);
                     return true;
                 }
 
                 if (shouldReload)
                 {
+                    var args = new List<string>(Environment.GetCommandLineArgs());
+                    args.RemoveAt(0);
+                    if (!args.Contains("--no-self-update-prompt"))
+                    {
+                        args.Add("--no-self-update-prompt");
+                    }
+                    RestartWithArgs(args);
                     return true;
                 }
 
@@ -368,5 +389,20 @@ namespace Leayal.PSO2Launcher.Updater
         }
 
         public void Dispose() => this.wc.Dispose();
+
+        private static void RestartWithArgs(ICollection<string> commandLineArgs)
+        {
+            ProcessStartInfo processStartInfo = new ProcessStartInfo();
+            processStartInfo.FileName = RuntimeValues.EntryExecutableFilename;
+            if (commandLineArgs != null && commandLineArgs.Count != 0)
+            {
+                foreach (var arg in commandLineArgs)
+                {
+                    processStartInfo.ArgumentList.Add(arg);
+                }
+            }
+            Application.Exit();
+            Process.Start(processStartInfo)?.Dispose();
+        }
     }
 }

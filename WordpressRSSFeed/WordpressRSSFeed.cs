@@ -62,6 +62,11 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
 
         protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
         {
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                this.SetNextRefesh(TimeSpan.FromMinutes(30));
+                return null;
+            }
             var reader = new XmlDocument();
             reader.LoadXml(data);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(reader.NameTable);

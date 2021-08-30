@@ -158,6 +158,21 @@ namespace Leayal.PSO2Launcher.Core
             e.Handled = true;
         }
 
+        private static void RestartWithArgs(ICollection<string> commandLineArgs)
+        {
+            ProcessStartInfo processStartInfo = new ProcessStartInfo();
+            processStartInfo.FileName = RuntimeValues.EntryExecutableFilename;
+            if (commandLineArgs != null && commandLineArgs.Count != 0)
+            {
+                foreach (var arg in commandLineArgs)
+                {
+                    processStartInfo.ArgumentList.Add(arg);
+                }
+            }
+            System.Windows.Forms.Application.Exit();
+            Process.Start(processStartInfo)?.Dispose();
+        }
+
         public void ExecuteCommandUrl(Uri url)
         {
             if (url != null && url.IsAbsoluteUri)
@@ -169,7 +184,31 @@ namespace Leayal.PSO2Launcher.Core
                     {
                         this.MainWindow?.Close();
                         this.Shutdown();
-                        System.Windows.Forms.Application.Restart();
+                        var args = new List<string>(Environment.GetCommandLineArgs());
+                        args.RemoveAt(0);
+                        if (!args.Contains("--no-self-update-prompt"))
+                        {
+                            args.Add("--no-self-update-prompt");
+                        }
+                        if (this.MainWindow is Windows.MainMenuWindow window)
+                        {
+                            if (window.IsMinimizedToTray)
+                            {
+                                if (!args.Contains("--tray"))
+                                {
+                                    args.Add("--tray");
+                                }
+                            }
+                            else
+                            {
+                                if (args.Contains("--tray"))
+                                {
+                                    args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
+                                }
+                            }
+                        }
+                        RestartWithArgs(args);
+                        // System.Windows.Forms.Application.Restart();
                     });
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))

@@ -47,9 +47,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public static readonly DependencyProperty IsDeploymentSuccessfulProperty = IsDeploymentSuccessfulPropertyKey.DependencyProperty;
         public bool IsDeploymentSuccessful => (bool)this.GetValue(IsDeploymentSuccessfulProperty);
 
-        private static readonly DependencyPropertyKey IsDeploymentSuccessfulWithGraphicModWarningPropertyKey = DependencyProperty.RegisterReadOnly("IsDeploymentSuccessfulWithGraphicModWarning", typeof(bool), typeof(PSO2DeploymentWindow), new PropertyMetadata(false));
-        public static readonly DependencyProperty IsDeploymentSuccessfulWithGraphicModWarningProperty = IsDeploymentSuccessfulWithGraphicModWarningPropertyKey.DependencyProperty;
-        public bool IsDeploymentSuccessfulWithGraphicModWarning => (bool)this.GetValue(IsDeploymentSuccessfulWithGraphicModWarningProperty);
+        private static readonly DependencyPropertyKey IsDeploymentSuccessfulWithLibraryModWarningPropertyKey = DependencyProperty.RegisterReadOnly("IsDeploymentSuccessfulWithLibraryModWarning", typeof(bool), typeof(PSO2DeploymentWindow), new PropertyMetadata(false));
+        public static readonly DependencyProperty IsDeploymentSuccessfulWithLibraryModWarningProperty = IsDeploymentSuccessfulWithLibraryModWarningPropertyKey.DependencyProperty;
+        public bool IsDeploymentSuccessfulWithLibraryModWarning => (bool)this.GetValue(IsDeploymentSuccessfulWithLibraryModWarningProperty);
 
         public static readonly DependencyProperty GameClientSelectionProperty = DependencyProperty.Register("GameClientDownloadSelection", typeof(GameClientSelection), typeof(PSO2DeploymentWindow), new PropertyMetadata(GameClientSelection.Auto, (obj, e) =>
         {
@@ -222,12 +222,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 var mods = await PSO2TroubleshootingWindow.CheckGraphicMods(dir_pso2_bin);
                                 if (mods != null && mods.Count != 0)
                                 {
-                                    this.GraphicModMetadataPrensenter.MetadataSource = mods;
-                                    this.SetValue(IsDeploymentSuccessfulWithGraphicModWarningPropertyKey, true);
+                                    this.LibraryModMetadataPrensenter.MetadataSource = mods;
+                                    this.SetValue(IsDeploymentSuccessfulWithLibraryModWarningPropertyKey, true);
                                 }
                                 else
                                 {
-                                    this.SetValue(IsDeploymentSuccessfulWithGraphicModWarningPropertyKey, false);
+                                    this.SetValue(IsDeploymentSuccessfulWithLibraryModWarningPropertyKey, false);
                                 }
                             }
                             this.SetValue(IsDeploymentSuccessfulPropertyKey, deploymentsuccess);
