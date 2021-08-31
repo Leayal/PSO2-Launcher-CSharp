@@ -183,7 +183,17 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     this.Dispatcher.InvokeAsync(delegate
                     {
-                        this.MainWindow?.Close();
+                        bool isInTray;
+                        if (this.MainWindow is Windows.MainMenuWindow window)
+                        {
+                            isInTray = window.IsMinimizedToTray;
+                            window.Close();
+                        }
+                        else
+                        {
+                            isInTray = false;
+                            this.MainWindow?.Close();
+                        }
                         this.Shutdown();
                         var args = new List<string>(Environment.GetCommandLineArgs());
                         args.RemoveAt(0);
@@ -191,21 +201,18 @@ namespace Leayal.PSO2Launcher.Core
                         {
                             args.Add("--no-self-update-prompt");
                         }
-                        if (this.MainWindow is Windows.MainMenuWindow window)
+                        if (isInTray)
                         {
-                            if (window.IsMinimizedToTray)
+                            if (!args.Contains("--tray"))
                             {
-                                if (!args.Contains("--tray"))
-                                {
-                                    args.Add("--tray");
-                                }
+                                args.Add("--tray");
                             }
-                            else
+                        }
+                        else
+                        {
+                            if (args.Contains("--tray"))
                             {
-                                if (args.Contains("--tray"))
-                                {
-                                    args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
-                                }
+                                args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
                             }
                         }
                         RestartWithArgs(args);
