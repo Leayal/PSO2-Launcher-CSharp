@@ -26,4 +26,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
         [EnumDisplayName("Remember my login info until launcher exits")]
         NonPersistentRemember
     }
+
+    enum CustomLibraryModMetadata_TrustVerificationState
+    {
+        Bypassed = 0,
+        Trusted,
+        Untrusted
+    }
 }

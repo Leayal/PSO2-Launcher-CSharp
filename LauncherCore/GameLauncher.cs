@@ -104,6 +104,7 @@ namespace Leayal.PSO2Launcher.Core
     }
 
     // Unused
+    /*
     public class GameLauncher2 : WindowsFormsApplicationBase, IWPFApp
     {
         private App _app;
@@ -136,4 +137,5 @@ namespace Leayal.PSO2Launcher.Core
             return base.OnUnhandledException(e);
         }
     }
+    */
 }

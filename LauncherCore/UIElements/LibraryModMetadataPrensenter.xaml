@@ -79,6 +79,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock VerticalAlignment="Center" TextAlignment="Right" Text="ProductName: " />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductName,Mode=OneTime}" TextWrapping="Wrap" />
@@ -92,7 +93,26 @@
                         <TextBlock Grid.Row="3" VerticalAlignment="Center" TextAlignment="Right" Text="Product Version: " />
                         <TextBlock Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ProductVersion,Mode=OneTime}" TextWrapping="Wrap" />
 
-                        <Grid Grid.Row="4" Grid.ColumnSpan="2">
+                        <TextBlock Grid.Row="4" VerticalAlignment="Center" TextAlignment="Right" Text="Digital Sign: " />
+                        <TextBlock Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="Text" Value="&lt;Bypassed&gt;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDigitalSigned,Mode=OneTime}" Value="True">
+                                            <Setter Property="Text" Value="Trusted" />
+                                            <Setter Property="Foreground" Value="LightGreen" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsDigitalSigned,Mode=OneTime}" Value="False">
+                                            <Setter Property="Text" Value="Untrusted" />
+                                            <Setter Property="Foreground" Value="Yellow" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        
+                        <Grid Grid.Row="5" Grid.ColumnSpan="2">
                             <Grid.Style>
                                 <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Visible" />

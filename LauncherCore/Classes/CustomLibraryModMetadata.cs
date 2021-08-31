@@ -4,10 +4,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Reflection.PortableExecutable;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    readonly struct CustomLibraryModMetadata
+    class CustomLibraryModMetadata
     {
         const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
         
@@ -20,28 +21,49 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         const string Text_Advice_RemoveImmediately = "Please remove this file because it will likely cause problem due to wrong target CPU architecture. PSO2 client is 'AMD64' (or 'x64_x86') and it will crash if the game loads this file.";
         const string Text_Advice_RemoveVCRedistImmediately = "Please remove this file and install VC++ Redist properly by using the installation setup from Microsoft Download Center (or Microsoft Support Center) if you haven't installed the VC++ Redist yet.";
+        const string Text_Advice_RemoveVCRedistImmediately_Untrusted = "Please remove this file because it's shimming/impersonate VC++ Redist file but it's not digital-trusted.";
 
-        public readonly string Filepath { get; }
-        public readonly string ProductName { get; }
-        public readonly string Summary { get; }
-        public readonly string FileVersion { get; }
-        public readonly string ProductVersion { get; }
+        public string Filepath { get; }
+        public string ProductName { get; }
+        public string Summary { get; }
+        public string FileVersion { get; }
+        public string ProductVersion { get; }
 
-        public readonly string FileNameOnly => Path.GetFileName(Filepath);
+        public string FileNameOnly => Path.GetFileName(Filepath);
 
-        public readonly string Advice { get; }
+        public string Advice { get; }
 
-        public readonly bool WrongCPUTarget { get; }
-        public readonly Machine TargetCPU { get; }
+        public bool WrongCPUTarget { get; }
+        public Machine TargetCPU { get; }
+
+        public bool? IsDigitalSigned { get; }
 
         public CustomLibraryModMetadata(string filepath)
         {
             this.Filepath = filepath;
 
             using (var fs = File.OpenRead(filepath))
-            using (var pereader = new PEReader(fs, PEStreamOptions.LeaveOpen))
             {
-                this.TargetCPU = pereader.PEHeaders.CoffHeader.Machine;
+                using (var pereader = new PEReader(fs, PEStreamOptions.LeaveOpen))
+                {
+                    this.TargetCPU = pereader.PEHeaders.CoffHeader.Machine;
+                }
+                if (this.TargetCPU == Machine.Amd64)
+                {
+                    fs.Position = 0;
+                    try
+                    {
+                        this.IsDigitalSigned = DigitalSignatureHelper.IsSigned(fs);
+                    }
+                    catch
+                    {
+                        this.IsDigitalSigned = null;
+                    }
+                }
+                else
+                {
+                    this.IsDigitalSigned = null;
+                }
             }
             if (this.TargetCPU != Machine.Amd64)
             {
@@ -62,6 +84,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     this.Summary = "PSO2 Tweaker's item translation patch from Arks-Layer";
                     this.FileVersion = Text_NotGiven;
                     this.ProductVersion = Text_NotGiven;
+
+                    this.IsDigitalSigned = null;
 
                     this.Advice = Text_Advice_RemoveTranslationPatchIfNotUsing;
                 }
@@ -98,7 +122,14 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         && this.Summary.StartsWith("Microsoft®", StringComparison.OrdinalIgnoreCase)
                         && this.Summary.Contains("Runtime", StringComparison.OrdinalIgnoreCase))
                     {
-                        this.Advice = Text_Advice_RemoveVCRedistImmediately;
+                        if (this.IsDigitalSigned == true)
+                        {
+                            this.Advice = Text_Advice_RemoveVCRedistImmediately;
+                        }
+                        else
+                        {
+                            this.Advice = Text_Advice_RemoveVCRedistImmediately_Untrusted;
+                        }
                     }
                     else
                     {

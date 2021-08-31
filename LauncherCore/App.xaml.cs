@@ -28,9 +28,10 @@ namespace Leayal.PSO2Launcher.Core
 
         public App() : base()
         {
+            this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
+            
             this.InitializeComponent();
 
-            this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();
