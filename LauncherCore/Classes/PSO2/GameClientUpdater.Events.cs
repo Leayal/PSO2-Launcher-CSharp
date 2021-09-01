@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             => this.ProgressEnd?.Invoke(currentFile, in isSuccess);
 
         public event OperationCompletedHandler OperationCompleted;
-        private void OnClientOperationComplete1(GameClientSelection downloadMode, int count_fileFailure, int count_totalFiles, PSO2Version ver, bool noError, CancellationToken cancellationToken)
+        private void OnClientOperationComplete1(GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
         {
             // Everything is completed.
             // Write the version file out.
@@ -41,7 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             finally
             {
-                this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, count_totalFiles, count_fileFailure);
+                this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, patchlist, needtodownload, successlist, failurelist);
             }
         }
 
@@ -66,7 +66,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private void OnFileCheckReport(in int current) => this.FileCheckReport?.Invoke(this, current);
 
         public event DownloadQueueAddedHandler DownloadQueueAdded;
-        private void OnDownloadQueueAdded(in int total) => this.DownloadQueueAdded?.Invoke(this, total);
+        private void OnDownloadQueueAdded() => this.DownloadQueueAdded?.Invoke(this);
 
         public event FileCheckEndHandler FileCheckEnd;
         private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
@@ -89,9 +89,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
-        public delegate void DownloadQueueAddedHandler(GameClientUpdater sender, in int total);
+        public delegate void DownloadQueueAddedHandler(GameClientUpdater sender);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
-        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, long howManyFileInTotal, long howManyFileFailed);
+        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
         public class BackupFileFoundEventArgs : EventArgs

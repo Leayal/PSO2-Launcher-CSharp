@@ -7,7 +7,7 @@ using System.Collections;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public class PatchListMemory : PatchListBase
+    public class PatchListMemory : PatchListBase, IReadOnlyCollection<PatchListItem>
     {
         private readonly Dictionary<string, PatchListItem> _items;
 

@@ -135,11 +135,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 this.t_operation = Task.Factory.StartNew(async () =>
                 {
-                    int count_fileFailure = 0, count_totalFiles = 0;
                     var pendingFiles = new BlockingCollection<DownloadItem>();
                     bool isOperationSuccess = false;
                     FileCheckHashCache duhB = null;
                     PSO2Version ver = default;
+
+                    PatchListBase patchlist = null;
+
+                    ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(),
+                                                bag_success = new ConcurrentBag<PatchListItem>(),
+                                                bag_failure = new ConcurrentBag<PatchListItem>();
 
                     try
                     {
@@ -149,7 +154,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             try
                             {
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, selection, flags, duhB, new Action<int>(num => Interlocked.Exchange(ref count_totalFiles, num)), cancellationToken);
+                                await this.InnerScanForFilesNeedToDownload(pendingFiles, selection, flags, duhB, newpatchlist =>
+                                {
+                                    Interlocked.CompareExchange<PatchListBase>(ref patchlist, newpatchlist, null);
+                                }, item =>
+                                {
+                                    bag_needtodownload.Add(item.PatchInfo);
+                                    this.OnDownloadQueueAdded();
+                                }, cancellationToken);
                             }
                             finally
                             {
@@ -171,7 +183,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             {
                                 tasks[i] = Task.Factory.StartNew(async () =>
                                 {
-                                    await this.InnerDownloadSingleFile(pendingFiles, duhB, new Action<DownloadItem>(item => Interlocked.Increment(ref count_fileFailure)), cancellationToken);
+                                    await this.InnerDownloadSingleFile(pendingFiles, duhB, (item, success) =>
+                                    {
+                                        if (success)
+                                        {
+                                            bag_success.Add(item.PatchInfo);
+                                        }
+                                        else
+                                        {
+                                            bag_failure.Add(item.PatchInfo);
+                                        }
+                                        this.OnProgressEnd(item.PatchInfo, in success);
+                                    }, cancellationToken);
                                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                             }
 
@@ -194,7 +217,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             FileCheckHashCache.Close(duhB);
                         }
                         pendingFiles.Dispose();
-                        this.OnClientOperationComplete1(selection, count_fileFailure, count_totalFiles, ver, isOperationSuccess, cancellationToken);
+                        IReadOnlyCollection<PatchListItem> list_all;
+                        if (patchlist is PatchListMemory memorylist)
+                        {
+                            list_all = memorylist;
+                        }
+                        else
+                        {
+                            list_all = new List<PatchListItem>(patchlist);
+                        }
+                        this.OnClientOperationComplete1(selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
                         Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1);
                     }
                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();

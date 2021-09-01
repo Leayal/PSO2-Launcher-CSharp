@@ -28,22 +28,38 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public static readonly RoutedEvent UpdateCancelClickedEvent = EventManager.RegisterRoutedEvent("UpdateCancelClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabGameUpdateProgress));
 
-        private static readonly DependencyPropertyKey TotalFileNeedToDownloadPropertyKey = DependencyProperty.RegisterReadOnly("TotalFileNeedToDownload", typeof(int), typeof(TabGameUpdateProgress), new UIPropertyMetadata(0, (obj, val) =>
-        {
-            if (obj is TabGameUpdateProgress tab)
-            {
-                tab.label_downloadtotal.Content = val.NewValue.ToString();
-            }
-        }));
+        private static readonly DependencyPropertyKey TotalFileNeedToDownloadPropertyKey = DependencyProperty.RegisterReadOnly("TotalFileNeedToDownload", typeof(int), typeof(TabGameUpdateProgress), new PropertyMetadata(0));
         public static readonly DependencyProperty TotalFileNeedToDownloadProperty = TotalFileNeedToDownloadPropertyKey.DependencyProperty;
-        public static readonly DependencyPropertyKey TotalDownloadedPropertyKey = DependencyProperty.RegisterReadOnly("TotalDownloaded", typeof(int), typeof(TabGameUpdateProgress), new UIPropertyMetadata(0, (obj, val) =>
+        public int TotalFileNeedToDownload => (int)this.GetValue(TotalFileNeedToDownloadProperty);
+
+        public static readonly DependencyPropertyKey TotalDownloadedPropertyKey = DependencyProperty.RegisterReadOnly("TotalDownloaded", typeof(int), typeof(TabGameUpdateProgress), new PropertyMetadata(0));
+        public static readonly DependencyProperty TotalDownloadedProperty = TotalDownloadedPropertyKey.DependencyProperty;
+        public int TotalDownloaded => (int)this.GetValue(TotalDownloadedProperty);
+
+        public static readonly DependencyPropertyKey TotalDownloadedBytesPropertyKey = DependencyProperty.RegisterReadOnly("TotalDownloadedBytes", typeof(long), typeof(TabGameUpdateProgress), new PropertyMetadata(0L, (obj, val) =>
         {
             if (obj is TabGameUpdateProgress tab)
             {
-                tab.label_downloaded.Content = val.NewValue.ToString();
+                if (val.NewValue is long l || long.TryParse(val.NewValue.ToString(), System.Globalization.NumberStyles.Integer, null, out l))
+                {
+                    if (l == 0)
+                    {
+                        tab.SetValue(TotalDownloadedBytesTextPropertyKey, "0 B");
+                    }
+                    else
+                    {
+                        tab.SetValue(TotalDownloadedBytesTextPropertyKey, Leayal.Shared.NumericHelper.ToHumanReadableFileSize(in l));
+                    }
+                }
+                else
+                {
+                    tab.SetValue(TotalDownloadedBytesTextPropertyKey, $"{val.NewValue} B");
+                }
             }
         }));
-        public static readonly DependencyProperty TotalDownloadedProperty = TotalDownloadedPropertyKey.DependencyProperty;
+        public static readonly DependencyPropertyKey TotalDownloadedBytesTextPropertyKey = DependencyProperty.RegisterReadOnly("TotalDownloadedBytesText", typeof(string), typeof(TabGameUpdateProgress), new PropertyMetadata("0 B"));
+        public static readonly DependencyProperty TotalDownloadedBytesTextProperty = TotalDownloadedBytesTextPropertyKey.DependencyProperty;
+        public string TotalDownloadedBytesText => (string)this.GetValue(TotalDownloadedBytesTextProperty);
 
         public bool IsIndetermined
         {
@@ -57,17 +73,21 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             remove { this.RemoveHandler(UpdateCancelClickedEvent, value); }
         }
 
-        private readonly DebounceDispatcher debounceDispatcher1, debounceDispatcher2;
+        private readonly DebounceDispatcher debounceDispatcher1, debounceDispatcher2, debounceDispatcher3;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
         private int downloadedCount, totalDownloadCount;
 
+        private long downloadedByteCount;
+
         public TabGameUpdateProgress()
         {
+            this.downloadedByteCount = 0L;
             this.downloadedCount = 0;
             this.totalDownloadCount = 0;
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
             this.debounceDispatcher1 = new DebounceDispatcher(this.Dispatcher);
             this.debounceDispatcher2 = new DebounceDispatcher(this.Dispatcher);
+            this.debounceDispatcher3 = new DebounceDispatcher(this.Dispatcher);
             InitializeComponent();
             this.TopProgressBar.ShowDetailedProgressPercentage = true;
             this.DownloadFileTable.ItemsSource = this.indexing;
@@ -79,6 +99,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.debounceDispatcher1.ThrottleEx(10, delegate
             {
                 this.SetValue(TotalDownloadedPropertyKey, num);
+            }, System.Windows.Threading.DispatcherPriority.Render);
+            return num;
+        }
+
+        public long IncreaseDownloadedBytesCount(in long byteCount)
+        {
+            var num = Interlocked.Add(ref this.downloadedByteCount, byteCount);
+            this.debounceDispatcher3.ThrottleEx(10, delegate
+            {
+                this.SetValue(TotalDownloadedBytesPropertyKey, num);
             }, System.Windows.Threading.DispatcherPriority.Render);
             return num;
         }
@@ -96,8 +126,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             Interlocked.Exchange(ref this.downloadedCount, 0);
             Interlocked.Exchange(ref this.totalDownloadCount, 0);
+            Interlocked.Exchange(ref this.downloadedByteCount, 0L);
             this.SetValue(TotalDownloadedPropertyKey, 0);
             this.SetValue(TotalFileNeedToDownloadPropertyKey, 0);
+            this.SetValue(TotalDownloadedBytesPropertyKey, 0L);
         }
 
         public void SetProgressBarCount(int count)
@@ -122,10 +154,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public void SetProgressMaximum(int index, in double value) => this.indexing[index].ProgressBar.Maximum = value;
 
         private void ThisSelf_Unselected(object sender, RoutedEventArgs e)
-        {
-            this.debounceDispatcher1.Stop();
-            this.debounceDispatcher2.Stop();
-        }
+            => this.DispatchersStop();
 
         private void ThisSelf_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
@@ -133,15 +162,20 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 if (!b)
                 {
-                    this.debounceDispatcher1.Stop();
-                    this.debounceDispatcher2.Stop();
+                    this.DispatchersStop();
                 }
             }
             else
             {
-                this.debounceDispatcher1.Stop();
-                this.debounceDispatcher2.Stop();
+                this.DispatchersStop();
             }
+        }
+
+        private void DispatchersStop()
+        {
+            this.debounceDispatcher1?.Stop();
+            this.debounceDispatcher2?.Stop();
+            this.debounceDispatcher3?.Stop();
         }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e) => this.RaiseEvent(new RoutedEventArgs(UpdateCancelClickedEvent));

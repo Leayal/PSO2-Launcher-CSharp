@@ -3,6 +3,7 @@ using Leayal.PSO2Launcher.Helper;
 using Leayal.Shared;
 using SymbolicLinkSupport;
 using System;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, Action<int> onGetTotalFile, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, Action<PatchListBase> onGetTotalFile, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -191,14 +192,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             var headacheMatterAgain = PatchListBase.Create(arr_PatchListBase);
 
+            onGetTotalFile?.Invoke(headacheMatterAgain);
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {
-                onGetTotalFile?.Invoke(patchListMemory.Count);
                 this.OnFileCheckBegin(patchListMemory.Count);
             }
             else
             {
-                onGetTotalFile?.Invoke(-1);
                 this.OnFileCheckBegin(-1);
             }
 
@@ -231,15 +231,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     if (!File.Exists(localFilePath))
                     {
                         var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                        DownloadItem item;
                         if (isLink)
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                            item = new DownloadItem(patchItem, localFilePath, linkTo);
                         }
                         else
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                            item = new DownloadItem(patchItem, localFilePath, null);
                         }
-                        this.OnDownloadQueueAdded(pendingFiles.Count);
+                        // this.OnDownloadQueueAdded(pendingFiles.Count);
+                        pendingFiles.Add(item);
+                        onDownloadQueueAdd.Invoke(item);
                     }
                     else
                     {
@@ -264,31 +268,40 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     if (!bool_compareMD5)
                                     {
                                         var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                                        DownloadItem item;
                                         if (isLink)
                                         {
-                                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                            item = new DownloadItem(patchItem, localFilePath, linkTo);
                                         }
                                         else
                                         {
-                                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                            item = new DownloadItem(patchItem, localFilePath, null);
                                         }
-                                        this.OnDownloadQueueAdded(pendingFiles.Count);
-                                        // this.pendingFiles.Add(patchItem);
+                                        // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                                        pendingFiles.Add(item);
+                                        onDownloadQueueAdd.Invoke(item);
                                     }
                                 }
                             }
                             else
                             {
                                 var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                                DownloadItem item;
                                 if (isLink)
                                 {
-                                    pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                    item = new DownloadItem(patchItem, localFilePath, linkTo);
                                 }
                                 else
                                 {
-                                    pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                    item = new DownloadItem(patchItem, localFilePath, null);
                                 }
-                                this.OnDownloadQueueAdded(pendingFiles.Count);
+                                // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                                pendingFiles.Add(item);
+                                onDownloadQueueAdd.Invoke(item);
                             }
                         }
                     }
@@ -329,45 +342,60 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         if (cachedHash == null)
                         {
                             var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                            DownloadItem item;
                             if (isLink)
                             {
-                                pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                item = new DownloadItem(patchItem, localFilePath, linkTo);
                             }
                             else
                             {
-                                pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                item = new DownloadItem(patchItem, localFilePath, null);
                             }
-                            this.OnDownloadQueueAdded(pendingFiles.Count);
+                            // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                            pendingFiles.Add(item);
+                            onDownloadQueueAdd.Invoke(item);
                         }
                         else
                         {
                             if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                             {
                                 var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                                DownloadItem item;
                                 if (isLink)
                                 {
-                                    pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                    item = new DownloadItem(patchItem, localFilePath, linkTo);
                                 }
                                 else
                                 {
-                                    pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                    item = new DownloadItem(patchItem, localFilePath, null);
                                 }
-                                this.OnDownloadQueueAdded(pendingFiles.Count);
+                                // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                                pendingFiles.Add(item);
+                                onDownloadQueueAdd.Invoke(item);
                             }
                         }
                     }
                     else
                     {
                         var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                        DownloadItem item;
                         if (isLink)
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                            item = new DownloadItem(patchItem, localFilePath, linkTo);
                         }
                         else
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                            item = new DownloadItem(patchItem, localFilePath, null);
                         }
-                        this.OnDownloadQueueAdded(pendingFiles.Count);
+                        // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                        pendingFiles.Add(item);
+                        onDownloadQueueAdd.Invoke(item);
                     }
 
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
@@ -392,15 +420,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     if (!File.Exists(localFilePath))
                     {
                         string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                        DownloadItem item;
                         if (isLink)
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                            item = new DownloadItem(patchItem, localFilePath, linkTo);
                         }
                         else
                         {
-                            pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                            item = new DownloadItem(patchItem, localFilePath, null);
                         }
-                        this.OnDownloadQueueAdded(pendingFiles.Count);
+                        // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                        pendingFiles.Add(item);
+                        onDownloadQueueAdd.Invoke(item);
                     }
                     else
                     {
@@ -429,30 +462,39 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                                         {
                                             string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                                            DownloadItem item;
                                             if (isLink)
                                             {
-                                                pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                                item = new DownloadItem(patchItem, localFilePath, linkTo);
                                             }
                                             else
                                             {
-                                                pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                                item = new DownloadItem(patchItem, localFilePath, null);
                                             }
-                                            this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                                            pendingFiles.Add(item);
+                                            onDownloadQueueAdd.Invoke(item);
                                         }
                                     }
                                 }
                                 else
                                 {
                                     string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+
+                                    DownloadItem item;
                                     if (isLink)
                                     {
-                                        pendingFiles.Add(new DownloadItem(patchItem, localFilePath, linkTo));
+                                        item = new DownloadItem(patchItem, localFilePath, linkTo);
                                     }
                                     else
                                     {
-                                        pendingFiles.Add(new DownloadItem(patchItem, localFilePath, null));
+                                        item = new DownloadItem(patchItem, localFilePath, null);
                                     }
-                                    this.OnDownloadQueueAdded(pendingFiles.Count);
+                                    // this.OnDownloadQueueAdded(pendingFiles.Count);
+
+                                    pendingFiles.Add(item);
+                                    onDownloadQueueAdd.Invoke(item);
                                 }
                             }
                         }

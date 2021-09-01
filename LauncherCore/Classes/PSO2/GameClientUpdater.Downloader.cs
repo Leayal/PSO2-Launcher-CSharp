@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerDownloadSingleFile(BlockingCollection<DownloadItem> pendingFiles, FileCheckHashCache duhB, Action<DownloadItem> onFailure, CancellationToken cancellationToken)
+        private async Task InnerDownloadSingleFile(BlockingCollection<DownloadItem> pendingFiles, FileCheckHashCache duhB, Action<DownloadItem, bool> onFinished, CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
             // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
@@ -116,7 +116,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 if (isSuccess)
                 {
-
                     try
                     {
                         File.Move(tmpFilePath, localFilePath, true);
@@ -131,11 +130,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
                 else
                 {
-                    onFailure?.Invoke(downloadItem);
+                    // onFailure?.Invoke(downloadItem);
                     File.Delete(tmpFilePath);
                 }
 
-                this.OnProgressEnd(downloadItem.PatchInfo, in isSuccess);
+                onFinished.Invoke(downloadItem, isSuccess);
+                // this.OnProgressEnd(downloadItem.PatchInfo, in isSuccess);
             }
         }
     }

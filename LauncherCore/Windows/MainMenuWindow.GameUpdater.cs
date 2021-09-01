@@ -175,13 +175,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             GameClientUpdater.OperationCompletedHandler completed = null;
-            completed = (sender, cancelled, totalfiles, failedfiles) =>
+            completed = (sender, cancelled, patchlist, required_download, success_list, failure_list) =>
             {
                 this.pso2Updater.OperationCompleted -= completed;
-                this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _cancelled, _totalfiles, _failedfiles) =>
+                this.Dispatcher.InvokeAsync(delegate
                 {
                     this.TabMainMenu.IsSelected = true;
-                }), sender, cancelled, totalfiles, failedfiles);
+                });
             };
             this.pso2Updater.OperationCompleted += completed;
 
@@ -321,7 +321,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 bagFree.Add(i);
             }
 
-            result.OperationCompleted += new GameClientUpdater.OperationCompletedHandler((sender, iscancelled, totalFileInTheList, count_filefailed) =>
+            result.OperationCompleted += new GameClientUpdater.OperationCompletedHandler((sender, iscancelled, patchlist, required_download, success_list, failure_list) =>
             {
                 this.Dispatcher.Invoke((Action)delegate
                 {
@@ -335,26 +335,44 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                     }
                 }, System.Windows.Threading.DispatcherPriority.Send);
+
+                long totalsizedownloaded = 0L;
+                foreach (var item in success_list)
+                {
+                    totalsizedownloaded += item.FileSize;
+                }
+                var totalsizedownloadedtext = Leayal.Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
+
                 _ = this.CreateNewParagraphInLog(writer =>
                 {
                     if (iscancelled)
                     {
-                        writer.Write("[GameUpdater] User cancelled the updating progress");
-                    }
-                    else if (count_filefailed != 0)
-                    {
-                        if (count_filefailed == 1)
-                        {
-                            writer.Write($"[GameUpdater] PSO2 game client has been updated. However, there are 1 file which couldn't be downloaded");
-                        }
-                        else
-                        {
-                            writer.Write($"[GameUpdater] PSO2 game client has been updated. However, there are {count_filefailed} files which couldn't be downloaded");
-                        }
+                        writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded {success_list.Count} ({totalsizedownloadedtext}) before cancelled.");
                     }
                     else
                     {
-                        writer.Write($"[GameUpdater] PSO2 game client has been updated successfully (All files downloaded)");
+                        if (required_download.Count == 0)
+                        {
+                            writer.Write("[GameUpdater] PSO2 game client has all files updated. There are no files need to be downloaded.");
+                        }
+                        else
+                        {
+                            if (failure_list.Count != 0)
+                            {
+                                if (failure_list.Count == 1)
+                                {
+                                    writer.Write($"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded");
+                                }
+                                else
+                                {
+                                    writer.Write($"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are {failure_list.Count} files which couldn't be downloaded");
+                                }
+                            }
+                            else
+                            {
+                                writer.Write($"[GameUpdater] PSO2 game client has been updated successfully (All files ({totalsizedownloadedtext}) downloaded)");
+                            }
+                        }
                     }
                 });
             });
@@ -399,12 +417,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             result.ProgressEnd += (PatchListItem file, in bool success) =>
             {
+                if (success)
+                {
+                    this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount();
+                    this.TabGameClientUpdateProgressBar.IncreaseDownloadedBytesCount(in file.FileSize);
+                }
                 this.Dispatcher.Invoke(new GameClientUpdater.ProgressEndHandler((PatchListItem _file, in bool _success) =>
                 {
-                    if (_success)
-                    {
-                        this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount();
-                    }
                     if (dictionaryInUse.TryRemove(_file, out var index))
                     {
                         debouncers[index].Stop();
@@ -470,7 +489,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }), sender, totalfilecount);
             };
 
-            result.DownloadQueueAdded += (GameClientUpdater sender, in int total) =>
+            result.DownloadQueueAdded += (GameClientUpdater sender) =>
             {
                 this.TabGameClientUpdateProgressBar.IncreaseNeedToDownloadCount();
                 /*

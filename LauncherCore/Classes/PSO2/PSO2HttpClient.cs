@@ -86,6 +86,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             using (var content = new PSO2LoginContent(username, password))
             {
                 request.Content = content;
+
+                // Don't retry sending request. It may be considered as brute-force attack.
+                // Instead, let it throw naturally and then user can attempt another login by themselves (retry by themselves).
+
                 using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
@@ -122,7 +126,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Host = url.Host;
             SetUA_pso2launcher(request);
-            using (var response = await this.client.SendAsync(request, cancellationToken))
+            using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
             {
                 response.EnsureSuccessStatusCode();
 
@@ -238,14 +242,50 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
         {
             if (file == null) throw new ArgumentNullException(nameof(file));
-            
+
+            return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
+        }
+
+        // Manual URL
+        public async Task<HttpResponseMessage> OpenForDownloadAsync(Uri filename, CancellationToken cancellationToken)
+        {
+            if (!filename.IsAbsoluteUri)
+            {
+                throw new ArgumentException(nameof(filename));
+            }
+            var request = new HttpRequestMessage(HttpMethod.Get, filename);
+            SetUA_AQUA_HTTP(request);
+            request.Headers.Host = filename.Host;
+
+            HttpResponseMessage response = null;
+            try
+            {
+                response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                return response;
+            }
+            catch
+            {
+                response?.Dispose();
+                throw;
+            }
+        }
+
+        // Support deferred here. Why? Because this is open source. So there maybe someone who want deferred or enumerating kind of reading.
+
+        #endregion
+
+        #region | Private or inner methods |
+
+        private async Task<HttpResponseMessage> SendAsyncWithRetries(HttpRequestMessage request, HttpCompletionOption httpCompletionOption, CancellationToken cancellationToken)
+        {
             int retrytimes = 0;
 
             while (Interlocked.Increment(ref retrytimes) < WebFailure_RetryTimes)
             {
                 try
                 {
-                    return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
+                    return await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -283,40 +323,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // Last retry outside in order to trigger exception throw.
-            return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
-            // throw new Exception("PSO2HttpClient.OpenForDownloadAsync reached unexpected case");
+            return await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
         }
-
-        // Manual URL
-        public async Task<HttpResponseMessage> OpenForDownloadAsync(Uri filename, CancellationToken cancellationToken)
-        {
-            if (!filename.IsAbsoluteUri)
-            {
-                throw new ArgumentException(nameof(filename));
-            }
-            var request = new HttpRequestMessage(HttpMethod.Get, filename);
-            SetUA_AQUA_HTTP(request);
-            request.Headers.Host = filename.Host;
-
-            HttpResponseMessage response = null;
-            try
-            {
-                response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                response.EnsureSuccessStatusCode();
-                return response;
-            }
-            catch
-            {
-                response?.Dispose();
-                throw;
-            }
-        }
-
-        // Support deferred here. Why? Because this is open source. So there maybe someone who want deferred or enumerating kind of reading.
-
-        #endregion
-
-        #region | Private or inner methods |
 
         private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
         {
@@ -373,7 +381,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             request.Headers.Host = baseUri.Host;
             SetUA_AQUA_HTTP(request);
 
-            using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+            using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
             {
                 response.EnsureSuccessStatusCode();
 
@@ -394,7 +402,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             SetUA_AQUA_HTTP(request);
 
             // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
-            using (var response = await this.client.SendAsync(request, cancellationToken))
+            using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
             {
                 response.EnsureSuccessStatusCode();
                 var raw = await response.Content.ReadAsStringAsync();

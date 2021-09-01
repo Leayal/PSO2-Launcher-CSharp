@@ -21,23 +21,14 @@
         <Label Content="Preparing" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
         
         <local:ExtendedProgressBar Text="Checking file" x:Name="TopProgressBar" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
-        <Grid Grid.Row="1" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" HorizontalAlignment="Left">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Label Content="Downloading: " />
-            <Label Grid.Column="1" Content="(" />
-            <Label Grid.Column="2" x:Name="label_downloaded" Content="0" />
-            <Label Grid.Column="3" Content="/" />
-            <Label Grid.Column="4" x:Name="label_downloadtotal" Content="0" />
-            <Label Grid.Column="5" Content=")" />
-        </Grid>
-        
+        <TextBlock Grid.Row="1" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}">
+            <Run Text="Downloading: (" />
+            <Run Text="{Binding ElementName=thisSelf,Path=TotalDownloaded,Mode=OneWay}" />
+            <Run Text="/" />
+            <Run Text="{Binding ElementName=thisSelf,Path=TotalFileNeedToDownload,Mode=OneWay}" />
+            <Run Text=") | Downloaded data: " />
+            <Run Text="{Binding ElementName=thisSelf,Path=TotalDownloadedBytesText,Mode=OneWay}" />
+        </TextBlock>
 
         <!--File download progress bars-->
         <ListView Grid.Row="2" x:Name="DownloadFileTable" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}"

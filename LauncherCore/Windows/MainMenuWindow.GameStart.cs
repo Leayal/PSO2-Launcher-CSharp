@@ -207,13 +207,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 var checkUpdateBeforeLaunch = this.config_main.CheckForPSO2GameUpdateBeforeLaunchingGame;
 
                                 GameClientUpdater.OperationCompletedHandler completed = null;
-                                completed = (sender, cancelled, totalfiles, failedfiles) =>
+                                completed = (sender, cancelled, pathclist, requiredDownload, successList, failedList) =>
                                 {
                                     this.pso2Updater.OperationCompleted -= completed;
-                                    this.Dispatcher.BeginInvoke(new GameClientUpdater.OperationCompletedHandler((_sender, _cancelled, _totalfiles, _failedfiles) =>
+                                    this.Dispatcher.InvokeAsync(delegate
                                     {
                                         this.TabMainMenu.IsSelected = true;
-                                    }), sender, cancelled, totalfiles, failedfiles);
+                                    });
 
                                 };
                                 this.pso2Updater.OperationCompleted += completed;
