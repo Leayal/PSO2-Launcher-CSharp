@@ -1,5 +1,7 @@
 # PSO2-Launcher-CSharp
- An alternative game launcher for Phantasy Star Online 2 (JP) written in C# (.NET5).
+ An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET5).
+ 
+ This project is just a hobby one.
 
 # Feature Overviews
 - The launcher is designed to be left running for a very long time. Therefore, it is not necessary to close the launcher shortly after using, but it's totally okay to do it, too.
@@ -30,7 +32,7 @@
   - Classic options are planned.
   - More game options are planned.
 - Customizable RSS Feeds:
-  - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler should be sufficient for most cases).
+  - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler or `Leayal.PSO2Launcher.RSS.Handlers.WordpressRSSFeed` Base Handler should be sufficient for most cases).
   - Plugin system is available to add more handler to handle special RSS Feeds.
   - `Deferred Refresh` setting per-feed allows the user to customize which feed will be actively refreshed: If enabled, this `deferred refresh` will stop any unfocused RSS feeds (in UI) from refreshing the feed data, only when they're focused (or being in the UI view) that they start to refresh data.
 - \[BETA\] PSO2 Client Troubleshooting:
@@ -65,5 +67,5 @@
 
 # Development
 As of writing this `README.md`, I am using: `Visual Studio 2019` (stable channel) with `.NET cross-platform development` bundle. Specifically, the launcher was written with `C# 8.0` of `.NET5` and `.NET Standard 2.0`.
-- Any IDEs supporting `.NET5 SDK` and `.NET Standard` development should be usable to develop this launcher.
+- Any IDEs supporting `.NET5 SDK` and `.NET Standard` development should be usable to develop or compile this launcher.
 

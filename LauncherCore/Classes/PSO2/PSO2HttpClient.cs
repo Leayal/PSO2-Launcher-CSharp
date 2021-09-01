@@ -128,8 +128,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             SetUA_pso2launcher(request);
             using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
             {
-                response.EnsureSuccessStatusCode();
-
                 var repContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 return new PatchRootInfo(in repContent);
@@ -261,7 +259,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             try
             {
                 response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                response.EnsureSuccessStatusCode();
                 return response;
             }
             catch
@@ -285,7 +282,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 try
                 {
-                    return await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
+                    var response = await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return response;
+                    }
+                    else
+                    {
+                        using (response)
+                        {
+                            return response.EnsureSuccessStatusCode();
+                        }
+                    }
                 }
                 catch (HttpRequestException ex)
                 {
@@ -323,7 +331,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // Last retry outside in order to trigger exception throw.
-            return await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
+            var lasttry_response = await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
+            return lasttry_response.EnsureSuccessStatusCode();
         }
 
         private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
@@ -382,15 +391,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             SetUA_AQUA_HTTP(request);
 
             using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+            using (var stream = response.Content.ReadAsStream()) // I thought there was only Async ops.
+            using (var sr = new StreamReader(stream))
+            using (var patchlistReader = new PatchListDeferred(rootInfo, isReboot, sr, false))
             {
-                response.EnsureSuccessStatusCode();
-
-                using (var stream = response.Content.ReadAsStream()) // I thought there was only Async ops.
-                using (var sr = new StreamReader(stream))
-                using (var patchlistReader = new PatchListDeferred(rootInfo, isReboot, sr, false))
-                {
-                    return patchlistReader.ToMemory();
-                }
+                return patchlistReader.ToMemory();
             }
         }
 
@@ -404,7 +409,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
             using (var response = await this.SendAsyncWithRetries(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
             {
-                response.EnsureSuccessStatusCode();
                 var raw = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrWhiteSpace(raw))
                 {
