@@ -22,6 +22,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private const string UA_PSO2_Launcher = "PSO2 Launcher";
         private const string UA_pso2launcher = "pso2launcher";
 
+        private const int WebFailure_RetryTimes = 5;
+        private const int WebFailure_RetryDelayMiliseconds = 1000;
+
         // Need to add snail mode (for when internet is extremely unreliable).
         // Do it later.
 
@@ -235,23 +238,53 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
         {
             if (file == null) throw new ArgumentNullException(nameof(file));
-            try
-            {
-                return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
-            }
-            catch (Exception ex) when (ex is WebException || ex is HttpRequestException)
+            
+            int retrytimes = 0;
+
+            while (Interlocked.Increment(ref retrytimes) < WebFailure_RetryTimes)
             {
                 try
                 {
-                    return await this.OpenForDownloadAsync(file.GetDownloadUrl(true), cancellationToken);
+                    return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
                 }
-                catch (Exception ex2) when (ex2 is WebException || ex2 is HttpRequestException)
+                catch (HttpRequestException ex)
                 {
-#pragma warning disable CA2200 // Rethrow to preserve stack details
-                    throw ex; // Should be the same failure in case it Net exception
-#pragma warning restore CA2200 // Rethrow to preserve stack details
+                    // Throw immediately if it's 4xx codes.
+                    var errorcode = (int)ex.StatusCode;
+                    if (errorcode >= 400 && errorcode < 500)
+                    {
+                        throw;
+                    }
+
+                    // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
+                    // Beside, another attempt right away after a failure usually doesn't success.
+                    await Task.Delay(WebFailure_RetryDelayMiliseconds);
+                }
+                catch (WebException ex)
+                {
+                    if (ex.Response is HttpWebResponse response)
+                    {
+                        // Throw immediately if it's 4xx codes.
+                        var errorcode = (int)response.StatusCode;
+                        if (errorcode >= 400 && errorcode < 500)
+                        {
+                            throw;
+                        }
+                    }
+
+                    // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
+                    // Beside, another attempt right away after a failure usually doesn't success.
+                    await Task.Delay(WebFailure_RetryDelayMiliseconds);
+                }
+                catch (Exception)
+                {
+                    throw;
                 }
             }
+
+            // Last retry outside in order to trigger exception throw.
+            return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
+            // throw new Exception("PSO2HttpClient.OpenForDownloadAsync reached unexpected case");
         }
 
         // Manual URL

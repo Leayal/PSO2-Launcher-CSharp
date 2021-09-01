@@ -214,6 +214,11 @@ namespace Leayal.PSO2Launcher.RSS
                     // Wait for 5 minutes before retry
                     await Task.Delay(TimeSpan.FromMinutes(5)).ConfigureAwait(false);
                 }
+                catch (System.Net.WebException)
+                {
+                    // Wait for 5 minutes before retry
+                    await Task.Delay(TimeSpan.FromMinutes(5)).ConfigureAwait(false);
+                }
                 catch (Exception) { data = null; break; } // should include TaskCanceledException
             }
 
