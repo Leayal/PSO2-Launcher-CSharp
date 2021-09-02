@@ -65,7 +65,7 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
             if (string.IsNullOrWhiteSpace(data))
             {
                 this.SetNextRefesh(TimeSpan.FromMinutes(30));
-                return null;
+                return Task.FromResult<IReadOnlyList<FeedItemData>>(null);
             }
             var reader = new XmlDocument();
             reader.LoadXml(data);

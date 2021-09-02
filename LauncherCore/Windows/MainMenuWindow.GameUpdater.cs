@@ -25,18 +25,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void TabGameClientUpdateProgressBar_UpdateCancelClicked(object sender, RoutedEventArgs e)
         {
-            if (this.cancelSrc != null)
+            var cancelsrc = this.cancelSrc_gameupdater;
+            if (cancelsrc != null)
             {
-                if (!this.cancelSrc.IsCancellationRequested)
+                try
                 {
-                    try
+                    if (!cancelsrc.IsCancellationRequested)
                     {
-                        this.cancelSrc.Cancel();
+                        cancelsrc.Cancel();
                     }
-                    catch (ObjectDisposedException)
-                    {
-                        this.TabMainMenu.IsSelected = true;
-                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    this.TabMainMenu.IsSelected = true;
                 }
             }
         }
@@ -190,9 +191,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                 this.TabGameClientUpdateProgressBar.IsSelected = true;
-                currentCancelSrc = new CancellationTokenSource();
-                this.cancelSrc?.Dispose();
-                this.cancelSrc = currentCancelSrc;
+                currentCancelSrc = CancellationTokenSource.CreateLinkedTokenSource(this.cancelAllOperation.Token);
+                this.cancelSrc_gameupdater?.Dispose();
+                this.cancelSrc_gameupdater = currentCancelSrc;
 
                 CancellationToken cancelToken = currentCancelSrc.Token;
 
@@ -231,7 +232,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                         {
                             currentCancelSrc.Dispose();
-                            this.cancelSrc = null;
+                            this.cancelSrc_gameupdater = null;
                             this.pso2Updater.OperationCompleted -= completed;
                             this.TabMainMenu.IsSelected = true;
                             return;
@@ -263,7 +264,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 else
                 {
                     currentCancelSrc.Dispose();
-                    this.cancelSrc = null;
+                    this.cancelSrc_gameupdater = null;
                     this.pso2Updater.OperationCompleted -= completed;
                     this.TabMainMenu.IsSelected = true;
                     if (!fixMode)
@@ -277,10 +278,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (TaskCanceledException)
             {
-                currentCancelSrc?.Dispose();
-                this.cancelSrc = null;
-                this.pso2Updater.OperationCompleted -= completed;
-                this.TabMainMenu.IsSelected = true;
             }
             catch (FileCheckHashCache.DatabaseErrorException)
             {
@@ -289,6 +286,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             catch (Exception ex) when (!Debugger.IsAttached)
             {
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                currentCancelSrc?.Dispose();
+                this.cancelSrc_gameupdater = null;
+                this.pso2Updater.OperationCompleted -= completed;
+                this.TabMainMenu.IsSelected = true;
             }
         }
 
@@ -347,7 +351,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (iscancelled)
                     {
-                        writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded {success_list.Count} ({totalsizedownloadedtext}) before cancelled.");
+                        if (success_list.Count == 0)
+                        {
+                            writer.Write($"[GameUpdater] User cancelled the updating progress. No files downloaded before cancelled.");
+                        }
+                        else if (success_list.Count == 1)
+                        {
+                            writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.");
+                        }
+                        else
+                        {
+                            writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded {success_list.Count} files ({totalsizedownloadedtext}) before cancelled.");
+                        }
                     }
                     else
                     {

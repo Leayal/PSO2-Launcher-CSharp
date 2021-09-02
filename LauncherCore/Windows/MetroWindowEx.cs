@@ -108,19 +108,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected bool RegisterDisposeObject(AsyncDisposeObject disposeObj)
         {
+            bool isSuccess;
             lock (this._disposeThem)
             {
                 try
                 {
                     this._disposeThem.Add(disposeObj);
-                    disposeObj.Disposed += this.DisposeObj_Disposed;
-                    return true;
+                    isSuccess = true;
                 }
                 catch
                 {
-                    return false;
+                    isSuccess = false;
                 }
             }
+            if (isSuccess)
+            {
+                disposeObj.Disposed += this.DisposeObj_Disposed;
+            }
+            return isSuccess;
         }
 
         private void DisposeObj_Disposed(AsyncDisposeObject sender)
@@ -130,6 +135,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this._disposeThem.Remove(sender);
             }
+        }
+
+        /// <summary>Event is used for synchronous clean up operations. This event will be raised when the window is certainly going to be closed (after <seealso cref="OnClosing(CancelEventArgs)"/>. Thus, not cancellable).</summary>
+        /// <remarks>All async cleanings should be used with <seealso cref="RegisterDisposeObject(AsyncDisposeObject)"/> instead.</remarks>
+        public event EventHandler CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
+
+        protected virtual Task OnCleanupBeforeClosed()
+        {
+            try
+            {
+                this.CleanupBeforeClosed?.Invoke(this, EventArgs.Empty);
+            }
+            catch { } // Silent error because it's going be closed anyway.
+            return Task.CompletedTask;
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -149,13 +168,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     else
                     {
+                        e.Cancel = true;
                         if (Interlocked.CompareExchange(ref this.flag_disposing, 2, 1) == 1)
                         {
-                            Task.Factory.StartNew(this.DisposeAsyncStuffs, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously).Unwrap().ContinueWith(t =>
+                            this.Dispatcher.InvokeAsync(async delegate
                             {
+                                await this.OnCleanupBeforeClosed();
+                                await this.DisposeAsyncStuffs();
                                 if (Interlocked.CompareExchange(ref this.flag_disposing, 3, 2) == 2)
                                 {
-                                    this.Dispatcher.InvokeAsync(this.Close);
+                                    await this.Dispatcher.InvokeAsync(this.Close);
                                 }
                             });
                         }
@@ -164,6 +186,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 case 1:
                 case 2:
                     e.Cancel = true;
+                    break;
+                case 3:
+                    e.Cancel = false;
+                    base.OnClosing(e);
                     break;
             }
         }

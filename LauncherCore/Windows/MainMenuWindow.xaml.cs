@@ -34,7 +34,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private GameClientUpdater pso2Updater;
-        private CancellationTokenSource cancelSrc;
+        private readonly CancellationTokenSource cancelAllOperation;
+        private CancellationTokenSource cancelSrc_gameupdater;
         private readonly ConfigurationFile config_main;
         private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
@@ -95,6 +96,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
+
+            this.cancelAllOperation = new CancellationTokenSource();
 
             InitializeComponent();
 
@@ -222,13 +225,52 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void ThisWindow_Closed(object sender, EventArgs e)
+        protected override async Task OnCleanupBeforeClosed()
         {
-            // this.config_main.Save();
+            await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Stopping all operations and cleaning up resources before closing and exiting launcher."));
+
+            var clientupdater = this.pso2Updater;
+            if (clientupdater != null && this.cancelSrc_gameupdater != null && this.TabGameClientUpdateProgressBar.IsSelected)
+            {
+                await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait..."));
+
+                var tsrc = new TaskCompletionSource();
+
+                GameClientUpdater.OperationCompletedHandler onfinialize = null;
+                onfinialize = new GameClientUpdater.OperationCompletedHandler(delegate
+                {
+                    clientupdater.OperationCompleted -= onfinialize;
+                    tsrc.TrySetResult();
+                });
+                clientupdater.OperationCompleted += onfinialize;
+
+                // 
+
+                this.cancelAllOperation.Cancel();
+                this.webclient.CancelPendingRequests();
+
+                await Task.WhenAny(tsrc.Task, Task.Delay(5000)); // Either wait until the thing stopped or 5s and force closing
+                tsrc.TrySetResult();
+
+                await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Game client updating has been stopped gracefully."));
+
+                // Not really needed because we need to close the window asap.
+                // await Task.Delay(1); // This allow the UI thread to process a little bit of calls. Thus, the log above should be written.
+            }
+            else
+            {
+                this.webclient.CancelPendingRequests();
+            }
+            this.cancelAllOperation?.Dispose();
+            this.cancelSrc_gameupdater?.Dispose();
+            this.webclient.Dispose();
+
             if (this.trayIcon.IsValueCreated)
             {
-                this.trayIcon.Value.Visible = false;
-                this.trayIcon.Value.Dispose();
+                using (var trayicon = this.trayIcon.Value)
+                {
+                    trayicon.Visible = false;
+                }
             }
             foreach (var btn in this.toggleButtons)
             {
@@ -240,6 +282,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     break;
                 }
             }
+
+            // This is unnecessary as we don't really use the event CleanupBeforeClosed at all.
+            // await base.OnCleanupBeforeClosed();
         }
 
         private void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)

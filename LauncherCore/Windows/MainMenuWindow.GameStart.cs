@@ -105,7 +105,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             File.Create(usernamePath)?.Dispose();
                         }
 
-                        currentCancelSrc = new CancellationTokenSource();
+                        currentCancelSrc = CancellationTokenSource.CreateLinkedTokenSource(this.cancelAllOperation.Token);
                         var cancelToken = currentCancelSrc.Token;
                         // bool isOKay = false;
                         PSO2LoginToken token = null;
@@ -194,10 +194,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             {
                                 try
                                 {
-                                    this.cancelSrc?.Dispose();
+                                    this.cancelSrc_gameupdater?.Dispose();
                                 }
                                 catch { }
-                                this.cancelSrc = currentCancelSrc;
+                                this.cancelSrc_gameupdater = currentCancelSrc;
 
                                 if (this.TabGameClientUpdateProgressBar.IsSelected != true)
                                 {
@@ -284,6 +284,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 finally
                 {
                     currentCancelSrc?.Dispose();
+                    this.cancelSrc_gameupdater = null;
                     await this.Dispatcher.InvokeAsync(new Action(() =>
                     {
                         tab.GameStartEnabled = true;

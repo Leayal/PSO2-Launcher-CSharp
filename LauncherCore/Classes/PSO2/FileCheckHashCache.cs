@@ -66,13 +66,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 if (connection.DecreaseRefCount() == 0)
                 {
-                    await connection.ScheduleCloseAsync().ContinueWith(t =>
+                    var canceltoken = await connection.ScheduleCloseAsync();
+
+                    // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
+                    // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
+                    if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
                     {
-                        if (t.IsCompleted && !t.IsCanceled)
-                        {
-                            _connectionPool.TryRemove(db.filepath, out connection);
-                        }
-                    });
+                        _connectionPool.TryRemove(db.filepath, out _);
+                    }
                 }
             }
         }
@@ -80,6 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public static async Task ForceCloseAll()
         {
             string[] keys = new string[_connectionPool.Keys.Count];
+            if (keys.Length == 0) return;
             _connectionPool.Keys.CopyTo(keys, 0);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -88,6 +90,24 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     try
                     {
                         await connection.ForceClose();
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        public static void ForceCloseAllSync()
+        {
+            string[] keys = new string[_connectionPool.Keys.Count];
+            if (keys.Length == 0) return;
+            _connectionPool.Keys.CopyTo(keys, 0);
+            for (int i = 0; i < keys.Length; i++)
+            {
+                if (_connectionPool.TryRemove(keys[i], out var connection))
+                {
+                    try
+                    {
+                        connection.ForceCloseSync();
                     }
                     catch { }
                 }
@@ -235,7 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        private async Task ScheduleCloseAsync()
+        private async Task<CancellationToken> ScheduleCloseAsync()
         {
             var state = Interlocked.CompareExchange(ref this.flag_state, 2, 1);
             if (state == 1)
@@ -254,12 +274,27 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     this.cancelSchedule?.Dispose();
                     this.cancelSchedule = null;
                 }, token).Unwrap();
+                return token;
             }
+            return CancellationToken.None;
         }
 
         private async Task ForceClose()
         {
             await this.sqlConn.CloseAsync();
+        }
+
+        /// <summary>Only use when the application is exiting and that no database operation is on-going before closing.</summary>
+        private void ForceCloseSync()
+        {
+            using (var connection = this.sqlConn.GetConnection())
+            {
+                if (connection.IsInTransaction)
+                {
+                    connection.Rollback();
+                }
+                connection.Close();
+            }
         }
 
         public class DatabaseErrorException : Exception { }

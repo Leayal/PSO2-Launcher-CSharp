@@ -10,7 +10,7 @@
                      xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
                      mc:Ignorable="d" x:Name="thisWindow"
                      MinHeight="600" MinWidth="860"
-                     Loaded="ThisWindow_Loaded" Closed="ThisWindow_Closed"
+                     Loaded="ThisWindow_Loaded"
                      Title="PSO2 JP Launcher" Height="600" Width="860" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
         <Grid.RowDefinitions>

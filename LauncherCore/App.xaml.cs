@@ -183,39 +183,70 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     this.Dispatcher.InvokeAsync(delegate
                     {
-                        bool isInTray;
-                        if (this.MainWindow is Windows.MainMenuWindow window)
+                        var mainwindow = this.MainWindow;
+                        if (mainwindow != null)
                         {
-                            isInTray = window.IsMinimizedToTray;
-                            window.Close();
-                        }
-                        else
-                        {
-                            isInTray = false;
-                            this.MainWindow?.Close();
-                        }
-                        this.Shutdown();
-                        var args = new List<string>(Environment.GetCommandLineArgs());
-                        args.RemoveAt(0);
-                        if (!args.Contains("--no-self-update-prompt"))
-                        {
-                            args.Add("--no-self-update-prompt");
-                        }
-                        if (isInTray)
-                        {
-                            if (!args.Contains("--tray"))
+                            bool isInTray;
+                            if (mainwindow is Windows.MainMenuWindow window)
                             {
-                                args.Add("--tray");
+                                isInTray = window.IsMinimizedToTray;
                             }
+                            else
+                            {
+                                isInTray = false;
+                            }
+
+                            EventHandler mainformclosed = null;
+                            mainformclosed = (sender, e) =>
+                            {
+                                if (sender is Window w)
+                                {
+                                    w.Closed -= mainformclosed;
+                                }
+
+                                this.Shutdown();
+                                var args = new List<string>(Environment.GetCommandLineArgs());
+                                args.RemoveAt(0);
+                                if (!args.Contains("--no-self-update-prompt"))
+                                {
+                                    args.Add("--no-self-update-prompt");
+                                }
+                                if (isInTray)
+                                {
+                                    if (!args.Contains("--tray"))
+                                    {
+                                        args.Add("--tray");
+                                    }
+                                }
+                                else
+                                {
+                                    if (args.Contains("--tray"))
+                                    {
+                                        args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
+                                    }
+                                }
+                                RestartWithArgs(args);
+                            };
+
+                            mainwindow.Closed += mainformclosed;
+                            mainwindow.Close();
                         }
                         else
                         {
+                            this.Shutdown();
+                            var args = new List<string>(Environment.GetCommandLineArgs());
+                            args.RemoveAt(0);
+                            if (!args.Contains("--no-self-update-prompt"))
+                            {
+                                args.Add("--no-self-update-prompt");
+                            }
                             if (args.Contains("--tray"))
                             {
                                 args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
                             }
+                            RestartWithArgs(args);
                         }
-                        RestartWithArgs(args);
+
                         // System.Windows.Forms.Application.Restart();
                     });
                 }
@@ -255,6 +286,10 @@ namespace Leayal.PSO2Launcher.Core
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
+            
+            // Double check and close all database connections.
+            // Optimally, this should does nothing because all databases has been finalized and closed.
+            Classes.PSO2.FileCheckHashCache.ForceCloseAllSync();
         }
     }
 }
