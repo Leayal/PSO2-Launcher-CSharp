@@ -66,14 +66,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 if (connection.DecreaseRefCount() == 0)
                 {
-                    var canceltoken = await connection.ScheduleCloseAsync();
-
-                    // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
-                    // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
-                    if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
+                    try
                     {
-                        _connectionPool.TryRemove(db.filepath, out _);
+                        var canceltoken = await connection.ScheduleCloseAsync();
+
+                        // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
+                        // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
+                        if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
+                        {
+                            _connectionPool.TryRemove(db.filepath, out _);
+                        }
                     }
+                    catch (ObjectDisposedException) { }
+                    catch (TaskCanceledException) { }
                 }
             }
         }

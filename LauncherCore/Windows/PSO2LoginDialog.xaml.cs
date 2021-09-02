@@ -117,7 +117,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var anothertoken = this.cancelsrc.Token;
             anothertoken.Register(() =>
             {
-                this.DialogResult = false;
+                this.CustomDialogResult = false;
                 this.Close();
             });
             try
@@ -161,13 +161,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                             catch (ObjectDisposedException)
                             {
-                                this.DialogResult = false;
+                                this.CustomDialogResult = false;
                                 this.Close();
                                 return;
                             }
-                            this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken);
+                            this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken).ConfigureAwait(true);
 
-                            this.DialogResult = true;
+                            this.CustomDialogResult = true;
+                            this.Close();
                         }
                     }
                 }

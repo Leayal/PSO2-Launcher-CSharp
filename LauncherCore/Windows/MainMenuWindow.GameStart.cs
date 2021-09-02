@@ -136,8 +136,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 using (var loginForm = new PSO2LoginDialog(this.config_main, this.pso2HttpClient, username, true))
                                 {
-                                    loginForm.Owner = this;
-                                    if (loginForm.ShowDialog() == true)
+                                    if (loginForm.ShowCustomDialog(this) == true)
                                     {
                                         token = loginForm.LoginToken;
                                         if (loginForm.checkbox_rememberusername.IsChecked == true)
