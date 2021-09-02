@@ -66,19 +66,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 if (connection.DecreaseRefCount() == 0)
                 {
-                    try
-                    {
-                        var canceltoken = await connection.ScheduleCloseAsync();
+                    var canceltoken = await connection.ScheduleCloseAsync();
 
-                        // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
-                        // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
-                        if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
-                        {
-                            _connectionPool.TryRemove(db.filepath, out _);
-                        }
+                    // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
+                    // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
+                    if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
+                    {
+                        _connectionPool.TryRemove(db.filepath, out _);
                     }
-                    catch (ObjectDisposedException) { }
-                    catch (TaskCanceledException) { }
                 }
             }
         }
@@ -267,18 +262,26 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 this.cancelSchedule = new CancellationTokenSource();
                 var token = this.cancelSchedule.Token;
-                await Task.Delay(TimeSpan.FromSeconds(10), token).ContinueWith(async t =>
+                try
                 {
-                    if (!token.IsCancellationRequested && !t.IsCanceled)
-                    {
-                        if (Interlocked.CompareExchange(ref this.flag_state, 3, 2) == 2)
-                        {
-                            await this.ForceClose();
-                        }
-                    }
+                    await Task.Delay(TimeSpan.FromSeconds(10), token); // This should raise the task TaskCancelledException
+                }
+                catch (ObjectDisposedException) { }
+                catch (TaskCanceledException) { }
+                finally
+                {
                     this.cancelSchedule?.Dispose();
                     this.cancelSchedule = null;
-                }, token).Unwrap();
+                }
+
+                if (!token.IsCancellationRequested)
+                {
+                    if (Interlocked.CompareExchange(ref this.flag_state, 3, 2) == 2)
+                    {
+                        await this.ForceClose();
+                    }
+                }
+
                 return token;
             }
             return CancellationToken.None;
