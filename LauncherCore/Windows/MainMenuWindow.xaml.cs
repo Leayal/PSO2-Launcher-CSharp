@@ -75,12 +75,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                 if (Directory.Exists(binDir))
                 {
-                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.AllDirectories))
+                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.TopDirectoryOnly))
                     {
                         var sha1 = SHA1Hash.ComputeHashFromFile(filename);
                         dictionary.Add(filename.Remove(0, removelen), sha1);
                     }
                 }
+
+                binDir = Path.Combine(RuntimeValues.RootDirectory, "bin", "plugins", "rss");
+                if (Directory.Exists(binDir))
+                {
+                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.TopDirectoryOnly))
+                    {
+                        var sha1 = SHA1Hash.ComputeHashFromFile(filename);
+                        dictionary.Add(filename.Remove(0, removelen), sha1);
+                    }
+                }
+
+                dictionary.TrimExcess();
                 var selfupdatecheck = new BackgroundSelfUpdateChecker(this.webclient, dictionary);
                 selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
                 return selfupdatecheck;
@@ -133,8 +145,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
         {
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
-
-            this.RegisterDisposeObject(AsyncDisposeObject.CreateFrom(FileCheckHashCache.ForceCloseAll));
 
             this.RegisterDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
             {
@@ -229,38 +239,56 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Stopping all operations and cleaning up resources before closing and exiting launcher."));
 
+            var listOfOperations = new List<Task>();
+
             var clientupdater = this.pso2Updater;
-            if (clientupdater != null && this.cancelSrc_gameupdater != null && this.TabGameClientUpdateProgressBar.IsSelected)
+            Task t_stopClientUpdater;
+            if (clientupdater != null && clientupdater.IsBusy)
             {
                 await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait..."));
 
                 var tsrc = new TaskCompletionSource();
+                t_stopClientUpdater = tsrc.Task;
+                listOfOperations.Add(t_stopClientUpdater);
 
                 GameClientUpdater.OperationCompletedHandler onfinialize = null;
-                onfinialize = new GameClientUpdater.OperationCompletedHandler(delegate
+                onfinialize = new GameClientUpdater.OperationCompletedHandler(async delegate
                 {
                     clientupdater.OperationCompleted -= onfinialize;
+                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Game client updating has been stopped gracefully."));
                     tsrc.TrySetResult();
                 });
                 clientupdater.OperationCompleted += onfinialize;
-
-                // 
-
-                this.cancelAllOperation.Cancel();
-                this.webclient.CancelPendingRequests();
-
-                await Task.WhenAny(tsrc.Task, Task.Delay(5000)); // Either wait until the thing stopped or 5s and force closing
-                tsrc.TrySetResult();
-
-                await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Game client updating has been stopped gracefully."));
-
-                // Not really needed because we need to close the window asap.
-                // await Task.Delay(1); // This allow the UI thread to process a little bit of calls. Thus, the log above should be written.
             }
             else
             {
-                this.webclient.CancelPendingRequests();
+                t_stopClientUpdater = null;
             }
+
+            this.cancelAllOperation.Cancel();
+            this.webclient.CancelPendingRequests();
+
+            listOfOperations.Add(Task.Factory.StartNew(async () =>
+            {
+                if (t_stopClientUpdater != null)
+                {
+                    await t_stopClientUpdater;
+                }
+                if (SQLite.SQLiteAsyncConnection.HasConnections)
+                {
+                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Lingering database connections. This may take a while to gracefully stop and clean up. Please wait..."));
+                    SQLite.SQLiteAsyncConnection.ResetPool();
+                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] All database connections have been closed successfully."));
+                }
+            }, TaskCreationOptions.LongRunning).Unwrap());
+            
+
+            // Wait until the everything is stopped within 10s, if not finished, consider timeout and force close anyway.
+            if (listOfOperations.Count != 0)
+            {
+                await Task.WhenAny(Task.WhenAll(listOfOperations), Task.Delay(10000));
+            }
+
             this.cancelAllOperation?.Dispose();
             this.cancelSrc_gameupdater?.Dispose();
             this.webclient.Dispose();

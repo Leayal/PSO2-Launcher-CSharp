@@ -192,6 +192,8 @@ namespace SQLite
 			SQLiteConnectionPool.Shared.Reset ();
 		}
 
+		public static bool HasConnections => (SQLiteConnectionPool.Shared.ConnectionCount != 0);
+
 		/// <summary>
 		/// Gets the pooled lockable connection used by this async connection.
 		/// You should never need to use this. This is provided only to add additional
@@ -1440,7 +1442,7 @@ namespace SQLite
 		/// <summary>
 		/// Closes all connections managed by this pool.
 		/// </summary>
-		public void Reset ()
+		public bool Reset ()
 		{
 			List<Entry> entries;
 			lock (_entriesLock) {
@@ -1451,7 +1453,10 @@ namespace SQLite
 			foreach (var e in entries) {
 				e.Close ();
 			}
+			return true;
 		}
+
+		public int ConnectionCount => _entries.Count;
 	}
 
 	/// <summary>

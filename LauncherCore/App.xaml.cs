@@ -286,10 +286,10 @@ namespace Leayal.PSO2Launcher.Core
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
-            
+
             // Double check and close all database connections.
-            // Optimally, this should does nothing because all databases has been finalized and closed.
-            Classes.PSO2.FileCheckHashCache.ForceCloseAllSync();
+            // Optimally, this should does nothing because all databases have been finalized and closed.
+            // SQLite.SQLiteAsyncConnection.ResetPool();
         }
     }
 }

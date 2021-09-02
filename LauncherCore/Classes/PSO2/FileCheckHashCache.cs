@@ -10,146 +10,31 @@ using System.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public class FileCheckHashCache
+    public class FileCheckHashCache : IAsyncDisposable
     {
         private const int LatestVersion = 2;
 
-        private static readonly ConcurrentDictionary<string, FileCheckHashCache> _connectionPool;
-
-        static FileCheckHashCache()
-        {
-            _connectionPool = new ConcurrentDictionary<string, FileCheckHashCache>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        public static FileCheckHashCache CreateOrOpen(string path)
-        {
-            return _connectionPool.AddOrUpdate(path, (key) => 
-            {
-                try
-                {
-                    var connection = new FileCheckHashCache(key);
-                    connection.IncreaseRefCount();
-                    _ = connection.Load();
-                    return connection;
-                }
-                catch
-                {
-                    throw new DatabaseErrorException();
-                }
-            }, (key, existing) => 
-            {
-                if (existing.CancelScheduleClose())
-                {
-                    existing.IncreaseRefCount();
-                    return existing;
-                }
-                else
-                {
-                    try
-                    {
-                        var connection = new FileCheckHashCache(key);
-                        connection.IncreaseRefCount();
-                        _ = connection.Load();
-                        return connection;
-                    }
-                    catch
-                    {
-                        throw new DatabaseErrorException();
-                    }
-                }
-            });
-        }
-
-        public static async void Close(FileCheckHashCache db)
-        {
-            if (_connectionPool.TryGetValue(db.filepath, out var connection))
-            {
-                if (connection.DecreaseRefCount() == 0)
-                {
-                    var canceltoken = await connection.ScheduleCloseAsync();
-
-                    // Technically, CancellationToken.None has `CanBeCanceled` prop is false.
-                    // But idk if it's changed in the future, so checking if it's not the None should be more accurate.
-                    if (canceltoken != CancellationToken.None && canceltoken.CanBeCanceled && !canceltoken.IsCancellationRequested)
-                    {
-                        _connectionPool.TryRemove(db.filepath, out _);
-                    }
-                }
-            }
-        }
-
-        public static async Task ForceCloseAll()
-        {
-            string[] keys = new string[_connectionPool.Keys.Count];
-            if (keys.Length == 0) return;
-            _connectionPool.Keys.CopyTo(keys, 0);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                if (_connectionPool.TryRemove(keys[i], out var connection))
-                {
-                    try
-                    {
-                        await connection.ForceClose();
-                    }
-                    catch { }
-                }
-            }
-        }
-
-        public static void ForceCloseAllSync()
-        {
-            string[] keys = new string[_connectionPool.Keys.Count];
-            if (keys.Length == 0) return;
-            _connectionPool.Keys.CopyTo(keys, 0);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                if (_connectionPool.TryRemove(keys[i], out var connection))
-                {
-                    try
-                    {
-                        connection.ForceCloseSync();
-                    }
-                    catch { }
-                }
-            }
-        }
-
-        private readonly string filepath;
         private readonly SQLiteAsyncConnection sqlConn;
-        private Task t_load;
-        private int flag_state;
-        private CancellationTokenSource cancelSchedule;
+        private readonly Task t_load;
+        private int state;
 
-        private int refCount;
-
-        private FileCheckHashCache(string filepath)
+        public FileCheckHashCache(string filepath)
         {
-            this.cancelSchedule = null;
-            this.filepath = filepath;
-            this.refCount = 0;
-            this.flag_state = 0;
+            this.state = 0;
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteAsyncConnection(connectionStr);
+
+            this.t_load = this.Init();
+            if (this.t_load.Status == TaskStatus.Created)
+            {
+                this.t_load.Start();
+            }
         }
-
-        private int IncreaseRefCount() => Interlocked.Increment(ref this.refCount);
-
-        private int DecreaseRefCount() => Interlocked.Decrement(ref this.refCount);
 
         public async Task Load()
         {
-            var state = Interlocked.CompareExchange(ref this.flag_state, 1, 0);
-            if (state == 0)
-            {
-                this.t_load = this.Init();
-            }
-            else if (state == 3)
-            {
-                throw new ObjectDisposedException(nameof(FileCheckHashCache));
-            }
             await this.t_load;
         }
-
 
         private async Task Init()
         {
@@ -213,95 +98,77 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public async Task<PatchRecordItem> GetPatchItem(string filename)
         {
-            try
+            switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
-                return await this.sqlConn.Table<PatchRecordItem>().FirstOrDefaultAsync(obj => obj.RemoteFilename == filename);
-            }
-            catch (InvalidOperationException)
-            {
-                return null;
+                case 0:
+                    await this.t_load;
+                    try
+                    {
+                        return await this.sqlConn.Table<PatchRecordItem>().FirstOrDefaultAsync(obj => obj.RemoteFilename == filename);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        return null;
+                    }
+                case 1:
+                    try
+                    {
+                        return await this.sqlConn.Table<PatchRecordItem>().FirstOrDefaultAsync(obj => obj.RemoteFilename == filename);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        return null;
+                    }
+                case 2:
+                    throw new ObjectDisposedException(nameof(FileCheckHashCache));
+                default:
+                    throw new InvalidOperationException();
             }
         }
 
         public async Task<PatchRecordItem> SetPatchItem(PatchListItem item, DateTime lastModifiedTimeUTC)
         {
-            var obj = new PatchRecordItem() { RemoteFilename = item.GetFilenameWithoutAffix(), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC };
-            var result = await this.sqlConn.InsertOrReplaceAsync(obj);
-            if (result != 0)
+            var oldstate = Interlocked.CompareExchange(ref this.state, -1, -1);
+            if (oldstate == 2)
             {
-                return obj;
+                throw new ObjectDisposedException(nameof(FileCheckHashCache));
             }
             else
             {
-                return null;
-            }
-        }
-
-        private bool CancelScheduleClose()
-        {
-            var state = Interlocked.CompareExchange(ref this.flag_state, 1, 2);
-            if (state == 2)
-            {
-                this.cancelSchedule.Cancel();
-                return true;
-            }
-            else if (state == 3)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        private async Task<CancellationToken> ScheduleCloseAsync()
-        {
-            var state = Interlocked.CompareExchange(ref this.flag_state, 2, 1);
-            if (state == 1)
-            {
-                this.cancelSchedule = new CancellationTokenSource();
-                var token = this.cancelSchedule.Token;
-                try
+                if (oldstate >= 0 && oldstate < 2)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(10), token); // This should raise the task TaskCancelledException
-                }
-                catch (ObjectDisposedException) { }
-                catch (TaskCanceledException) { }
-                finally
-                {
-                    this.cancelSchedule?.Dispose();
-                    this.cancelSchedule = null;
-                }
-
-                if (!token.IsCancellationRequested)
-                {
-                    if (Interlocked.CompareExchange(ref this.flag_state, 3, 2) == 2)
+                    if (oldstate == 0)
                     {
-                        await this.ForceClose();
+                        await this.t_load;
+                    }
+                    var obj = new PatchRecordItem() { RemoteFilename = item.GetFilenameWithoutAffix(), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC };
+                    var result = await this.sqlConn.InsertOrReplaceAsync(obj);
+                    if (result != 0)
+                    {
+                        return obj;
+                    }
+                    else
+                    {
+                        return null;
                     }
                 }
-
-                return token;
-            }
-            return CancellationToken.None;
-        }
-
-        private async Task ForceClose()
-        {
-            await this.sqlConn.CloseAsync();
-        }
-
-        /// <summary>Only use when the application is exiting and that no database operation is on-going before closing.</summary>
-        private void ForceCloseSync()
-        {
-            using (var connection = this.sqlConn.GetConnection())
-            {
-                if (connection.IsInTransaction)
+                else
                 {
-                    connection.Rollback();
+                    throw new InvalidOperationException();
                 }
-                connection.Close();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            var oldstate = Interlocked.Exchange(ref this.state, 2);
+            if (oldstate != 2)
+            {
+                if (oldstate == 0)
+                {
+                    await t_load;
+                }
+                await this.sqlConn.CloseAsync();
             }
         }
 

@@ -48,6 +48,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Snail mode (for when internet is extremely unreliable).
         public bool SnailMode { get; set; }
 
+        public bool IsBusy => (Interlocked.CompareExchange(ref this.flag_operationStarted, -1, -1) != 0);
+
         public GameClientUpdater(string whereIsThePSO2_BIN, string? preference_classicWhere, string? preference_rebootWhere, string hashCheckCache, PSO2HttpClient httpHandler)
         {
             this.hashCheckCachePath = hashCheckCache;
@@ -135,7 +137,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 this.t_operation = Task.Factory.StartNew(async () =>
                 {
-                    var pendingFiles = new BlockingCollection<DownloadItem>();
                     bool isOperationSuccess = false;
                     FileCheckHashCache duhB = null;
                     PSO2Version ver = default;
@@ -145,10 +146,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(),
                                                 bag_success = new ConcurrentBag<PatchListItem>(),
                                                 bag_failure = new ConcurrentBag<PatchListItem>();
-
+                    var pendingFiles = new BlockingCollection<DownloadItem>();
                     try
                     {
-                        duhB = FileCheckHashCache.CreateOrOpen(this.hashCheckCachePath);
+                        duhB = new FileCheckHashCache(this.hashCheckCachePath);
                         ver = await GetRemoteVersionAsync(cancellationToken);
                         var t_check = Task.Factory.StartNew(async () =>
                         {
@@ -212,11 +213,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     finally
                     {
+                        pendingFiles.Dispose();
                         if (duhB != null)
                         {
-                            FileCheckHashCache.Close(duhB);
+                            await duhB.DisposeAsync();
                         }
-                        pendingFiles.Dispose();
                         IReadOnlyCollection<PatchListItem> list_all;
                         if (patchlist is PatchListMemory memorylist)
                         {
@@ -226,8 +227,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             list_all = new List<PatchListItem>(patchlist);
                         }
-                        this.OnClientOperationComplete1(selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
-                        Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1);
+                        if (Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1) == 1)
+                        {
+                            this.OnClientOperationComplete1(selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
+                        }
                     }
                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
             }

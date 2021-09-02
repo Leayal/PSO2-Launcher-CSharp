@@ -118,6 +118,22 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     try
                     {
+                        if (File.Exists(localFilePath))
+                        {
+                            var attrFlags = File.GetAttributes(localFilePath);
+                            if (attrFlags.HasFlag(FileAttributes.ReadOnly))
+                            {
+                                // Remove readonly flags from the old file
+                                // This should avoid error caused by ReadOnly file. Especially on file overwriting.
+                                File.SetAttributes(localFilePath, attrFlags & ~FileAttributes.ReadOnly);
+                            }
+
+                            // Copy all attributes from the old file to the updated one if it's not the usual attributes.
+                            if (attrFlags != FileAttributes.Normal)
+                            {
+                                File.SetAttributes(tmpFilePath, attrFlags);
+                            }
+                        }
                         File.Move(tmpFilePath, localFilePath, true);
                         var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                         await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
