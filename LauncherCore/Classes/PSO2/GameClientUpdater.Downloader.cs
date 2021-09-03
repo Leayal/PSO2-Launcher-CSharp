@@ -158,8 +158,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
                 else
                 {
-                    // In case there's no item in the queue yet. Put the Task into inactive and yield the thread to run other scheduled task(s).
-                    await Task.Delay(30, cancellationToken);
+                    if (pendingFiles.IsAddingCompleted)
+                    {
+                        // Exit loop because the collection is marked as completed adding (can no longer add item into the queue).
+                        // So if we can't dequeue an item, that means there's no more work to do **for this Downloader Task**, hence stop the loop and complete this Task.
+                        // Other Downloader task(s) may still be working.
+                        break;
+                    }
+                    else
+                    {
+                        // In case there's no item in the queue yet. Put the Task into inactive and yield the thread to run other scheduled task(s).
+                        await Task.Delay(30, cancellationToken);
+                    }
                 }
             }
         }
