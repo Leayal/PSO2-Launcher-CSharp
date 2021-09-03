@@ -8,10 +8,10 @@ namespace Leayal.PSO2Launcher.Core.Interfaces
 {
     interface ICacheManager<T> : IAsyncDisposable
     {
-        Task Load();
+        ValueTask Load();
 
-        Task<T> TryGet(string name);
+        ValueTask<T> TryGet(string name);
 
-        Task<T> GetOrAdd(string name, Func<Task<T>> factoryIfNotFoundOrInvalidCache);
+        ValueTask<T> GetOrAdd(string name, Func<Task<T>> factoryIfNotFoundOrInvalidCache);
     }
 }

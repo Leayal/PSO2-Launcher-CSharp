@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
+    // Unused for now
     class PersistentObjectCacheManager<T> : ICacheManager<T>
     {
         private const int LatestVersion = 1;
@@ -27,7 +28,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this.memCache = new ConcurrentDictionary<string, Task<T>>();
         }
 
-        public async Task Load()
+        public async ValueTask Load()
         {
             if (Interlocked.CompareExchange(ref this.state, 1, 0) == 0)
             {
@@ -89,7 +90,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public async Task<T> GetOrAdd(string name, Func<Task<T>> factoryIfNotFoundOrInvalidCache)
+        public async ValueTask<T> GetOrAdd(string name, Func<Task<T>> factoryIfNotFoundOrInvalidCache)
         {
             await this.Load();
 
@@ -102,7 +103,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             });
         }
 
-        public async Task<T> TryGet(string name)
+        public async ValueTask<T> TryGet(string name)
         {
             return default;
         }

@@ -9,49 +9,57 @@ namespace Leayal.PSO2Launcher.Core.Classes
 {
     class ObjectShortCacheManager<T> : ICacheManager<T>
     {
-        private readonly ConcurrentDictionary<string, ObjectShortCacheAsyncItem> innerCache;
+        private readonly ConcurrentDictionary<string, Lazy<ObjectShortCacheAsyncItem>> innerCache;
 
         public ObjectShortCacheManager() : this(StringComparer.Ordinal) { }
 
         public ObjectShortCacheManager(StringComparer nameComparer)
         {
-            this.innerCache = new ConcurrentDictionary<string, ObjectShortCacheAsyncItem>(nameComparer);
+            this.innerCache = new ConcurrentDictionary<string, Lazy<ObjectShortCacheAsyncItem>>(nameComparer);
         }
 
-        public Task Load() => Task.CompletedTask;
+        public ValueTask Load() => ValueTask.CompletedTask;
 
-        public Task<T> TryGet(string name)
+        public async ValueTask<T> TryGet(string name)
         {
             if (this.innerCache.TryGetValue(name, out var cached))
             {
-                if (DateTime.UtcNow <= cached.ttl)
+                var val = cached.Value;
+                if (DateTime.UtcNow <= val.ttl)
                 {
-                    return cached.ObjectData;
+                    return await val.ObjectData;
                 }
             }
 
-            return Task.FromResult(default(T));
+            return default(T);
         }
 
-        public Task<T> GetOrAdd(string name, Func<Task<T>> factory)
-            => this.GetOrAdd(name, factory, TimeSpan.FromSeconds(30));
+        public async ValueTask<T> GetOrAdd(string name, Func<Task<T>> factory)
+            => await this.GetOrAdd(name, factory, TimeSpan.FromSeconds(30));
 
-        public Task<T> GetOrAdd(string name, Func<Task<T>> factory, TimeSpan howLongWillILive)
+        public async ValueTask<T> GetOrAdd(string name, Func<Task<T>> factory, TimeSpan howLongWillILive)
         {
-            return this.innerCache.AddOrUpdate(name, (cachedName) =>
-            {
-                return new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive);
-            }, (cachedName, cachedValue) =>
-            {
-                if (DateTime.UtcNow > cachedValue.ttl)
+            return await this.innerCache.AddOrUpdate(name, (cachedName) => new Lazy<ObjectShortCacheAsyncItem>(() => new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive)),
+                (cachedName, cachedValue) =>
                 {
-                    return new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive);
-                }
-                else
-                {
-                    return cachedValue;
-                }
-            }).ObjectData;
+                    if (cachedValue.IsValueCreated)
+                    {
+                        var cached = cachedValue.Value;
+                        if (DateTime.UtcNow > cached.ttl)
+                        {
+                            return new Lazy<ObjectShortCacheAsyncItem>(() => new ObjectShortCacheAsyncItem(factory.Invoke(), howLongWillILive));
+                        }
+                        else
+                        {
+                            return cachedValue;
+                        }
+                    }
+                    else
+                    {
+                        return cachedValue;
+                    }
+                    
+                }).Value.ObjectData;
         }
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

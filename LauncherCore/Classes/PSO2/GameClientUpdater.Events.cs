@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             => this.ProgressEnd?.Invoke(currentFile, in isSuccess);
 
         public event OperationCompletedHandler OperationCompleted;
-        private void OnClientOperationComplete1(GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
+        private void OnClientOperationComplete1(string dir_pso2bin, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
         {
             // Everything is completed.
             // Write the version file out.
@@ -31,7 +31,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 if (noError && !cancellationToken.IsCancellationRequested && downloadMode != GameClientSelection.Always_Only && ver != default(PSO2Version))
                 {
-                    var localFilePath = Path.GetFullPath("version.ver", this.dir_pso2bin);
+                    var localFilePath = Path.GetFullPath("version.ver", dir_pso2bin);
                     if (Directory.Exists(localFilePath))
                     {
                         Directory.Delete(localFilePath);
@@ -70,18 +70,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public event FileCheckEndHandler FileCheckEnd;
         private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
-
-        protected override Task OnDisposeAsync()
-        {
-            if (this.t_operation == null)
-            {
-                return Task.CompletedTask;
-            }
-            else
-            {
-                return this.t_operation;
-            }
-        }
 
         public delegate void ProgressBeginHandler(PatchListItem file, in long totalProgressValue);
         public delegate void ProgressReportHandler(PatchListItem file, in long currentProgressValue);

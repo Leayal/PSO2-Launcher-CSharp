@@ -13,7 +13,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, Action<PatchListBase> onGetTotalFile, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, Action<PatchListBase> onGetTotalFile, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -30,7 +30,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 fileCheckThrottleFactor = 0;
             }
 
-            static void AddToPatchListTasks(Task<PatchListMemory> t, System.Collections.Generic.List<Task<PatchListMemory>> list)
+            static void AddToPatchListTasks(Task<PatchListMemory> t, List<Task<PatchListMemory>> list)
             {
                 if (t.Status == TaskStatus.Created)
                 {
@@ -44,7 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             bool bakExist_classic = false;
             bool bakExist_reboot = false;
-            var tasksOfLists = new System.Collections.Generic.List<Task<PatchListMemory>>(4);
+            var tasksOfLists = new List<Task<PatchListMemory>>(4);
             BackupFileFoundEventArgs e_onBackup = null;
 
             switch (selection)
@@ -53,11 +53,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     AddToPatchListTasks(this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
 
-                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot || bakExist_classic)
                     {
-                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, bakExist_classic);
+                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, bakExist_classic);
                         await this.OnBackupFileFound(e_onBackup);
                     }
                     break;
@@ -66,10 +66,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
 
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
-                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
+                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, false);
                         await this.OnBackupFileFound(e_onBackup);
                     }
                     break;
@@ -77,10 +77,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case GameClientSelection.Classic_Only:
                     AddToPatchListTasks(this.webclient.GetPatchListClassicAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32", "backup"));
+                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
                     if (bakExist_classic)
                     {
-                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, false, bakExist_classic);
+                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, false, bakExist_classic);
                         await this.OnBackupFileFound(e_onBackup);
                     }
                     break;
@@ -94,10 +94,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     AddToPatchListTasks(this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(this.dir_pso2bin, "data", "win32reboot", "backup"));
+                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
-                        e_onBackup = new BackupFileFoundEventArgs(this.dir_pso2bin, bakExist_reboot, false);
+                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, false);
                         await this.OnBackupFileFound(e_onBackup);
                     }
                     break;
@@ -226,11 +226,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    string localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
-                    // localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                    string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                    // localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
                     if (!File.Exists(localFilePath))
                     {
-                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                         DownloadItem item;
                         if (isLink)
@@ -267,7 +267,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                                     if (!bool_compareMD5)
                                     {
-                                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                                         DownloadItem item;
                                         if (isLink)
@@ -287,7 +287,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                             else
                             {
-                                var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                                 DownloadItem item;
                                 if (isLink)
@@ -322,8 +322,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    // string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
-                    var localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
+                    // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                    var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
                     var cachedHash = await duhB.GetPatchItem(localFilename);
                     // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
 
@@ -341,7 +341,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                         if (cachedHash == null)
                         {
-                            var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                            var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                             DownloadItem item;
                             if (isLink)
@@ -361,7 +361,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                             {
-                                var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                                 DownloadItem item;
                                 if (isLink)
@@ -381,7 +381,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     else
                     {
-                        var linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                         DownloadItem item;
                         if (isLink)
@@ -415,11 +415,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
 
                     var localFilename = patchItem.GetFilenameWithoutAffix();
-                    var localFilePath = Path.GetFullPath(localFilename, this.dir_pso2bin);
-                    // string localFilePath = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data);
+                    var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                    // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
                     if (!File.Exists(localFilePath))
                     {
-                        string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                        string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                         DownloadItem item;
                         if (isLink)
@@ -461,7 +461,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                                         if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                                         {
-                                            string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                            string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                                             DownloadItem item;
                                             if (isLink)
@@ -480,7 +480,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 }
                                 else
                                 {
-                                    string linkTo = DetermineWhere(patchItem, this.dir_pso2bin, this.dir_classic_data, this.dir_reboot_data, out var isLink);
+                                    string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
 
                                     DownloadItem item;
                                     if (isLink)

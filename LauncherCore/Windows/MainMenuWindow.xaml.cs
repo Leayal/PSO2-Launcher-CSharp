@@ -33,7 +33,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
-        private GameClientUpdater pso2Updater;
+        private readonly GameClientUpdater pso2Updater;
         private readonly CancellationTokenSource cancelAllOperation;
         private CancellationTokenSource cancelSrc_gameupdater;
         private readonly ConfigurationFile config_main;
@@ -97,7 +97,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
                 return selfupdatecheck;
             }));
-
+            this.pso2Updater = CreateGameClientUpdater(this.pso2HttpClient);
             /*
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             if (File.Exists(this.config_main.Filename))
@@ -145,26 +145,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
         {
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
-
-            this.RegisterDisposeObject(AsyncDisposeObject.CreateFrom(async delegate
-            {
-                if (this.backgroundselfupdatechecker.IsValueCreated)
-                {
-                    var checker = await this.backgroundselfupdatechecker.Value;
-                    checker.Dispose();
-                }
-            }));
-
-            string dir_root = this.config_main.PSO2_BIN,
-                dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
-            if (!string.IsNullOrEmpty(dir_root))
-            {
-                dir_root = Path.GetFullPath(dir_root);
-                dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data);
-                dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data);
-                this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-            }
             this.TabMainMenu.IsSelected = true;
             RSSFeedPresenter_Loaded();
         }
@@ -241,9 +221,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             var listOfOperations = new List<Task>();
 
-            var clientupdater = this.pso2Updater;
             Task t_stopClientUpdater;
-            if (clientupdater != null && clientupdater.IsBusy)
+            if (this.pso2Updater.IsBusy)
             {
                 await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait..."));
 
@@ -254,26 +233,29 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 GameClientUpdater.OperationCompletedHandler onfinialize = null;
                 onfinialize = new GameClientUpdater.OperationCompletedHandler(async delegate
                 {
-                    clientupdater.OperationCompleted -= onfinialize;
+                    this.pso2Updater.OperationCompleted -= onfinialize;
                     await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Game client updating has been stopped gracefully."));
                     tsrc.TrySetResult();
                 });
-                clientupdater.OperationCompleted += onfinialize;
+                this.pso2Updater.OperationCompleted += onfinialize;
             }
             else
             {
-                t_stopClientUpdater = null;
+                t_stopClientUpdater = Task.CompletedTask;
             }
 
-            this.cancelAllOperation.Cancel();
-            this.webclient.CancelPendingRequests();
+            listOfOperations.Add((new Func<Task>(async delegate
+            {
+                if (this.backgroundselfupdatechecker.IsValueCreated)
+                {
+                    var checker = await this.backgroundselfupdatechecker.Value;
+                    checker.Dispose();
+                }
+            })).Invoke());
 
             listOfOperations.Add(Task.Factory.StartNew(async () =>
             {
-                if (t_stopClientUpdater != null)
-                {
-                    await t_stopClientUpdater;
-                }
+                await t_stopClientUpdater;
                 if (SQLite.SQLiteAsyncConnection.HasConnections)
                 {
                     await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Lingering database connections. This may take a while to gracefully stop and clean up. Please wait..."));
@@ -281,7 +263,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     await this.CreateNewParagraphInLog(writer => writer.Write($"[System] All database connections have been closed successfully."));
                 }
             }, TaskCreationOptions.LongRunning).Unwrap());
-            
+
+            this.cancelAllOperation.Cancel();
+            this.webclient.CancelPendingRequests();
 
             // Wait until the everything is stopped within 10s, if not finished, consider timeout and force close anyway.
             if (listOfOperations.Count != 0)
@@ -501,48 +485,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     dialog.Owner = this;
                     if (dialog.ShowDialog() == true)
                     {
-                        await this.RefreshGameClientUpdaterDirectory();
+                        
                     }
                 }
                 finally
                 {
                     tab.ButtonManageGameDataClicked += this.TabMainMenu_ButtonManageGameDataClick;
-                }
-            }
-        }
-
-        private async Task RefreshGameClientUpdaterDirectory()
-        {
-            string dir_root = this.config_main.PSO2_BIN,
-                            dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
-            if (string.IsNullOrEmpty(dir_root))
-            {
-                var oldUpdater = this.pso2Updater;
-                this.pso2Updater = null;
-                await oldUpdater.DisposeAsync();
-            }
-            else
-            {
-                dir_root = Path.GetFullPath(dir_root);
-                dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data);
-                dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data);
-                var oldUpdater = this.pso2Updater;
-                if (oldUpdater == null)
-                {
-                    this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                    this.RegisterDisposeObject(this.pso2Updater);
-                }
-                else
-                {
-                    if (!string.Equals(oldUpdater.Path_PSO2BIN, dir_root, StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(oldUpdater.Path_PSO2RebootData, dir_reboot_data, StringComparison.OrdinalIgnoreCase) ||
-                        !string.Equals(oldUpdater.Path_PSO2ClassicData, dir_classic_data, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.pso2Updater = CreateGameClientUpdater(dir_root, dir_classic_data, dir_reboot_data, this.pso2HttpClient);
-                        this.RegisterDisposeObject(this.pso2Updater);
-                        await oldUpdater.DisposeAsync();
-                    }
                 }
             }
         }

@@ -26,132 +26,141 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             await duhB.Load();
 
-            foreach (var downloadItem in pendingFiles.GetConsumingEnumerable())
+            // GetConsumingEnumerable() blocks the thread. No good now.
+            while (!pendingFiles.IsCompleted && !cancellationToken.IsCancellationRequested)
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (pendingFiles.TryTake(out var downloadItem))
                 {
-                    break;
-                }
-
-                var localFilePath = SymbolicLink.FollowTarget(downloadItem.Destination) ?? downloadItem.Destination;
-                // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
-                // var tmpFilename = localFilename + ".dtmp";
-                var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);
-
-                // Check whether the launcher has the access right or able to create file at the destination
-                bool isSuccess = false;
-
-                Directory.CreateDirectory(Path.GetDirectoryName(localFilePath));
-                using (var localStream = File.Create(tmpFilePath)) // Sync it is
-                using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
-                {
-                    if (response.IsSuccessStatusCode)
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        // Check if the response has content-length header.
-                        long remoteSizeInBytes = -1, bytesDownloaded = 0;
-                        var header = response.Content.Headers.ContentLength;
-                        if (header.HasValue)
-                        {
-                            remoteSizeInBytes = header.Value;
-                        }
-                        else
-                        {
-                            remoteSizeInBytes = downloadItem.PatchInfo.FileSize;
-                        }
-                        using (var remoteStream = response.Content.ReadAsStream())
-                        {
-                            this.OnProgressBegin(downloadItem.PatchInfo, in remoteSizeInBytes);
-                            if (remoteSizeInBytes == -1)
-                            {
-                                // Download without knowing total size, until upstream get EOF.
+                        break;
+                    }
 
-                                // Still need async to support cancellation faster.
-                                var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
-                                while (byteRead > 0)
-                                {
-                                    if (cancellationToken.IsCancellationRequested)
-                                    {
-                                        break;
-                                    }
-                                    localStream.Write(downloadbuffer, 0, byteRead);
-                                    bytesDownloaded += byteRead;
-                                    byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
-                                }
+                    var localFilePath = SymbolicLink.FollowTarget(downloadItem.Destination) ?? downloadItem.Destination;
+                    // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
+                    // var tmpFilename = localFilename + ".dtmp";
+                    var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);
+
+                    // Check whether the launcher has the access right or able to create file at the destination
+                    bool isSuccess = false;
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(localFilePath));
+                    using (var localStream = File.Create(tmpFilePath)) // Sync it is
+                    using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
+                    {
+                        if (response.IsSuccessStatusCode)
+                        {
+                            // Check if the response has content-length header.
+                            long remoteSizeInBytes = -1, bytesDownloaded = 0;
+                            var header = response.Content.Headers.ContentLength;
+                            if (header.HasValue)
+                            {
+                                remoteSizeInBytes = header.Value;
                             }
                             else
                             {
-                                // Download while reporting the download progress, until upstream get EOF.
-                                var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
-                                while (byteRead > 0)
+                                remoteSizeInBytes = downloadItem.PatchInfo.FileSize;
+                            }
+                            using (var remoteStream = response.Content.ReadAsStream())
+                            {
+                                this.OnProgressBegin(downloadItem.PatchInfo, in remoteSizeInBytes);
+                                if (remoteSizeInBytes == -1)
                                 {
-                                    if (cancellationToken.IsCancellationRequested)
-                                    {
-                                        break;
-                                    }
+                                    // Download without knowing total size, until upstream get EOF.
 
-                                    localStream.Write(downloadbuffer, 0, byteRead);
-                                    bytesDownloaded += byteRead;
-                                    // Report progress here
-                                    this.OnProgressReport(downloadItem.PatchInfo, in bytesDownloaded);
-                                    byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
+                                    // Still need async to support cancellation faster.
+                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
+                                    while (byteRead > 0)
+                                    {
+                                        if (cancellationToken.IsCancellationRequested)
+                                        {
+                                            break;
+                                        }
+                                        localStream.Write(downloadbuffer, 0, byteRead);
+                                        bytesDownloaded += byteRead;
+                                        byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
+                                    }
+                                }
+                                else
+                                {
+                                    // Download while reporting the download progress, until upstream get EOF.
+                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
+                                    while (byteRead > 0)
+                                    {
+                                        if (cancellationToken.IsCancellationRequested)
+                                        {
+                                            break;
+                                        }
+
+                                        localStream.Write(downloadbuffer, 0, byteRead);
+                                        bytesDownloaded += byteRead;
+                                        // Report progress here
+                                        this.OnProgressReport(downloadItem.PatchInfo, in bytesDownloaded);
+                                        byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
+                                    }
+                                }
+
+                                localStream.Flush();
+                                localStream.Position = 0;
+
+                                // Final check
+                                var downloadedMd5 = MD5Hash.ComputeHashFromFile(localStream);
+                                if (downloadedMd5 == downloadItem.PatchInfo.MD5)
+                                {
+                                    isSuccess = true;
                                 }
                             }
+                        }
+                        else
+                        {
+                            // Report failure and continue to another file.
+                        }
+                    }
 
-                            localStream.Flush();
-                            localStream.Position = 0;
-
-                            // Final check
-                            var downloadedMd5 = MD5Hash.ComputeHashFromFile(localStream);
-                            if (downloadedMd5 == downloadItem.PatchInfo.MD5)
+                    if (isSuccess)
+                    {
+                        try
+                        {
+                            if (File.Exists(localFilePath))
                             {
-                                isSuccess = true;
+                                var attrFlags = File.GetAttributes(localFilePath);
+                                if (attrFlags.HasFlag(FileAttributes.ReadOnly))
+                                {
+                                    // Remove readonly flags from the old file
+                                    // This should avoid error caused by ReadOnly file. Especially on file overwriting.
+                                    File.SetAttributes(localFilePath, attrFlags & ~FileAttributes.ReadOnly);
+                                }
+
+                                // Copy all attributes from the old file to the updated one if it's not the usual attributes.
+                                if (attrFlags != FileAttributes.Normal)
+                                {
+                                    File.SetAttributes(tmpFilePath, attrFlags);
+                                }
                             }
+                            File.Move(tmpFilePath, localFilePath, true);
+                            var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                            await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
+                        }
+                        catch
+                        {
+                            File.Delete(tmpFilePath); // Won't throw error if file is not existed.
+                            throw;
                         }
                     }
                     else
                     {
-                        // Report failure and continue to another file.
+                        // onFailure?.Invoke(downloadItem);
+                        File.Delete(tmpFilePath);
                     }
-                }
 
-                if (isSuccess)
-                {
-                    try
-                    {
-                        if (File.Exists(localFilePath))
-                        {
-                            var attrFlags = File.GetAttributes(localFilePath);
-                            if (attrFlags.HasFlag(FileAttributes.ReadOnly))
-                            {
-                                // Remove readonly flags from the old file
-                                // This should avoid error caused by ReadOnly file. Especially on file overwriting.
-                                File.SetAttributes(localFilePath, attrFlags & ~FileAttributes.ReadOnly);
-                            }
-
-                            // Copy all attributes from the old file to the updated one if it's not the usual attributes.
-                            if (attrFlags != FileAttributes.Normal)
-                            {
-                                File.SetAttributes(tmpFilePath, attrFlags);
-                            }
-                        }
-                        File.Move(tmpFilePath, localFilePath, true);
-                        var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                        await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
-                    }
-                    catch
-                    {
-                        File.Delete(tmpFilePath); // Won't throw error if file is not existed.
-                        throw;
-                    }
+                    onFinished.Invoke(downloadItem, isSuccess);
+                    // this.OnProgressEnd(downloadItem.PatchInfo, in isSuccess);
                 }
                 else
                 {
-                    // onFailure?.Invoke(downloadItem);
-                    File.Delete(tmpFilePath);
+                    // In case there's no item in the queue yet. Put the Task into inactive and yield the thread to run other scheduled task(s).
+                    await Task.Delay(30, cancellationToken);
                 }
-
-                onFinished.Invoke(downloadItem, isSuccess);
-                // this.OnProgressEnd(downloadItem.PatchInfo, in isSuccess);
             }
         }
     }

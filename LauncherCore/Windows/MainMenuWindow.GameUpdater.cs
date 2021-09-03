@@ -81,8 +81,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async Task StartGameClientUpdate(bool fixMode = false, bool promptBeforeUpdate = false, GameClientSelection selection = GameClientSelection.Auto)
         {
-            var dir_pso2bin = this.config_main.PSO2_BIN;
-            if (this.pso2Updater == null || string.IsNullOrEmpty(dir_pso2bin))
+            string dir_pso2bin = this.config_main.PSO2_BIN;
+            if (string.IsNullOrEmpty(dir_pso2bin))
             {
                 var aaa = new Prompt_PSO2BinIsNotSet();
                 switch (aaa.ShowCustomDialog(this))
@@ -112,6 +112,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
+            string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
+                dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
+            dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
+            dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data, dir_pso2bin);
+
             var downloaderProfile = this.config_main.DownloaderProfile;
             var conf_DownloadType = this.config_main.DownloadSelection;
             GameClientSelection downloadType;
@@ -134,8 +139,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     downloadType = selection;
                     break;
             }
-
-            
 
             if (fixMode)
             {
@@ -212,7 +215,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     });
                     var version = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
                     ver = version;
-                    newVer = await this.pso2Updater.CheckForPSO2Updates(version, cancelToken);
+                    newVer = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, version, cancelToken);
                 }
                 
 
@@ -259,7 +262,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             writer.Write("[GameUpdater] Begin game client's updating progress...");
                         });
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(downloadType, downloaderProfile, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, downloadType, downloaderProfile, cancelToken);
                 }
                 else
                 {
@@ -296,9 +299,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private GameClientUpdater CreateGameClientUpdater(string directory, string? path_classic_data, string? path_reboot_data, PSO2HttpClient webclient)
+        private GameClientUpdater CreateGameClientUpdater(PSO2HttpClient webclient)
         {
-            var result = new GameClientUpdater(directory, path_classic_data, path_reboot_data, Path.GetFullPath("leapso2launcher.CheckCache.dat", directory), webclient);
+            var result = new GameClientUpdater(webclient);
             var throttleFileCheck = this.config_main.DownloaderCheckThrottle;
 
             var logicalCount = Environment.ProcessorCount;

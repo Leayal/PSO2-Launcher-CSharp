@@ -94,6 +94,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
+                        string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
+                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
+                        dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
+                        dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data, dir_pso2bin);
+
                         var configFolderPath = Path.GetFullPath("config", RuntimeValues.RootDirectory);
                         var usernamePath = Path.Combine(configFolderPath, "SavedUsername.txt");
                         if (!File.Exists(usernamePath))
@@ -220,7 +225,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 if (checkUpdateBeforeLaunch)
                                 {
-                                    var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(cancelToken);
+                                    var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, cancelToken);
                                     if (hasUpdate)
                                     {
                                         if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -236,7 +241,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 });
 
                                 // Safety reason => Balanced.
-                                await this.pso2Updater.ScanAndDownloadFilesAsync(GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
+                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
 
                                 if (!cancelToken.IsCancellationRequested)
                                 {

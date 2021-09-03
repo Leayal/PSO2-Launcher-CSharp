@@ -168,46 +168,55 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         var size = fs.Read(buffer, 0, buffer.Length);
                         var span = new ReadOnlySpan<byte>(buffer, 0, size);
                         int currentIndex = 0;
+                        var currentSpan = span;
 
-                        currentIndex = utf8bin_attachedtoprocess.Search(span, currentIndex);
+                        currentIndex = utf8bin_attachedtoprocess.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_attachedtoprocess.PatternLength;
 
-                        currentIndex = utf8bin_failedtoinitialized3d11shim.Search(span, 0);
+                        currentIndex = utf8bin_failedtoinitialized3d11shim.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_failedtoinitialized3d11shim.PatternLength;
 
-                        currentIndex = utf8bin_shimd3d11.Search(span, 0);
+                        currentIndex = utf8bin_shimd3d11.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_shimd3d11.PatternLength;
 
-                        currentIndex = utf8bin_failedtoinitializedxgishim.Search(span, 0);
+                        currentIndex = utf8bin_failedtoinitializedxgishim.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_failedtoinitializedxgishim.PatternLength;
 
-                        currentIndex = utf8bin_shimdxgi.Search(span, 0);
+                        currentIndex = utf8bin_shimdxgi.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_shimdxgi.PatternLength;
 
-                        currentIndex = utf8bin_skippingshiminitialization.Search(span, 0);
+                        currentIndex = utf8bin_skippingshiminitialization.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_skippingshiminitialization.PatternLength;
 
-                        currentIndex = utf8bin_itemdatabasepath.Search(span, 0);
+                        currentIndex = utf8bin_itemdatabasepath.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_itemdatabasepath.PatternLength;
 
-                        currentIndex = utf8bin_noticeloaditemsuccess.Search(span, 0);
+                        currentIndex = utf8bin_noticeloaditemsuccess.Search(in currentSpan);
                         if (currentIndex == -1) return false;
+                        currentSpan = currentSpan.Slice(currentIndex);
                         // currentIndex += utf8bin_noticeloaditemsuccess.PatternLength;
 
-                        currentIndex = utf8bin_pso2classicdll.Search(span, 0);
+                        currentIndex = utf8bin_pso2classicdll.Search(in currentSpan);
                         if (currentIndex == -1) return false;
 
-                        currentIndex = utf8bin_pso2rebootdll.Search(span, 0);
+                        currentIndex = utf8bin_pso2rebootdll.Search(in currentSpan);
                         if (currentIndex == -1) return false;
 
-                        currentIndex = utf8bin_noticehookthreadending.Search(span, 0);
+                        currentIndex = utf8bin_noticehookthreadending.Search(in currentSpan);
                         if (currentIndex == -1) return false;
 
                         return true;

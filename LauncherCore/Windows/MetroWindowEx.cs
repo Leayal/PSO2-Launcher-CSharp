@@ -25,7 +25,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public static readonly DependencyProperty WindowCommandButtonsHeightProperty = WindowCommandButtonsHeightPropertyKey.DependencyProperty;
 
         private int flag_disposing, flag_firstshown;
-        private readonly List<AsyncDisposeObject> _disposeThem;
 
         public bool IsMaximized => (bool)this.GetValue(IsMaximizedProperty);
 
@@ -42,7 +41,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.CustomDialogResult = null;
             this.flag_disposing = 0;
             this.flag_firstshown = 0;
-            this._disposeThem = new List<AsyncDisposeObject>();
         }
 
         public bool? ShowCustomDialog(Window window)
@@ -106,37 +104,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        protected bool RegisterDisposeObject(AsyncDisposeObject disposeObj)
-        {
-            bool isSuccess;
-            lock (this._disposeThem)
-            {
-                try
-                {
-                    this._disposeThem.Add(disposeObj);
-                    isSuccess = true;
-                }
-                catch
-                {
-                    isSuccess = false;
-                }
-            }
-            if (isSuccess)
-            {
-                disposeObj.Disposed += this.DisposeObj_Disposed;
-            }
-            return isSuccess;
-        }
-
-        private void DisposeObj_Disposed(AsyncDisposeObject sender)
-        {
-            sender.Disposed -= this.DisposeObj_Disposed;
-            lock (this._disposeThem)
-            {
-                this._disposeThem.Remove(sender);
-            }
-        }
-
         /// <summary>Event is used for synchronous clean up operations. This event will be raised when the window is certainly going to be closed (after <seealso cref="OnClosing(CancelEventArgs)"/>. Thus, not cancellable).</summary>
         /// <remarks>All async cleanings should be used with <seealso cref="RegisterDisposeObject(AsyncDisposeObject)"/> instead.</remarks>
         public event EventHandler CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
@@ -174,7 +141,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             this.Dispatcher.InvokeAsync(async delegate
                             {
                                 await this.OnCleanupBeforeClosed();
-                                await this.DisposeAsyncStuffs();
                                 if (Interlocked.CompareExchange(ref this.flag_disposing, 3, 2) == 2)
                                 {
                                     await this.Dispatcher.InvokeAsync(this.Close);
@@ -191,20 +157,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     e.Cancel = false;
                     base.OnClosing(e);
                     break;
-            }
-        }
-
-        private async Task DisposeAsyncStuffs()
-        {
-            AsyncDisposeObject[] copied;
-            lock (this._disposeThem)
-            {
-                copied = this._disposeThem.ToArray();
-                this._disposeThem.Clear();
-            }
-            for (int i = 0; i < copied.Length; i++)
-            {
-                await copied[i].DisposeAsync();
             }
         }
     }
