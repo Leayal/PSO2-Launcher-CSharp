@@ -308,7 +308,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     if (fileCheckThrottleFactor != 0)
                     {
-                        await Task.Delay(fileCheckThrottleFactor);
+                        try
+                        {
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -401,7 +408,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     if (fileCheckThrottleFactor != 0)
                     {
-                        await Task.Delay(fileCheckThrottleFactor);
+                        try
+                        {
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -502,7 +516,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
                     if (fileCheckThrottleFactor != 0)
                     {
-                        await Task.Delay(fileCheckThrottleFactor);
+                        try
+                        {
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
             }

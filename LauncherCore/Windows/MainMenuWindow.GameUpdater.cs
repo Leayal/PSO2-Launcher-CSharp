@@ -40,6 +40,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.TabMainMenu.IsSelected = true;
                 }
             }
+            else
+            {
+                this.TabMainMenu.IsSelected = true;
+            }
         }
 
         private Task<IReadOnlyDictionary<PatchListItem, bool>> QuickCheckFiles(string pso2_bin, IEnumerable<PatchListItem> itemsToCheck)
@@ -182,7 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             completed = (sender, cancelled, patchlist, required_download, success_list, failure_list) =>
             {
                 this.pso2Updater.OperationCompleted -= completed;
-                this.Dispatcher.InvokeAsync(delegate
+                this.Dispatcher.TryInvoke(delegate
                 {
                     this.TabMainMenu.IsSelected = true;
                 });
@@ -288,6 +292,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
+                await this.CreateNewParagraphInLog(writer =>
+                {
+                    writer.Write("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
+                });
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally

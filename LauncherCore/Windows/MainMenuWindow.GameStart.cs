@@ -170,7 +170,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             this.ss_id = loginForm.GetUsername();
                                             this.ss_pw = loginForm.GetPassword();
 
-                                            await this.TabMainMenu.Dispatcher.InvokeAsync(delegate
+                                            this.TabMainMenu.Dispatcher.TryInvoke(delegate
                                             {
                                                 this.TabMainMenu.ForgetLoginInfoEnabled = true;
                                             });
@@ -184,7 +184,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                             else
                             {
-                                await this.Dispatcher.InvokeAsync(delegate
+                                this.Dispatcher.TryInvoke(delegate
                                 {
                                     this.TabGameClientUpdateProgressBar.IsSelected = true;
                                 });
@@ -214,7 +214,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 completed = (sender, cancelled, pathclist, requiredDownload, successList, failedList) =>
                                 {
                                     this.pso2Updater.OperationCompleted -= completed;
-                                    this.Dispatcher.InvokeAsync(delegate
+                                    this.Dispatcher.TryInvoke(delegate
                                     {
                                         this.TabMainMenu.IsSelected = true;
                                     });
@@ -281,18 +281,60 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         writer.Write("[GameStart] User cancelled");
                     });
                 }
-                catch (Exception ex)
+                catch (TaskCanceledException)
                 {
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameStart] User cancelled");
+                    });
+                }
+                catch (System.Net.Http.HttpRequestException ex)
+                {
+                    var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
+                    });
+                    MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (System.Net.WebException ex)
+                {
+                    string errorCode;
+                    if (ex.Response is System.Net.HttpWebResponse response)
+                    {
+                        errorCode = response.StatusDescription;
+                    }
+                    else
+                    {
+                        errorCode = ex.Status.ToString();
+                    }
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
+                    });
+                    MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (FileCheckHashCache.DatabaseErrorException)
+                {
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameUpdater] Error occured when opening file check cache database.");
+                    });
+                    MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (Exception ex) when (!Debugger.IsAttached)
+                {
+                    await this.CreateNewParagraphInLog(writer =>
+                    {
+                        writer.Write("[GameStart] Fail to start game. Error message: " + ex.Message);
+                    });
                     MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {
                     currentCancelSrc?.Dispose();
                     this.cancelSrc_gameupdater = null;
-                    await this.Dispatcher.InvokeAsync(new Action(() =>
-                    {
-                        tab.GameStartEnabled = true;
-                    }));
+                    this.Dispatcher.TryInvoke(delegate { tab.GameStartEnabled = true; tab.IsSelected = true; });
                 }
             }
         }
