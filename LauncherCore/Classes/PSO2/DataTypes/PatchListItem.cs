@@ -49,11 +49,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 
         public string GetFilenameWithoutAffix() => GetFilenameWithoutAffix(in this.RemoteFilename);
 
+        public ReadOnlySpan<char> GetSpanFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.AsSpan());
+
         public static string GetFilenameWithoutAffix(in string filename)
         {
             if (filename.EndsWith(AffixFilename, StringComparison.OrdinalIgnoreCase))
             {
                 return filename.Remove(filename.Length - AffixFilename.Length);
+            }
+            else
+            {
+                return filename;
+            }
+        }
+
+        public static ReadOnlySpan<char> GetFilenameWithoutAffix(in ReadOnlySpan<char> filename)
+        {
+            if (filename.EndsWith(AffixFilename, StringComparison.OrdinalIgnoreCase))
+            {
+                return filename.Slice(0, filename.Length - AffixFilename.Length);
             }
             else
             {

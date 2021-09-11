@@ -93,8 +93,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 try
                 {
                     var window = new RSSFeedsManagerWindow(this.RSSFeedPresenter.Loader, this.RSSFeedPresenter.RSSFeedHandlers);
-                    window.Owner = this;
-                    if (window.ShowDialog() == true)
+                    if (window.ShowCustomDialog(this) == true)
                     {
                         this.RSSFeedPresenter.ClearAllFeeds();
                         var included = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

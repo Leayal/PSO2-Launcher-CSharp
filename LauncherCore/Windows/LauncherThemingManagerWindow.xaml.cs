@@ -45,14 +45,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.ManualSelectedThemeIndex = this.slider_manualThemeSelect.Value;
 
             this._config.Save();
-            this.DialogResult = true;
+            this.CustomDialogResult = true;
+            this.Close();
             // SystemCommands.CloseWindow(this);
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = false;
-            SystemCommands.CloseWindow(this);
+            this.CustomDialogResult = false;
+            this.Close();
+            // SystemCommands.CloseWindow(this);
         }
     }
 }

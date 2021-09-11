@@ -142,7 +142,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     FileCheckHashCache duhB = null;
                     PSO2Version ver = default;
 
-                    PatchListBase patchlist = null;
+                    PatchListMemory patchlist = null;
 
                     ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(),
                                                 bag_success = new ConcurrentBag<PatchListItem>(),
@@ -150,18 +150,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var pendingFiles = new BlockingCollection<DownloadItem>();
                     try
                     {
-                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin));
-                        var t_ver = GetRemoteVersionAsync(cancellationToken);
-                        await duhB.Load();
+                        patchlist = await this.InnerGetFilelistToScan(selection, cancellationToken);
+                        var t_ver = GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
+                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), patchlist.Count + 500);
+                        duhB.Load();
                         ver = await t_ver;
                         var t_check = Task.Factory.StartNew(async () =>
                         {
                             try
                             {
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, newpatchlist =>
-                                {
-                                    Interlocked.CompareExchange<PatchListBase>(ref patchlist, newpatchlist, null);
-                                }, item =>
+                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, patchlist, item =>
                                 {
                                     bag_needtodownload.Add(item.PatchInfo);
                                     this.OnDownloadQueueAdded();
@@ -222,7 +220,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             await duhB.DisposeAsync();
                         }
                         IReadOnlyCollection<PatchListItem> list_all;
-                        if (patchlist is PatchListMemory memorylist)
+                        if (patchlist == null)
+                        {
+                            list_all = new List<PatchListItem>(0);
+                        }
+                        else if (patchlist is PatchListMemory memorylist)
                         {
                             list_all = memorylist;
                         }

@@ -103,12 +103,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = true;
+            this.CustomDialogResult = true;
+            this.Close();
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = false;
+            this.CustomDialogResult = false;
+            this.Close();
         }
 
         private async void ButtonAdd_Click(object sender, RoutedEventArgs e)

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -18,6 +17,18 @@ namespace Leayal.PSO2Launcher.Core.Classes
             else
             {
                 dispatcher.InvokeAsync(action);
+            }
+        }
+
+        public static void TryInvokeSync(this Dispatcher dispatcher, Action action)
+        {
+            if (dispatcher.CheckAccess())
+            {
+                action.Invoke();
+            }
+            else
+            {
+                dispatcher.Invoke(action);
             }
         }
 

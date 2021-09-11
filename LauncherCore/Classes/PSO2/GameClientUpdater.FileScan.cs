@@ -13,7 +13,69 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, Action<PatchListBase> onGetTotalFile, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task<PatchListMemory> InnerGetFilelistToScan(GameClientSelection selection, CancellationToken cancellationToken)
+        {
+            static void AddToPatchListTasks(Task<PatchListMemory> t, List<Task<PatchListMemory>> list)
+            {
+                if (t.Status == TaskStatus.Created)
+                {
+                    try
+                    {
+                        t.Start();
+                    }
+                    catch { }
+                }
+                list.Add(t);
+            }
+
+            // Acquire patch list.
+            var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
+            // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
+            var tasksOfLists = new List<Task<PatchListMemory>>(4);
+
+            switch (selection)
+            {
+                case GameClientSelection.NGS_AND_CLASSIC:
+                    AddToPatchListTasks(this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    break;
+
+                case GameClientSelection.NGS_Prologue_Only:
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    break;
+
+                case GameClientSelection.Classic_Only:
+                    AddToPatchListTasks(this.webclient.GetPatchListClassicAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    break;
+
+                case GameClientSelection.Always_Only:
+                    AddToPatchListTasks(this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    break;
+
+                case GameClientSelection.NGS_Only:
+                    // Download 3 files at the same time.
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
+                    break;
+
+                default:
+                    // Universe exploded because you handed wrong value.
+                    throw new ArgumentOutOfRangeException(nameof(selection));
+            }
+
+            await Task.WhenAll(tasksOfLists);
+            var arr_PatchListBase = new PatchListBase[tasksOfLists.Count];
+            for (int i = 0; i < arr_PatchListBase.Length; i++)
+            {
+                arr_PatchListBase[i] = await tasksOfLists[i];
+            }
+            return PatchListBase.Create(arr_PatchListBase);
+        }
+
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, PatchListBase headacheMatterAgain, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -30,17 +92,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 fileCheckThrottleFactor = 0;
             }
 
-            static void AddToPatchListTasks(Task<PatchListMemory> t, List<Task<PatchListMemory>> list)
-            {
-                if (t.Status == TaskStatus.Created)
-                {
-                    t.Start();
-                }
-                list.Add(t);
-            }
-
-            // Acquire patch list.
-            var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             bool bakExist_classic = false;
             bool bakExist_reboot = false;
@@ -50,9 +101,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
-                    AddToPatchListTasks(this.webclient.GetPatchListAllAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-
                     bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
                     bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot || bakExist_classic)
@@ -63,9 +111,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.NGS_Prologue_Only:
-                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-
                     bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
@@ -75,8 +120,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.Classic_Only:
-                    AddToPatchListTasks(this.webclient.GetPatchListClassicAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
                     if (bakExist_classic)
                     {
@@ -86,14 +129,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     break;
 
                 case GameClientSelection.Always_Only:
-                    AddToPatchListTasks(this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     break;
 
                 case GameClientSelection.NGS_Only:
-                    // Download 3 files at the same time.
-                    AddToPatchListTasks(this.webclient.GetPatchListNGSPrologueAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    AddToPatchListTasks(this.webclient.GetPatchListNGSFullAsync(patchInfoRoot, cancellationToken), tasksOfLists);
-                    AddToPatchListTasks(this.webclient.GetLauncherListAsync(patchInfoRoot, cancellationToken), tasksOfLists);
                     bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
                     if (bakExist_reboot)
                     {
@@ -101,10 +139,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         await this.OnBackupFileFound(e_onBackup);
                     }
                     break;
-
-                default:
-                    // Universe exploded because you handed wrong value.
-                    throw new ArgumentOutOfRangeException(nameof(selection));
             }
 
             if (e_onBackup != null && e_onBackup.Handled == false)
@@ -184,15 +218,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
 
-            await Task.WhenAll(tasksOfLists);
-            var arr_PatchListBase = new PatchListBase[tasksOfLists.Count];
-            for (int i = 0; i < arr_PatchListBase.Length; i++)
-            {
-                arr_PatchListBase[i] = await tasksOfLists[i];
-            }
-            var headacheMatterAgain = PatchListBase.Create(arr_PatchListBase);
-
-            onGetTotalFile?.Invoke(headacheMatterAgain);
             if (headacheMatterAgain is PatchListMemory patchListMemory)
             {
                 this.OnFileCheckBegin(patchListMemory.Count);
@@ -201,8 +226,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 this.OnFileCheckBegin(-1);
             }
-
-            await duhB.Load();
 
             // Begin file check
 
@@ -256,13 +279,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 if (flag_useMd5)
                                 {
                                     string localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                    var cached = await duhB.GetPatchItem(localFilename);
+                                    var cached = duhB.GetPatchItem(localFilename);
 
                                     var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
 
                                     if (cached == null || cached.LastModifiedTimeUTC != localLastModifiedTimeUtc || cached.FileSize != localFileLen || !string.Equals(localMd5, cached.MD5, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
+                                        duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
                                     }
 
                                     if (!bool_compareMD5)
@@ -331,7 +354,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var localFilename = patchItem.GetFilenameWithoutAffix();
                     // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
                     var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                    var cachedHash = await duhB.GetPatchItem(localFilename);
+                    var cachedHash = duhB.GetPatchItem(localFilename);
                     // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
 
                     if (File.Exists(localFilePath))
@@ -342,7 +365,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             using (var fs = File.OpenRead(localFilePath))
                             {
                                 var localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                cachedHash = await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
+                                cachedHash = duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
                             }
                         }
 
@@ -453,7 +476,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     {
                         if (flag_useFileSize || flag_useMd5)
                         {
-                            var cachedHash = await duhB.GetPatchItem(localFilename);
+                            var cachedHash = duhB.GetPatchItem(localFilename);
                             var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                             using (var fs = File.OpenRead(localFilePath))
                             {
@@ -470,7 +493,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         else
                                         {
                                             localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                            await duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
+                                            duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
                                         }
 
                                         if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))

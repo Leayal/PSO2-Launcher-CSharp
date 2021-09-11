@@ -1,9 +1,9 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using MahApps.Metro.Controls;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -73,10 +73,15 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             remove { this.RemoveHandler(UpdateCancelClickedEvent, value); }
         }
 
-        private readonly DebounceDispatcher debounceDispatcher1, debounceDispatcher2, debounceDispatcher3;
+        private readonly SimpleDispatcherQueue debounceDispatcher;
+        private DispatcherQueueItem dispatcherQueueItem_IncreaseDownloadedCount, dispatcherQueueItem_IncreaseNeedToDownloadCount;
+        private DispatcherQueueItem dispatcherQueueItem_MainProgressValue;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
-        private int downloadedCount, totalDownloadCount;
 
+        private readonly ConcurrentBag<int> bag_freeindexes;
+        private readonly ConcurrentDictionary<int, DispatcherQueueItem> dictionary_middleman;
+        
+        private int downloadedCount, totalDownloadCount;
         private long downloadedByteCount;
 
         public TabGameUpdateProgress()
@@ -84,45 +89,98 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.downloadedByteCount = 0L;
             this.downloadedCount = 0;
             this.totalDownloadCount = 0;
+            this.dictionary_middleman = new ConcurrentDictionary<int, DispatcherQueueItem>();
+            this.bag_freeindexes = new ConcurrentBag<int>();
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
-            this.debounceDispatcher1 = new DebounceDispatcher(this.Dispatcher);
-            this.debounceDispatcher2 = new DebounceDispatcher(this.Dispatcher);
-            this.debounceDispatcher3 = new DebounceDispatcher(this.Dispatcher);
+            this.debounceDispatcher = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(15), System.Windows.Threading.DispatcherPriority.DataBind, this.Dispatcher);
             InitializeComponent();
             this.TopProgressBar.ShowDetailedProgressPercentage = true;
             this.DownloadFileTable.ItemsSource = this.indexing;
         }
 
-        public int IncreaseDownloadedCount()
+        public void IncreaseDownloadedCount(in long byteCount)
         {
-            var num = Interlocked.Increment(ref this.downloadedCount);
-            this.debounceDispatcher1.ThrottleEx(10, delegate
-            {
-                this.SetValue(TotalDownloadedPropertyKey, num);
-            }, System.Windows.Threading.DispatcherPriority.Render);
-            return num;
-        }
+            Interlocked.Increment(ref this.downloadedCount);
+            Interlocked.Add(ref this.downloadedByteCount, byteCount);
 
-        public long IncreaseDownloadedBytesCount(in long byteCount)
-        {
-            var num = Interlocked.Add(ref this.downloadedByteCount, byteCount);
-            this.debounceDispatcher3.ThrottleEx(10, delegate
+            // Only `this` is captured.
+            var newitem = this.debounceDispatcher.RegisterToTick(delegate
             {
-                this.SetValue(TotalDownloadedBytesPropertyKey, num);
-            }, System.Windows.Threading.DispatcherPriority.Render);
-            return num;
+                this.SetValue(TotalDownloadedPropertyKey, Interlocked.CompareExchange(ref this.downloadedCount, 0, 0));
+                this.SetValue(TotalDownloadedBytesPropertyKey, Interlocked.CompareExchange(ref this.downloadedByteCount, 0, 0));
+
+                Interlocked.Exchange(ref this.dispatcherQueueItem_IncreaseDownloadedCount, null)?.Unregister();
+            });
+            var olditem = Interlocked.CompareExchange(ref this.dispatcherQueueItem_IncreaseDownloadedCount, newitem, null);
+            if (olditem != null && olditem != newitem)
+            {
+                newitem.Unregister();
+            }
         }
 
         public void IncreaseNeedToDownloadCount()
         {
-            var num = Interlocked.Increment(ref this.totalDownloadCount);
-            this.debounceDispatcher2.ThrottleEx(10, delegate
+            Interlocked.Increment(ref this.totalDownloadCount);
+
+            // Only `this` is captured.
+            var newitem = this.debounceDispatcher.RegisterToTick(delegate
             {
-                this.SetValue(TotalFileNeedToDownloadPropertyKey, num);
-            }, System.Windows.Threading.DispatcherPriority.Render);
+                this.SetValue(TotalFileNeedToDownloadPropertyKey, Interlocked.CompareExchange(ref this.totalDownloadCount, 0, 0));
+                Interlocked.Exchange(ref this.dispatcherQueueItem_IncreaseNeedToDownloadCount, null)?.Unregister();
+            });
+            var olditem = Interlocked.CompareExchange(ref this.dispatcherQueueItem_IncreaseNeedToDownloadCount, newitem, null);
+            if (olditem != null && olditem != newitem)
+            {
+                newitem.Unregister();
+            }
         }
 
-        public void ResetDownloadCount()
+        public void ResetMainProgressBarState()
+        {
+            if (this.Dispatcher.CheckAccess())
+            {
+                this.TopProgressBar.ProgressBar.Value = 0d;
+                this.UpdateMainProgressBarState("Checking file", 100d, false);
+            }
+            else
+            {
+                this.Dispatcher.Invoke(this.ResetMainProgressBarState);
+            }
+        }
+
+        public void UpdateMainProgressBarState(string text, double maximum, bool showdetail)
+        {
+            if (this.Dispatcher.CheckAccess())
+            {
+                var topprogressbar = this.TopProgressBar;
+                topprogressbar.Text = text;
+                topprogressbar.ProgressBar.Maximum = maximum;
+                topprogressbar.ShowDetailedProgressPercentage = showdetail;
+            }
+            else
+            {
+                this.Dispatcher.Invoke(this.ResetMainProgressBarState);
+            }
+        }
+
+        public void SetMainProgressBarValue(double value)
+        {
+            if (this.Dispatcher.CheckAccess())
+            {
+                Interlocked.Exchange(ref this.dispatcherQueueItem_MainProgressValue, null)?.Unregister();
+                this.TopProgressBar.ProgressBar.Value = value;
+            }
+            else
+            {
+                Interlocked.Exchange(ref this.dispatcherQueueItem_MainProgressValue, this.debounceDispatcher.RegisterToTick(new Action<ProgressBar, double>((_progressbar, val) =>
+                {
+                    _progressbar.Value = val;
+                    // Interlocked.Exchange(ref this.dispatcherQueueItem_MainProgressValue, null)?.Unregister();
+                }), this.TopProgressBar.ProgressBar, value))?.Unregister();
+            }
+        }
+
+        public void ResetAllSubDownloadState()
         {
             Interlocked.Exchange(ref this.downloadedCount, 0);
             Interlocked.Exchange(ref this.totalDownloadCount, 0);
@@ -130,52 +188,146 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.SetValue(TotalDownloadedPropertyKey, 0);
             this.SetValue(TotalFileNeedToDownloadPropertyKey, 0);
             this.SetValue(TotalDownloadedBytesPropertyKey, 0L);
+
+            this.bag_freeindexes.Clear();
+            var count = this.indexing.Count;
+            for (int index = 0; index < count; index++)
+            {
+                this.ResetSubDownloadState(index);
+            }
         }
 
-        public void SetProgressBarCount(int count)
+        public void ResetSubDownloadState(in int index) => this.ResetSubDownloadState(in index, 100d);
+
+        public void ResetSubDownloadState(in int index, in double maximum)
+        {
+            if (this.dictionary_middleman.TryRemove(index, out var item))
+            {
+                item.Unregister();
+            }
+            if (this.Dispatcher.CheckAccess())
+            {
+                var progressbar = this.indexing[index];
+                progressbar.ShowProgressText = false;
+                progressbar.Text = string.Empty;
+                progressbar.ProgressBar.Value = 0d;
+                progressbar.ProgressBar.Maximum = maximum;
+                this.bag_freeindexes.Add(index);
+            }
+            else
+            {
+                this.Dispatcher.Invoke(new Action<TabGameUpdateProgress, int, double>((self, i, max) =>
+                {
+                    var progressbar = self.indexing[i];
+                    progressbar.ShowProgressText = false;
+                    progressbar.Text = string.Empty;
+                    progressbar.ProgressBar.Value = 0d;
+                    progressbar.ProgressBar.Maximum = max;
+                    self.bag_freeindexes.Add(i);
+                }), new object[] { this, index, maximum });
+            }
+        }
+
+        public void SetProgressBarCount(in int count)
         {
             var currentHaving = this.indexing.Count;
             if (count != currentHaving)
             {
                 this.indexing.Clear();
+                this.bag_freeindexes.Clear();
                 for (int i = 0; i < count; i++)
                 {
                     // this.DownloadFileTable.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40) });
                     var progressbar = new ExtendedProgressBar() { Margin = new Thickness(1) };
                     Grid.SetRow(progressbar, i);
                     this.indexing.Add(progressbar);
+                    this.bag_freeindexes.Add(i);
                 }
             }
         }
 
-        public void SetProgressText(int index, string text) => this.indexing[index].Text = text;
-        public void SetProgressTextVisible(int index, bool value) => this.indexing[index].ShowProgressText = value;
-        public void SetProgressValue(int index, in double value) => this.indexing[index].ProgressBar.Value = value;
-        public void SetProgressMaximum(int index, in double value) => this.indexing[index].ProgressBar.Maximum = value;
-
-        private void ThisSelf_Unselected(object sender, RoutedEventArgs e)
-            => this.DispatchersStop();
-
-        private void ThisSelf_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        public bool Book_A_Slot(out int index, string progresstext, in double progressMaximum)
         {
-            if (e.NewValue is bool b)
+            if (this.bag_freeindexes.TryTake(out index))
             {
-                if (!b)
+                if (this.dictionary_middleman.TryRemove(index, out var item))
                 {
-                    this.DispatchersStop();
+                    item.Unregister();
                 }
+                if (this.Dispatcher.CheckAccess())
+                {
+                    var progressbar = this.indexing[index];
+                    progressbar.Text = progresstext;
+                    progressbar.ShowProgressText = true;
+                    progressbar.ProgressBar.Value = 0d;
+                    progressbar.ProgressBar.Maximum = progressMaximum;
+                    this.bag_freeindexes.Add(index);
+                }
+                else
+                {
+                    this.Dispatcher.Invoke(new Action<TabGameUpdateProgress, int, double>((self, i, max) =>
+                    {
+                        var progressbar = self.indexing[i];
+                        progressbar.Text = progresstext;
+                        progressbar.ShowProgressText = true;
+                        progressbar.ProgressBar.Value = 0d;
+                        progressbar.ProgressBar.Maximum = max;
+                        self.bag_freeindexes.Add(i);
+                    }), new object[] { this, index, progressMaximum });
+                }
+                return true;
             }
             else
             {
-                this.DispatchersStop();
+                return false;
             }
         }
 
-        private void DispatchersStop()
+        public void SetSubProgressValue(int index, double value)
         {
-            this.debounceDispatcher1?.Stop();
-            this.debounceDispatcher2?.Stop();
-            this.debounceDispatcher3?.Stop();
+            // This is even messier than the old one.
+            this.dictionary_middleman.AddOrUpdate(index, key => this.debounceDispatcher.RegisterToTick(new Action<ObservableCollection<ExtendedProgressBar>, int, double>((_indexing, i, val) =>
+            {
+                _indexing[i].ProgressBar.Value = val;
+            }), this.indexing, index, value),
+                (key, existing) =>
+                {
+                    existing?.Unregister();
+                    return this.debounceDispatcher.RegisterToTick(new Action<ObservableCollection<ExtendedProgressBar>, int, double>((_indexing, i, val) =>
+                    {
+                        _indexing[i].ProgressBar.Value = val;
+                    }), this.indexing, index, value);
+                });
+
+            /*
+            if (this.dictionary_middleman.TryRemove(index, out var item))
+            {
+                item.Unregister();
+            }
+            this.indexing[index].ProgressBar.Value = value;
+
+            */
+        }
+
+        // public void SetProgressText(int index, string text) => this.indexing[index].Text = text;
+        // public void SetProgressTextVisible(int index, bool value) => this.indexing[index].ShowProgressText = value;
+        // public void SetProgressMaximum(int index, in double value) => this.indexing[index].ProgressBar.Maximum = value;
+
+        private void ThisSelf_Unselected(object sender, RoutedEventArgs e)
+        {
+            // this.debounceDispatcher?.Stop();
+        }
+
+        private void ThisSelf_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue)
+            {
+                this.debounceDispatcher?.Start();
+            }
+            else
+            {
+                this.debounceDispatcher?.Stop();
+            }
         }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e) => this.RaiseEvent(new RoutedEventArgs(UpdateCancelClickedEvent));

@@ -24,8 +24,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 downloadbuffer = new byte[1024 * 64]; // 64KB buffer.
             }
 
-            await duhB.Load();
-
             // GetConsumingEnumerable() blocks the thread. No good now.
             while (!pendingFiles.IsCompleted && !cancellationToken.IsCancellationRequested)
             {
@@ -139,7 +137,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                             File.Move(tmpFilePath, localFilePath, true);
                             var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                            await duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
+                            duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
                         }
                         catch
                         {

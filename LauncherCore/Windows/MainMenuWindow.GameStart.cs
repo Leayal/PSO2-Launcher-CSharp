@@ -101,7 +101,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                         var configFolderPath = Path.GetFullPath("config", RuntimeValues.RootDirectory);
                         var usernamePath = Path.Combine(configFolderPath, "SavedUsername.txt");
-                        if (!File.Exists(usernamePath))
+                        if (e.SelectedStyle == GameStartStyle.StartWithToken && !File.Exists(usernamePath))
                         {
                             if (MessageBox.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.\r\nDo you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                             {

@@ -60,7 +60,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         /// <summary>Merge all the patchlists into one and return the merged patchlist.</summary>
         /// <returns>Return a patchlist which has all the items from given <paramref name="patchlists"/>.</returns>
-        public static PatchListBase Create(params PatchListBase[] patchlists)
+        public static PatchListMemory Create(params PatchListBase[] patchlists)
         {
             if (patchlists == null)
             {
@@ -73,7 +73,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             if (patchlists.Length == 1)
             {
-                return patchlists[0];
+                if (patchlists[0] is PatchListMemory mem)
+                {
+                    return mem;
+                }
+                else
+                {
+                    var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
+                    patchlists[0].CopyTo(items);
+                    return new PatchListMemory(patchlists[0].RootInfo, patchlists[0].IsReboot, items);
+                }
             }
             else
             {

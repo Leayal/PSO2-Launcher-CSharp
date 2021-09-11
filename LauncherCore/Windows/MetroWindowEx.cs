@@ -45,9 +45,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public bool? ShowCustomDialog(Window window)
         {
-            this.Owner = window;
-            this.ShowDialog();
-            return this.CustomDialogResult;
+            if (this.Dispatcher.CheckAccess())
+            {
+                this.Owner = window;
+                this.CustomDialogResult = null;
+                this.ShowDialog();
+                return this.CustomDialogResult;
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         protected override void OnStateChanged(EventArgs e)

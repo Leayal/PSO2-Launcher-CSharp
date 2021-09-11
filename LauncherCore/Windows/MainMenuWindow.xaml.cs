@@ -42,12 +42,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
         private readonly RSSFeedPresenter RSSFeedPresenter;
+        private readonly SimpleDispatcherQueue dispatcherqueue;
 
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
             this.config_main = conf;
             this.ss_id = null;
             this.ss_pw = null;
+            this.dispatcherqueue = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(30), this.Dispatcher);
             this.webclient = new HttpClient(new SocketsHttpHandler()
             {
                 AllowAutoRedirect = true,
@@ -97,6 +99,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
                 return selfupdatecheck;
             }));
+            this.gameupdater_dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>();
             this.pso2Updater = CreateGameClientUpdater(this.pso2HttpClient);
             /*
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
@@ -252,17 +255,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     checker.Dispose();
                 }
             })).Invoke());
-
-            listOfOperations.Add(Task.Factory.StartNew(async () =>
-            {
-                await t_stopClientUpdater;
-                if (SQLite.SQLiteAsyncConnection.HasConnections)
-                {
-                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Lingering database connections. This may take a while to gracefully stop and clean up. Please wait..."));
-                    SQLite.SQLiteAsyncConnection.ResetPool();
-                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] All database connections have been closed successfully."));
-                }
-            }, TaskCreationOptions.LongRunning).Unwrap());
 
             this.cancelAllOperation.Cancel();
             this.webclient.CancelPendingRequests();
@@ -422,9 +414,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 try
                 {
                     var dialog = new LauncherBehaviorManagerWindow(this.config_main);
-                    dialog.Owner = this;
-
-                    if (dialog.ShowDialog() == true)
+                    if (dialog.ShowCustomDialog(this) == true)
                     {
                         this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
 
@@ -474,7 +464,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
         {
             if (sender is TabMainMenu tab)
             {
@@ -482,10 +472,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 try
                 {
                     var dialog = new DataManagerWindow(this.config_main);
-                    dialog.Owner = this;
-                    if (dialog.ShowDialog() == true)
+                    if (dialog.ShowCustomDialog(this) == true)
                     {
-                        
+                        this.RefreshGameUpdaterOptions();
                     }
                 }
                 finally
@@ -570,8 +559,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 try
                 {
                     var dialog = new LauncherThemingManagerWindow(this.config_main);
-                    dialog.Owner = this;
-                    if (dialog.ShowDialog() == true)
+                    if (dialog.ShowCustomDialog(this) == true)
                     {
                         App.Current?.RefreshThemeSetting();
                     }

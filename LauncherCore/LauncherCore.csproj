@@ -16,6 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Classes\PersistentObjectCacheManager.cs" />
+    <Compile Remove="Classes\SQLiteAsync.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resources\SyntaxHighlightRuleDarkTheme.xml" />
     <None Remove="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <None Remove="Resources\_bgimg.png" />
@@ -35,7 +40,7 @@
     <PackageReference Include="ControlzEx" Version="5.0.1" />
     <PackageReference Include="MahApps.Metro" Version="2.4.7" />
     <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="4.8.0" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.0.5" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.0.6" />
   </ItemGroup>
 
   <ItemGroup>
