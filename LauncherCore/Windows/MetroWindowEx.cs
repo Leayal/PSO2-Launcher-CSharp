@@ -9,12 +9,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     public class MetroWindowEx : MetroWindow, System.Windows.Interop.IWin32Window, System.Windows.Forms.IWin32Window
     {
+        private static readonly DependencyProperty WindowCloseIsDefaultedCancelProperty = DependencyProperty.Register("WindowCloseIsDefaultedCancel", typeof(bool), typeof(MetroWindowEx), new PropertyMetadata(false));
+
         private static readonly DependencyPropertyKey IsMaximizedPropertyKey = DependencyProperty.RegisterReadOnly("IsMaximized", typeof(bool), typeof(MetroWindowEx), new UIPropertyMetadata(false));
         public static readonly DependencyProperty IsMaximizedProperty = IsMaximizedPropertyKey.DependencyProperty;
 
@@ -31,6 +34,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public double WindowCommandButtonsWidth => (double)this.GetValue(WindowCommandButtonsWidthProperty);
 
         public double WindowCommandButtonsHeight => (double)this.GetValue(WindowCommandButtonsHeightProperty);
+
+        public bool WindowCloseIsDefaultedCancel
+        {
+            get => (bool)this.GetValue(WindowCloseIsDefaultedCancelProperty);
+            set => this.SetValue(WindowCloseIsDefaultedCancelProperty, value);
+        }
 
         public IntPtr Handle => this.CriticalHandle;
 
@@ -69,10 +78,29 @@ namespace Leayal.PSO2Launcher.Core.Windows
             base.OnApplyTemplate();
             // PART_WindowTitleBackground
             // PART_WindowButtonCommands
+            
             var winBtnCommands = this.FindChild<ContentPresenterEx>("PART_WindowButtonCommands");
+            winBtnCommands.ApplyTemplate();
             this.SetValue(WindowCommandButtonsWidthPropertyKey, winBtnCommands.ActualWidth);
             this.SetValue(WindowCommandButtonsHeightPropertyKey, winBtnCommands.ActualHeight);
             winBtnCommands.SizeChanged += this.WinBtnCommands_SizeChanged;
+
+            if (winBtnCommands.Content is WindowButtonCommands cmds)
+            {
+                cmds.ApplyTemplate();
+                var aa = cmds.FindChild<StackPanel>();
+                aa.ApplyTemplate();
+                foreach (var item in aa.Children)
+                {
+                    if (item is Button btn && btn.Name == "PART_Close")
+                    {
+                        btn.SetBinding(Button.IsCancelProperty, new Binding("WindowCloseIsDefaultedCancel") { Source = this, Mode = BindingMode.OneWay });
+                        // btn.IsCancel = this.WindowCloseIsDefaultedCancel;
+                        break;
+                    }
+                }
+            }
+
             this.OnThemeRefresh();
         }
 

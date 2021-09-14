@@ -500,7 +500,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     switch (failureCount)
                     {
                         case 0:
-                            logtext = $"[GameUpdater] PSO2 game client has been updated successfully (All files ({totalsizedownloadedtext}) downloaded)";
+                            logtext = $"[GameUpdater] PSO2 game client has been updated successfully (All {successCount} files ({totalsizedownloadedtext}) downloaded)";
                             break;
                         case 1:
                             logtext = $"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded";

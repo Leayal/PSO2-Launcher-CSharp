@@ -1,4 +1,5 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,10 +35,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public Guid ResultGuid { get; }
 
-        public GameClientUpdateResultLogDialog(in Guid id, IEnumerable<PatchListItemLogData> success, IEnumerable<PatchListItemLogData> failures)
+        public GameClientUpdateResultLogDialog(in Guid id, IEnumerable<PatchListItemLogData> success, IEnumerable<PatchListItemLogData> failures) : base()
         {
             this.ResultGuid = id;
             InitializeComponent();
+
+            this.WindowCloseIsDefaultedCancel = true;
 
             var row = this.ListOfSuccess.RowDefinitions;
             var children = this.ListOfSuccess.Children;
