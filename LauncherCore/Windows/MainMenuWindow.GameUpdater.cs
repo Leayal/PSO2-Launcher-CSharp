@@ -215,10 +215,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write("[GameUpdater] Checking for PSO2 game client updates...");
-                    });
+                    this.CreateNewParagraphInLog("[GameUpdater] Checking for PSO2 game client updates...");
                     var version = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
                     ver = version;
                     newVer = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, version, cancelToken);
@@ -256,17 +253,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     if (fixMode)
                     {
-                        await this.CreateNewParagraphInLog(writer =>
-                        {
-                            writer.Write("[GameUpdater] Begin game client's files scanning and downloading...");
-                        });
+                        this.CreateNewParagraphInLog("[GameUpdater] Begin game client's files scanning and downloading...");
                     }
                     else
                     {
-                        await this.CreateNewParagraphInLog(writer =>
-                        {
-                            writer.Write("[GameUpdater] Begin game client's updating progress...");
-                        });
+                        this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
                     }
                     await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, downloadType, downloaderProfile, cancelToken);
                 }
@@ -278,10 +269,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.TabMainMenu.IsSelected = true;
                     if (!fixMode)
                     {
-                        await this.CreateNewParagraphInLog(writer =>
-                        {
-                            writer.Write("[GameUpdater] PSO2 client is already up-to-date");
-                        });
+                        this.CreateNewParagraphInLog("[GameUpdater] PSO2 client is already up-to-date");
                     }
                 }
             }
@@ -296,10 +284,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     else
                     {
-                        await this.CreateNewParagraphInLog(writer =>
-                        {
-                            writer.Write("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                        });
+                        this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
                         MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         break;
                     }
@@ -311,10 +296,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
-                await this.CreateNewParagraphInLog(writer =>
-                {
-                    writer.Write("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                });
+                this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
                 MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -392,10 +374,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount(in file.FileSize);
             }
-            else
-            {
-
-            }
             if (this.gameupdater_dictionaryInUse.TryRemove(file, out var index))
             {
                 this.TabGameClientUpdateProgressBar.ResetSubDownloadState(in index);
@@ -459,52 +437,119 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 totalsizedownloaded += item.FileSize;
             }
-            var totalsizedownloadedtext = Leayal.Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
+            var totalsizedownloadedtext = Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
 
             var successCount = successList.Count;
             var requiredCount = download_required_list.Count;
             var failureCount = failureList.Count;
 
-            _ = this.CreateNewParagraphInLog(writer =>
+            Guid dialogguid;
+            if (requiredCount == 0)
             {
-                if (isCancelled)
+                dialogguid = Guid.Empty;
+            }
+            else
+            {
+                dialogguid = (Guid)this.Dispatcher.Invoke(new Func<IReadOnlyCollection<PatchListItem>, IReadOnlyCollection<PatchListItem>, Guid>((list_of_success, list_of_failure) =>
                 {
-                    switch (successCount)
-                    {
-                        case 0:
-                            writer.Write($"[GameUpdater] User cancelled the updating progress. No files downloaded before cancelled.");
-                            break;
-                        case 1:
-                            writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.");
-                            break;
-                        default:
-                            writer.Write($"[GameUpdater] User cancelled the updating progress. Downloaded {successList.Count} files ({totalsizedownloadedtext}) before cancelled.");
-                            break;
-                    }
+                    var factory = new GameClientUpdateResultLogDialogFactory(list_of_success, list_of_failure);
+                    var result = factory.Id;
+                    this.dialogReferenceByUUID.Add(result, factory);
+                    return result;
+                }), new object[] { successList, failureList });
+            }
+
+            Uri crafted;
+            if (dialogguid != Guid.Empty)
+            {
+                if (!Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out crafted))
+                {
+                    this.Dispatcher.BeginInvoke(new Action<Guid>(id => this.dialogReferenceByUUID.Remove(id)), new object[] { dialogguid });
+                    crafted = null;
+                }
+            }
+            else
+            {
+                crafted = null;
+            }
+
+            string logtext;
+            if (isCancelled)
+            {
+                switch (successCount)
+                {
+                    case 0:
+                        logtext = $"[GameUpdater] User cancelled the updating progress. No files downloaded before cancelled.";
+                        break;
+                    case 1:
+                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.";
+                        break;
+                    default:
+                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded {successList.Count} files ({totalsizedownloadedtext}) before cancelled.";
+                        break;
+                }
+            }
+            else
+            {
+                if (requiredCount == 0)
+                {
+                    logtext = "[GameUpdater] PSO2 game client has all files updated. There are no files need to be downloaded.";
                 }
                 else
                 {
-                    if (requiredCount == 0)
+                    switch (failureCount)
                     {
-                        writer.Write("[GameUpdater] PSO2 game client has all files updated. There are no files need to be downloaded.");
-                    }
-                    else
-                    {
-                        switch (failureCount)
-                        {
-                            case 0:
-                                writer.Write($"[GameUpdater] PSO2 game client has been updated successfully (All files ({totalsizedownloadedtext}) downloaded)");
-                                break;
-                            case 1:
-                                writer.Write($"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded");
-                                break;
-                            default:
-                                writer.Write($"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are {failureCount} files which couldn't be downloaded");
-                                break;
-                        }
+                        case 0:
+                            logtext = $"[GameUpdater] PSO2 game client has been updated successfully (All files ({totalsizedownloadedtext}) downloaded)";
+                            break;
+                        case 1:
+                            logtext = $"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded";
+                            break;
+                        default:
+                            logtext = $"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are {failureCount} files which couldn't be downloaded";
+                            break;
                     }
                 }
-            });
+            }
+
+            if (crafted != null)
+            {
+                const string showDetail = " (Show details)";
+                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                {
+                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
+                };
+                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines);
+            }
+            else
+            {
+                this.CreateNewParagraphInLog(logtext);
+            }
+        }
+
+        class GameClientUpdateResultLogDialogFactory : ILogDialogFactory
+        {
+            private readonly GameClientUpdateResultLogDialog.PatchListItemLogData[] success, failure;
+            public readonly Guid Id;
+
+            public GameClientUpdateResultLogDialogFactory(IReadOnlyCollection<PatchListItem> _success, IReadOnlyCollection<PatchListItem> _failure)
+            {
+                int index = 0;
+                this.success = new GameClientUpdateResultLogDialog.PatchListItemLogData[_success.Count];
+                foreach (var item in _success)
+                {
+                    this.success[index++] = new GameClientUpdateResultLogDialog.PatchListItemLogData(item.GetFilenameWithoutAffix(), item.FileSize);
+                }
+                index = 0;
+                this.failure = new GameClientUpdateResultLogDialog.PatchListItemLogData[_failure.Count];
+                foreach (var item in _failure)
+                {
+                    this.failure[index++] = new GameClientUpdateResultLogDialog.PatchListItemLogData(item.GetFilenameWithoutAffix(), item.FileSize);
+                }
+                this.Id = Guid.NewGuid();
+            }
+
+            public Window CreateNew() => new GameClientUpdateResultLogDialog(in this.Id, this.success, this.failure);
         }
 
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)

@@ -250,6 +250,28 @@ namespace Leayal.PSO2Launcher.Core
                         // System.Windows.Forms.Application.Restart();
                     });
                 }
+                else if (string.Equals(urlstr, StaticResources.Url_ShowAuthor.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal");
+                        }
+                        catch { }
+                    });
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_ShowSourceCodeGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
+                        }
+                        catch { }
+                    });
+                }
                 else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.Dispatcher.InvokeAsync(delegate
@@ -279,6 +301,20 @@ namespace Leayal.PSO2Launcher.Core
                         }
                         catch { }
                     });
+                }
+                else if (!string.IsNullOrEmpty(urlstr) && urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    var dialogguide = Guid.Parse(urlstr.AsSpan().Slice(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri.Length));
+                    if (dialogguide != Guid.Empty)
+                    {
+                        this.Dispatcher.BeginInvoke(new Action<Guid>((dialog_id) =>
+                        {
+                            if (this.MainWindow is Windows.MainMenuWindow mainmenu)
+                            {
+                                mainmenu.ShowLogDialogFromGuid(dialog_id);
+                            }
+                        }), new object[] { dialogguide });
+                    }
                 }
             }
         }

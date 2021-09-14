@@ -43,7 +43,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
         private readonly RSSFeedPresenter RSSFeedPresenter;
         private readonly SimpleDispatcherQueue dispatcherqueue;
-
+        
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
             this.config_main = conf;
@@ -67,6 +67,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 Credentials = null,
                 DefaultProxyCredentials = null
             }, true);
+            this.dialogReferenceByUUID = new Dictionary<Guid, ILogDialogFactory>();
+            this.consolelog_hyperlinkparser = new CustomHyperlinkElementGenerator();
+            this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.pso2HttpClient = new PSO2HttpClient(this.webclient);
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
@@ -116,6 +119,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             InitializeComponent();
 
+            this.ConsoleLog.Options.EnableHyperlinks = true;
+            this.ConsoleLog.Options.EnableImeSupport = false;
+            this.ConsoleLog.Options.EnableEmailHyperlinks = false;
+            this.ConsoleLog.Options.EnableTextDragDrop = false;
+            this.ConsoleLog.Options.HighlightCurrentLine = true;
+            this.ConsoleLog.Options.RequireControlModifierForHyperlinkClick = false;
+
+            this.ConsoleLog.TextArea.TextView.ElementGenerators.Add(this.consolelog_hyperlinkparser);
+            this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_hyperlinkparser.Colorizer);
+
             this.RSSFeedPresenterBorder.Child = this.RSSFeedPresenter;
 
             this.toggleButtons = new ToggleButton[] { this.ToggleBtn_PSO2News, this.ToggleBtn_RSSFeed, this.ToggleBtn_ConsoleLog };
@@ -139,10 +152,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.ToggleBtn_PSO2News.IsChecked = true;
             }
-            _ = this.CreateNewParagraphInLog(writer =>
+
+            const string StartingLine = "[Lea] Welcome to PSO2 Launcher, which was made by ",
+                i_am_lea = "Dramiel Leayal",
+                FollowingLline = ". The source code can be found on ",
+                i_am_here = "Github";
+            var str = StartingLine + i_am_lea + FollowingLline + i_am_here + '.';
+            var placements = new Dictionary<RelativeLogPlacement, Uri>(2)
             {
-                writer.Write($"[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal");
-            }, false);
+                { new RelativeLogPlacement(StartingLine.Length, i_am_lea.Length), StaticResources.Url_ShowAuthor },
+                { new RelativeLogPlacement(StartingLine.Length + i_am_lea.Length + FollowingLline.Length, i_am_here.Length), StaticResources.Url_ShowSourceCodeGithub }
+            };
+            this.CreateNewParagraphFormatHyperlinksInLog(str, placements, false);
+            // this.CreateNewParagraphInLog("[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal", false);
         }
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
@@ -189,55 +211,38 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (App.Current.IsLightMode)
             {
                 this.BgImg.Source = lazybg_light.Value;
-                _ = this.CreateNewParagraphInLog(writer =>
-                {
-                    if (this.config_main.SyncThemeWithOS)
-                    {
-                        writer.Write($"[ThemeManager] Detected Windows 10's theme change: Light Mode.");
-                    }
-                    else
-                    {
-                        writer.Write($"[ThemeManager] User changed theme setting: Light Mode.");
-                    }
-                });
+                this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Light Mode.");
+                this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Blue;
             }
             else
             {
                 this.BgImg.Source = lazybg_dark.Value;
-                _ = this.CreateNewParagraphInLog(writer =>
-                {
-                    if (this.config_main.SyncThemeWithOS)
-                    {
-                        writer.Write($"[ThemeManager] Detected Windows 10's theme change: Dark Mode.");
-                    }
-                    else
-                    {
-                        writer.Write($"[ThemeManager] User changed theme setting: Dark Mode.");
-                    }
-                });
+                this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Dark Mode.");
+                this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Yellow;
             }
+            this.ConsoleLog.TextArea.TextView.Redraw();
         }
 
         protected override async Task OnCleanupBeforeClosed()
         {
-            await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Stopping all operations and cleaning up resources before closing and exiting launcher."));
+            this.CreateNewParagraphInLog("[System] Stopping all operations and cleaning up resources before closing and exiting launcher.");
 
             var listOfOperations = new List<Task>();
 
             Task t_stopClientUpdater;
             if (this.pso2Updater.IsBusy)
             {
-                await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait..."));
+                this.CreateNewParagraphInLog("[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait...");
 
                 var tsrc = new TaskCompletionSource();
                 t_stopClientUpdater = tsrc.Task;
                 listOfOperations.Add(t_stopClientUpdater);
 
                 GameClientUpdater.OperationCompletedHandler onfinialize = null;
-                onfinialize = new GameClientUpdater.OperationCompletedHandler(async delegate
+                onfinialize = new GameClientUpdater.OperationCompletedHandler(delegate
                 {
                     this.pso2Updater.OperationCompleted -= onfinialize;
-                    await this.CreateNewParagraphInLog(writer => writer.Write($"[System] Game client updating has been stopped gracefully."));
+                    this.CreateNewParagraphInLog("[System] Game client updating has been stopped gracefully.");
                     tsrc.TrySetResult();
                 });
                 this.pso2Updater.OperationCompleted += onfinialize;
@@ -339,10 +344,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         webview.Initialized += this.WebViewCompatControl_Initialized;
                         this.LauncherWebView.Child = (Control)obj;
-                        _ = this.CreateNewParagraphInLog(writer =>
-                        {
-                            writer.Write("[WebView] PSO2's launcher news has been loaded.");
-                        });
+                        this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
                     }
                     else
                     {
@@ -484,41 +486,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async Task CreateNewParagraphInLog(Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline = true, bool followLastLine = true)
-        {
-            if (this.ConsoleLog.CheckAccess())
-            {
-                CreateNewParagraphInLog2(this.ConsoleLog, callback, newline, followLastLine);
-            }
-            else
-            {
-                await this.ConsoleLog.Dispatcher.InvokeAsync(delegate
-                {
-                    CreateNewParagraphInLog2(this.ConsoleLog, callback, newline, followLastLine);
-                });
-            }
-
-            static void CreateNewParagraphInLog2(ICSharpCode.AvalonEdit.TextEditor consolelog, Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> _callback, bool _newline, bool _followLastLine)
-            {
-                var textlength = consolelog.Document.TextLength;
-                using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(consolelog.Document, textlength))
-                {
-                    bool isAlreadyInLastLineView = (_followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
-                    if (_newline)
-                    {
-                        if (textlength != 0)
-                        {
-                            writer.WriteLine();
-                        }
-                    }
-                    _callback.Invoke(writer);
-                    if (isAlreadyInLastLineView)
-                    {
-                        consolelog.ScrollToEnd();
-                    }
-                }
-            }
-        }
+        
 
         private void ConsoleLog_ContextMenuOpening(object sender, RoutedEventArgs e)
         {
@@ -569,26 +537,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     tab.ButtonManageLauncherThemingClicked += this.TabMainMenu_ButtonManageLauncherThemingClicked;
                 }
             }
-        }
-
-        private void ConsoleLogMenuItemCopySelected_Click(object sender, RoutedEventArgs e)
-        {
-            if (this.ConsoleLog.SelectionLength == 0) return;
-            Clipboard.SetText(this.ConsoleLog.SelectedText, TextDataFormat.UnicodeText);
-        }
-
-        private void ConsoleLogMenuItemCopyAll_Click(object sender, RoutedEventArgs e)
-        {
-            var str = this.ConsoleLog.Text;
-            if (!string.IsNullOrEmpty(str))
-            {
-                Clipboard.SetText(str, TextDataFormat.UnicodeText);
-            }
-        }
-
-        private void ConsoleLogMenuItemClearAll_Click(object sender, RoutedEventArgs e)
-        {
-            this.ConsoleLog.Clear();
         }
 
 #region | WindowsCommandButtons |

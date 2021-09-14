@@ -15,7 +15,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private async Task OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
         {
             sender.Stop();
-            await this.CreateNewParagraphInLog(writer =>
+            this.CreateNewParagraphInLog(writer =>
             {
                 writer.Write("[Launcher Updater] An update for this PSO2 Launcher has been found. These files need to be updated: ");
                 if (files != null)

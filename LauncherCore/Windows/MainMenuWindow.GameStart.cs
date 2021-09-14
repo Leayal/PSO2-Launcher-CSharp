@@ -235,10 +235,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     }
                                 }
 
-                                await this.CreateNewParagraphInLog(writer =>
-                                {
-                                    writer.Write("[GameStart] Quick check executable files...");
-                                });
+                                this.CreateNewParagraphInLog("[GameStart] Quick check executable files...");
 
                                 // Safety reason => Balanced.
                                 await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
@@ -258,10 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         proc.StartInfo.ArgumentList.Add("-optimize");
                                         proc.StartInfo.WorkingDirectory = dir_pso2bin;
                                         proc.Start();
-                                        await this.CreateNewParagraphInLog(writer =>
-                                        {
-                                            writer.Write("[GameStart] Starting game...");
-                                        });
+                                        this.CreateNewParagraphInLog("[GameStart] Starting game...");
                                     }
                                 }
                             }
@@ -276,25 +270,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     // Silent it as user press "No" themselves.
                     // MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write("[GameStart] User cancelled");
-                    });
+                    this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
                 catch (TaskCanceledException)
                 {
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write("[GameStart] User cancelled");
-                    });
+                    this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
                 catch (System.Net.Http.HttpRequestException ex)
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    });
+                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
                     MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (System.Net.WebException ex)
@@ -308,26 +293,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         errorCode = ex.Status.ToString();
                     }
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    });
+                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
                     MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (FileCheckHashCache.DatabaseErrorException)
                 {
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write("[GameUpdater] Error occured when opening file check cache database.");
-                    });
+                    this.CreateNewParagraphInLog("[GameUpdater] Error occured when opening file check cache database.");
                     MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Exception ex) when (!Debugger.IsAttached)
                 {
-                    await this.CreateNewParagraphInLog(writer =>
-                    {
-                        writer.Write("[GameStart] Fail to start game. Error message: " + ex.Message);
-                    });
+                    this.CreateNewParagraphInLog("[GameStart] Fail to start game. Error message: " + ex.Message);
                     MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
