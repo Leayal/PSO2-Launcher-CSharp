@@ -145,7 +145,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 foreach (var item in this.generator.Items)
                 {
                     var info = item.Key;
-                    if (currentIndex <= info.Offset)
+                    if (currentIndex <= info.Offset && (info.Offset + info.Length) <= absolutelength)
                     {
                         currentIndex = info.Offset + info.Length;
                         ChangeLinePart(info.Offset, currentIndex, ApplyChanges);
