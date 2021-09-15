@@ -164,7 +164,7 @@
                                  IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" IsUndoEnabled="False" >
                             <FlowDocument />
                         </RichTextBox>
-                        <Grid Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithGraphicModWarning}">
+                        <Grid Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithLibraryModWarning}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />

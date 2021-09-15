@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -26,6 +27,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
         
         private static readonly DependencyPropertyKey WindowCommandButtonsHeightPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsHeight", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
         public static readonly DependencyProperty WindowCommandButtonsHeightProperty = WindowCommandButtonsHeightPropertyKey.DependencyProperty;
+
+        public static readonly DependencyProperty AutoHideInTaskbarByOwnerIsVisibleProperty = DependencyProperty.Register("AutoHideInTaskbarByOwnerIsVisible", typeof(bool), typeof(MetroWindowEx), new PropertyMetadata(false, (obj, e)=>
+        {
+            if (obj is MetroWindowEx metroex)
+            {
+                if (metroex._autoHideInTaskbarByOwnerIsVisibleAttached != null)
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }));
 
         private int flag_disposing, flag_firstshown;
 
@@ -45,11 +57,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public bool? CustomDialogResult { get; set; }
 
+        public bool AutoHideInTaskbarByOwnerIsVisible
+        {
+            get => (bool)this.GetValue(AutoHideInTaskbarByOwnerIsVisibleProperty);
+            set => this.SetValue(AutoHideInTaskbarByOwnerIsVisibleProperty, value);
+        }
+
+        private bool _autoassignedIcon;
+        private Window _autoHideInTaskbarByOwnerIsVisibleAttached;
+
         public MetroWindowEx() : base() 
         {
             this.CustomDialogResult = null;
             this.flag_disposing = 0;
             this.flag_firstshown = 0;
+            this._autoHideInTaskbarByOwnerIsVisibleAttached = null;
+            this._autoassignedIcon = false;
         }
 
         public bool? ShowCustomDialog(Window window)
@@ -65,6 +88,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 throw new InvalidOperationException();
             }
+        }
+
+        private void OwnerWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            var isvisible = (bool)e.NewValue;
+            this.ShowInTaskbar = !isvisible;
         }
 
         protected override void OnStateChanged(EventArgs e)
@@ -117,8 +146,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             if (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0)
             {
+                var ownerWindow = this.Owner;
+                if (ownerWindow != null)
+                {
+                    if (this.Icon == null)
+                    {
+                        this.Icon = ownerWindow.Icon;
+                        this._autoassignedIcon = true; // Put this after to overwrite the value assigned in the OnPropertyChanged below.
+                    }
+                    if (this.AutoHideInTaskbarByOwnerIsVisible)
+                    {
+                        this._autoHideInTaskbarByOwnerIsVisibleAttached = ownerWindow;
+                        this.ShowInTaskbar = !ownerWindow.IsVisible;
+                        ownerWindow.IsVisibleChanged += this.OwnerWindow_IsVisibleChanged;
+                    }
+                }
                 this.OnFirstShown(EventArgs.Empty);
             }
+        }
+
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            if (e.Property == IconProperty)
+            {
+                this._autoassignedIcon = false;
+            }
+            
+            base.OnPropertyChanged(e);
         }
 
         protected virtual void OnFirstShown(EventArgs e)
@@ -141,7 +195,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         /// <summary>Event is used for synchronous clean up operations. This event will be raised when the window is certainly going to be closed (after <seealso cref="OnClosing(CancelEventArgs)"/>. Thus, not cancellable).</summary>
-        /// <remarks>All async cleanings should be used with <seealso cref="RegisterDisposeObject(AsyncDisposeObject)"/> instead.</remarks>
         public event EventHandler CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
 
         protected virtual Task OnCleanupBeforeClosed()
@@ -152,6 +205,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch { } // Silent error because it's going be closed anyway.
             return Task.CompletedTask;
+        }
+
+        private async Task OnInternalCleanupBeforeClosed()
+        {
+            if (this._autoassignedIcon)
+            {
+                this.Icon = null;
+            }
+            var registerdOwnerWindow = Interlocked.Exchange(ref this._autoHideInTaskbarByOwnerIsVisibleAttached, null);
+            if (registerdOwnerWindow != null)
+            {
+                registerdOwnerWindow.IsVisibleChanged -= this.OwnerWindow_IsVisibleChanged;
+            }
+            await this.OnCleanupBeforeClosed();
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -176,7 +243,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             this.Dispatcher.InvokeAsync(async delegate
                             {
-                                await this.OnCleanupBeforeClosed();
+                                await this.OnInternalCleanupBeforeClosed();
                                 if (Interlocked.CompareExchange(ref this.flag_disposing, 3, 2) == 2)
                                 {
                                     await this.Dispatcher.InvokeAsync(this.Close);

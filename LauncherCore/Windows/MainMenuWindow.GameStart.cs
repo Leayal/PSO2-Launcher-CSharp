@@ -141,6 +141,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 using (var loginForm = new PSO2LoginDialog(this.config_main, this.pso2HttpClient, username, true))
                                 {
+                                    loginForm.AutoHideInTaskbarByOwnerIsVisible = true;
                                     if (loginForm.ShowCustomDialog(this) == true)
                                     {
                                         token = loginForm.LoginToken;

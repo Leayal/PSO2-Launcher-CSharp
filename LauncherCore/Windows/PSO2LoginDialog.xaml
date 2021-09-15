@@ -9,7 +9,7 @@
                       mc:Ignorable="d" x:Name="thisSelf"
                       ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" ShowCloseButton="False"
                       Loaded="ThisSelf_Loaded"
-                      Title="PSO2LoginDialog" Height="170" Width="400" ShowInTaskbar="False">
+                      Title="Login to PSO2" Height="170" Width="400">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -21,7 +21,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Login to PSO2" Grid.ColumnSpan="2" TextAlignment="Center" Margin="1" FontSize="16" />
+        <TextBlock Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneTime}" Grid.ColumnSpan="2" TextAlignment="Center" Margin="1" FontSize="16" IsHitTestVisible="False" />
 
         <Grid Grid.ColumnSpan="2" Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsInLoading}">
             <Grid.RowDefinitions>
