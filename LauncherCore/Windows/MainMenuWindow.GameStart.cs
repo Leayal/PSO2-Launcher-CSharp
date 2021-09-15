@@ -221,7 +221,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 };
                                 this.pso2Updater.OperationCompleted += completed;
-                                this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
+                                this.TabGameClientUpdateProgressBar.ResetMainProgressBarState();
+                                this.TabGameClientUpdateProgressBar.ResetAllSubDownloadState();
+                                // this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
                                 if (checkUpdateBeforeLaunch)
                                 {

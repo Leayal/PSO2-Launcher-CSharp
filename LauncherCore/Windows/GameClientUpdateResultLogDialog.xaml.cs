@@ -110,7 +110,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.OverviewPanel.DataContext = new Eyy()
             {
-                Status = cancel ? Text_StatusCompleted : Text_StatusCancelled,
+                Status = cancel ? Text_StatusCancelled : Text_StatusCompleted,
                 FileCount = patchlist_count,
                 CountScanned = datalist.Count,
                 CountSuccess = index_success,
