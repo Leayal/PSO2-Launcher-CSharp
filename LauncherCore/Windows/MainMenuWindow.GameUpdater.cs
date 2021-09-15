@@ -450,13 +450,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                dialogguid = (Guid)this.Dispatcher.Invoke(new Func<IReadOnlyCollection<PatchListItem>, IReadOnlyCollection<PatchListItem>, Guid>((list_of_success, list_of_failure) =>
+                // Very expensive
+                HashSet<PatchListItem> lookup_success = new HashSet<PatchListItem>(successList), lookup_failure = new HashSet<PatchListItem>(failureList);
+                var dictionary = new Dictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>(download_required_list.Count);
+                foreach (var itemrecord in download_required_list)
                 {
-                    var factory = new GameClientUpdateResultLogDialogFactory(list_of_success, list_of_failure);
+                    if (lookup_success.Contains(itemrecord))
+                    {
+                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), true);
+                    }
+                    else if (lookup_failure.Contains(itemrecord))
+                    {
+                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), false);
+                    }
+                    else
+                    {
+                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), null);
+                    }
+                }
+                dialogguid = (Guid)this.Dispatcher.Invoke(new Func<bool, int, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>, Guid>((_cancelled, patchlist_count, _scannedinfo) =>
+                {
+                    var factory = new GameClientUpdateResultLogDialogFactory(in _cancelled, in patchlist_count, _scannedinfo);
                     var result = factory.Id;
                     this.dialogReferenceByUUID.Add(result, factory);
                     return result;
-                }), new object[] { successList, failureList });
+                }), new object[] { isCancelled, patchlist.Count, (IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>)dictionary });
             }
 
             Uri crafted;
@@ -529,27 +547,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         class GameClientUpdateResultLogDialogFactory : ILogDialogFactory
         {
-            private readonly GameClientUpdateResultLogDialog.PatchListItemLogData[] success, failure;
+            private readonly IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> items;
             public readonly Guid Id;
+            private readonly bool _cancel;
+            private readonly int list_count;
 
-            public GameClientUpdateResultLogDialogFactory(IReadOnlyCollection<PatchListItem> _success, IReadOnlyCollection<PatchListItem> _failure)
+            public GameClientUpdateResultLogDialogFactory(in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
             {
-                int index = 0;
-                this.success = new GameClientUpdateResultLogDialog.PatchListItemLogData[_success.Count];
-                foreach (var item in _success)
-                {
-                    this.success[index++] = new GameClientUpdateResultLogDialog.PatchListItemLogData(item.GetFilenameWithoutAffix(), item.FileSize);
-                }
-                index = 0;
-                this.failure = new GameClientUpdateResultLogDialog.PatchListItemLogData[_failure.Count];
-                foreach (var item in _failure)
-                {
-                    this.failure[index++] = new GameClientUpdateResultLogDialog.PatchListItemLogData(item.GetFilenameWithoutAffix(), item.FileSize);
-                }
+                this._cancel = iscancelled;
+                this.list_count = patchlist_count;
+                this.items = data;
                 this.Id = Guid.NewGuid();
             }
 
-            public Window CreateNew() => new GameClientUpdateResultLogDialog(in this.Id, this.success, this.failure);
+            public Window CreateNew() => new GameClientUpdateResultLogDialog(in this.Id, in this._cancel, in this.list_count, items);
         }
 
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)

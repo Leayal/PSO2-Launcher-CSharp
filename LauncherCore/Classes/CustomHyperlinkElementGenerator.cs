@@ -39,13 +39,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
             // var beginning = CurrentContext.VisualLine.FirstDocumentLine;
             // var firstOffset = beginning.Offset;
             // var currentLineNumber = beginning.LineNumber;
-            // int endOffset = CurrentContext.VisualLine.LastDocumentLine.EndOffset;
+            int endOffset = CurrentContext.VisualLine.LastDocumentLine.EndOffset;
             // var segment = CurrentContext.GetText(startOffset, endOffset - startOffset);
             // var span = segment.Text.AsSpan().Slice(segment.Offset, segment.Count);
             foreach (var item in this.Items)
             {
                 var info = item.Key;
-                if (startOffset <= info.Offset)
+                if (startOffset <= info.Offset && (info.Offset + info.Length) <= endOffset)
                 {
                     return info.Offset;
                 }

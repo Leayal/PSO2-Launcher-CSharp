@@ -20,8 +20,53 @@
             <Run Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=ResultGuid}" />
             <Run Text=")" />
         </TextBlock>
-        <mah:MetroAnimatedTabControl Grid.Row="1">
+        <mah:MetroAnimatedTabControl Grid.Row="1" SelectionChanged="MetroAnimatedTabControl_SelectionChanged">
             <mah:MetroTabItem IsSelected="True">
+                <mah:MetroTabItem.Header>
+                    <ToggleButton IsChecked="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorLevel=1,AncestorType={x:Type mah:MetroTabItem}},Mode=TwoWay,Path=IsSelected}">
+                        <TextBlock Text="Overview" FontSize="13" />
+                    </ToggleButton>
+                </mah:MetroTabItem.Header>
+                <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+                    <Grid x:Name="OverviewPanel">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="5" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.ColumnSpan="3" Text="Summary of the result" TextAlignment="Center" FontSize="15" />
+                        <TextBlock Grid.Row="1" Text="Status:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Status,Mode=OneWay}" FontSize="15" />
+
+                        <TextBlock Grid.Row="2" Text="File count from remote patchlist:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding FileCount,Mode=OneWay}" FontSize="15" />
+
+                        <TextBlock Grid.Row="3" Text="File checked:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding CountScanned,Mode=OneWay}" FontSize="15" />
+
+                        <TextBlock Grid.Row="4" Text="Success count:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding CountSuccess,Mode=OneWay}" FontSize="15" />
+
+                        <TextBlock Grid.Row="5" Text="Failure count:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{Binding CountFailure,Mode=OneWay}" FontSize="15" />
+
+                        <TextBlock Grid.Row="6" Text="Cancelled count:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding CountCancelled,Mode=OneWay}" FontSize="15" />
+                        <TextBlock Grid.Row="7" Grid.Column="2" Text="(Cancelled file is a file which hasn't been started to download yet. It is different from failures)" TextWrapping="Wrap" FontSize="13" />
+                    </Grid>
+                </ScrollViewer>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem>
                 <mah:MetroTabItem.Header>
                     <ToggleButton IsChecked="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorLevel=1,AncestorType={x:Type mah:MetroTabItem}},Mode=TwoWay,Path=IsSelected}">
                         <TextBlock Text="List of download success" FontSize="13" />
@@ -38,8 +83,8 @@
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filename" />
                     <TextBlock Grid.Column="1" Text="Filesize" />
-                    <ScrollViewer Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
-                        <Grid x:Name="ListOfSuccess">
+                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+                        <Grid x:Name="ListOfSuccessItems">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto" />
@@ -65,8 +110,35 @@
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filename" />
                     <TextBlock Grid.Column="1" Text="Filesize" />
-                    <ScrollViewer Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
-                        <Grid x:Name="ListOfFailure">
+                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+                        <Grid x:Name="ListOfFailureItems">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem>
+                <mah:MetroTabItem.Header>
+                    <ToggleButton IsChecked="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorLevel=1,AncestorType={x:Type mah:MetroTabItem}},Mode=TwoWay,Path=IsSelected}">
+                        <TextBlock Text="List of download cancel" FontSize="13" />
+                    </ToggleButton>
+                </mah:MetroTabItem.Header>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Filename" />
+                    <TextBlock Grid.Column="1" Text="Filesize" />
+                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
+                        <Grid x:Name="ListOfCancelledItems">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto" />
