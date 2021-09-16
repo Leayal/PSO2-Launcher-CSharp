@@ -60,6 +60,41 @@ namespace Leayal.PSO2Launcher.Core
             }
         }
 
+        public Window GetModalOrNull() => this.GetModalOrNull(null);
+
+        public Window GetModalOrNull(Predicate<Window> predicate)
+        {
+            if (System.Windows.Interop.ComponentDispatcher.IsThreadModal)
+            {
+                var collection = this.Windows;
+                var count = collection.Count;
+                if (predicate == null)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (collection[i] is Windows.MetroWindowEx windowex)
+                        {
+                            if (windowex.IsActive || windowex.IsVisible)
+                            {
+                                return windowex;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (predicate(collection[i]))
+                        {
+                            return collection[i];
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
         {
             if (sender is ThemeManager thememgr)

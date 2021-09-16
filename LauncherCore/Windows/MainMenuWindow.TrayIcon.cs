@@ -116,11 +116,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (!e.Cancel)
                 {
-                    _IsSelectedOrGameStartEnabledChanged.Invoke(tab, null);
-                    _ForgetSegaLoginStateRefresh.Invoke(tab, null);
-                    tab.GameStartEnabledChanged += _IsSelectedOrGameStartEnabledChanged;
-                    tab.IsSelectedChanged += _IsSelectedOrGameStartEnabledChanged;
-                    tab.ForgetLoginInfoEnabledChanged += _ForgetSegaLoginStateRefresh;
+                    var modal = App.Current.GetModalOrNull();
+                    if (modal != null)
+                    {
+                        e.Cancel = true;
+                        if (modal.WindowState == WindowState.Minimized)
+                        {
+                            SystemCommands.RestoreWindow(modal);
+                        }
+                        modal.Activate();
+                    }
+                    else
+                    {
+                        _IsSelectedOrGameStartEnabledChanged.Invoke(tab, null);
+                        _ForgetSegaLoginStateRefresh.Invoke(tab, null);
+                        tab.GameStartEnabledChanged += _IsSelectedOrGameStartEnabledChanged;
+                        tab.IsSelectedChanged += _IsSelectedOrGameStartEnabledChanged;
+                        tab.ForgetLoginInfoEnabledChanged += _ForgetSegaLoginStateRefresh;
+                    }
                 }
             };
             ico_contextmenu.Closing += (sender, e) =>
@@ -210,7 +223,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void Ico_DoubleClick(object sender, EventArgs e)
         {
-            this.IsMinimizedToTray = false;
+            var modal = App.Current.GetModalOrNull();
+            if (modal != null)
+            {
+                if (modal.WindowState == WindowState.Minimized)
+                {
+                    SystemCommands.RestoreWindow(modal);
+                }
+                modal.Activate();
+            }
+            else
+            {
+                this.IsMinimizedToTray = false;
+            }
         }
 
         private void WindowsCommandButtons_MinimizeToTray_Click(object sender, RoutedEventArgs e)

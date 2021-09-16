@@ -86,17 +86,29 @@ namespace Leayal.PSO2Launcher.Core
             {
                 app.Dispatcher.InvokeAsync(delegate
                 {
-                    if (app.MainWindow is Windows.MainMenuWindow window)
+                    var modal = app.GetModalOrNull();
+                    if (modal != null)
                     {
-                        if (window.IsMinimizedToTray)
+                        if (modal.WindowState == System.Windows.WindowState.Minimized)
                         {
-                            window.IsMinimizedToTray = false;
+                            System.Windows.SystemCommands.RestoreWindow(modal);
                         }
-                        else if (window.WindowState == System.Windows.WindowState.Minimized)
+                        modal.Activate();
+                    }
+                    else
+                    {
+                        if (app.MainWindow is Windows.MainMenuWindow window)
                         {
-                            System.Windows.SystemCommands.RestoreWindow(window);
+                            if (window.IsMinimizedToTray)
+                            {
+                                window.IsMinimizedToTray = false;
+                            }
+                            else if (window.WindowState == System.Windows.WindowState.Minimized)
+                            {
+                                System.Windows.SystemCommands.RestoreWindow(window);
+                            }
+                            window.Activate();
                         }
-                        window.Activate();
                     }
                 });
             }
