@@ -76,7 +76,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return PatchListBase.Create(arr_PatchListBase);
         }
 
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAdd onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -266,7 +266,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             */
 
             int processedFiles = 0;
-            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAdd callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string dir_classic_data, string dir_reboot_data)
+            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string dir_classic_data, string dir_reboot_data)
             {
                 var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
                 DownloadItem item = new DownloadItem(patchItem, localFilePath, isLink ? linkTo : null);

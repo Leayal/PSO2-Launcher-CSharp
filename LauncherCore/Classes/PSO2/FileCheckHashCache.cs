@@ -26,7 +26,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             this.state = 0;
             this.buffering = null;
-            this.concurrentlevel = Math.Min(Environment.ProcessorCount, concurrentLevel) + 1;
+            this.concurrentlevel = Math.Min(Environment.ProcessorCount, concurrentLevel);
             this.writebuffer = new BlockingCollection<PatchRecordItem>(new ConcurrentQueue<PatchRecordItem>());
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteConnection(connectionStr);
@@ -157,7 +157,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public PatchRecordItem SetPatchItem(PatchListItem item, in DateTime lastModifiedTimeUTC)
+        public PatchRecordItem SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {

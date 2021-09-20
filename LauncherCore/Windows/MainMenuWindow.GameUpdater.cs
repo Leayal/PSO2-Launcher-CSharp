@@ -185,7 +185,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             GameClientUpdater.OperationCompletedHandler completed = null;
-            completed = (sender, cancelled, patchlist, required_download, success_list, failure_list) =>
+            completed = (sender, cancelled, patchlist, downloadResults) =>
             {
                 this.pso2Updater.OperationCompleted -= completed;
                 this.Dispatcher.TryInvoke(delegate
@@ -430,18 +430,32 @@ namespace Leayal.PSO2Launcher.Core.Windows
             });
         }
 
-        private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList)
+        //private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList)
+        private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_results_list)
         {
             long totalsizedownloaded = 0L;
-            foreach (var item in successList)
+            
+            var requiredCount = download_results_list.Count;
+            var successCount = 0;
+            var failureCount = 0;
+
+            foreach (var item in download_results_list)
             {
-                totalsizedownloaded += item.FileSize;
+                var result = item.Value;
+                if (result.HasValue)
+                {
+                    if (result.Value)
+                    {
+                        totalsizedownloaded += item.Key.FileSize;
+                        successCount++;
+                    }
+                    else
+                    {
+                        failureCount++;
+                    }
+                }
             }
             var totalsizedownloadedtext = Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
-
-            var successCount = successList.Count;
-            var requiredCount = download_required_list.Count;
-            var failureCount = failureList.Count;
 
             Guid dialogguid;
             if (requiredCount == 0)
@@ -450,23 +464,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                // Very expensive
-                HashSet<PatchListItem> lookup_success = new HashSet<PatchListItem>(successList), lookup_failure = new HashSet<PatchListItem>(failureList);
-                var dictionary = new Dictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>(download_required_list.Count);
-                foreach (var itemrecord in download_required_list)
+                var dictionary = new Dictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>(requiredCount);
+                foreach (var (itemrecord, value) in download_results_list)
                 {
-                    if (lookup_success.Contains(itemrecord))
-                    {
-                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), true);
-                    }
-                    else if (lookup_failure.Contains(itemrecord))
-                    {
-                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), false);
-                    }
-                    else
-                    {
-                        dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), null);
-                    }
+                    dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), value);
                 }
                 dialogguid = (Guid)this.Dispatcher.Invoke(new Func<bool, int, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>, Guid>((_cancelled, patchlist_count, _scannedinfo) =>
                 {
@@ -503,7 +504,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.";
                         break;
                     default:
-                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded {successList.Count} files ({totalsizedownloadedtext}) before cancelled.";
+                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded {successCount} files ({totalsizedownloadedtext}) before cancelled.";
                         break;
                 }
             }

@@ -144,9 +144,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                     PatchListMemory patchlist = null;
 
-                    ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(),
-                                                bag_success = new ConcurrentBag<PatchListItem>(),
-                                                bag_failure = new ConcurrentBag<PatchListItem>();
+                    ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads = null;
+                    // ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(), bag_success = new ConcurrentBag<PatchListItem>(), bag_failure = new ConcurrentBag<PatchListItem>();
                     var pendingFiles = new BlockingCollection<DownloadItem>();
                     try
                     {
@@ -155,19 +154,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             taskCount = RuntimeValues.GetProcessorCountAuto();
                         }
-                        
-                        patchlist = await this.InnerGetFilelistToScan(selection, cancellationToken);
-                        var t_ver = GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
+
+                        var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
                         duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
-                        ver = await t_ver;
+                        patchlist = await t_patchlist;
+                        resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
+                        ver = await GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
                         var t_check = Task.Factory.StartNew(async () =>
                         {
                             try
                             {
                                 await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, patchlist, (in DownloadItem item) =>
                                 {
-                                    bag_needtodownload.Add(item.PatchInfo);
+                                    // bag_needtodownload.Add(item.PatchInfo);
+                                    resultsOfDownloads.TryAdd(item.PatchInfo, null);
                                     this.OnDownloadQueueAdded();
                                 }, cancellationToken);
                             }
@@ -179,8 +180,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
                         var tasks = new Task[taskCount];
-                        Action<DownloadItem, bool> onDownloadFinishCallback = (item, success) =>
+                        DownloadFinishCallback onDownloadFinishCallback = (in DownloadItem item, in bool success) =>
                         {
+                            resultsOfDownloads.AddOrUpdate<bool?>(item.PatchInfo, (key, arg) => arg, (key, existing, arg) =>
+                            {
+                                if (existing == null)
+                                {
+                                    return arg;
+                                }
+                                else
+                                {
+                                    return existing;
+                                }
+                            }, success);
+                            /*
                             if (success)
                             {
                                 bag_success.Add(item.PatchInfo);
@@ -189,6 +202,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             {
                                 bag_failure.Add(item.PatchInfo);
                             }
+                            */
                             this.OnProgressEnd(item.PatchInfo, in success);
                         };
 
@@ -233,7 +247,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         if (Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1) == 1)
                         {
-                            this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
+                            // this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
+                            this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, resultsOfDownloads, ver, isOperationSuccess, cancellationToken);
                         }
                     }
                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();

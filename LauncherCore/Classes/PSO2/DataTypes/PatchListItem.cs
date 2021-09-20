@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
-    public class PatchListItem
+    public readonly struct PatchListItem
     {
         internal const string AffixFilename = ".pat";
 
@@ -29,14 +29,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 
         public PatchListItem(PatchListBase origin, string filename, in long size, string md5) : this(origin, filename, md5, in size, null) { }
 
-        /// <param name="mORp">True = p. False = m. Null = Not given.</param>
-        public PatchListItem(PatchListBase origin, string filename, string md5, in long size, in bool? mORp)
+        /// <param name="m_or_p">True = p. False = m. Null = Not given.</param>
+        public PatchListItem(PatchListBase origin, string filename, string md5, in long size, in bool? m_or_p)
         {
             this.Origin = origin;
             this.RemoteFilename = filename;
             this.MD5 = md5;
             this.FileSize = size;
-            this.PatchOrBase = mORp;
+            this.PatchOrBase = m_or_p;
             if (origin != null && DetermineIfReboot(in this.RemoteFilename).HasValue)
             {
                 this.IsRebootData = origin.IsReboot;

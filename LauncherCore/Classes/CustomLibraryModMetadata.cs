@@ -78,10 +78,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
             else
             {
                 this.WrongCPUTarget = false;
-                if (IsArksLayerItemTranslationPatch(this.Filepath))
+                if (IsArksLayerPluginLoaderFile(this.Filepath))
                 {
-                    this.ProductName = "Item translation patch";
-                    this.Summary = "PSO2 Tweaker's item translation patch from Arks-Layer";
+                    this.ProductName = "PSO2 Tweaker's Plugin Loader";
+                    this.Summary = "Plugin loader (plugin system) of PSO2 Tweaker from Arks-Layer";
                     this.FileVersion = Text_NotGiven;
                     this.ProductVersion = Text_NotGiven;
 
@@ -154,15 +154,16 @@ namespace Leayal.PSO2Launcher.Core.Classes
             utf8bin_pso2rebootdll = new BoyerMoore(Encoding.UTF8.GetBytes("pso2reboot.dll")),
             utf8bin_noticehookthreadending = new BoyerMoore(Encoding.UTF8.GetBytes("Main hook thread ending"));
 
-        private const long WithinFileLength = 1024 * 1024; // 1MB
+        private const long WithinFileLength = 2 * 1024 * 1024; // 2MB
 
-        public static bool IsArksLayerItemTranslationPatch(string filepath)
+        public static bool IsArksLayerPluginLoaderFile(string filepath)
         {
             using (var fs = File.OpenRead(filepath))
             {
-                if (fs.Length <= WithinFileLength)
+                var length = fs.Length;
+                if (length <= WithinFileLength)
                 {
-                    var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent((int)fs.Length);
+                    var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(Convert.ToInt32(length));
                     try
                     {
                         var size = fs.Read(buffer, 0, buffer.Length);

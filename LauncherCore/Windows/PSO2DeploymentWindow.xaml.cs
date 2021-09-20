@@ -372,7 +372,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             progressbar_second.Text = $"{item.GetFilenameWithoutAffix()} ({Interlocked.Increment(ref currentcount)}/{totalfiles})";
                         });
-                        using (var response = await webclient.OpenForDownloadAsync(item, cancellationToken))
+                        using (var response = await webclient.OpenForDownloadAsync(in item, cancellationToken))
                         {
                             if (!response.IsSuccessStatusCode)
                             {

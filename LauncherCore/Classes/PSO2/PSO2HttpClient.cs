@@ -74,9 +74,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 throw new ArgumentNullException(nameof(username));
             }
+            else if (username.Length == 0)
+            {
+                throw new ArgumentException(nameof(username));
+            }
             if (password == null)
             {
                 throw new ArgumentNullException(nameof(password));
+            }
+            else if (password.Length == 0)
+            {
+                throw new ArgumentException(nameof(password));
             }
             var url = new Uri("https://auth.pso2.jp/auth/v1/auth");
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
@@ -242,11 +250,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         #region | Advanced public APIs |
         // Need to be able to open stream (to download or handle resources from SEGA's server directly)
 
-        public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> OpenForDownloadAsync(in PatchListItem file, CancellationToken cancellationToken)
         {
-            if (file == null) throw new ArgumentNullException(nameof(file));
+            if (string.IsNullOrEmpty(file.RemoteFilename))
+            {
+                throw new ArgumentNullException(nameof(file));
+            }
+            else if (file.Origin == null)
+            {
+                throw new InvalidOperationException(nameof(file));
+            }
 
-            return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
+            return this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
         }
 
         // Manual URL
