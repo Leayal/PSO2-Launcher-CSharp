@@ -409,7 +409,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void GameUpdaterComponent_FileCheckReport(GameClientUpdater sender, int current)
+        private void GameUpdaterComponent_FileCheckReport(GameClientUpdater sender, in int current)
         {
             this.TabGameClientUpdateProgressBar.SetMainProgressBarValue(Convert.ToDouble(current));
         }

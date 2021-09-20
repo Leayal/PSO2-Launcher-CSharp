@@ -14,25 +14,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     {
         private const int LatestVersion = 2;
 
+        private readonly int concurrentlevel;
         private readonly SQLiteConnection sqlConn;
         private readonly Task t_write;
         private int state;
 
-        private readonly ConcurrentDictionary<string, PatchRecordItem> buffering;
+        private ConcurrentDictionary<string, PatchRecordItem> buffering;
         private readonly BlockingCollection<PatchRecordItem> writebuffer;
 
-        public FileCheckHashCache(string filepath, int bufferCapacity = -1)
+        public FileCheckHashCache(string filepath, in int concurrentLevel)
         {
             this.state = 0;
-            if (bufferCapacity < 0)
-            {
-                this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(StringComparer.InvariantCultureIgnoreCase);
-            }
-            else
-            {
-                this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(Environment.ProcessorCount, bufferCapacity + 1, StringComparer.InvariantCultureIgnoreCase);
-            }
-            this.writebuffer = new BlockingCollection<PatchRecordItem>();
+            this.buffering = null;
+            this.concurrentlevel = Math.Min(Environment.ProcessorCount, concurrentLevel) + 1;
+            this.writebuffer = new BlockingCollection<PatchRecordItem>(new ConcurrentQueue<PatchRecordItem>());
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteConnection(connectionStr);
             this.t_write = Task.Factory.StartNew(this.PollingWrite, TaskCreationOptions.LongRunning).Unwrap();
@@ -111,6 +106,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 // Buffering data into memory.
                 var tb = this.sqlConn.Table<PatchRecordItem>();
+                var count = tb.Count();
+                if (count <= 0)
+                {
+                    this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(this.concurrentlevel, 331, StringComparer.InvariantCultureIgnoreCase);
+                }
+                else
+                {
+                    this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(this.concurrentlevel, count + 300, StringComparer.InvariantCultureIgnoreCase);
+                }
+
                 foreach (var item in tb.Deferred())
                 {
                     this.buffering.TryAdd(item.RemoteFilename, item);
@@ -137,21 +142,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public PatchRecordItem GetPatchItem(string filename)
+        public bool TryGetPatchItem(string filename, out PatchRecordItem item)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
                 case 0:
                     throw new InvalidOperationException("Please call Load() before using.");
                 case 1:
-                    if (this.buffering.TryGetValue(filename, out var item))
-                    {
-                        return item;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    return this.buffering.TryGetValue(filename, out item);
                 case 2:
                     throw new ObjectDisposedException(nameof(FileCheckHashCache));
                 default:
@@ -159,7 +157,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public PatchRecordItem SetPatchItem(PatchListItem item, DateTime lastModifiedTimeUTC)
+        public PatchRecordItem SetPatchItem(PatchListItem item, in DateTime lastModifiedTimeUTC)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
@@ -177,9 +175,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }, (key, existing, args) =>
                     {
                         var _item = args.Item1;
-                        var result = new PatchRecordItem() { RemoteFilename = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), FileSize = _item.FileSize, MD5 = _item.MD5, LastModifiedTimeUTC = args.Item2 };
-                        if (!result.Equals(existing))
+                        var str = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c));
+                        if (!PatchRecordItem.IsEquals(existing, str, _item.MD5, in _item.FileSize, in args.Item2))
                         {
+                            var result = new PatchRecordItem()
+                            {
+                                RemoteFilename = str,
+                                FileSize = _item.FileSize,
+                                MD5 = _item.MD5,
+                                LastModifiedTimeUTC = args.Item2
+                            };
                             args.Item3.Add(result);
                             return result;
                         }
@@ -229,6 +234,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     return this.Equals(item);
                 return base.Equals(obj);
             }
+
+            public static bool IsEquals(PatchRecordItem item, string remotefilename, string md5, in long filesize, in DateTime lastmodified)
+            {
+                return (string.Equals(remotefilename, item.RemoteFilename, StringComparison.InvariantCultureIgnoreCase)
+                   && string.Equals(md5, item.MD5, StringComparison.InvariantCultureIgnoreCase)
+                   && filesize == item.FileSize
+                   && lastmodified == item.LastModifiedTimeUTC);
+            }
+
+            public override int GetHashCode()
+                => this.RemoteFilename.GetHashCode() ^ this.MD5.GetHashCode() ^ this.FileSize.GetHashCode() ^ this.LastModifiedTimeUTC.GetHashCode();
 
             public bool Equals(PatchRecordItem other)
             {

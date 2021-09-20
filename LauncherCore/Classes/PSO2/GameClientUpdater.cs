@@ -150,16 +150,22 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var pendingFiles = new BlockingCollection<DownloadItem>();
                     try
                     {
+                        var taskCount = this.ConcurrentDownloadCount;
+                        if (taskCount == 0)
+                        {
+                            taskCount = RuntimeValues.GetProcessorCountAuto();
+                        }
+                        
                         patchlist = await this.InnerGetFilelistToScan(selection, cancellationToken);
                         var t_ver = GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
-                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), patchlist.Count + 500);
+                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
                         ver = await t_ver;
                         var t_check = Task.Factory.StartNew(async () =>
                         {
                             try
                             {
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, patchlist, item =>
+                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, patchlist, (in DownloadItem item) =>
                                 {
                                     bag_needtodownload.Add(item.PatchInfo);
                                     this.OnDownloadQueueAdded();
@@ -172,14 +178,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
-
-                        var taskCount = this.ConcurrentDownloadCount;
-                        if (taskCount == 0)
-                        {
-                            taskCount = RuntimeValues.GetProcessorCountAuto();
-                        }
                         var tasks = new Task[taskCount];
-
                         Action<DownloadItem, bool> onDownloadFinishCallback = (item, success) =>
                         {
                             if (success)

@@ -3,13 +3,13 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.SharedInterfaces;
+using Leayal.Shared;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -38,6 +38,54 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.config_main.DefaultGameStartStyle = e.SelectedStyle;
             this.config_main.Save();
+        }
+
+        /// <returns>PSO2 process or NULL if not found.</returns>
+        private static Task<Process> TryFindPSO2Process(string? fullpath = null)
+        {
+            return Task.Factory.StartNew<Process>(obj =>
+            {
+                Process result = null;
+                if (obj is string imagePath)
+                {
+                    var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(fullpath));
+                    if (processes != null && processes.Length != 0)
+                    {
+                        if (!Path.IsPathFullyQualified(imagePath))
+                        {
+                            imagePath = Path.GetFullPath(imagePath);
+                        }
+                        for (int i = 0; i < processes.Length; i++)
+                        {
+                            if (string.Equals(processes[i].GetMainModuleFileName(), imagePath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result = processes[i];
+                            }
+                            else
+                            {
+                                // Dispose/Release other handles which we don't need.
+                                // We can wait for the runtime to cleanup automatically but I want the runtime to do it ASAP. Hence, calling Dispose.
+                                processes[i].Dispose();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var processes = Process.GetProcessesByName("pso2");
+                    if (processes != null && processes.Length != 0)
+                    {
+                        // Dispose/Release other handles which we don't need.
+                        for (int i = 1; i < processes.Length; i++)
+                        {
+                            // We can wait for the runtime to cleanup automatically but I want the runtime to do it ASAP. Hence, calling Dispose.
+                            processes[i].Dispose();
+                        }
+                        result = processes[0];
+                    }
+                }
+                return result;
+            }, fullpath);
         }
 
         private async void TabMainMenu_GameStartRequested(object sender, GameStartStyleEventArgs e)
@@ -82,16 +130,104 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     else
                     {
                         dir_pso2bin = Path.GetFullPath(dir_pso2bin);
-                        var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
+
                         if (!Directory.Exists(dir_pso2bin))
                         {
                             MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
-                        else if (!File.Exists(filename))
+                        var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
+                        if (!File.Exists(filename))
                         {
                             MessageBox.Show(this, "The file 'pso2.exe' doesn't exist. Please download game's data files if you haven't done it.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
+                        }
+
+                        var existingProcess = await TryFindPSO2Process(filename);
+
+                        if (existingProcess != null)
+                        {
+                            if (UacHelper.IsCurrentProcessElevated)
+                            {
+                                var windowhandle = existingProcess.MainWindowHandle;
+                                if (windowhandle == IntPtr.Zero)
+                                {
+                                    try
+                                    {
+                                        string prompt_message;
+                                        var elt = (DateTime.Now - existingProcess.StartTime);
+                                        if ((DateTime.Now - existingProcess.StartTime) > TimeSpan.FromMinutes(5))
+                                        {
+                                            prompt_message = $"The game is already running but it seems to be stuck.{Environment.NewLine}Do you want to close the the existing game's process and start a new one?";
+                                        }
+                                        else
+                                        {
+                                            prompt_message = $"The game is already running but you should wait for a little bit before the window shows up.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?";
+                                        }
+                                        if (MessageBox.Show(this, prompt_message, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                        {
+                                            existingProcess.Kill();
+                                        }
+                                        else
+                                        {
+                                            windowhandle = existingProcess.MainWindowHandle;
+                                            if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                            {
+                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                            }
+                                            return;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
+                                        MessageBox.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        return;
+                                    }
+                                }
+                                else
+                                {
+                                    if (MessageBox.Show(this, $"The game is already running.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                    {
+                                        existingProcess.Kill();
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                            {
+                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                            }
+                                        }
+                                        catch { }
+                                        return;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    // UnmanagedWindowsHelper
+                                    var windowhandle = existingProcess.MainWindowHandle;
+                                    if (windowhandle == IntPtr.Zero || !UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                    {
+                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
+                                        MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    }
+                                    else
+                                    {
+                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                    }
+                                }
+                                catch
+                                {
+                                    this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
+                                    MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                return;
+                            }
                         }
 
                         string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
@@ -222,6 +358,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 };
                                 this.pso2Updater.OperationCompleted += completed;
+                                this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                                 this.TabGameClientUpdateProgressBar.ResetMainProgressBarState();
                                 this.TabGameClientUpdateProgressBar.ResetAllSubDownloadState();
                                 // this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
@@ -268,6 +405,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
                     }
+                }
+                catch (PSO2LoginException loginEx)
+                {
+                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.");
+                    MessageBox.Show(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {

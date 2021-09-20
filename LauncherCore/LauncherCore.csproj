@@ -47,6 +47,7 @@
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Installer\Leayal.PSO2Installer.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj" />
+    <ProjectReference Include="..\Leayal.Shared.Windows\Leayal.Shared.Windows.csproj" />
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
       <Private>true</Private>
     </ProjectReference>

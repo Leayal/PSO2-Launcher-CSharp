@@ -63,7 +63,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private void OnFileCheckBegin(in int total) => this.FileCheckBegin?.Invoke(this, total);
 
         public event FileCheckReportHandler FileCheckReport;
-        private void OnFileCheckReport(in int current) => this.FileCheckReport?.Invoke(this, current);
+        private void OnFileCheckReport(in int current) => this.FileCheckReport?.Invoke(this, in current);
 
         public event DownloadQueueAddedHandler DownloadQueueAdded;
         private void OnDownloadQueueAdded() => this.DownloadQueueAdded?.Invoke(this);
@@ -78,10 +78,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
         public delegate void DownloadQueueAddedHandler(GameClientUpdater sender);
-        public delegate void FileCheckReportHandler(GameClientUpdater sender, int current);
+        public delegate void FileCheckReportHandler(GameClientUpdater sender, in int current);
         public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
+        private delegate void InnerDownloadQueueAdd(in DownloadItem item);
+            
         public class BackupFileFoundEventArgs : EventArgs
         {
             private readonly string root;
@@ -162,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        class DownloadItem
+        readonly struct DownloadItem
         {
             public readonly PatchListItem PatchInfo;
             public readonly string Destination;

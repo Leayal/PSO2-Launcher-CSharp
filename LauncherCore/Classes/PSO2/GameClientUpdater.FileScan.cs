@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -75,7 +76,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return PatchListBase.Create(arr_PatchListBase);
         }
 
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, PatchListBase headacheMatterAgain, Action<DownloadItem> onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, FileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAdd onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -231,324 +232,285 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             // Maybe Enum.HasFlag() is better than this mess????
 
-            int processedCount = 0;
-
             bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
                 flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
                 flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),
                 flag_missingOnly = flags.HasFlag(FileScanFlags.MissingFilesOnly),
                 flag_useMd5 = flags.HasFlag(FileScanFlags.MD5HashMismatch);
 
-            if (flag_forceRefresh)
+            /*
+            static long GetFileSize(ref FileStream fs, string filename)
             {
-                foreach (var patchItem in headacheMatterAgain)
+                if (fs == null)
                 {
-                    if (cancellationToken.IsCancellationRequested)
+                    fs = File.OpenRead(filename);
+                }
+                return fs.Length;
+            }
+
+            static Task<string> GetFileMD5(ref FileStream fs, MD5 hashal, string filename, in CancellationToken cancellationToken)
+            {
+                if (fs == null)
+                {
+                    fs = File.OpenRead(filename);
+                }
+                hashal.Initialize();
+                return ___GetFileMD5(fs, hashal, cancellationToken);
+            }
+
+            static async Task<string> ___GetFileMD5(FileStream fs, MD5 hashal, CancellationToken cancellationToken)
+            {
+                var buffer = await hashal.ComputeHashAsync(fs, cancellationToken);
+                return Convert.ToHexString(buffer);
+            }
+            */
+
+            int processedFiles = 0;
+            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAdd callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string dir_classic_data, string dir_reboot_data)
+            {
+                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
+                DownloadItem item = new DownloadItem(patchItem, localFilePath, isLink ? linkTo : null);
+                queue.Add(item);
+                callback.Invoke(in item);
+            }
+
+            using (var md5engi = MD5.Create())
+            {
+                if (flags == FileScanFlags.MissingFilesOnly)
+                {
+                    foreach (var patchItem in headacheMatterAgain)
                     {
-                        break;
-                    }
-
-                    var localFilename = patchItem.GetFilenameWithoutAffix();
-                    string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                    // localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-                    if (!File.Exists(localFilePath))
-                    {
-                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                        DownloadItem item;
-                        if (isLink)
-                        {
-                            item = new DownloadItem(patchItem, localFilePath, linkTo);
-                        }
-                        else
-                        {
-                            item = new DownloadItem(patchItem, localFilePath, null);
-                        }
-                        // this.OnDownloadQueueAdded(pendingFiles.Count);
-                        pendingFiles.Add(item);
-                        onDownloadQueueAdd.Invoke(item);
-                    }
-                    else
-                    {
-                        var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                        using (var fs = File.OpenRead(localFilePath))
-                        {
-                            var localFileLen = fs.Length;
-                            if (localFileLen == patchItem.FileSize)
-                            {
-                                if (flag_useMd5)
-                                {
-                                    string localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                    var cached = duhB.GetPatchItem(localFilename);
-
-                                    var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
-
-                                    if (cached == null || cached.LastModifiedTimeUTC != localLastModifiedTimeUtc || cached.FileSize != localFileLen || !string.Equals(localMd5, cached.MD5, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
-                                    }
-
-                                    if (!bool_compareMD5)
-                                    {
-                                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                                        DownloadItem item;
-                                        if (isLink)
-                                        {
-                                            item = new DownloadItem(patchItem, localFilePath, linkTo);
-                                        }
-                                        else
-                                        {
-                                            item = new DownloadItem(patchItem, localFilePath, null);
-                                        }
-                                        // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                                        pendingFiles.Add(item);
-                                        onDownloadQueueAdd.Invoke(item);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                                DownloadItem item;
-                                if (isLink)
-                                {
-                                    item = new DownloadItem(patchItem, localFilePath, linkTo);
-                                }
-                                else
-                                {
-                                    item = new DownloadItem(patchItem, localFilePath, null);
-                                }
-                                // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                                pendingFiles.Add(item);
-                                onDownloadQueueAdd.Invoke(item);
-                            }
-                        }
-                    }
-                    this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
-                    if (fileCheckThrottleFactor != 0)
-                    {
-                        try
-                        {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                        }
-                        catch (TaskCanceledException)
+                        if (cancellationToken.IsCancellationRequested)
                         {
                             break;
                         }
+                        var localFilename = patchItem.GetFilenameWithoutAffix();
+                        string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                        if (!File.Exists(localFilePath))
+                        {
+                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                        }
                     }
                 }
-            }
-            else if (flag_cacheOnly)
-            {
-                foreach (var patchItem in headacheMatterAgain)
+                else if (flag_forceRefresh)
                 {
-                    if (cancellationToken.IsCancellationRequested)
+                    foreach (var patchItem in headacheMatterAgain)
                     {
-                        break;
-                    }
-
-                    var localFilename = patchItem.GetFilenameWithoutAffix();
-                    // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                    var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                    var cachedHash = duhB.GetPatchItem(localFilename);
-                    // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-
-                    if (File.Exists(localFilePath))
-                    {
-                        if (cachedHash == null)
-                        {
-                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                            using (var fs = File.OpenRead(localFilePath))
-                            {
-                                var localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                cachedHash = duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
-                            }
-                        }
-
-                        if (cachedHash == null)
-                        {
-                            var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                            DownloadItem item;
-                            if (isLink)
-                            {
-                                item = new DownloadItem(patchItem, localFilePath, linkTo);
-                            }
-                            else
-                            {
-                                item = new DownloadItem(patchItem, localFilePath, null);
-                            }
-                            // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                            pendingFiles.Add(item);
-                            onDownloadQueueAdd.Invoke(item);
-                        }
-                        else
-                        {
-                            if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
-                            {
-                                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                                DownloadItem item;
-                                if (isLink)
-                                {
-                                    item = new DownloadItem(patchItem, localFilePath, linkTo);
-                                }
-                                else
-                                {
-                                    item = new DownloadItem(patchItem, localFilePath, null);
-                                }
-                                // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                                pendingFiles.Add(item);
-                                onDownloadQueueAdd.Invoke(item);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                        DownloadItem item;
-                        if (isLink)
-                        {
-                            item = new DownloadItem(patchItem, localFilePath, linkTo);
-                        }
-                        else
-                        {
-                            item = new DownloadItem(patchItem, localFilePath, null);
-                        }
-                        // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                        pendingFiles.Add(item);
-                        onDownloadQueueAdd.Invoke(item);
-                    }
-
-                    this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
-                    if (fileCheckThrottleFactor != 0)
-                    {
-                        try
-                        {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                        }
-                        catch (TaskCanceledException)
+                        if (cancellationToken.IsCancellationRequested)
                         {
                             break;
                         }
-                    }
-                }
-            }
-            else
-            {
-                foreach (var patchItem in headacheMatterAgain)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
 
-                    var localFilename = patchItem.GetFilenameWithoutAffix();
-                    var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                    // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                    if (!File.Exists(localFilePath))
-                    {
-                        string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                        DownloadItem item;
-                        if (isLink)
+                        var localFilename = patchItem.GetFilenameWithoutAffix();
+                        string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                        // localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
+                        if (!File.Exists(localFilePath))
                         {
-                            item = new DownloadItem(patchItem, localFilePath, linkTo);
+                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                         }
                         else
                         {
-                            item = new DownloadItem(patchItem, localFilePath, null);
-                        }
-                        // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                        pendingFiles.Add(item);
-                        onDownloadQueueAdd.Invoke(item);
-                    }
-                    else
-                    {
-                        if (flag_useFileSize || flag_useMd5)
-                        {
-                            var cachedHash = duhB.GetPatchItem(localFilename);
                             var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+
                             using (var fs = File.OpenRead(localFilePath))
                             {
                                 var localFileLen = fs.Length;
-                                if (!flag_useFileSize || localFileLen == patchItem.FileSize)
+                                if (localFileLen == patchItem.FileSize)
                                 {
                                     if (flag_useMd5)
                                     {
-                                        string localMd5;
-                                        if (cachedHash != null && cachedHash.FileSize == localFileLen && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
-                                        {
-                                            localMd5 = cachedHash.MD5;
-                                        }
-                                        else
-                                        {
-                                            localMd5 = MD5Hash.ComputeHashFromFile(fs);
-                                            duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, localFileLen, localMd5), localLastModifiedTimeUtc);
-                                        }
+                                        var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
 
-                                        if (!string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                        var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
+                                        duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, in localFileLen, localMd5), localLastModifiedTimeUtc);
+
+                                        if (!bool_compareMD5)
                                         {
-                                            string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                                            DownloadItem item;
-                                            if (isLink)
-                                            {
-                                                item = new DownloadItem(patchItem, localFilePath, linkTo);
-                                            }
-                                            else
-                                            {
-                                                item = new DownloadItem(patchItem, localFilePath, null);
-                                            }
-
-                                            pendingFiles.Add(item);
-                                            onDownloadQueueAdd.Invoke(item);
+                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    string linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-
-                                    DownloadItem item;
-                                    if (isLink)
-                                    {
-                                        item = new DownloadItem(patchItem, localFilePath, linkTo);
-                                    }
-                                    else
-                                    {
-                                        item = new DownloadItem(patchItem, localFilePath, null);
-                                    }
-                                    // this.OnDownloadQueueAdded(pendingFiles.Count);
-
-                                    pendingFiles.Add(item);
-                                    onDownloadQueueAdd.Invoke(item);
+                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                 }
                             }
                         }
-                    }
-                    this.OnFileCheckReport(Interlocked.Increment(ref processedCount));
-                    if (fileCheckThrottleFactor != 0)
-                    {
-                        try
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+                        if (fileCheckThrottleFactor != 0)
                         {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            break;
+                            try
+                            {
+                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
                         }
                     }
                 }
+                else if (flag_cacheOnly)
+                {
+                    foreach (var patchItem in headacheMatterAgain)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        var localFilename = patchItem.GetFilenameWithoutAffix();
+                        // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                        var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                        var isNotInCache = !duhB.TryGetPatchItem(localFilename, out var cachedHash);
+                        // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+
+                        if (File.Exists(localFilePath))
+                        {
+                            if (isNotInCache)
+                            {
+                                var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                using (var fs = File.OpenRead(localFilePath))
+                                {
+                                    var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                    cachedHash = duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
+                                }
+                            }
+
+                            if (isNotInCache)
+                            {
+                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                            }
+                            else
+                            {
+                                if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                        }
+
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            try
+                            {
+                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var patchItem in headacheMatterAgain)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        var localFilename = patchItem.GetFilenameWithoutAffix();
+                        var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                        // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                        if (!File.Exists(localFilePath))
+                        {
+                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                        }
+                        else
+                        {
+                            var isInCache = duhB.TryGetPatchItem(localFilename, out var cachedHash);
+                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                            if (isInCache && localLastModifiedTimeUtc != cachedHash.LastModifiedTimeUTC)
+                            {
+                            }
+                            FileStream fs = null;
+                            try
+                            {
+                                if (flag_useFileSize)
+                                {
+                                    fs = File.OpenRead(localFilePath);
+                                    if (flag_useMd5)
+                                    {
+                                        if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC && fs.Length == cachedHash.FileSize)
+                                        {
+                                            if (!string.Equals(patchItem.MD5, cachedHash.MD5, StringComparison.InvariantCultureIgnoreCase))
+                                            {
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                            if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
+                                            {
+                                                duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
+                                            }
+                                            else
+                                            {
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (fs.Length != patchItem.FileSize)
+                                        {
+                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                        }
+                                    }
+                                }
+                                else if (flag_useMd5)
+                                {
+                                    if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
+                                    {
+                                        if (!string.Equals(patchItem.MD5, cachedHash.MD5, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        fs = File.OpenRead(localFilePath);
+                                        var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                        if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
+                                        {
+                                            duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
+                                        }
+                                        else
+                                        {
+                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                        }
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                fs?.Dispose();
+                            }
+                        }
+                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+                        if (fileCheckThrottleFactor != 0)
+                        {
+                            try
+                            {
+                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                md5engi.Clear();
             }
         }
     }

@@ -37,7 +37,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         /// </remarks>
         ForceRefreshCache = 1 << 3,
 
-        [EnumDisplayName("Cache only [Not recommended] (Only use the info from the cache to check)")]
+        [EnumDisplayName("Cache only [Not recommended: Very unreliable] (Only use the info from the cache to check. Ignore all physical file checks on disk)")]
         /// <summary>Only use the data info from the hash cache.</summary>
         /// <remarks>
         /// <para>Very fast, however this will <b>not</b> do sanity check whether the actual file is existed or matched the written state in the cache.</para>
@@ -47,16 +47,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         // Preset below
 
-        [EnumDisplayName("Prefer speed [Not recommended] (Check missing and incorrect size files)")]
+        [EnumDisplayName("Prefer speed [Not recommended: Unreliable] (Check missing and compare the cached MD5-hash if the file is already existed)")]
         /// <summary>This should be very fast. But unreliable.</summary>
         /// <remarks>Should only be used for advanced users. Or those who know they're having missing files only.</remarks>
-        FastCheck = MissingFilesOnly | FileSizeMismatch,
+        FastCheck = MissingFilesOnly | MD5HashMismatch,
 
         [EnumDisplayName("Balanced [Recommended] (Check missing files, incorrect size, and compare file hash in case size is correct)")]
         /// <summary>This should be fast. But somewhat unreliable. However, should be good enough.</summary>
         Balanced = FileSizeMismatch | MD5HashMismatch,
 
-        [EnumDisplayName("Prefer accurate [Very slow] (Check missing files, and compare file hash regardless)")]
+        [EnumDisplayName("Prefer accurate [Very slow but extremely reliable] (Check missing files, and compare file hash regardless)")]
         /// <summary>This should be very slowest. But reliable. As all files are going to be hash-compared regardless.</summary>
         HighAccuracy = MD5HashMismatch | ForceRefreshCache
     }

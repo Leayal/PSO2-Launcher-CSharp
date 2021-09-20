@@ -27,10 +27,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 
         public bool IsDataFile => (DetermineIfReboot(in this.RemoteFilename).HasValue);
 
-        public PatchListItem(PatchListBase origin, string filename, long size, string md5) : this(origin, filename, md5, size, null) { }
+        public PatchListItem(PatchListBase origin, string filename, in long size, string md5) : this(origin, filename, md5, in size, null) { }
 
         /// <param name="mORp">True = p. False = m. Null = Not given.</param>
-        public PatchListItem(PatchListBase origin, string filename, string md5, long size, bool? mORp)
+        public PatchListItem(PatchListBase origin, string filename, string md5, in long size, in bool? mORp)
         {
             this.Origin = origin;
             this.RemoteFilename = filename;
