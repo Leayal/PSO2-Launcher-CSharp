@@ -143,90 +143,102 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
-                        var existingProcess = await TryFindPSO2Process(filename);
-
-                        if (existingProcess != null)
+                        using (var existingProcess = await TryFindPSO2Process(filename))
                         {
-                            if (UacHelper.IsCurrentProcessElevated)
+                            if (existingProcess != null)
                             {
-                                var windowhandle = existingProcess.MainWindowHandle;
-                                if (windowhandle == IntPtr.Zero)
+                                if (UacHelper.IsCurrentProcessElevated)
                                 {
-                                    try
+                                    var windowhandle = existingProcess.MainWindowHandle;
+                                    if (windowhandle == IntPtr.Zero)
                                     {
-                                        string prompt_message;
-                                        var elt = (DateTime.Now - existingProcess.StartTime);
-                                        if ((DateTime.Now - existingProcess.StartTime) > TimeSpan.FromMinutes(5))
+                                        try
                                         {
-                                            prompt_message = $"The game is already running but it seems to be stuck.{Environment.NewLine}Do you want to close the the existing game's process and start a new one?";
-                                        }
-                                        else
-                                        {
-                                            prompt_message = $"The game is already running but you should wait for a little bit before the window shows up.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?";
-                                        }
-                                        if (MessageBox.Show(this, prompt_message, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                                        {
-                                            existingProcess.Kill();
-                                        }
-                                        else
-                                        {
-                                            windowhandle = existingProcess.MainWindowHandle;
-                                            if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                            string prompt_message;
+                                            var elt = (DateTime.Now - existingProcess.StartTime);
+                                            if ((DateTime.Now - existingProcess.StartTime) > TimeSpan.FromMinutes(5))
                                             {
-                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                prompt_message = $"The game is already running but it seems to be stuck.{Environment.NewLine}Do you want to close the the existing game's process and start a new one?";
                                             }
+                                            else
+                                            {
+                                                prompt_message = $"The game is already running but you should wait for a little bit before the window shows up.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?";
+                                            }
+                                            if (MessageBox.Show(this, prompt_message, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                            {
+                                                if (!existingProcess.HasExited)
+                                                {
+                                                    existingProcess.Kill();
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (!existingProcess.HasExited)
+                                                {
+                                                    windowhandle = existingProcess.MainWindowHandle;
+                                                    if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                                    {
+                                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                    }
+                                                }
+                                                return;
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
+                                            MessageBox.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                                             return;
                                         }
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
-                                        MessageBox.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        return;
+                                        if (MessageBox.Show(this, $"The game is already running.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                        {
+                                            if (!existingProcess.HasExited)
+                                            {
+                                                existingProcess.Kill();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            try
+                                            {
+                                                if (!existingProcess.HasExited && UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                                {
+                                                    this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                }
+                                            }
+                                            catch { }
+                                            return;
+                                        }
                                     }
                                 }
                                 else
                                 {
-                                    if (MessageBox.Show(this, $"The game is already running.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                                    {
-                                        existingProcess.Kill();
-                                    }
-                                    else
+                                    if (!existingProcess.HasExited)
                                     {
                                         try
                                         {
-                                            if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                            var windowhandle = existingProcess.MainWindowHandle;
+                                            if (windowhandle == IntPtr.Zero || !UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
+                                            {
+                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
+                                                MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            }
+                                            else
                                             {
                                                 this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
                                             }
                                         }
-                                        catch { }
+                                        catch
+                                        {
+                                            this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
+                                            MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        }
                                         return;
                                     }
                                 }
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    // UnmanagedWindowsHelper
-                                    var windowhandle = existingProcess.MainWindowHandle;
-                                    if (windowhandle == IntPtr.Zero || !UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
-                                    {
-                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                        MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                                    }
-                                    else
-                                    {
-                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
-                                    }
-                                }
-                                catch
-                                {
-                                    this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                    MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                                }
-                                return;
                             }
                         }
 

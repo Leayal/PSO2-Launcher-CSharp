@@ -50,6 +50,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.ss_id = null;
             this.ss_pw = null;
             this.dispatcherqueue = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(30), this.Dispatcher);
+            // System.Net.Http.web
             this.webclient = new HttpClient(new SocketsHttpHandler()
             {
                 AllowAutoRedirect = true,
