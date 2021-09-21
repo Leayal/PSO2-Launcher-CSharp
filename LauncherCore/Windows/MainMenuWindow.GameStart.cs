@@ -133,13 +133,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                         if (!Directory.Exists(dir_pso2bin))
                         {
-                            MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            Prompt_Generic.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
                         var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
                         if (!File.Exists(filename))
                         {
-                            MessageBox.Show(this, "The file 'pso2.exe' doesn't exist. Please download game's data files if you haven't done it.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            Prompt_Generic.Show(this, "The file 'pso2.exe' doesn't exist. Please download game's data files if you haven't done it.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
 
@@ -164,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             {
                                                 prompt_message = $"The game is already running but you should wait for a little bit before the window shows up.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?";
                                             }
-                                            if (MessageBox.Show(this, prompt_message, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                            if (Prompt_Generic.Show(this, prompt_message, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                                             {
                                                 if (!existingProcess.HasExited)
                                                 {
@@ -187,13 +187,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         catch (Exception ex)
                                         {
                                             this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
-                                            MessageBox.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            Prompt_Generic.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                                             return;
                                         }
                                     }
                                     else
                                     {
-                                        if (MessageBox.Show(this, $"The game is already running.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                                        if (Prompt_Generic.Show(this, $"The game is already running.{Environment.NewLine}Are you sure you want to close the the existing game's process and start a new one?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                                         {
                                             if (!existingProcess.HasExited)
                                             {
@@ -224,7 +224,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             if (windowhandle == IntPtr.Zero || !UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
                                             {
                                                 this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                                MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                                Prompt_Generic.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                             }
                                             else
                                             {
@@ -234,7 +234,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         catch
                                         {
                                             this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                            MessageBox.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            Prompt_Generic.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                         }
                                         return;
                                     }
@@ -251,7 +251,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         var usernamePath = Path.Combine(configFolderPath, "SavedUsername.txt");
                         if (e.SelectedStyle == GameStartStyle.StartWithToken && !File.Exists(usernamePath))
                         {
-                            if (MessageBox.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.\r\nDo you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                            if (Prompt_Generic.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.\r\nDo you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                             {
                                 return;
                             }
@@ -421,7 +421,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 catch (PSO2LoginException loginEx)
                 {
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.");
-                    MessageBox.Show(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
@@ -437,7 +437,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (System.Net.WebException ex)
                 {
@@ -451,17 +451,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         errorCode = ex.Status.ToString();
                     }
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    MessageBox.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (FileCheckHashCache.DatabaseErrorException)
                 {
                     this.CreateNewParagraphInLog("[GameUpdater] Error occured when opening file check cache database.");
-                    MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Exception ex) when (!Debugger.IsAttached)
                 {
                     this.CreateNewParagraphInLog("[GameStart] Fail to start game. Error message: " + ex.Message);
-                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {

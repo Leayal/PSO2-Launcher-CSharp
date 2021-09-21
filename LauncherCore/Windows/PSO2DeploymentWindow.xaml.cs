@@ -143,7 +143,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (!currentCancelSrc.IsCancellationRequested)
                 {
-                    if (MessageBox.Show(this, "Are you sure you want to cancel deployment and close this dialog?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                    if (Prompt_Generic.Show(this, "Are you sure you want to cancel deployment and close this dialog?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                     {
                         e.Cancel = true;
                     }
@@ -253,10 +253,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         var pso2bin = this.PSO2BinDirectory;
                         if (Path.IsPathFullyQualified(pso2bin))
                         {
-                            MessageBoxResult result;
+                            MessageBoxResult? result;
                             if (DirectoryHelper.IsDirectoryExistsAndNotEmpty(pso2bin, true))
                             {
-                                result = MessageBox.Show(this, $"The directory '{pso2bin}' is already existed and not empty.{Environment.NewLine}Are you sure you want to use this directory and continue the deployment?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                result = Prompt_Generic.Show(this, $"The directory '{pso2bin}' is already existed and not empty.{Environment.NewLine}Are you sure you want to use this directory and continue the deployment?", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question);
                             }
                             else
                             {
@@ -284,11 +284,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 catch (DeploymentFailureException ex)
                 {
-                    MessageBox.Show(this, $"Failed to deploy due to {ex.Category} problem(s):{Environment.NewLine}{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, $"Failed to deploy due to {ex.Category} problem(s):{Environment.NewLine}{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {

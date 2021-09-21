@@ -208,7 +208,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public event Func<BackgroundSelfUpdateChecker, IReadOnlyList<string>, Task> UpdateFound;
+        public event Action<BackgroundSelfUpdateChecker, IReadOnlyList<string>> UpdateFound;
 
         class UpdateFoundData
         {

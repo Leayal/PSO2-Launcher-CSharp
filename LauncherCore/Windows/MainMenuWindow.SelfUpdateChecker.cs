@@ -12,7 +12,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private async Task OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
+        private void OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
         {
             sender.Stop();
             this.CreateNewParagraphInLog(writer =>

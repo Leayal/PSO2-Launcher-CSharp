@@ -147,7 +147,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void Checkbox_checkpso2updatebeforegamestart_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show(this, "Are you sure you want to disable checking for PSO2 updates before starting game?\r\n(Disable this will NOT disable binaries integrity check before starting. They are 2 different checks of their own before starting game)", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (Prompt_Generic.Show(this, "Are you sure you want to disable checking for PSO2 updates before starting game?\r\n(Disable this will NOT disable binaries integrity check before starting. They are 2 different checks of their own before starting game)", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 e.Handled = true;
                 if (sender is CheckBox cb)
@@ -159,7 +159,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void Checkbox_lauchlauncherasadmin_Checked(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show(this, "Are you sure you want to set RunAsAdmin by default for this launcher?\r\n(It is not needed in general cases unless you have compatibility problem(s) with your system)\r\nNote: The launcher will demand Administrator elevation from next launch and onward with this behavior option enabled.", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (Prompt_Generic.Show(this, "Are you sure you want to set RunAsAdmin by default for this launcher?\r\n(It is not needed in general cases unless you have compatibility problem(s) with your system)\r\nNote: The launcher will demand Administrator elevation from next launch and onward with this behavior option enabled.", "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 e.Handled = true;
                 if (sender is CheckBox cb)

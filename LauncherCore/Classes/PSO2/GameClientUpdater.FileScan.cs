@@ -32,7 +32,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // Acquire patch list.
             var patchInfoRoot = await this.InnerGetPatchRootAsync(cancellationToken);
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
-            var tasksOfLists = new List<Task<PatchListMemory>>(4);
+            var tasksOfLists = new List<Task<PatchListMemory>>(5);
 
             switch (selection)
             {
@@ -68,7 +68,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             await Task.WhenAll(tasksOfLists);
-            var arr_PatchListBase = new PatchListBase[tasksOfLists.Count];
+            var arr_PatchListBase = new PatchListMemory[tasksOfLists.Count];
             for (int i = 0; i < arr_PatchListBase.Length; i++)
             {
                 arr_PatchListBase[i] = await tasksOfLists[i];

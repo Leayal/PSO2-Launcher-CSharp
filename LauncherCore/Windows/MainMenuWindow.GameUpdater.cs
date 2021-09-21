@@ -112,7 +112,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             dir_pso2bin = Path.GetFullPath(dir_pso2bin);
             if (!Directory.Exists(dir_pso2bin))
             {
-                if (MessageBox.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nContinue anyway (may result in full game download)?\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                if (Prompt_Generic.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nContinue anyway (may result in full game download)?\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 {
                     return;
                 }
@@ -178,7 +178,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     sb.Append("(If the download profile is 'Cache Only', it will use 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
                 }
 
-                if (MessageBox.Show(this, sb.ToString(), "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                if (Prompt_Generic.Show(this, sb.ToString(), "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 {
                     return;
                 }
@@ -235,7 +235,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             msg = $"Launcher has found updates for PSO2 game client.\r\nDo you want to perform update?";
                         }
-                        if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        if (Prompt_Generic.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                         {
                             currentCancelSrc.Dispose();
                             this.cancelSrc_gameupdater = null;
@@ -285,19 +285,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     else
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                        MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         break;
                     }
                 }
             }
             catch (FileCheckHashCache.DatabaseErrorException)
             {
-                MessageBox.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
                 this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

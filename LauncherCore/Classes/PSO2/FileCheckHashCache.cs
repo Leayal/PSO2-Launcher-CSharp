@@ -19,15 +19,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private readonly Task t_write;
         private int state;
 
-        private ConcurrentDictionary<string, PatchRecordItem> buffering;
-        private readonly BlockingCollection<PatchRecordItem> writebuffer;
+        private ConcurrentDictionary<string, PatchRecordItemValue> buffering;
+        private readonly BlockingCollection<PatchRecordItemValue> writebuffer;
 
         public FileCheckHashCache(string filepath, in int concurrentLevel)
         {
             this.state = 0;
             this.buffering = null;
             this.concurrentlevel = Math.Min(Environment.ProcessorCount, concurrentLevel);
-            this.writebuffer = new BlockingCollection<PatchRecordItem>(new ConcurrentQueue<PatchRecordItem>());
+            this.writebuffer = new BlockingCollection<PatchRecordItemValue>(new ConcurrentQueue<PatchRecordItemValue>());
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteConnection(connectionStr);
             this.t_write = Task.Factory.StartNew(this.PollingWrite, TaskCreationOptions.LongRunning).Unwrap();
@@ -35,32 +35,50 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private async Task PollingWrite()
         {
-            while (!this.writebuffer.IsCompleted)
+            // INSERT OR REPLACE INTO PatchRecordItem (RemoteFilename,FileSize,MD5,LastModifiedTimeUTC) VALUES (?,?,?,?)
+            //var statementHandle = SQLite3.Prepare2(this.sqlConn.Handle, "INSERT OR REPLACE INTO PatchRecordItem(RemoteFilename,FileSize,MD5,LastModifiedTimeUTC) VALUES (?,?,?,?)");   
+            var singular = new PatchRecordItem(); // Re-use this object to insert.
+            try
             {
-                if (this.writebuffer.TryTake(out var item))
+                while (!this.writebuffer.IsCompleted)
                 {
-                    this.sqlConn.BeginTransaction();
-                    try
+                    if (this.writebuffer.TryTake(out var item))
                     {
-                        this.sqlConn.InsertOrReplace(item);
-                        while (this.writebuffer.TryTake(out item))
+                        this.sqlConn.BeginTransaction();
+                        try
                         {
-                            this.sqlConn.InsertOrReplace(item);
+                            singular.FileSize = item.FileSize;
+                            singular.RemoteFilename = item.RemoteFilename;
+                            singular.MD5 = item.MD5;
+                            singular.LastModifiedTimeUTC = item.LastModifiedTimeUTC;
+                            this.sqlConn.InsertOrReplace(singular);
+                            while (this.writebuffer.TryTake(out item))
+                            {
+                                singular.FileSize = item.FileSize;
+                                singular.RemoteFilename = item.RemoteFilename;
+                                singular.MD5 = item.MD5;
+                                singular.LastModifiedTimeUTC = item.LastModifiedTimeUTC;
+                                this.sqlConn.InsertOrReplace(singular);
+                            }
+                            this.sqlConn.Commit();
                         }
-                        this.sqlConn.Commit();
+                        catch
+                        {
+                            this.sqlConn.Rollback();
+                        }
                     }
-                    catch
+                    else
                     {
-                        this.sqlConn.Rollback();
+                        if (!this.writebuffer.IsAddingCompleted)
+                        {
+                            await Task.Delay(200).ConfigureAwait(false);
+                        }
                     }
                 }
-                else
-                {
-                    if (!this.writebuffer.IsAddingCompleted)
-                    {
-                        await Task.Delay(200);
-                    }
-                }
+            }
+            finally
+            {
+                // SQLite3.Finalize(statementHandle);
             }
         }
 
@@ -104,22 +122,52 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                 }
 
-                // Buffering data into memory.
-                var tb = this.sqlConn.Table<PatchRecordItem>();
-                var count = tb.Count();
-                if (count <= 0)
-                {
-                    this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(this.concurrentlevel, 331, StringComparer.InvariantCultureIgnoreCase);
-                }
-                else
-                {
-                    this.buffering = new ConcurrentDictionary<string, PatchRecordItem>(this.concurrentlevel, count + 300, StringComparer.InvariantCultureIgnoreCase);
-                }
+                // this.FetchAllRecords();
+                this.FetchAllRecordsValueType();
+            }
+        }
 
-                foreach (var item in tb.Deferred())
+        private void FetchAllRecordsValueType()
+        {
+            // Buffering data into memory.
+
+            // Live on edge.
+            // Using low-level. LET'S GO!!!
+            var count = this.sqlConn.ExecuteScalar<int>("SELECT COUNT(*) FROM PatchRecordItem");
+            if (count <= 0)
+            {
+                this.buffering = new ConcurrentDictionary<string, PatchRecordItemValue>(this.concurrentlevel, 331, StringComparer.InvariantCultureIgnoreCase);
+            }
+            else
+            {
+                this.buffering = new ConcurrentDictionary<string, PatchRecordItemValue>(this.concurrentlevel, count + 300, StringComparer.InvariantCultureIgnoreCase);
+            }
+            
+            var statementHandle = SQLite3.Prepare2(this.sqlConn.Handle, "SELECT RemoteFilename,FileSize,MD5,LastModifiedTimeUTC FROM PatchRecordItem");
+            try
+            {
+                SQLite3.Result r;
+                r = SQLite3.Step(statementHandle);
+                string remoteFilename, md5;
+                long filesize, tickCount;
+                while (r == SQLite3.Result.Row)
                 {
-                    this.buffering.TryAdd(item.RemoteFilename, item);
+                    remoteFilename = SQLite3.ColumnString(statementHandle, 0);
+                    filesize = SQLite3.ColumnInt64(statementHandle, 1);
+                    md5 = SQLite3.ColumnString(statementHandle, 2);
+                    tickCount = SQLite3.ColumnInt64(statementHandle, 3);
+                    this.buffering.TryAdd(remoteFilename, new PatchRecordItemValue(remoteFilename, in filesize, md5, new DateTime(tickCount)));
+                    r = SQLite3.Step(statementHandle);
                 }
+                if (r != SQLite3.Result.Done)
+                {
+                    this.buffering.Clear();
+                    throw SQLiteException.New(r, SQLite3.GetErrmsg(this.sqlConn.Handle));
+                }
+            }
+            finally
+            {
+                SQLite3.Finalize(statementHandle);
             }
         }
 
@@ -142,7 +190,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public bool TryGetPatchItem(string filename, out PatchRecordItem item)
+        public bool TryGetPatchItem(string filename, out PatchRecordItemValue item)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
@@ -157,7 +205,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public PatchRecordItem SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC)
+        public PatchRecordItemValue SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
@@ -169,22 +217,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     return this.buffering.AddOrUpdate(item.RemoteFilename, (key, args) =>
                     {
                         var _item = args.Item1;
-                        var result = new PatchRecordItem() { RemoteFilename = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), FileSize = _item.FileSize, MD5 = _item.MD5, LastModifiedTimeUTC = args.Item2 };
+                        var result = new PatchRecordItemValue(string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), in _item.FileSize, _item.MD5, in args.Item2);
                         args.Item3.Add(result);
                         return result;
                     }, (key, existing, args) =>
                     {
                         var _item = args.Item1;
                         var str = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c));
-                        if (!PatchRecordItem.IsEquals(existing, str, _item.MD5, in _item.FileSize, in args.Item2))
+                        if (!PatchRecordItemValue.IsEquals(existing, str, _item.MD5, in _item.FileSize, in args.Item2))
                         {
-                            var result = new PatchRecordItem()
-                            {
-                                RemoteFilename = str,
-                                FileSize = _item.FileSize,
-                                MD5 = _item.MD5,
-                                LastModifiedTimeUTC = args.Item2
-                            };
+                            var result = new PatchRecordItemValue(str, in _item.FileSize, _item.MD5, in args.Item2);
                             args.Item3.Add(result);
                             return result;
                         }
@@ -192,7 +234,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             return existing;
                         }
-                    }, new ValueTuple<PatchListItem, DateTime, BlockingCollection<PatchRecordItem>>(item, lastModifiedTimeUTC, this.writebuffer));
+                    }, new ValueTuple<PatchListItem, DateTime, BlockingCollection<PatchRecordItemValue>>(item, lastModifiedTimeUTC, this.writebuffer));
                 case 2:
                     throw new ObjectDisposedException(nameof(FileCheckHashCache));
                 default:
@@ -211,6 +253,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 this.sqlConn.ExecuteScalar<string>("PRAGMA optimize;", Array.Empty<object>());
 
+                this.buffering.Clear();
+
                 this.sqlConn.Close();
                 this.sqlConn.Dispose();
             }
@@ -218,15 +262,26 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public class DatabaseErrorException : Exception { }
 
-        public class PatchRecordItem : IEquatable<PatchRecordItem>
+        private class PatchRecordItem
         {
-            [PrimaryKey, Unique, NotNull, MaxLength(2048)]
+            [PrimaryKey, Unique, NotNull, MaxLength(2048), Collation("NOCASE")]
             public string RemoteFilename { get; set; }
             [MaxLength(32)]
             public string MD5 { get; set; }
             public long FileSize { get; set; }
             [NotNull]
             public DateTime LastModifiedTimeUTC { get; set; }
+        }
+
+        public class PatchRecordItemValue : IEquatable<PatchRecordItemValue>
+        {
+            // [PrimaryKey, Unique, NotNull, MaxLength(2048)]
+            public readonly string RemoteFilename;
+            // [MaxLength(32)]
+            public readonly string MD5;
+            public readonly long FileSize;
+            // [NotNull]
+            public readonly DateTime LastModifiedTimeUTC;
 
             public override bool Equals(object obj)
             {
@@ -235,7 +290,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return base.Equals(obj);
             }
 
-            public static bool IsEquals(PatchRecordItem item, string remotefilename, string md5, in long filesize, in DateTime lastmodified)
+            public PatchRecordItemValue(string filename, in long filesize, string md5, in DateTime modifiedTimeUtc)
+            {
+                this.RemoteFilename = filename;
+                this.FileSize = filesize;
+                this.MD5 = md5;
+                this.LastModifiedTimeUTC = modifiedTimeUtc;
+            }
+
+            public static bool IsEquals(PatchRecordItemValue item, string remotefilename, string md5, in long filesize, in DateTime lastmodified)
             {
                 return (string.Equals(remotefilename, item.RemoteFilename, StringComparison.InvariantCultureIgnoreCase)
                    && string.Equals(md5, item.MD5, StringComparison.InvariantCultureIgnoreCase)
@@ -246,7 +309,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             public override int GetHashCode()
                 => this.RemoteFilename.GetHashCode() ^ this.MD5.GetHashCode() ^ this.FileSize.GetHashCode() ^ this.LastModifiedTimeUTC.GetHashCode();
 
-            public bool Equals(PatchRecordItem other)
+            public bool Equals(PatchRecordItemValue other)
             {
                 return (string.Equals(other.RemoteFilename, this.RemoteFilename, StringComparison.InvariantCultureIgnoreCase)
                     && string.Equals(other.MD5, this.MD5, StringComparison.InvariantCultureIgnoreCase)

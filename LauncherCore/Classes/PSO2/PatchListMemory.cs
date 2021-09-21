@@ -11,7 +11,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     {
         private readonly Dictionary<string, PatchListItem> _items;
 
-        public int Count => this._items.Count;
+        public override bool CanCount => true;
+
+        public override int Count => this._items.Count;
 
         public PatchListMemory(PatchRootInfo rootInfo, bool? isReboot, IDictionary<string, PatchListItem> items) : base(rootInfo, isReboot)
         {
@@ -28,18 +30,28 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this._items = items;
         }
 
-        public override IEnumerator<PatchListItem> GetEnumerator() => this._items.Values.GetEnumerator();
-
-        protected override IEnumerator CreateEnumerator() => this._items.Values.GetEnumerator();
+        protected override IEnumerator<PatchListItem> CreateEnumerator() => this._items.Values.GetEnumerator();
 
         public override bool TryGetByFilenameExact(in string filename, out PatchListItem value) => this._items.TryGetValue(filename, out value);
 
-        protected override void CopyTo(Dictionary<string, PatchListItem> items)
+        protected override void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy)
         {
-            items.Clear();
+            if (clearBeforeCopy)
+            {
+                items.Clear();
+            }
             foreach (var item in this._items)
             {
                 items.Add(item.Key, item.Value);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                this._items.Clear();
+                this._items.TrimExcess(0);
             }
         }
     }

@@ -38,6 +38,25 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 if (this.ContextMenu != null)
                 {
+                    /*
+                    var uielement = e.OriginalSource as UIElement;
+                    if (uielement == null)
+                    {
+                        uielement = e.Source as UIElement;
+                    }
+                    if (uielement == null)
+                    {
+                        uielement = sender as UIElement;
+                    }
+                    */
+                    if (sender is UIElement element)
+                    {
+                        this.ContextMenu.PlacementTarget = element;
+                    }
+                    else
+                    {
+                        this.ContextMenu.PlacementTarget = this;
+                    }
                     this.ContextMenu.IsOpen = true;
                 }
             }

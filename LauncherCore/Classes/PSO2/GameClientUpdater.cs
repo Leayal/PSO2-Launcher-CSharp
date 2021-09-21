@@ -6,7 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -222,15 +224,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     catch
                     {
+                        resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(1, 0);
                         isOperationSuccess = false;
                         throw;
                     }
                     finally
                     {
-                        pendingFiles.Dispose();
+                        if (pendingFiles != null)
+                        {
+                            pendingFiles.Dispose();
+                            pendingFiles = null;
+                        }
                         if (duhB != null)
                         {
                             await duhB.DisposeAsync();
+                            duhB = null;
                         }
                         IReadOnlyCollection<PatchListItem> list_all;
                         if (patchlist == null)
@@ -243,13 +251,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         else
                         {
-                            list_all = new List<PatchListItem>(patchlist);
+                            var list = new List<PatchListItem>(patchlist.Count);
+                            list.AddRange(patchlist);
+                            list_all = new ReadOnlyCollection<PatchListItem>(list);
+                            patchlist = null;
                         }
                         if (Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1) == 1)
                         {
                             // this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
                             this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, resultsOfDownloads, ver, isOperationSuccess, cancellationToken);
                         }
+
+                        // For debugging purpose.
+                        // Don't call GC.Collect because it won't help much.
+                        // GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                        // GC.Collect(GC.MaxGeneration, GCCollectionMode.Default, true, true);
                     }
                 }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
             }

@@ -118,7 +118,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var pso2bin = this.textbox_pso2_bin.Text;
             if (!string.IsNullOrWhiteSpace(pso2bin) && !Shared.PathHelper.IsValid(pso2bin))
             {
-                System.Windows.MessageBox.Show(this, "The 'pso2_bin' path is invalid.", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                Prompt_Generic.Show(this, "The 'pso2_bin' path is invalid.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             this._config.PSO2_BIN = pso2bin;
@@ -173,7 +173,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                         else
                         {
-                            if (System.Windows.MessageBox.Show(this, $"The selected directory seems to not be a practical 'pso2_bin'.{Environment.NewLine}Do you still want to continue and select this folder?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+                            if (Prompt_Generic.Show(this, $"The selected directory seems to not be a practical 'pso2_bin'.{Environment.NewLine}Do you still want to continue and select this folder?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
                             {
                                 this.textbox_pso2_bin.Text = selected;
                                 break;

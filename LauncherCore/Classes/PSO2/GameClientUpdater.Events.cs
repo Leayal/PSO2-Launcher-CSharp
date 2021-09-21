@@ -167,7 +167,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        readonly struct DownloadItem
+        class DownloadItem
         {
             public readonly PatchListItem PatchInfo;
             public readonly string Destination;

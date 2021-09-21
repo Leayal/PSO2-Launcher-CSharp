@@ -422,11 +422,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 SetUA_AQUA_HTTP(request);
                 return request;
             }, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
-            using (var stream = response.Content.ReadAsStream()) // I thought there was only Async ops.
-            using (var sr = new StreamReader(stream))
-            using (var patchlistReader = new PatchListDeferred(rootInfo, isReboot, sr, false))
             {
-                return patchlistReader.ToMemory();
+                using (var stream = response.Content.ReadAsStream())
+                using (var tr = new StreamReader(stream))
+                using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                {
+                    return parser.ToMemory();
+                }
             }
         }
 

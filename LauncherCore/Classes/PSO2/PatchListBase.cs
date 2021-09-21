@@ -6,7 +6,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable
+    public abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable, IReadOnlyCollection<PatchListItem>, IDisposable
     {
         public readonly PatchRootInfo RootInfo;
         public readonly bool? IsReboot;
@@ -21,11 +21,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.RootInfo = rootInfo;
         }
 
-        public abstract IEnumerator<PatchListItem> GetEnumerator();
+        public abstract bool CanCount { get; }
+
+        public abstract int Count { get; }
+
+        public IEnumerator<PatchListItem> GetEnumerator() => this.CreateEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.CreateEnumerator();
 
-        protected abstract IEnumerator CreateEnumerator();
+        protected abstract IEnumerator<PatchListItem> CreateEnumerator();
 
         public virtual bool TryGetByFilename(in string filename, out PatchListItem value)
         {
@@ -54,9 +58,24 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~PatchListBase()
+        {
+            this.Dispose(false);
+        }
+
         public abstract bool TryGetByFilenameExact(in string filename, out PatchListItem value);
 
-        protected abstract void CopyTo(Dictionary<string, PatchListItem> items);
+        protected abstract void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy);
 
         /// <summary>Merge all the patchlists into one and return the merged patchlist.</summary>
         /// <returns>Return a patchlist which has all the items from given <paramref name="patchlists"/>.</returns>
@@ -79,9 +98,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
                 else
                 {
-                    var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
-                    patchlists[0].CopyTo(items);
-                    return new PatchListMemory(patchlists[0].RootInfo, patchlists[0].IsReboot, items);
+                    var list = patchlists[0];
+                    Dictionary<string, PatchListItem> items;
+                    if (list.CanCount)
+                    {
+                        items = new Dictionary<string, PatchListItem>(list.Count + 1, StringComparer.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
+                    }
+                    list.CopyTo(items, false);
+                    return new PatchListMemory(list.RootInfo, list.IsReboot, items);
                 }
             }
             else

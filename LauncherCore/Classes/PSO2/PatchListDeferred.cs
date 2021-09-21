@@ -10,31 +10,35 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     /// <summary>Provides instance for forward-only parsing patchlist file.</summary>
     /// <remarks>Mainly used for building <see cref="PatchListMemory"/> or enumerating.</remarks>
-    public class PatchListDeferred : PatchListBase, IDisposable
+    public class PatchListDeferred : PatchListBase
     {
         private readonly TextReader tr;
         private readonly bool keepOpen;
+        
+        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader reader) : this(rootInfo, isReboot, reader, false) { }
 
-        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader textReader) : this(rootInfo, isReboot, textReader, false) { }
-
-        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader textReader, bool keepOpen) : base(rootInfo, isReboot)
+        public PatchListDeferred(PatchRootInfo rootInfo, bool? isReboot, TextReader reader, bool keepOpen) : base(rootInfo, isReboot)
         {
             this.keepOpen = keepOpen;
-            this.tr = textReader;
+            this.tr = reader;
         }
 
-        public override IEnumerator<PatchListItem> GetEnumerator() => new PatchListItemWalker(this);
+        public override bool CanCount => false;
 
-        protected override IEnumerator CreateEnumerator() => new PatchListItemWalker(this);
+        public override int Count => throw new NotSupportedException();
+
+        protected override IEnumerator<PatchListItem> CreateEnumerator() => new PatchListItemWalker(this);
 
         class PatchListItemWalker : IEnumerator<PatchListItem>
         {
-            private readonly PatchListDeferred parent;
+            private readonly PatchListBase parent;
+            private readonly TextReader tr;
             private PatchListItem currentItem;
 
             public PatchListItemWalker(PatchListDeferred parent)
             {
                 this.parent = parent;
+                this.tr = parent.tr;
             }
 
             public PatchListItem Current => this.currentItem;
@@ -43,12 +47,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             public void Dispose()
             {
-                // Does nothing
+                this.currentItem = null;
             }
 
             public bool MoveNext()
             {
-                var currentLine = this.parent.tr.ReadLine();
+                var currentLine = this.tr.ReadLine();
                 if (currentLine != null)
                 {
                     this.currentItem = PatchListItem.Parse(this.parent, in currentLine);
@@ -74,11 +78,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new NotSupportedException();
         }
 
-        protected override void CopyTo(Dictionary<string, PatchListItem> items) => this.InnerCopyTo(items);
-
-        private void InnerCopyTo(Dictionary<string, PatchListItem> items)
+        protected override void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy)
         {
-            items.Clear();
+            if (clearBeforeCopy)
+            {
+                items.Clear();
+            }
             foreach (var item in this)
             {
                 items.Add(item.GetFilenameWithoutAffix(), item);
@@ -88,15 +93,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public PatchListMemory ToMemory()
         {
             var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
-            this.InnerCopyTo(items);
+            this.CopyTo(items, false);
             return new PatchListMemory(this.RootInfo, this.IsReboot, items);
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (!this.keepOpen)
+            if (disposing)
             {
-                this.tr.Dispose();
+                if (!this.keepOpen)
+                {
+                    this.tr.Dispose();
+                }
             }
         }
     }
