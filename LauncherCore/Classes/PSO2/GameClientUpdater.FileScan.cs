@@ -339,14 +339,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
                         if (fileCheckThrottleFactor != 0)
                         {
-                            try
-                            {
-                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                            }
-                            catch (TaskCanceledException)
-                            {
-                                break;
-                            }
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
                         }
                     }
                 }
@@ -397,14 +390,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
                         if (fileCheckThrottleFactor != 0)
                         {
-                            try
-                            {
-                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                            }
-                            catch (TaskCanceledException)
-                            {
-                                break;
-                            }
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
                         }
                     }
                 }
@@ -499,14 +485,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
                         if (fileCheckThrottleFactor != 0)
                         {
-                            try
-                            {
-                                await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                            }
-                            catch (TaskCanceledException)
-                            {
-                                break;
-                            }
+                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
                         }
                     }
                 }

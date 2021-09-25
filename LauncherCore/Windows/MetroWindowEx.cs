@@ -39,7 +39,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }));
 
-        private int flag_disposing, flag_firstshown;
+        private int flag_disposing, flag_firstshown, flag_readied;
 
         public bool IsMaximized => (bool)this.GetValue(IsMaximizedProperty);
 
@@ -71,8 +71,54 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.CustomDialogResult = null;
             this.flag_disposing = 0;
             this.flag_firstshown = 0;
+            this.flag_readied = 0;
             this._autoHideInTaskbarByOwnerIsVisibleAttached = null;
             this._autoassignedIcon = false;
+
+            this.WindowTransitionCompleted += MetroWindowEx_WindowTransitionCompleted;
+        }
+
+        protected override void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+
+            if (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0)
+            {
+                var ownerWindow = this.Owner;
+                if (ownerWindow != null)
+                {
+                    if (this.Icon == null)
+                    {
+                        this.Icon = ownerWindow.Icon;
+                        this._autoassignedIcon = true; // Put this after to overwrite the value assigned in the OnPropertyChanged below.
+                    }
+                    if (this.AutoHideInTaskbarByOwnerIsVisible)
+                    {
+                        this._autoHideInTaskbarByOwnerIsVisibleAttached = ownerWindow;
+                        this.ShowInTaskbar = !ownerWindow.IsVisible;
+                        ownerWindow.IsVisibleChanged += this.OwnerWindow_IsVisibleChanged;
+                    }
+                }
+            }
+
+            if (!this.WindowTransitionsEnabled)
+            {
+                this.WindowTransitionCompleted -= MetroWindowEx_WindowTransitionCompleted;
+                this.ExecuteWhenLoaded(this.EnsureOnReadyInvoked);
+            }
+        }
+
+        private static void MetroWindowEx_WindowTransitionCompleted(object sender, RoutedEventArgs e)
+        {
+            if (sender is MetroWindowEx windowex)
+            {
+                windowex.WindowTransitionCompleted -= MetroWindowEx_WindowTransitionCompleted;
+                windowex.EnsureOnReadyInvoked();
+            }
+            else if (sender is MetroWindow window)
+            {
+                window.WindowTransitionCompleted -= MetroWindowEx_WindowTransitionCompleted;
+            }
         }
 
         public bool? ShowCustomDialog(Window window)
@@ -138,32 +184,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.OnThemeRefresh();
         }
 
-        public event EventHandler FirstShown;
-
-        protected override void OnContentRendered(EventArgs e)
-        {
-            base.OnContentRendered(e);
-
-            if (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0)
-            {
-                var ownerWindow = this.Owner;
-                if (ownerWindow != null)
-                {
-                    if (this.Icon == null)
-                    {
-                        this.Icon = ownerWindow.Icon;
-                        this._autoassignedIcon = true; // Put this after to overwrite the value assigned in the OnPropertyChanged below.
-                    }
-                    if (this.AutoHideInTaskbarByOwnerIsVisible)
-                    {
-                        this._autoHideInTaskbarByOwnerIsVisibleAttached = ownerWindow;
-                        this.ShowInTaskbar = !ownerWindow.IsVisible;
-                        ownerWindow.IsVisibleChanged += this.OwnerWindow_IsVisibleChanged;
-                    }
-                }
-                this.OnFirstShown(EventArgs.Empty);
-            }
-        }
+        public event EventHandler Ready;
 
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
@@ -175,9 +196,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
             base.OnPropertyChanged(e);
         }
 
-        protected virtual void OnFirstShown(EventArgs e)
+        private void EnsureOnReadyInvoked()
         {
-            this.FirstShown?.Invoke(this, e);
+            if (Interlocked.CompareExchange(ref this.flag_readied, 1, 0) == 0)
+            {
+                this.OnReady(EventArgs.Empty);
+            }
+        }
+
+        protected virtual void OnReady(EventArgs e)
+        {
+            this.Ready?.Invoke(this, e);
         }
 
         protected virtual void OnThemeRefresh() { }

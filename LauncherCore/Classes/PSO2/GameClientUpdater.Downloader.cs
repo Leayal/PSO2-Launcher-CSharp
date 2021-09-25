@@ -166,14 +166,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     else
                     {
                         // In case there's no item in the queue yet. Put the Task into inactive and yield the thread to run other scheduled task(s).
-                        try
-                        {
-                            await Task.Delay(30, cancellationToken);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            break;
-                        }
+                        await Task.Delay(30, cancellationToken);
                     }
                 }
             }

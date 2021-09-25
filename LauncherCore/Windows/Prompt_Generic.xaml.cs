@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -20,8 +21,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class Prompt_Generic : MetroWindowEx
     {
+        public readonly static ICommand CommandCopyText = new DialogCommandCopyText();
         public readonly static DependencyProperty DialogTextContentProperty = DependencyProperty.Register("DialogTextContent", typeof(object), typeof(Prompt_Generic), new PropertyMetadata(string.Empty));
-        private static readonly Lazy<BitmapSource> Icon_Question = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Question.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
+        public static readonly Lazy<BitmapSource> Icon_Question = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Question.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
             Icon_Error = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Error.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
             Icon_Warning = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Warning.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
             Icon_Information = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Information.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()));
@@ -43,11 +45,103 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return dialog._result;
         }
 
+        public static MessageBoxResult? Show(Window parent, string text, string title)
+            => Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Information);
+
+        public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
+        {
+            var dialog = new Prompt_Generic(in buttons, in image)
+            {
+                DialogTextContent = new TextBlock() { Text = exception.ToString(), TextWrapping = TextWrapping.WrapWithOverflow },
+                Title = title ?? "Error"
+            };
+
+            Exception ex = exception.InnerException ?? exception;
+
+            if (string.IsNullOrEmpty(text))
+            {
+                if (string.IsNullOrWhiteSpace(ex.Message))
+                {
+                    dialog.DialogTextContent = new TextBlock() { Text = ex.ToString(), TextWrapping = TextWrapping.WrapWithOverflow };
+                }
+                else if (string.IsNullOrWhiteSpace(ex.StackTrace))
+                {
+                    dialog.DialogTextContent = new TextBlock() { Text = ex.Message, TextWrapping = TextWrapping.WrapWithOverflow };
+                }
+                else
+                {
+                    var grid = new Grid() { Tag = ex };
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+
+                    grid.Children.Add(new TextBlock() { Text = ex.Message, TextWrapping = TextWrapping.WrapWithOverflow });
+
+                    var btnShowStackTrace = new ToggleButton() { Content = new TextBlock() { Text = "Show stacktrace", FontSize = 11 }, IsChecked = false, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left };
+                    Grid.SetRow(btnShowStackTrace, 1);
+                    grid.Children.Add(btnShowStackTrace);
+
+                    var stackTraceContent = new TextBlock() { Text = ex.StackTrace, Visibility = Visibility.Collapsed, TextWrapping = TextWrapping.WrapWithOverflow };
+                    stackTraceContent.SetBinding(MahApps.Metro.Controls.VisibilityHelper.IsVisibleProperty, new Binding(ToggleButton.IsCheckedProperty.Name) { Source = btnShowStackTrace, Mode = BindingMode.OneWay });
+                    Grid.SetRow(stackTraceContent, 2);
+                    grid.Children.Add(stackTraceContent);
+
+                    dialog.DialogTextContent = grid;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(ex.StackTrace))
+                {
+                    dialog.DialogTextContent = new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow };
+                }
+                else
+                {
+                    var grid = new Grid() { Tag = ex };
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+                    grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
+
+                    grid.Children.Add(new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow });
+
+                    var btnShowStackTrace = new ToggleButton() { Content = new TextBlock() { Text = "Show stacktrace", FontSize = 11 }, IsChecked = false, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left };
+                    Grid.SetRow(btnShowStackTrace, 1);
+                    grid.Children.Add(btnShowStackTrace);
+
+                    var stackTraceContent = new TextBlock() { Text = ex.ToString(), Visibility = Visibility.Collapsed, TextWrapping = TextWrapping.WrapWithOverflow };
+                    stackTraceContent.SetBinding(MahApps.Metro.Controls.VisibilityHelper.IsVisibleProperty, new Binding(ToggleButton.IsCheckedProperty.Name) { Source = btnShowStackTrace, Mode = BindingMode.OneWay });
+                    Grid.SetRow(stackTraceContent, 2);
+                    grid.Children.Add(stackTraceContent);
+
+                    dialog.DialogTextContent = grid;
+                }
+            }
+
+            dialog.ShowCustomDialog(parent);
+            return dialog._result;
+        }
+
+        public static MessageBoxResult? ShowError(Window parent, Exception exception, string? title, MessageBoxButton buttons, MessageBoxImage image)
+            => ShowError(parent, null, title, exception, buttons, image);
+
+        public static MessageBoxResult? ShowError(Window parent, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
+            => ShowError(parent, null, null, exception, buttons, image);
+
+        public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception)
+            => ShowError(parent, null, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+
+        public static MessageBoxResult? ShowError(Window parent, Exception exception, string? title)
+            => ShowError(parent, null, title, exception);
+
+        public static MessageBoxResult? ShowError(Window parent, Exception exception)
+            => ShowError(parent, null, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+
         private MessageBoxResult? _result;
 
         private Prompt_Generic(in MessageBoxButton buttons, in MessageBoxImage image) : base()
         {
             InitializeComponent();
+            this.InputBindings.Add(new InputBinding(CommandCopyText, new KeyGesture(Key.C, ModifierKeys.Control)) { CommandParameter = this });
             this._result = null;
             this.AutoHideInTaskbarByOwnerIsVisible = true;
             
@@ -113,6 +207,87 @@ namespace Leayal.PSO2Launcher.Core.Windows
             };
         }
 
+        private string ReFormatDialogAsText()
+        {
+            const char eee = '=';
+            if (this.DialogTextContent is TextBlock tb)
+            {
+                var sb = new StringBuilder(this.Title.Length + tb.Text.Length + (10 * 2) + (Environment.NewLine.Length * 4));
+                sb.AppendLine(this.Title);
+                for (int i = 0; i < 10; i++)
+                {
+                    sb.Append(eee);
+                }
+                sb.AppendLine().AppendLine(tb.Text);
+                for (int i = 0; i < 10; i++)
+                {
+                    sb.Append(eee);
+                }
+                sb.AppendLine();
+                foreach (var child in this.Buttons.Children)
+                {
+                    if (child is Button btn)
+                    {
+                        sb.Append(' ');
+                        if (btn.Content is Label lb && lb.Content is TextBlock btnText)
+                        {
+                            sb.Append(btnText.Text);
+                        }
+                        else if (btn.Content is TextBlock btnText2)
+                        {
+                            sb.Append(btnText2.Text);
+                        }
+                    }
+                }
+                return sb.ToString();
+            }
+            else if (this.DialogTextContent is Grid grid)
+            {
+                if (grid.Tag is Exception ex)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine(this.Title);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        sb.Append(eee);
+                    }
+                    sb.AppendLine()
+                        .AppendLine(((TextBlock)grid.Children[0]).Text)
+                        .AppendLine(">>> Stacktrace:")
+                        .AppendLine(((TextBlock)grid.Children[2]).Text);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        sb.Append(eee);
+                    }
+                    sb.AppendLine();
+                    foreach (var child in this.Buttons.Children)
+                    {
+                        if (child is Button btn)
+                        {
+                            sb.Append(' ');
+                            if (btn.Content is Label lb && lb.Content is TextBlock btnText)
+                            {
+                                sb.Append(btnText.Text);
+                            }
+                            else if (btn.Content is TextBlock btnText2)
+                            {
+                                sb.Append(btnText2.Text);
+                            }
+                        }
+                    }
+                    return sb.ToString();
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
         private void BtnOk_Click(object sender, RoutedEventArgs e)
         {
             this._result = MessageBoxResult.OK;
@@ -135,6 +310,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.CustomDialogResult = true;
             this.DialogResult = true;
+        }
+
+        class DialogCommandCopyText : ICommand
+        {
+            public event EventHandler CanExecuteChanged;
+
+            public bool CanExecute(object parameter) => (parameter is Prompt_Generic);
+
+            public void Execute(object parameter)
+            {
+                if (parameter is Prompt_Generic prompt)
+                {
+                    var str = prompt.ReFormatDialogAsText();
+                    if (!string.IsNullOrEmpty(str))
+                    {
+                        Clipboard.SetText(str, TextDataFormat.UnicodeText);
+                    }
+                }
+            }
         }
     }
 }

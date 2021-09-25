@@ -5,6 +5,7 @@
                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                      xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                      mc:Ignorable="d" x:Name="thisSelf"
+                     WindowTransitionsEnabled="False"
                      ResizeMode="NoResize" ShowMinButton="False" ShowMaxRestoreButton="False" ShowTitleBar="False" WindowStartupLocation="CenterOwner"
                      Title="Dialog" MinHeight="120" MaxHeight="480" MinWidth="250" MaxWidth="640" SizeToContent="WidthAndHeight">
     <Grid>
@@ -19,7 +20,7 @@
         </Grid.RowDefinitions>
         <Border Grid.ColumnSpan="2" IsHitTestVisible="False">
             <Border.Background>
-                <SolidColorBrush Color="{DynamicResource MahApps.Colors.AccentBase}" Opacity=".6" />
+                <SolidColorBrush Color="{DynamicResource MahApps.Colors.AccentBase}" Opacity=".5" />
             </Border.Background>
         </Border>
         <TextBlock Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneWay}" TextAlignment="Center" VerticalAlignment="Center" Margin="1" FontSize="15" IsHitTestVisible="False" TextTrimming="CharacterEllipsis" />
@@ -35,7 +36,10 @@
                           Content="{Binding ElementName=thisSelf,Mode=OneWay,Path=DialogTextContent}" />
         </Grid>
 
-        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="#33FFFFFF">
+        <Border Grid.Row="2" Grid.ColumnSpan="2">
+            <Border.Background>
+                <SolidColorBrush Color="{DynamicResource MahApps.Colors.AccentBase}" Opacity=".2" />
+            </Border.Background>
             <Grid x:Name="Buttons" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="1">
                 <Grid.ColumnDefinitions />
                 <Grid.RowDefinitions />

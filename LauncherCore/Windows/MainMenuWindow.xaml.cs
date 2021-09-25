@@ -175,15 +175,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
             RSSFeedPresenter_Loaded();
         }
 
-        protected override async void OnFirstShown(EventArgs e)
+        protected override async void OnReady(EventArgs e)
         {
             try
             {
-                base.OnFirstShown(e);
+                base.OnReady(e);
             }
             catch
             {
 
+            }
+
+            if (this.config_main.LauncherCheckForSelfUpdates)
+            {
+                var selfchecker = await this.backgroundselfupdatechecker.Value;
+                selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
+                selfchecker.Start();
             }
 
             if (this.config_main.LauncherLoadWebsiteAtStartup)
@@ -193,17 +200,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 }
             }
-
-            if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
+            else
             {
-                await StartGameClientUpdate(false, this.config_main.LauncherCheckForPSO2GameUpdateAtStartupPrompt);
-            }
-
-            if (this.config_main.LauncherCheckForSelfUpdates)
-            {
-                var selfchecker = await this.backgroundselfupdatechecker.Value;
-                selfchecker.TickTime = TimeSpan.FromHours(this.config_main.LauncherCheckForSelfUpdates_IntervalHour);
-                selfchecker.Start();
+                await this.OnEverythingIsDoneAndReadyToBeInteracted();
             }
         }
 
@@ -362,18 +361,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 catch (Exception ex)
                 {
-                    Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, ex);
                 }
             }
         }
 
         private readonly static Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");
-        private void WebViewCompatControl_Initialized(object sender, EventArgs e)
+        private async void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
                 webview.Navigated += this.Webview_Navigated;
                 webview.NavigateTo(SEGALauncherNewsUrl);
+            }
+
+            if (this.config_main.LauncherLoadWebsiteAtStartup)
+            {
+                await this.OnEverythingIsDoneAndReadyToBeInteracted();
+            }
+        }
+
+        private async Task OnEverythingIsDoneAndReadyToBeInteracted()
+        {
+            if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
+            {
+                await StartGameClientUpdate(false, this.config_main.LauncherCheckForPSO2GameUpdateAtStartupPrompt);
             }
         }
 

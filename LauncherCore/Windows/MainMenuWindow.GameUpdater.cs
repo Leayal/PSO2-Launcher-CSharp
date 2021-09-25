@@ -285,7 +285,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     else
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                        Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Prompt_Generic.ShowError(this, ex);
                         break;
                     }
                 }
@@ -297,7 +297,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             catch (Exception ex) when (!Debugger.IsAttached)
             {
                 this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
-                Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Prompt_Generic.ShowError(this, ex);
             }
             finally
             {

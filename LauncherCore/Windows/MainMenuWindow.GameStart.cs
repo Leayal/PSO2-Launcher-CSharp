@@ -421,7 +421,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 catch (PSO2LoginException loginEx)
                 {
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.");
-                    Prompt_Generic.Show(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", loginEx);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
@@ -437,7 +437,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    Prompt_Generic.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, ex, "Network Error (Code: " + errorCode + ")");
                 }
                 catch (System.Net.WebException ex)
                 {
@@ -451,7 +451,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         errorCode = ex.Status.ToString();
                     }
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    Prompt_Generic.Show(this, ex.Message, "Network Error (Code: " + errorCode + ")", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, ex, "Network Error (Code: " + errorCode + ")");
                 }
                 catch (FileCheckHashCache.DatabaseErrorException)
                 {
@@ -461,7 +461,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 catch (Exception ex) when (!Debugger.IsAttached)
                 {
                     this.CreateNewParagraphInLog("[GameStart] Fail to start game. Error message: " + ex.Message);
-                    Prompt_Generic.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, ex);
                 }
                 finally
                 {
