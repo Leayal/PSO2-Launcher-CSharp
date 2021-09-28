@@ -1,6 +1,7 @@
 @echo off
 cd /d %~dp0
-
+SETLOCAL
+SET "MSBUILDDISABLENODEREUSE=1"
 if not exist docs\publish\files (
  mkdir "docs\publish\files"
 )
@@ -21,3 +22,4 @@ copy /B /L /Y "Build\PSUBlogRSSFeed\PSUBlogRSSFeed.dll" "docs\publish\files\plug
 copy /B /L /Y "Dependencies\Build\net5.0\*.dll" "docs\publish\files\"
 
 Tools\SHA1Maker.exe "docs\publish" "docs\publish\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/"
+ENDLOCAL
