@@ -174,15 +174,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 catch (PSO2LoginException ex)
                 {
-                    this.ShowModalMessageExternal("Login failure", "Failed to login.\r\nError code: " + ex.ErrorCode.ToString(), MessageDialogStyle.Affirmative, new MetroDialogSettings() { AffirmativeButtonText = "OK", AnimateHide = true, AnimateShow = false });
+                    Prompt_Generic.Show(this, "Failed to login.\r\nError code: " + ex.ErrorCode.ToString(), "Login failure", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }
                 catch (UnexpectedDataFormatException ex)
                 {
-                    MessageBox.Show(this, ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.Show(this, ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Prompt_Generic.ShowError(this, ex);
                 }
                 finally
                 {

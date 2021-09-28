@@ -80,7 +80,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         var window = Window.GetWindow(this);
                         if (window != null)
                         {
-                            MessageBox.Show(window, ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Windows.Prompt_Generic.ShowError(window, ex);
                         }
                     }
                 }

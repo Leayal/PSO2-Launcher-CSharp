@@ -62,7 +62,7 @@ namespace Leayal.PSO2Launcher.Core
 
         public Window GetModalOrNull() => this.GetModalOrNull(null);
 
-        public Window GetModalOrNull(Predicate<Window> predicate)
+        public Window GetModalOrNull(Predicate<Window>? predicate)
         {
             if (System.Windows.Interop.ComponentDispatcher.IsThreadModal)
             {
@@ -70,7 +70,7 @@ namespace Leayal.PSO2Launcher.Core
                 var count = collection.Count;
                 if (predicate == null)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = count - 1; i >= 0; i--)
                     {
                         if (collection[i] is Windows.MetroWindowEx windowex)
                         {
@@ -83,7 +83,7 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = count - 1; i >= 0; i--)
                     {
                         if (predicate(collection[i]))
                         {
@@ -93,6 +93,48 @@ namespace Leayal.PSO2Launcher.Core
                 }
             }
             return null;
+        }
+
+        public Window GetTopMostWindowOfThisAppOrNull() => this.GetTopMostWindowOfThisAppOrNull(null);
+
+        public Window GetTopMostWindowOfThisAppOrNull(Predicate<Window>? predicate)
+        {
+            var collection = this.Windows;
+            var count = collection.Count;
+            if (System.Windows.Interop.ComponentDispatcher.IsThreadModal)
+            {
+                if (predicate == null)
+                {
+                    for (int i = count - 1; i >= 0; i--)
+                    {
+                        if (collection[i] is Windows.MetroWindowEx windowex)
+                        {
+                            if (windowex.IsActive || windowex.IsVisible)
+                            {
+                                return windowex;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = count - 1; i >= 0; i--)
+                    {
+                        if (predicate(collection[i]))
+                        {
+                            return collection[i];
+                        }
+                    }
+                }
+            }
+            if (count != 0)
+            {
+                return collection[count - 1];
+            }
+            else
+            {
+                return null;
+            }
         }
 
         private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)

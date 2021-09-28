@@ -380,7 +380,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, cancelToken);
                                     if (hasUpdate)
                                     {
-                                        if (MessageBox.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                                        if (Prompt_Generic.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                                         {
                                             return;
                                         }
@@ -426,7 +426,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
                     // Silent it as user press "No" themselves.
-                    // MessageBox.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    // Prompt_Generic.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
                 catch (TaskCanceledException)

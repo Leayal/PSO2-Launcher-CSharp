@@ -255,7 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     else
                     {
-                        MessageBox.Show(this, "Invalid configuration string. Message:\r\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Prompt_Generic.ShowError(this, "Invalid configuration string.", "Error", ex);
                     }
                 }
             }
@@ -289,7 +289,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Prompt_Generic.ShowError(this, ex);
             }
         }
 

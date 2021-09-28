@@ -590,7 +590,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 if (msg != null)
                 {
-                    if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    if (Prompt_Generic.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                     {
                         e.Handled = false;
                     }
@@ -631,7 +631,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     if (msg != null)
                     {
-                        if (MessageBox.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                        if (Prompt_Generic.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                         {
                             tsrc.SetResult(false);
                         }
