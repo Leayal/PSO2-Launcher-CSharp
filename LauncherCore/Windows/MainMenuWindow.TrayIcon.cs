@@ -116,8 +116,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (!e.Cancel)
                 {
-                    var _app = App.Current;
-                    var modal = _app.GetModalOrNull() ?? _app.GetTopMostWindowOfThisAppOrNull();
+                    var modal = App.Current.GetModalOrNull();
                     if (modal != null)
                     {
                         e.Cancel = true;
@@ -224,8 +223,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void Ico_DoubleClick(object sender, EventArgs e)
         {
-            var _app = App.Current;
-            var modal = _app.GetModalOrNull() ?? _app.GetTopMostWindowOfThisAppOrNull();
+            var modal = App.Current.GetModalOrNull();
             if (modal != null)
             {
                 if (modal.WindowState == WindowState.Minimized)

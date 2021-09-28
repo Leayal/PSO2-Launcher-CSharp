@@ -86,7 +86,7 @@ namespace Leayal.PSO2Launcher.Core
             {
                 app.Dispatcher.InvokeAsync(delegate
                 {
-                    var modal = app.GetModalOrNull() ?? app.GetTopMostWindowOfThisAppOrNull();
+                    var modal = app.GetModalOrNull();
                     if (modal != null)
                     {
                         if (modal.WindowState == System.Windows.WindowState.Minimized)
