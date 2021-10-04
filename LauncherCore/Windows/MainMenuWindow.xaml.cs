@@ -37,19 +37,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly CancellationTokenSource cancelAllOperation;
         private CancellationTokenSource cancelSrc_gameupdater;
         private readonly ConfigurationFile config_main;
+#nullable enable
         private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
+#nullable restore
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
         private readonly RSSFeedPresenter RSSFeedPresenter;
-        private readonly SimpleDispatcherQueue dispatcherqueue;
+        // private readonly SimpleDispatcherQueue dispatcherqueue;
         
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
             this.config_main = conf;
             this.ss_id = null;
             this.ss_pw = null;
-            this.dispatcherqueue = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(30), this.Dispatcher);
+            // this.dispatcherqueue = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(30), this.Dispatcher);
             // System.Net.Http.web
             this.webclient = new HttpClient(new SocketsHttpHandler()
             {
@@ -112,8 +114,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.config_main.Load();
             }
             */
+#nullable enable
             this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
             this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
+#nullable restore
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
 
             this.cancelAllOperation = new CancellationTokenSource();
@@ -175,17 +179,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             RSSFeedPresenter_Loaded();
         }
 
-        protected override async void OnReady(EventArgs e)
+        protected override async void OnFirstShown(EventArgs e)
         {
-            try
-            {
-                base.OnReady(e);
-            }
-            catch
-            {
-
-            }
-
             if (this.config_main.LauncherCheckForSelfUpdates)
             {
                 var selfchecker = await this.backgroundselfupdatechecker.Value;
@@ -193,16 +188,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 selfchecker.Start();
             }
 
+            if (!this.config_main.LauncherLoadWebsiteAtStartup)
+            {
+                if (this.LauncherWebView.Child is Button btn)
+                {
+                    // btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    btn.Click += this.LoadLauncherWebView_Click;
+                }
+            }
+
+            await this.OnEverythingIsDoneAndReadyToBeInteracted();
+        }
+
+        protected override void OnReady(EventArgs e)
+        {
             if (this.config_main.LauncherLoadWebsiteAtStartup)
             {
                 if (this.LauncherWebView.Child is Button btn)
                 {
-                    btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    // btn.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    this.LoadLauncherWebView_Click(btn, null);
                 }
-            }
-            else
-            {
-                await this.OnEverythingIsDoneAndReadyToBeInteracted();
             }
         }
 
@@ -296,88 +302,88 @@ namespace Leayal.PSO2Launcher.Core.Windows
             // await base.OnCleanupBeforeClosed();
         }
 
-        private void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
+        private async void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn)
             {
-                // this.RemoveLogicalChild(btn);
-                try
+                btn.Click -= this.LoadLauncherWebView_Click;
+            }
+            if (e != null)
+            {
+                e.Handled = true;
+            }
+            // this.RemoveLogicalChild(btn);
+            try
+            {
+                using (var hive = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "Internet Explorer", "Main", "FeatureControl", "FEATURE_BROWSER_EMULATION"), true))
                 {
-                    using (var hive = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "Internet Explorer", "Main", "FeatureControl", "FEATURE_BROWSER_EMULATION"), true))
+                    if (hive != null)
                     {
-                        if (hive != null)
+                        string filename = Path.GetFileName(RuntimeValues.EntryExecutableFilename);
+                        if (hive.GetValue(filename) is int verNum)
                         {
-                            string filename = Path.GetFileName(RuntimeValues.EntryExecutableFilename);
-                            if (hive.GetValue(filename) is int verNum)
-                            {
-                                if (verNum < 11001)
-                                {
-                                    hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
-                                    hive.Flush();
-                                }
-                            }
-                            else
+                            if (verNum < 11001)
                             {
                                 hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
                                 hive.Flush();
                             }
                         }
+                        else
+                        {
+                            hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
+                            hive.Flush();
+                        }
                     }
                 }
-                catch
-                {
-                    // Optional anyway.
-                }
+            }
+            catch
+            {
+                // Optional anyway.
+            }
 
-                try
+            try
+            {
+                var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
+                    Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory),
+                    "Leayal.WebViewCompat.WebViewCompatControl",
+                    false,
+                    BindingFlags.CreateInstance,
+                    null,
+                    new object[] { "PSO2Launcher" },
+                    null,
+                    null);
+                if (obj is IWebViewCompatControl webview)
                 {
-                    var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
-                        Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory),
-                        "Leayal.WebViewCompat.WebViewCompatControl",
-                        false,
-                        BindingFlags.CreateInstance,
-                        null,
-                        new object[] { "PSO2Launcher" },
-                        null,
-                        null);
-                    if (obj is IWebViewCompatControl webview)
-                    {
-                        webview.Initialized += this.WebViewCompatControl_Initialized;
-                        this.LauncherWebView.Child = (Control)obj;
-                        this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
-                    }
-                    else
-                    {
-                        if (obj is IDisposable disposable)
-                        {
-                            disposable.Dispose();
-                        }
-                        else if (obj is IAsyncDisposable asyncdisposable)
-                        {
-                            asyncdisposable.DisposeAsync();
-                        }
-                        Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    webview.Initialized += this.WebViewCompatControl_Initialized;
+                    this.LauncherWebView.Child = (Control)obj;
+                    this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
                 }
-                catch (Exception ex)
+                else
                 {
-                    Prompt_Generic.ShowError(this, ex);
+                    if (obj is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                    else if (obj is IAsyncDisposable asyncdisposable)
+                    {
+                        await asyncdisposable.DisposeAsync();
+                    }
+                    Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+            catch (Exception ex)
+            {
+                Prompt_Generic.ShowError(this, ex);
             }
         }
 
-        private readonly static Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");
-        private async void WebViewCompatControl_Initialized(object sender, EventArgs e)
+        private readonly static Uri SEGALauncherNewsUrl = new("https://launcher.pso2.jp/ngs/01/");
+        private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
                 webview.Navigated += this.Webview_Navigated;
                 webview.NavigateTo(SEGALauncherNewsUrl);
-            }
-
-            if (this.config_main.LauncherLoadWebsiteAtStartup)
-            {
-                await this.OnEverythingIsDoneAndReadyToBeInteracted();
             }
         }
 
@@ -467,9 +473,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonPSO2GameOptionClicked -= this.TabMainMenu_ButtonPSO2GameOptionClicked;
                 try
                 {
-                    var dialog = new PSO2UserConfigurationWindow();
-                    dialog.Owner = this;
-
+                    var dialog = new PSO2UserConfigurationWindow() { Owner = this };
                     dialog.ShowDialog();
                 }
                 finally

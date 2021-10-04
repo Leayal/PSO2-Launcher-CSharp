@@ -60,9 +60,10 @@ namespace Leayal.PSO2Launcher.Core
             }
         }
 
-        public Window GetModalOrNull() => this.GetModalOrNull(null);
+#nullable enable
+        public Window? GetModalOrNull() => this.GetModalOrNull(null);
 
-        public Window GetModalOrNull(Predicate<Window>? predicate)
+        public Window? GetModalOrNull(Predicate<Window>? predicate)
         {
             if (System.Windows.Interop.ComponentDispatcher.IsThreadModal)
             {
@@ -95,9 +96,9 @@ namespace Leayal.PSO2Launcher.Core
             return null;
         }
 
-        public Window GetTopMostWindowOfThisAppOrNull() => this.GetTopMostWindowOfThisAppOrNull(null);
+        public Window? GetTopMostWindowOfThisAppOrNull() => this.GetTopMostWindowOfThisAppOrNull(null);
 
-        public Window GetTopMostWindowOfThisAppOrNull(Predicate<Window>? predicate)
+        public Window? GetTopMostWindowOfThisAppOrNull(Predicate<Window>? predicate)
         {
             var collection = this.Windows;
             var count = collection.Count;
@@ -136,6 +137,7 @@ namespace Leayal.PSO2Launcher.Core
                 return null;
             }
         }
+#nullable restore
 
         private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
         {
@@ -238,7 +240,7 @@ namespace Leayal.PSO2Launcher.Core
 
         private static void RestartWithArgs(ICollection<string> commandLineArgs)
         {
-            ProcessStartInfo processStartInfo = new ProcessStartInfo();
+            ProcessStartInfo processStartInfo = new();
             processStartInfo.FileName = RuntimeValues.EntryExecutableFilename;
             if (commandLineArgs != null && commandLineArgs.Count != 0)
             {
@@ -273,8 +275,7 @@ namespace Leayal.PSO2Launcher.Core
                                 isInTray = false;
                             }
 
-                            EventHandler mainformclosed = null;
-                            mainformclosed = (sender, e) =>
+                            void mainformclosed(object sender, EventArgs e)
                             {
                                 if (sender is Window w)
                                 {
@@ -381,7 +382,7 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else if (!string.IsNullOrEmpty(urlstr) && urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    var dialogguide = Guid.Parse(urlstr.AsSpan().Slice(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri.Length));
+                    var dialogguide = Guid.Parse(urlstr.AsSpan(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri.Length));
                     if (dialogguide != Guid.Empty)
                     {
                         this.Dispatcher.BeginInvoke(new Action<Guid>((dialog_id) =>

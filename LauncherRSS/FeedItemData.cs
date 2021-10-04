@@ -7,19 +7,21 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.RSS
 {
     /// <summary>Parsed feed item from a RSS feed channel.</summary>
-    public readonly struct FeedItemData
+    public class FeedItemData
     {
         /// <summary>The item's title.</summary>
         /// <remarks>This will also be used as display name.</remarks>
-        public readonly string Title { get; }
-        /// <summary>The item's short description.</summary>
-        /// <remarks>This will be used as the item's tooltip.</remarks>
-        public readonly string? Description { get; }
+        public string Title { get; }
         /// <summary>The URL to the article on the site.</summary>
-        public readonly string Link { get; }
+        public string Link { get; }
         /// <summary>The date and/or time when the article is published.</summary>
         /// <remarks>Can be null, when null, it means the feed data didn't give this information.</remarks>
-        public readonly DateTime? PublishDate { get; }
+        public DateTime? PublishDate { get; }
+
+#nullable enable
+        /// <summary>The item's short description.</summary>
+        /// <remarks>This will be used as the item's tooltip.</remarks>
+        public string? Description { get; }
 
         /// <summary>Create a new data item.</summary>
         /// <param name="title">The item's title.</param>
@@ -40,5 +42,6 @@ namespace Leayal.PSO2Launcher.RSS
         /// <param name="link">The URL to the article on the site.</param>
         public FeedItemData(string title, string? description, string link)
             : this(title, description, link, null) { }
+#nullable restore
     }
 }

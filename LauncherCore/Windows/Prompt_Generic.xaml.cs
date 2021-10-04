@@ -23,10 +23,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         public readonly static ICommand CommandCopyText = new DialogCommandCopyText();
         public readonly static DependencyProperty DialogTextContentProperty = DependencyProperty.Register("DialogTextContent", typeof(object), typeof(Prompt_Generic), new PropertyMetadata(string.Empty));
-        public static readonly Lazy<BitmapSource> Icon_Question = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Question.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Error = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Error.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Warning = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Warning.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Information = new Lazy<BitmapSource>(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Information.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()));
+        public static readonly Lazy<BitmapSource> Icon_Question = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Question.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
+            Icon_Error = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Error.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
+            Icon_Warning = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Warning.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
+            Icon_Information = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Information.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()));
 
         public object DialogTextContent
         {
@@ -41,13 +41,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 DialogTextContent = new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow },
                 Title = title
             };
-            dialog.ShowCustomDialog(parent);
+            dialog.ShowAsModal(parent);
             return dialog._result;
         }
 
         public static MessageBoxResult? Show(Window parent, string text, string title)
             => Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Information);
 
+#nullable enable
         public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
         {
             var dialog = new Prompt_Generic(in buttons, in image)
@@ -117,7 +118,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            dialog.ShowCustomDialog(parent);
+            dialog.ShowAsModal(parent);
             return dialog._result;
         }
 
@@ -128,22 +129,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
             => ShowError(parent, null, null, exception, buttons, image);
 
         public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception)
-            => ShowError(parent, null, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+            => ShowError(parent, text, title, exception, MessageBoxButton.OK, MessageBoxImage.Error);
 
         public static MessageBoxResult? ShowError(Window parent, Exception exception, string? title)
             => ShowError(parent, null, title, exception);
 
         public static MessageBoxResult? ShowError(Window parent, Exception exception)
             => ShowError(parent, null, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+#nullable restore
 
         private MessageBoxResult? _result;
 
         private Prompt_Generic(in MessageBoxButton buttons, in MessageBoxImage image) : base()
         {
+            this.AutoHideInTaskbarByOwnerIsVisible = true;
+            this._result = null;
             InitializeComponent();
             this.InputBindings.Add(new InputBinding(CommandCopyText, new KeyGesture(Key.C, ModifierKeys.Control)) { CommandParameter = this });
-            this._result = null;
-            this.AutoHideInTaskbarByOwnerIsVisible = true;
             
             switch (buttons)
             {
@@ -207,6 +209,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             };
         }
 
+        private void ShowAsModal(Window parent)
+        {
+            this.ShowInTaskbar = !parent.IsVisible;
+            this.ShowCustomDialog(parent);
+        }
+
         private string ReFormatDialogAsText()
         {
             const char eee = '=';
@@ -243,7 +251,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else if (this.DialogTextContent is Grid grid)
             {
-                if (grid.Tag is Exception ex)
+                if (grid.Tag is Exception)
                 {
                     var sb = new StringBuilder();
                     sb.AppendLine(this.Title);
@@ -314,7 +322,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         class DialogCommandCopyText : ICommand
         {
+#pragma warning disable CS0067
             public event EventHandler CanExecuteChanged;
+#pragma warning restore CS0067
 
             public bool CanExecute(object parameter) => (parameter is Prompt_Generic);
 

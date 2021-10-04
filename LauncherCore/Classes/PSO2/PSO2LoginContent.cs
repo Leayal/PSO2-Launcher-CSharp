@@ -31,7 +31,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         // {"id":"","password":""}
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             stream.Write(b_1);
             this.username.EncodeTo(stream, out var b_id);
@@ -43,6 +43,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 computedLength = b_1.Length + b_2.Length + b_3.Length + b_id + b_pw;
             }
+
+            return Task.CompletedTask;
         }
 
         protected override bool TryComputeLength(out long length)

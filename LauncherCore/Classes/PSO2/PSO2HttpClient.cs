@@ -18,7 +18,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     {
         private readonly HttpClient client;
         private const string UA_AQUA_HTTP = "AQUA_HTTP";
-        private const string UA_PSO2Launcher = "PSO2Launcher";
+        // private const string UA_PSO2Launcher = "PSO2Launcher";
         private const string UA_PSO2_Launcher = "PSO2 Launcher";
         private const string UA_pso2launcher = "pso2launcher";
 
@@ -35,23 +35,22 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         #region | Convenient private methods |
-        private void SetUA_AQUA_HTTP(HttpRequestMessage request)
+        private static void SetUA_AQUA_HTTP(HttpRequestMessage request)
         {
             // request.Headers.UserAgent.Add(new ProductInfoHeaderValue(UA_AQUA_HTTP));
             request.Headers.Add("User-Agent", UA_AQUA_HTTP);
             request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true };
             request.Headers.Pragma.ParseAdd("no-cache");
         }
+                
+        //private void SetUA_PSO2Launcher(HttpRequestMessage request)
+        //{
+        //    request.Headers.Add("User-Agent", UA_PSO2Launcher);
+        //    request.Headers.Accept.ParseAdd("*/*");
+        //    request.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.7");
+        //}
 
-        private void SetUA_PSO2Launcher(HttpRequestMessage request)
-        {
-            request.Headers.Add("User-Agent", UA_PSO2Launcher);
-            // request.Headers.UserAgent.Add(new ProductInfoHeaderValue(UA_PSO2Launcher));
-            request.Headers.Accept.ParseAdd("*/*");
-            request.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.7");
-        }
-
-        private void SetUA_pso2launcher(HttpRequestMessage request)
+        private static void SetUA_pso2launcher(HttpRequestMessage request)
         {
             request.Headers.Add("User-Agent", UA_pso2launcher);
             // request.Headers.UserAgent.Add(new ProductInfoHeaderValue(UA_pso2launcher));
@@ -59,7 +58,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             request.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.7");
         }
 
-        private void SetUA_PSO2_Launcher(HttpRequestMessage request)
+        private static void SetUA_PSO2_Launcher(HttpRequestMessage request)
         {
             request.Headers.Add("User-Agent", UA_PSO2_Launcher);
             // request.Headers.UserAgent.Add(new ProductInfoHeaderValue(UA_PSO2Launcher));
@@ -76,7 +75,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else if (username.Length == 0)
             {
-                throw new ArgumentException(nameof(username));
+                throw new ArgumentException(null, nameof(username));
             }
             if (password == null)
             {
@@ -84,7 +83,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else if (password.Length == 0)
             {
-                throw new ArgumentException(nameof(password));
+                throw new ArgumentException(null, nameof(password));
             }
             var url = new Uri("https://auth.pso2.jp/auth/v1/auth");
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
@@ -102,7 +101,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                     {
                         response.EnsureSuccessStatusCode();
-                        using (var stream = response.Content.ReadAsStream())
+                        using (var stream = response.Content.ReadAsStream(cancellationToken))
                         using (var doc = JsonDocument.Parse(stream))
                         {
                             var root = doc.RootElement;
@@ -149,6 +148,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public Task<PSO2Version> GetPatchVersionAsync(CancellationToken cancellationToken) => this.GetPatchVersionAsync(null, cancellationToken);
 
+#nullable enable
         public async Task<PSO2Version> GetPatchVersionAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
             // Why the official launcher request twice over the same thing within the same time frame..
@@ -163,9 +163,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 patchRootInfo = rootInfo;
             }
-            Exception netEx = null;
-            string str_PatchURL; // Be clarify
-            if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
+            Exception? netEx = null;
+            if (patchRootInfo.TryGetPatchURL(out var str_PatchURL))
             {
                 try
                 {
@@ -245,6 +244,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public Task<PatchListMemory> GetLauncherListAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
             => this.InnerGetPatchListAsync(rootInfo, "launcherlist.txt", null, cancellationToken);
+#nullable restore
         #endregion
 
         #region | Advanced public APIs |
@@ -269,7 +269,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             if (!filename.IsAbsoluteUri)
             {
-                throw new ArgumentException(nameof(filename));
+                throw new ArgumentException(null, nameof(filename));
             }
             ;
 
@@ -332,7 +332,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                     // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
                     // Beside, another attempt right away after a failure usually doesn't success.
-                    await Task.Delay(WebFailure_RetryDelayMiliseconds);
+                    await Task.Delay(WebFailure_RetryDelayMiliseconds, cancellationToken);
                 }
                 catch (WebException ex)
                 {
@@ -348,7 +348,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                     // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
                     // Beside, another attempt right away after a failure usually doesn't success.
-                    await Task.Delay(WebFailure_RetryDelayMiliseconds);
+                    await Task.Delay(WebFailure_RetryDelayMiliseconds, cancellationToken);
                 }
                 catch (Exception)
                 {
@@ -364,6 +364,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+#nullable enable
         private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
         {
             PatchRootInfo patchRootInfo;
@@ -375,9 +376,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 patchRootInfo = rootInfo;
             }
-            Exception netEx = null;
-            string str_PatchURL; // Be clarify
-            if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
+            Exception? netEx = null;
+            if (patchRootInfo.TryGetPatchURL(out var str_PatchURL))
             {
                 try
                 {
@@ -423,7 +423,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return request;
             }, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
             {
-                using (var stream = response.Content.ReadAsStream())
+                using (var stream = response.Content.ReadAsStream(cancellationToken))
                 using (var tr = new StreamReader(stream))
                 using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
                 {
@@ -431,6 +431,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
         }
+#nullable restore
 
         private async Task<PSO2Version> InnerGetPatchVersionAsync(string patchUrl, CancellationToken cancellationToken)
         {
@@ -446,7 +447,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return request;
             }, HttpCompletionOption.ResponseContentRead, cancellationToken))
             {
-                var raw = await response.Content.ReadAsStringAsync();
+                var raw = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (string.IsNullOrWhiteSpace(raw))
                 {
                     throw new UnexpectedDataFormatException();
@@ -469,6 +470,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public void Dispose()
         {
             this.client.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

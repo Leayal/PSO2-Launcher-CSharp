@@ -80,9 +80,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnContentRendered(EventArgs e)
         {
-            base.OnContentRendered(e);
-
-            if (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0)
+            bool firstTime = (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0);
+            if (firstTime)
             {
                 var ownerWindow = this.Owner;
                 if (ownerWindow != null)
@@ -99,12 +98,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         ownerWindow.IsVisibleChanged += this.OwnerWindow_IsVisibleChanged;
                     }
                 }
+
+                
             }
 
-            if (!this.WindowTransitionsEnabled)
+            base.OnContentRendered(e);
+
+            if (firstTime)
             {
-                this.WindowTransitionCompleted -= MetroWindowEx_WindowTransitionCompleted;
-                this.ExecuteWhenLoaded(this.EnsureOnReadyInvoked);
+                this.OnFirstShown(EventArgs.Empty);
+
+                if (!this.WindowTransitionsEnabled)
+                {
+                    this.WindowTransitionCompleted -= MetroWindowEx_WindowTransitionCompleted;
+                    this.ExecuteWhenLoaded(this.EnsureOnReadyInvoked);
+                }
             }
         }
 
@@ -184,8 +192,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.OnThemeRefresh();
         }
 
-        public event EventHandler Ready;
-
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             if (e.Property == IconProperty)
@@ -204,9 +210,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        public event EventHandler Ready;
         protected virtual void OnReady(EventArgs e)
         {
             this.Ready?.Invoke(this, e);
+        }
+
+        public event EventHandler FirstShown;
+        protected virtual void OnFirstShown(EventArgs e)
+        {
+            this.FirstShown?.Invoke(this, e);
         }
 
         protected virtual void OnThemeRefresh() { }

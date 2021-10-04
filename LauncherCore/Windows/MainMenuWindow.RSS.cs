@@ -42,7 +42,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     rssloader.Load(listOfFiles);
                 }
             }
-            await Task.Run(async () =>
+            await Task.Run(() =>
             {
                 var rootdir = RuntimeValues.RootDirectory;
                 path = Path.GetFullPath(Path.Combine("config", "rss"), rootdir);

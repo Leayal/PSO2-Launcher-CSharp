@@ -22,17 +22,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
+#nullable enable
         private SecureString? ss_id, ss_pw;
-
-        private void TabMainMenu_ForgetLoginInfoClicked(object sender, RoutedEventArgs e)
-            => this.ForgetSEGALogin();
 
         private void ForgetSEGALogin()
         {
+            // Suppress it because we don't care whether it's null or not.
+            // If it's already null, does nothing. If non-null, dispose it.
+#pragma warning disable CS8601, CS8625
             Interlocked.Exchange<SecureString>(ref this.ss_id, null)?.Dispose();
             Interlocked.Exchange<SecureString>(ref this.ss_pw, null)?.Dispose();
+#pragma warning restore CS8601, CS8625
             this.TabMainMenu.ForgetLoginInfoEnabled = false;
         }
+#nullable restore
+
+        private void TabMainMenu_ForgetLoginInfoClicked(object sender, RoutedEventArgs e)
+            => this.ForgetSEGALogin();
 
         private void TabMainMenu_DefaultGameStartStyleChanged(object sender, ChangeDefaultGameStartStyleEventArgs e)
         {
@@ -40,12 +46,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.config_main.Save();
         }
 
+#nullable enable
         /// <returns>PSO2 process or NULL if not found.</returns>
-        private static Task<Process> TryFindPSO2Process(string? fullpath = null)
+        private static Task<Process?> TryFindPSO2Process(string? fullpath = null)
         {
-            return Task.Factory.StartNew<Process>(obj =>
+            return Task.Factory.StartNew<Process?>(obj =>
             {
-                Process result = null;
+                Process? result = null;
                 if (obj is string imagePath)
                 {
                     var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(fullpath));
@@ -87,6 +94,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 return result;
             }, fullpath);
         }
+#nullable restore
 
         private async void TabMainMenu_GameStartRequested(object sender, GameStartStyleEventArgs e)
         {
@@ -359,16 +367,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 var checkUpdateBeforeLaunch = this.config_main.CheckForPSO2GameUpdateBeforeLaunchingGame;
 
-                                GameClientUpdater.OperationCompletedHandler completed = null;
-                                completed = (sender, cancelled, patchlist, downloadResults) =>
+                                void completed(object sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results)
                                 {
                                     this.pso2Updater.OperationCompleted -= completed;
                                     this.Dispatcher.TryInvoke(delegate
                                     {
                                         this.TabMainMenu.IsSelected = true;
                                     });
-
-                                };
+                                }
                                 this.pso2Updater.OperationCompleted += completed;
                                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;
                                 this.TabGameClientUpdateProgressBar.ResetMainProgressBarState();

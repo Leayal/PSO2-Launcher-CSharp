@@ -171,6 +171,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             public readonly PatchListItem PatchInfo;
             public readonly string Destination;
+#nullable enable
             public readonly string? SymlinkTo;
 
             public DownloadItem(PatchListItem info, string dest, string? linkTo)
@@ -179,6 +180,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.Destination = dest;
                 this.SymlinkTo = linkTo;
             }
+#nullable restore
         }
     }
 }

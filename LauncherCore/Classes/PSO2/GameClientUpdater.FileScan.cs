@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
+#nullable enable
     partial class GameClientUpdater
     {
         private async Task<PatchListMemory> InnerGetFilelistToScan(GameClientSelection selection, CancellationToken cancellationToken)
@@ -97,7 +98,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             bool bakExist_classic = false;
             bool bakExist_reboot = false;
             var tasksOfLists = new List<Task<PatchListMemory>>(4);
-            BackupFileFoundEventArgs e_onBackup = null;
+            BackupFileFoundEventArgs? e_onBackup = null;
 
             switch (selection)
             {
@@ -215,7 +216,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
                 finally
                 {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                    if (buffer != null)
+                    {
+                        System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
 
@@ -266,11 +270,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             */
 
             int processedFiles = 0;
-            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string dir_classic_data, string dir_reboot_data)
+            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data, string? dir_reboot_data)
             {
                 var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-                DownloadItem item = new DownloadItem(patchItem, localFilePath, isLink ? linkTo : null);
-                queue.Add(item);
+                var item = new DownloadItem(patchItem, localFilePath, isLink ? linkTo : null);
+                queue.Add(item, CancellationToken.None);
                 callback.Invoke(in item);
             }
 
@@ -417,7 +421,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             if (isInCache && localLastModifiedTimeUtc != cachedHash.LastModifiedTimeUTC)
                             {
                             }
-                            FileStream fs = null;
+                            FileStream? fs = null;
                             try
                             {
                                 if (flag_useFileSize)
@@ -493,4 +497,5 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
     }
+#nullable restore
 }
