@@ -23,10 +23,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         public readonly static ICommand CommandCopyText = new DialogCommandCopyText();
         public readonly static DependencyProperty DialogTextContentProperty = DependencyProperty.Register("DialogTextContent", typeof(object), typeof(Prompt_Generic), new PropertyMetadata(string.Empty));
-        public static readonly Lazy<BitmapSource> Icon_Question = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Question.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Error = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Error.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Warning = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Warning.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())),
-            Icon_Information = new(() => Imaging.CreateBitmapSourceFromHIcon(SystemIcons.Information.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()));
+        public static readonly Lazy<BitmapSource> Icon_Question = new(() => CreateFromIcon(SystemIcons.Question)),
+            Icon_Error = new(() => CreateFromIcon(SystemIcons.Error)),
+            Icon_Warning = new(() => CreateFromIcon(SystemIcons.Warning)),
+            Icon_Information = new(() => CreateFromIcon(SystemIcons.Information));
+
+        private static BitmapSource CreateFromIcon(Icon icon)
+        {
+            var bmp = Imaging.CreateBitmapSourceFromHIcon(icon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            if (bmp.CanFreeze)
+            {
+                bmp.Freeze();
+            }
+            return bmp;
+        }
 
         public object DialogTextContent
         {
@@ -211,8 +221,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ShowAsModal(Window parent)
         {
-            this.ShowInTaskbar = !parent.IsVisible;
-            this.ShowCustomDialog(parent);
+            this.Owner = parent;
+            this.ShowDialog();
         }
 
         private string ReFormatDialogAsText()

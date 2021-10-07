@@ -188,12 +188,14 @@ namespace Leayal.SharedInterfaces.Communication
     {
         Task<BootstrapUpdater_CheckForUpdates> CheckForUpdatesAsync(string rootDirectory, string entryExecutableName);
 
+#nullable enable
         /// <summary>
         /// 
         /// </summary>
         /// <param name="parent"></param>
         /// <returns>Null to cancel. True to proceed. False to ignore and continue.</returns>
         bool? DisplayUpdatePrompt(System.Windows.Forms.Form? parent);
+#nullable restore
 
         /// <returns>
         /// <para>Null: Continue</para>

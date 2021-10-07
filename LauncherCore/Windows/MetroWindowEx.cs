@@ -144,6 +144,39 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        public new bool? ShowDialog()
+        {
+            this.EnsureHideInTaskbarByOwnerIsVisibleBeforeShown();
+            this.OnBeforeShown();
+            return base.ShowDialog();
+        }
+
+        public new void Show()
+        {
+            this.EnsureHideInTaskbarByOwnerIsVisibleBeforeShown();
+            this.OnBeforeShown();
+            base.Show();
+        }
+
+        public event EventHandler BeforeShown;
+
+        protected virtual void OnBeforeShown()
+        {
+            this.BeforeShown?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void EnsureHideInTaskbarByOwnerIsVisibleBeforeShown()
+        {
+            if (this.AutoHideInTaskbarByOwnerIsVisible)
+            {
+                var owner = this.Owner;
+                if (owner != null)
+                {
+                    this.ShowInTaskbar = !owner.IsVisible;
+                }
+            }
+        }
+
         private void OwnerWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             var isvisible = (bool)e.NewValue;
