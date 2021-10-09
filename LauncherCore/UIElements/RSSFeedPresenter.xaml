@@ -7,6 +7,45 @@
         xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
         mc:Ignorable="d" Background="#33FFFFFF" BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" CornerRadius="1"
         d:DesignHeight="200" d:DesignWidth="450">
+    <Border.Resources>
+        <ResourceDictionary>
+            <ContextMenu x:Key="RssItemContextMenu" Closed="ContextMenu_Closed">
+                <MenuItem IsCheckable="False" IsEnabled="False">
+                    <MenuItem.Header>
+                        <TextBlock Text="{Binding FeedName,Mode=OneWay}" />
+                    </MenuItem.Header>
+                </MenuItem>
+                <MenuItem IsCheckable="False" IsEnabled="False">
+                    <MenuItem.Header>
+                        <TextBlock Text="{Binding LastRefreshCallText,Mode=OneWay}" />
+                    </MenuItem.Header>
+                </MenuItem>
+                <MenuItem IsCheckable="False" IsEnabled="False">
+                    <MenuItem.Header>
+                        <TextBlock Text="{Binding LastSuccessfulRefreshCallText,Mode=OneWay}" />
+                    </MenuItem.Header>
+                </MenuItem>
+                <Separator />
+                <MenuItem Click="RssMenuItem_Click" ToolTip="Try to refresh the RSS feed if there is no on-going refresh operation for the feed"
+                          IsEnabled="{Binding IsFeedRefreshing,Mode=OneWay,Converter={StaticResource InverseBooleanConverter}}">
+                    <MenuItem.Header>
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="Text" Value="Try to refresh feed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFeedRefreshing,Mode=OneWay}" Value="True">
+                                            <Setter Property="Text" Value="(Feed is being refreshed)" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </MenuItem.Header>
+                </MenuItem>
+            </ContextMenu>
+        </ResourceDictionary>
+    </Border.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -19,6 +58,9 @@
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                     <Setter Property="Margin" Value="1" />
+                    <Setter Property="ContextMenu" Value="{StaticResource RssItemContextMenu}" />
+                    <EventSetter Event="ContextMenuOpening" Handler="RssItemContextMenu_ContextMenuOpening" />
+                    <EventSetter Event="PreviewMouseDown" Handler="RssItem_PreviewMouseDown" />
                 </Style>
             </ListBox.ItemContainerStyle>
         </ListBox>

@@ -28,6 +28,8 @@ namespace Leayal.PSO2Launcher.RSS
         protected readonly string CacheDataDirectory;
         protected readonly char DefaultRepresentativeCharacter;
 
+        private DateTime lastSuccessFetch, lastRefreshCall;
+
         internal char GetDefaultRepresentativeCharacter() => this.DefaultRepresentativeCharacter;
 
         private int flag_fetch, flag_event, flag_pendingrefresh, flag_isinrefresh;
@@ -71,8 +73,16 @@ namespace Leayal.PSO2Launcher.RSS
 
         public bool DeferRefresh { get; set; }
 
+        public DateTime LastSuccessFetch => this.lastSuccessFetch;
+        public event EventHandler LastSuccessFetchChanged;
+
+        public DateTime LastRefreshCall => this.lastRefreshCall;
+        public event EventHandler LastRefreshCallChanged;
+
         internal RSSFeedHandler(Uri feedchannelUrl, bool createworkspace)
         {
+            this.lastSuccessFetch = DateTime.MinValue;
+            this.lastRefreshCall = DateTime.MinValue;
             this._feedchannelUrl = feedchannelUrl;
             this.t_fetch = null;
             this.flag_fetch = 0;
@@ -98,6 +108,8 @@ namespace Leayal.PSO2Launcher.RSS
 
         public RSSFeedHandler(Uri feedchannelUrl) : this(feedchannelUrl, true) { }
 
+        public event EventHandler RefreshStart, RefreshEnd;
+
         /// <summary>When overriden, this method should contain code to re-fetch, re-parse the RSS Feed(s).</summary>
         /// <remarks>This method is called when <seealso cref="Refresh(in DateTime)"/> is called.</remarks>
         /// <param name="dateTime">The nearest <seealso cref="DateTime"/> object where the refresh is "needed"</param>
@@ -105,9 +117,16 @@ namespace Leayal.PSO2Launcher.RSS
         {
             if (Interlocked.CompareExchange(ref this.flag_isinrefresh, 1, 0) == 0)
             {
-                await Task.Run(this.Fetch);
-                Interlocked.Exchange(ref this.flag_isinrefresh, 0);
+                this.lastRefreshCall = dateTime;
+                this.LastRefreshCallChanged?.Invoke(this, EventArgs.Empty);
+                await Task.Run(this.CallFetch);
             }
+        }
+
+        private async Task CallFetch()
+        {
+            await this.Fetch();
+            Interlocked.Exchange(ref this.flag_isinrefresh, 0);
         }
 
         /// <summary>Perform a refresh if there's pending one. Otherwise does nothing.</summary>
@@ -118,6 +137,9 @@ namespace Leayal.PSO2Launcher.RSS
                 await this.OnRefresh(DateTime.Now);
             }
         }
+
+        /// <summary>Perform a refresh if there's no on-going refresh operation regardless of pending state. If the feed is already being refreshed, does nothing.</summary>
+        public Task ForceRefresh() => this.OnRefresh(DateTime.Now);
 
         public event EventHandler DeferredRefreshReady;
 
@@ -170,12 +192,14 @@ namespace Leayal.PSO2Launcher.RSS
             var f_fetch = Interlocked.CompareExchange(ref this.flag_fetch, 1, 0);
             if (f_fetch == 0)
             {
+                this.RefreshStart?.Invoke(this, EventArgs.Empty);
                 Interlocked.Exchange(ref this.flag_event, 1);
                 this.t_fetch = InnerFetch();
                 var result = await this.t_fetch;
                 Interlocked.Exchange(ref this.flag_fetch, 0);
                 this.FeedUpdated?.Invoke(this, new RSSFeedUpdatedEventArgs(result));
                 Interlocked.Exchange(ref this.flag_event, 0);
+                this.RefreshEnd?.Invoke(this, EventArgs.Empty);
             }
             else if (f_fetch == 1)
             {
@@ -207,6 +231,8 @@ namespace Leayal.PSO2Launcher.RSS
                 try
                 {
                     data = await this.DownloadFeedChannel(this.HttpClient, this._feedchannelUrl).ConfigureAwait(false);
+                    this.lastSuccessFetch = DateTime.Now;
+                    this.LastSuccessFetchChanged?.Invoke(this, EventArgs.Empty);
                     break;
                 }
                 catch (HttpRequestException)

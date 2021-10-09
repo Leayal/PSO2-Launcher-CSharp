@@ -19,7 +19,6 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
         private static readonly Regex rg_cdata = new Regex(@"\<\!\[CDATA\[(.*)\]\]\>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex rg_removetags = new Regex(@"<\/?[\w\s]*>|<.+[\W]>.*?<.+[\W]>?", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private int isfirstfetch;
         private string cached_abs_url_icon;
         private readonly string IconPath;
         private readonly string IconHashPath;
@@ -55,10 +54,7 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
             {
                 this.cached_abs_url_icon = null;
             }
-            this.isfirstfetch = 1;
         }
-
-        
 
         protected override Task<IReadOnlyList<FeedItemData>> OnParseFeedChannel(string data)
         {
@@ -78,12 +74,12 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
             var listOfItem = new List<FeedItemData>();
             if (element_channel != null)
             {
-                TimeSpan timerOffset = TimeSpan.Zero;
+                TimeSpan timerOffset = TimeSpan.FromHours(1);
                 var sy_updatefrequency = element_channel.SelectSingleNode(@"sy:updateFrequency", nsmgr);
                 if (sy_updatefrequency != null)
                 {
-                    var val_frequency = sy_updatefrequency.InnerText;
-                    if (!string.IsNullOrWhiteSpace(val_frequency))
+                    var val_frequency = sy_updatefrequency.InnerText.AsSpan();
+                    if (!val_frequency.IsEmpty && !val_frequency.IsWhiteSpace())
                     {
                         val_frequency = val_frequency.Trim();
                         if (int.TryParse(val_frequency, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var num))
@@ -91,19 +87,19 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
                             var sy_updateperiod = element_channel.SelectSingleNode(@"sy:updatePeriod", nsmgr);
                             if (sy_updateperiod != null)
                             {
-                                var val = sy_updateperiod.InnerText;
-                                if (!string.IsNullOrWhiteSpace(val))
+                                var val = sy_updateperiod.InnerText.AsSpan();
+                                if (!val.IsEmpty && !val.IsWhiteSpace())
                                 {
                                     val = val.Trim();
-                                    if (string.Equals(val, "hourly", StringComparison.OrdinalIgnoreCase))
+                                    if (val.Equals("hourly", StringComparison.OrdinalIgnoreCase))
                                     {
                                         timerOffset = TimeSpan.FromHours(num);
                                     }
-                                    else if (string.Equals(val, "daily", StringComparison.OrdinalIgnoreCase) || string.Equals(val, "dayly", StringComparison.OrdinalIgnoreCase))
+                                    else if (val.Equals("daily", StringComparison.OrdinalIgnoreCase) || val.Equals("dayly", StringComparison.OrdinalIgnoreCase))
                                     {
                                         timerOffset = TimeSpan.FromDays(num);
                                     }
-                                    else if (string.Equals(val, "minutely", StringComparison.OrdinalIgnoreCase))
+                                    else if (val.Equals("minutely", StringComparison.OrdinalIgnoreCase))
                                     {
                                         timerOffset = TimeSpan.FromMinutes(num);
                                     }
@@ -269,36 +265,32 @@ namespace Leayal.PSO2Launcher.RSS.Handlers
 
 
                 // Next tick.
-                if (Interlocked.CompareExchange(ref this.isfirstfetch, 0, 1) == 1)
+                DateTime lastFetchTime;
+                TimeSpan nextfetch;
+                var lastbuilddate = element_channel.SelectSingleNode("lastBuildDate");
+                if (lastbuilddate != null && !string.IsNullOrWhiteSpace(lastbuilddate.InnerText))
                 {
-                    DateTime lastFetchTime;
-                    TimeSpan nextfetch;
-                    var lastbuilddate = element_channel.SelectSingleNode("lastBuildDate");
-                    if (lastbuilddate != null && !string.IsNullOrWhiteSpace(lastbuilddate.InnerText))
+                    var val_lastbuilddate = lastbuilddate.InnerText.AsSpan();
+                    if (!val_lastbuilddate.IsEmpty && !val_lastbuilddate.IsWhiteSpace() && DateTime.TryParse(val_lastbuilddate, out lastFetchTime))
                     {
-                        lastFetchTime = DateTime.Parse(lastbuilddate.InnerText);
-                        if (lastFetchTime.Add(timerOffset) > DateTime.Now)
+                        var added = lastFetchTime.Add(timerOffset);
+                        var now = DateTime.Now;
+                        while (added <= now)
                         {
-                            // HOW!!!!?
-                            nextfetch = TimeSpan.Zero;
+                            added = added.Add(timerOffset);
                         }
-                        else
-                        {
-                            nextfetch = lastFetchTime.Add(timerOffset) - DateTime.Now;
-                        }
+                        nextfetch = added - now;
                     }
                     else
                     {
                         nextfetch = timerOffset;
                     }
-                    this.SetNextRefesh(nextfetch);
-                    // this.SetNextRefesh(TimeSpan.FromSeconds(5));
                 }
                 else
                 {
-                    // this.SetNextRefesh(TimeSpan.FromSeconds(5));
-                    this.SetNextRefesh(timerOffset);
+                    nextfetch = timerOffset;
                 }
+                this.SetNextRefesh(nextfetch);
             }
 
             return Task.FromResult<IReadOnlyList<FeedItemData>>(listOfItem);

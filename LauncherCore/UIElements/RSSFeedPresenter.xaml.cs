@@ -27,6 +27,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// </summary>
     public partial class RSSFeedPresenter : Border
     {
+        private const string Text_TitleLastRefreshCall = "Last refresh: ",
+            Text_TitleLastSuccessfulRefreshCall = "Last successful refresh: ",
+            Text_NotAvailable = "<Not available>";
+
         private readonly RSSLoader loader;
         private readonly ObservableCollection<RSSFeedHandler> rssfeedhandlers;
         private readonly ObservableCollection<RSSFeedDom> rssfeeds;
@@ -87,20 +91,22 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                             feedRemoved.Dispose();
                             if (this.linked.Remove(feedRemoved, out var dom))
                             {
-                                this.rssfeeds.Remove(dom);
-                                if (this.rssfeeds.Count == 0)
+                                if (this.rssfeeds.Remove(dom))
                                 {
-                                    this.NoFeedLabel.Visibility = Visibility.Visible;
-                                    if (this.FeedList.SelectedItem == dom)
+                                    if (this.rssfeeds.Count == 0)
                                     {
-                                        this.FeedList.SelectedIndex = -1;
+                                        this.NoFeedLabel.Visibility = Visibility.Visible;
+                                        if (this.FeedList.SelectedItem == dom)
+                                        {
+                                            this.FeedList.SelectedIndex = -1;
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (this.FeedList.SelectedItem == dom)
+                                    else
                                     {
-                                        this.FeedList.SelectedIndex = 0;
+                                        if (this.FeedList.SelectedItem == dom)
+                                        {
+                                            this.FeedList.SelectedIndex = 0;
+                                        }
                                     }
                                 }
                             }
@@ -247,11 +253,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        private async void CurrentFeed_DeferredRefreshReady(object sender, EventArgs e)
+        private void CurrentFeed_DeferredRefreshReady(object sender, EventArgs e)
         {
             if (sender is RSSFeedHandler handler)
             {
-                await handler.Refresh();
+                Task.Run(handler.Refresh);
             }
         }
 
@@ -399,13 +405,82 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         class RSSFeedDom : Border
         {
+            private static readonly DependencyPropertyKey FeedNamePropertyKey = DependencyProperty.RegisterReadOnly("FeedName", typeof(string), typeof(RSSFeedDom), new PropertyMetadata(string.Empty, (obj, ev) =>
+            {
+                if (obj is RSSFeedDom dom)
+                {
+                    string name;
+                    if (ev.NewValue == null)
+                    {
+                        name = string.Empty;
+                    }
+                    else
+                    {
+                        name = (string)ev.NewValue;
+                    }
+                    if (dom.ToolTip is ToolTip tip)
+                    {
+                        tip.Content = name;
+                    }
+                    else
+                    {
+                        dom.ToolTip = new ToolTip() { Content = name };
+                    }
+                }
+            }));
+            public static readonly DependencyProperty FeedNameProperty = FeedNamePropertyKey.DependencyProperty;
+            public string FeedName => (string)this.GetValue(FeedNameProperty);
+
+            private static readonly DependencyPropertyKey LastRefreshCallRawPropertyKey = DependencyProperty.RegisterReadOnly("LastRefreshCallRaw", typeof(DateTime), typeof(RSSFeedDom), new PropertyMetadata(DateTime.MinValue, (obj, ev) =>
+            {
+                if (obj is RSSFeedDom dom && ev.NewValue is DateTime dt)
+                {
+                    if (dt == DateTime.MinValue)
+                    {
+                        dom.SetValue(LastRefreshCallTextPropertyKey, Text_TitleLastRefreshCall + Text_NotAvailable);
+                    }
+                    else
+                    {
+                        dom.SetValue(LastRefreshCallTextPropertyKey, Text_TitleLastRefreshCall + dt.ToShortDateString() + " - " +  dt.ToLongTimeString());
+                    }
+                }
+            }));
+            private static readonly DependencyPropertyKey LastRefreshCallTextPropertyKey = DependencyProperty.RegisterReadOnly("LastRefreshCallText", typeof(string), typeof(RSSFeedDom), new PropertyMetadata(Text_TitleLastRefreshCall + Text_NotAvailable));
+            public static readonly DependencyProperty LastRefreshCallTextProperty = LastRefreshCallTextPropertyKey.DependencyProperty;
+            public string LastRefreshCallText => (string)this.GetValue(LastRefreshCallTextProperty);
+
+            private static readonly DependencyPropertyKey LastSuccessfulRefreshCallRawPropertyKey = DependencyProperty.RegisterReadOnly("LastSuccessfulRefreshCallRaw", typeof(DateTime), typeof(RSSFeedDom), new PropertyMetadata(DateTime.MinValue, (obj, ev) =>
+            {
+                if (obj is RSSFeedDom dom && ev.NewValue is DateTime dt)
+                {
+                    if (dt == DateTime.MinValue)
+                    {
+                        dom.SetValue(LastSuccessfulRefreshCallTextPropertyKey, Text_TitleLastSuccessfulRefreshCall + Text_NotAvailable);
+                    }
+                    else
+                    {
+                        dom.SetValue(LastSuccessfulRefreshCallTextPropertyKey, Text_TitleLastSuccessfulRefreshCall + dt.ToShortDateString() + " - " + dt.ToLongTimeString());
+                    }
+                }
+            }));
+            private static readonly DependencyPropertyKey LastSuccessfulRefreshCallTextPropertyKey = DependencyProperty.RegisterReadOnly("LastSuccessfulRefreshCallText", typeof(string), typeof(RSSFeedDom), new PropertyMetadata(Text_TitleLastSuccessfulRefreshCall + Text_NotAvailable));
+            public static readonly DependencyProperty LastSuccessfulRefreshCallTextProperty = LastSuccessfulRefreshCallTextPropertyKey.DependencyProperty;
+            public string LastSuccessfulRefreshCallText => (string)this.GetValue(LastSuccessfulRefreshCallTextProperty);
+
+            private static readonly DependencyPropertyKey IsFeedRefreshingPropertyKey = DependencyProperty.RegisterReadOnly("IsFeedRefreshing", typeof(bool), typeof(RSSFeedDom), new PropertyMetadata(false));
+            public static readonly DependencyProperty IsFeedRefreshingProperty = IsFeedRefreshingPropertyKey.DependencyProperty;
+            public bool IsFeedRefreshing => (bool)this.GetValue(IsFeedRefreshingProperty);
+
             public RSSFeedHandler Feed { get; }
 
             public RSSFeedDom(RSSFeedHandler feed) : base()
             {
                 this.MinWidth = 35;
                 this.MinHeight = 35;
+                this.MaxHeight = 40;
                 this.Feed = feed;
+                this.OnLastRefreshCallChanged(DateTime.Now);
+                this.OnLastSuccessFetchChanged(feed.LastSuccessFetch);
                 var imgStream = feed.DisplayImageStream;
                 if (imgStream != null)
                 {
@@ -430,24 +505,93 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
                 feed.DisplayImageChanged += this.Feed_DisplayImageChanged;
                 feed.DisplayNameChanged += this.Feed_DisplayNameChanged;
+                feed.LastRefreshCallChanged += this.Feed_LastRefreshCallChanged;
+                feed.LastSuccessFetchChanged += this.Feed_LastSuccessFetchChanged;
+                feed.RefreshStart += this.Feed_RefreshStart;
+                feed.RefreshEnd += this.Feed_RefreshEnd;
             }
 
-            private void Feed_DisplayNameChanged(RSSFeedHandler sender, RSSFeedDisplayNameChangedEventArgs e)
+            private void Feed_RefreshEnd(object sender, EventArgs e)
             {
-                this.Dispatcher.Invoke(() =>
+                if (this.Dispatcher.CheckAccess())
                 {
-                    if (this.ToolTip is ToolTip tip)
+                    this.OnRefreshEnd();
+                }
+                else
+                {
+                    this.Dispatcher.Invoke(this.OnRefreshEnd);
+                }
+            }
+
+            private void OnRefreshEnd()
+            {
+                this.SetValue(IsFeedRefreshingPropertyKey, false);
+            }
+
+            private void Feed_RefreshStart(object sender, EventArgs e)
+            {
+                if (this.Dispatcher.CheckAccess())
+                {
+                    this.OnRefreshStart();
+                }
+                else
+                {
+                    this.Dispatcher.Invoke(this.OnRefreshStart);
+                }
+            }
+
+            private void OnRefreshStart()
+            {
+                this.SetValue(IsFeedRefreshingPropertyKey, true);
+            }
+
+            private void Feed_LastSuccessFetchChanged(object sender, EventArgs e)
+            {
+                if (sender is RSSFeedHandler handler)
+                {
+                    if (this.Dispatcher.CheckAccess())
                     {
-                        tip.Content = e.DisplayName;
+                        this.OnLastSuccessFetchChanged(handler.LastSuccessFetch);
                     }
                     else
                     {
-                        this.ToolTip = new ToolTip() { Content = e.DisplayName };
+                        this.Dispatcher.BeginInvoke(new Action<DateTime>(this.OnLastSuccessFetchChanged), new object[] { handler.LastSuccessFetch });
                     }
-                });
+                }
             }
 
-            static BitmapImage CreateIconFromStream(System.IO.Stream stream)
+            private void OnLastSuccessFetchChanged(DateTime dt) => this.SetValue(LastSuccessfulRefreshCallRawPropertyKey, dt);
+
+            private void Feed_LastRefreshCallChanged(object sender, EventArgs e)
+            {
+                if (sender is RSSFeedHandler handler)
+                {
+                    if (this.Dispatcher.CheckAccess())
+                    {
+                        this.OnLastRefreshCallChanged(handler.LastRefreshCall);
+                    }
+                    else
+                    {
+                        this.Dispatcher.BeginInvoke(new Action<DateTime>(this.OnLastRefreshCallChanged), new object[] { handler.LastRefreshCall });
+                    }
+                }
+            }
+
+            private void OnLastRefreshCallChanged(DateTime dt) => this.SetValue(LastRefreshCallRawPropertyKey, dt);
+
+            private void Feed_DisplayNameChanged(RSSFeedHandler sender, RSSFeedDisplayNameChangedEventArgs e)
+            {
+                if (this.Dispatcher.CheckAccess())
+                {
+                    this.SetValue(FeedNamePropertyKey, e.DisplayName);
+                }
+                else
+                {
+                    this.Dispatcher.BeginInvoke(new Action<RSSFeedHandler, RSSFeedDisplayNameChangedEventArgs>(this.Feed_DisplayNameChanged), new object[] { sender, e });
+                }
+            }
+
+            static BitmapImage CreateIconFromStream(Stream stream)
             {
                 if (stream == null)
                 {
@@ -470,45 +614,169 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
 
-            private void Feed_DisplayImageChanged(RSSFeedHandler sender, RSSFeedDisplayImageChangedEventArgs e)
+#nullable enable
+            private void InnerSetImage(char representativeCharacter, BitmapImage? bm)
             {
-                var bm = CreateIconFromStream(e.ImageContentStream);
                 if (bm == null)
                 {
-                    this.Dispatcher.InvokeAsync(() =>
+                    var img = this.Child as TextBlock;
+                    if (img == null)
                     {
-                        var img = this.Child as TextBlock;
-                        if (img == null)
-                        {
-                            img = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                        }
-                        string displayname;
-                        if (char.IsWhiteSpace(e.RepresentativeCharacter))
-                        {
-                            displayname = "?";
-                        }
-                        else
-                        {
-                            displayname = char.ToUpper(e.RepresentativeCharacter).ToString();
-                        }
-                        img.Text = displayname;
-                        this.Child = img;
-                    });
+                        img = new TextBlock() { TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                    }
+                    string displayname;
+                    if (char.IsWhiteSpace(representativeCharacter))
+                    {
+                        displayname = "?";
+                    }
+                    else
+                    {
+                        displayname = char.ToUpper(representativeCharacter).ToString();
+                    }
+                    img.Text = displayname;
+                    this.Child = img;
                 }
                 else
                 {
-                    this.Dispatcher.InvokeAsync(() =>
+                    var img = this.Child as Image;
+                    if (img == null)
                     {
-                        var img = this.Child as Image;
-                        if (img == null)
-                        {
-                            img = new Image() { MaxWidth = 32 };
-                            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Fant);
-                            this.Child = img;
-                        }
-                        img.Source = bm;
-                    });
+                        img = new Image() { MaxWidth = 32 };
+                        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Fant);
+                        this.Child = img;
+                    }
+                    img.Source = bm;
                 }
+            }
+
+            private void Feed_DisplayImageChanged(RSSFeedHandler sender, RSSFeedDisplayImageChangedEventArgs e)
+            {
+                var bm = CreateIconFromStream(e.ImageContentStream);
+                if (this.Dispatcher.CheckAccess())
+                {
+                    this.InnerSetImage(e.RepresentativeCharacter, bm);
+                }
+                else
+                {
+                    this.Dispatcher.BeginInvoke(new Action<char, BitmapImage?>(this.InnerSetImage), new object[] { e.RepresentativeCharacter, bm });
+                }
+            }
+#nullable restore
+        }
+
+        private void ContextMenu_Closed(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextmenu)
+            {
+                // static TextBlock GetAndCast(ItemCollection items, int index) => (TextBlock)((MenuItem)items[index]).Header;
+                // static void ClearTextBindingOfTextBlock(TextBlock tb) => BindingOperations.ClearBinding(tb, TextBlock.TextProperty);
+
+                // var items = contextmenu.Items;
+
+                // Title
+                // ClearTextBindingOfTextBlock(GetAndCast(items, 0));
+
+                // Last refresh call
+                // ClearTextBindingOfTextBlock(GetAndCast(items, 1));
+
+                // Last successful refresh call
+                // ClearTextBindingOfTextBlock(GetAndCast(items, 2));
+
+                contextmenu.DataContext = null;
+            }
+        }
+
+        private void RssItem_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListBoxItem item)
+            {
+                if (item.IsSelected && e.ChangedButton == MouseButton.Left && e.ButtonState == MouseButtonState.Pressed && e.ClickCount == 1)
+                {
+                    var menu = item.ContextMenu;
+                    if (menu != null)
+                    {
+                        this.RssItemContextMenu_ContextMenuOpening(item, null);
+                        menu.IsOpen = true;
+                    }
+                }
+            }
+        }
+
+        private void RssMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuitem)
+            {
+                if (menuitem.DataContext is RSSFeedDom dom)
+                {
+                    Task.Run(dom.Feed.ForceRefresh);
+                }
+            }
+            else
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void RssItemContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is ListBoxItem item)
+            {
+                var menu = item.ContextMenu;
+                if (menu != null)
+                {
+                    menu.PlacementTarget = item;
+                    if (item.Content is RSSFeedDom dom)
+                    {
+                        menu.DataContext = dom;
+                    }
+                    else
+                    {
+                        // Wouldn't actually happen here.
+
+                        string str;
+
+                        if (item.Content is Image img && img.ToolTip is string str1)
+                        {
+                            str = str1;
+                        }
+                        else if (item.Content is TextBlock title && title.ToolTip is string str2)
+                        {
+                            str = str2;
+                        }
+                        else
+                        {
+                            str = string.Empty;
+                        }
+                        var titleItem = (MenuItem)(menu.Items[0]);
+                        if (titleItem.Header is TextBlock tb)
+                        {
+                            tb.Text = str;
+                        }
+                        else
+                        {
+                            titleItem.Header = new TextBlock() { Text = str };
+                        }
+
+                        if (menu.Items[1] is MenuItem menutbLastRefresh && menutbLastRefresh.Header is TextBlock tbLastRefresh)
+                        {
+                            tbLastRefresh.Text = Text_TitleLastRefreshCall + Text_NotAvailable;
+                        }
+
+                        if (menu.Items[2] is MenuItem menutbLastSuccessRefresh && menutbLastSuccessRefresh.Header is TextBlock tbLastSuccessRefresh)
+                        {
+                            tbLastSuccessRefresh.Text = Text_TitleLastSuccessfulRefreshCall + Text_NotAvailable;
+                        }
+
+                        if (menu.Items[4] is MenuItem btnRefresh)
+                        {
+                            btnRefresh.DataContext = item.DataContext;
+                        }
+                    }
+                }
+            }
+            else if (e != null)
+            {
+                e.Handled = true;
             }
         }
     }
