@@ -15,7 +15,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         const string Text_Advice_RemoveIfNotKnown = "If you don't know what {library-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this custom library file.";
         private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {library-mod-name} and if {library-mod-name} isn't at latest version, please update {library-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod." + Environment.NewLine + "- " + Text_Advice_RemoveIfNotKnown;
 
-        private static readonly string Text_Advice_RemoveTranslationPatchIfNotUsing = "- If you are a plugin from PSO2 Tweaker's of Arks-Layer, please launch PSO2 Tweaker to update the plugin loader and other plugins to latest version (if it isn't latest yet) to avoid crashes or bugs caused by the plugin(s)."
+        private static readonly string Text_Advice_RemoveTranslationPatchIfNotUsing = "- If you are using a plugin from PSO2 Tweaker's of Arks-Layer, please launch PSO2 Tweaker to update the plugin loader and other plugins to latest version (if it isn't latest yet) to avoid crashes or bugs caused by the plugin(s)."
             + Environment.NewLine + "- If you don't use any plugins coming from PSO2 Tweaker of Arks-Layer, please disable the Plugin Loader in Tweaker's 'Plugin Settings' or remove the file by clicking 'Remove'."
             + Environment.NewLine + "- If you don't know what this file is or where it's from, please remove it to avoid crashes or bugs caused by this patch.";
 
