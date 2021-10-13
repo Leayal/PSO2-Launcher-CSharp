@@ -583,7 +583,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (Prompt_Generic.Show(this, "Are you sure you want tell Garbarge Collector to clean up memory forcefully right now?" + Environment.NewLine + Environment.NewLine +
                     "This operation is not cancellable and you must wait until it's completed before doing anything else." + Environment.NewLine + Environment.NewLine +
-                    "GC won't just just reduce the currently in-use memory down to a few MBs. It will only reclaim parts which are no longer in use and are available to be collected.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    "GC won't just just reduce the currently in-use memory down to a few MBs. It will only reclaim parts which are no longer in use and are available to be collected." + Environment.NewLine + Environment.NewLine +
+                    "You may need to clean several times (about twice or 3 times) in order for the launcher to trim down the allocated memory." + Environment.NewLine +
+                    "And you shouldn't clean memory up while the launcher is updating the PSO2 game client.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     var controller = await MahApps.Metro.Controls.Dialogs.DialogManager.ShowProgressAsync(this, "Cleaning up memory", "Please wait...", isCancelable: false, settings: new MahApps.Metro.Controls.Dialogs.MetroDialogSettings() { OwnerCanCloseWithDialog = true, AnimateShow = false });
                     controller.SetIndeterminate();
