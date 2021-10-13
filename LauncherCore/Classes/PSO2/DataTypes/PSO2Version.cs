@@ -134,9 +134,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return false;
         }
 
-        public override int GetHashCode() => this.Version.GetHashCode() ^ this.ReleaseCandidate.GetHashCode();
+        public readonly override int GetHashCode() => this.Version.GetHashCode() ^ this.ReleaseCandidate.GetHashCode();
 
-        public override string ToString() => $"v{this.Version}_rc_{this.ReleaseCandidate}";
+        public readonly override string ToString() => $"v{this.Version}_rc_{this.ReleaseCandidate}";
 
         public bool Equals(PSO2Version other) => (this.Version.Equals(other.Version) && this.ReleaseCandidate.Equals(other.ReleaseCandidate));
 

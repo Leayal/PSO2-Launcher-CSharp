@@ -229,7 +229,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         string msg;
                         if (ver.HasValue)
                         {
-                            msg = $"Launcher has found updates for PSO2 game client (v{ver.Value}).\r\nDo you want to perform update?";
+                            msg = $"Launcher has found updates for PSO2 game client (New Version: {ver.Value}).\r\nDo you want to perform update?";
                         }
                         else
                         {
