@@ -106,7 +106,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
                 return selfupdatecheck;
             }));
-            this.gameupdater_dictionaryInUse = new ConcurrentDictionary<PatchListItem, int>();
             this.pso2Updater = CreateGameClientUpdater(this.pso2HttpClient);
             /*
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));

@@ -22,12 +22,14 @@
         
         <local:ExtendedProgressBar Text="Checking file" x:Name="TopProgressBar" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
         <TextBlock Grid.Row="1" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}">
-            <Run Text="Downloading: (" />
+            <Run Text="Downloaded: " />
             <Run Text="{Binding ElementName=thisSelf,Path=TotalDownloaded,Mode=OneWay}" />
             <Run Text="/" />
             <Run Text="{Binding ElementName=thisSelf,Path=TotalFileNeedToDownload,Mode=OneWay}" />
-            <Run Text=") | Downloaded data: " />
+            <Run Text=" | Downloaded data: " />
             <Run Text="{Binding ElementName=thisSelf,Path=TotalDownloadedBytesText,Mode=OneWay}" />
+            <LineBreak />
+            <Run Text="Currently downloading:" />
         </TextBlock>
 
         <!--File download progress bars-->

@@ -158,6 +158,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             taskCount = RuntimeValues.GetProcessorCountAuto();
                         }
 
+                        this.OnOperationBegin(taskCount);
+
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
                         duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
@@ -183,38 +185,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
                         var tasks = new Task[taskCount];
-                        void onDownloadFinishCallback(in DownloadItem item, in bool success)
-                        {
-                            resultsOfDownloads.AddOrUpdate<bool?>(item.PatchInfo, (key, arg) => arg, (key, existing, arg) =>
-                            {
-                                if (existing == null)
-                                {
-                                    return arg;
-                                }
-                                else
-                                {
-                                    return existing;
-                                }
-                            }, success);
-                            /*
-                            if (success)
-                            {
-                                bag_success.Add(item.PatchInfo);
-                            }
-                            else
-                            {
-                                bag_failure.Add(item.PatchInfo);
-                            }
-                            */
-                            this.OnProgressEnd(item.PatchInfo, in success);
-                        };
-
                         for (int i = 0; i < taskCount; i++)
                         {
-                            tasks[i] = Task.Factory.StartNew(async () =>
-                            {
-                                await this.InnerDownloadSingleFile(pendingFiles, duhB, onDownloadFinishCallback, cancellationToken);
-                            }, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                            UglyWrapper_MetaObj wrapped = new(i, this, pendingFiles, duhB, resultsOfDownloads, cancellationToken);
+                            tasks[i] = Task.Factory.StartNew(wrapped.Start, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                         }
 
                         var t_download = Task.WhenAll(tasks);
@@ -272,6 +246,59 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             await this.t_operation;
+        }
+
+        class UglyWrapper_MetaObj
+        {
+            public readonly int Id;
+            private readonly GameClientUpdater thisRef;
+            public readonly BlockingCollection<DownloadItem>? pendingFiles;
+            public readonly FileCheckHashCache? duhB;
+            public readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
+            public readonly CancellationToken cancellationToken;
+
+            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, FileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token)
+            {
+                this.Id = id;
+                this.thisRef = updater;
+                this.pendingFiles = collection;
+                this.duhB = db;
+                this.resultsOfDownloads = results;
+                this.cancellationToken = token;
+            }
+
+            public Task Start()
+            {
+                return thisRef.InnerDownloadSingleFile(this.Id, this.pendingFiles, this.duhB, this.OnDownloadFinishCallback, this.cancellationToken);
+            }
+
+            public void OnDownloadFinishCallback(in DownloadItem item, in bool success)
+            {
+                this.resultsOfDownloads.AddOrUpdate<bool?>(item.PatchInfo, (key, arg) => arg, (key, existing, arg) =>
+                {
+                    if (existing == null)
+                    {
+                        return arg;
+                    }
+                    else
+                    {
+                        return existing;
+                    }
+                }, success);
+                /*
+                if (success)
+                {
+                    bag_success.Add(item.PatchInfo);
+                }
+                else
+                {
+                    bag_failure.Add(item.PatchInfo);
+                }
+                */
+                thisRef.OnProgressEnd(this.Id, item.PatchInfo, in success);
+            }
+
+            // pendingFiles, duhB, onDownloadFinishCallback, cancellationToken
         }
 #nullable restore
 

@@ -77,10 +77,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private DispatcherQueueItem dispatcherQueueItem_IncreaseDownloadedCount, dispatcherQueueItem_IncreaseNeedToDownloadCount;
         private DispatcherQueueItem dispatcherQueueItem_MainProgressValue;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
+        private ProgressController[] controllers;
 
-        private readonly ConcurrentBag<int> bag_freeindexes;
-        private readonly ConcurrentDictionary<int, DispatcherQueueItem> dictionary_middleman;
-        
         private int downloadedCount, totalDownloadCount;
         private long downloadedByteCount;
 
@@ -89,8 +87,6 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.downloadedByteCount = 0L;
             this.downloadedCount = 0;
             this.totalDownloadCount = 0;
-            this.dictionary_middleman = new ConcurrentDictionary<int, DispatcherQueueItem>();
-            this.bag_freeindexes = new ConcurrentBag<int>();
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
             this.debounceDispatcher = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(15), System.Windows.Threading.DispatcherPriority.DataBind, this.Dispatcher);
             InitializeComponent();
@@ -148,6 +144,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
+        private delegate void _UpdateMainProgressBarState(string text, double maximum, bool showdetail);
         public void UpdateMainProgressBarState(string text, double maximum, bool showdetail)
         {
             if (this.Dispatcher.CheckAccess())
@@ -159,7 +156,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
             else
             {
-                this.Dispatcher.Invoke(this.ResetMainProgressBarState);
+                this.Dispatcher.Invoke(new _UpdateMainProgressBarState(this.UpdateMainProgressBarState), new object[] { text, maximum, showdetail });
             }
         }
 
@@ -189,43 +186,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.SetValue(TotalFileNeedToDownloadPropertyKey, 0);
             this.SetValue(TotalDownloadedBytesPropertyKey, 0L);
 
-            this.bag_freeindexes.Clear();
-            var count = this.indexing.Count;
+            var count = this.controllers.Length;
             for (int index = 0; index < count; index++)
             {
-                this.ResetSubDownloadState(index);
+                this.controllers[index].Reset();
             }
         }
 
-        public void ResetSubDownloadState(in int index) => this.ResetSubDownloadState(in index, 100d);
-
-        public void ResetSubDownloadState(in int index, in double maximum)
+        public ProgressController GetProgressController(int index)
         {
-            if (this.dictionary_middleman.TryRemove(index, out var item))
-            {
-                item.Unregister();
-            }
-            if (this.Dispatcher.CheckAccess())
-            {
-                var progressbar = this.indexing[index];
-                progressbar.ShowProgressText = false;
-                progressbar.Text = string.Empty;
-                progressbar.ProgressBar.Value = 0d;
-                progressbar.ProgressBar.Maximum = maximum;
-                this.bag_freeindexes.Add(index);
-            }
-            else
-            {
-                this.Dispatcher.Invoke(new Action<TabGameUpdateProgress, int, double>((self, i, max) =>
-                {
-                    var progressbar = self.indexing[i];
-                    progressbar.ShowProgressText = false;
-                    progressbar.Text = string.Empty;
-                    progressbar.ProgressBar.Value = 0d;
-                    progressbar.ProgressBar.Maximum = max;
-                    self.bag_freeindexes.Add(i);
-                }), new object[] { this, index, maximum });
-            }
+            return this.controllers[index];
         }
 
         public void SetProgressBarCount(in int count)
@@ -234,79 +204,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (count != currentHaving)
             {
                 this.indexing.Clear();
-                this.bag_freeindexes.Clear();
+                this.controllers = new ProgressController[count];
                 for (int i = 0; i < count; i++)
                 {
                     // this.DownloadFileTable.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40) });
                     var progressbar = new ExtendedProgressBar() { Margin = new Thickness(1) };
                     Grid.SetRow(progressbar, i);
                     this.indexing.Add(progressbar);
-                    this.bag_freeindexes.Add(i);
+                    this.controllers[i] = new ProgressController(progressbar);
                 }
             }
-        }
-
-        public bool Book_A_Slot(out int index, string progresstext, in double progressMaximum)
-        {
-            if (this.bag_freeindexes.TryTake(out index))
-            {
-                if (this.dictionary_middleman.TryRemove(index, out var item))
-                {
-                    item.Unregister();
-                }
-                if (this.Dispatcher.CheckAccess())
-                {
-                    var progressbar = this.indexing[index];
-                    progressbar.Text = progresstext;
-                    progressbar.ShowProgressText = true;
-                    progressbar.ProgressBar.Value = 0d;
-                    progressbar.ProgressBar.Maximum = progressMaximum;
-                    this.bag_freeindexes.Add(index);
-                }
-                else
-                {
-                    this.Dispatcher.Invoke(new Action<TabGameUpdateProgress, int, double>((self, i, max) =>
-                    {
-                        var progressbar = self.indexing[i];
-                        progressbar.Text = progresstext;
-                        progressbar.ShowProgressText = true;
-                        progressbar.ProgressBar.Value = 0d;
-                        progressbar.ProgressBar.Maximum = max;
-                        self.bag_freeindexes.Add(i);
-                    }), new object[] { this, index, progressMaximum });
-                }
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public void SetSubProgressValue(int index, double value)
-        {
-            // This is even messier than the old one.
-            this.dictionary_middleman.AddOrUpdate(index, key => this.debounceDispatcher.RegisterToTick(new Action<ObservableCollection<ExtendedProgressBar>, int, double>((_indexing, i, val) =>
-            {
-                _indexing[i].ProgressBar.Value = val;
-            }), this.indexing, index, value),
-                (key, existing) =>
-                {
-                    existing?.Unregister();
-                    return this.debounceDispatcher.RegisterToTick(new Action<ObservableCollection<ExtendedProgressBar>, int, double>((_indexing, i, val) =>
-                    {
-                        _indexing[i].ProgressBar.Value = val;
-                    }), this.indexing, index, value);
-                });
-
-            /*
-            if (this.dictionary_middleman.TryRemove(index, out var item))
-            {
-                item.Unregister();
-            }
-            this.indexing[index].ProgressBar.Value = value;
-
-            */
         }
 
         // public void SetProgressText(int index, string text) => this.indexing[index].Text = text;
@@ -327,6 +234,113 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             else
             {
                 this.debounceDispatcher?.Stop();
+            }
+            // MahApps.Metro.Controls.Dialogs.ProgressDialogController a = new MahApps.Metro.Controls.Dialogs.ProgressDialogController();
+        }
+
+        public class ProgressController
+        {
+            private readonly ExtendedProgressBar progressbar;
+            private long _value;
+            private readonly DebounceDispatcher debouncer;
+
+            public ProgressController(ExtendedProgressBar progressBar)
+            {
+                this.progressbar = progressBar;
+                this.debouncer = new DebounceDispatcher(progressBar.Dispatcher);
+                this.Reset();
+            }
+
+            public void Reset()
+            {
+                var disp = this.progressbar.Dispatcher;
+                if (disp.CheckAccess())
+                {
+                    this.InnerReset();
+                }
+                else
+                {
+                    disp.Invoke(this.InnerReset);
+                }
+            }
+
+            private void InnerReset()
+            {
+                this.debouncer.Stop();
+                Interlocked.Exchange(ref this._value, 0);
+                this.SetTextVislble(false);
+                this.SetText(string.Empty);
+                this.SetProgressLatest();
+            }
+
+            private static readonly Action<ProgressController, double> __setMax = (obj, val) => obj.progressbar.ProgressBar.Maximum = val;
+            public void SetMaximum(double max)
+            {
+                if (this.progressbar.CheckAccess())
+                {
+                    __setMax(this, max);
+                }
+                else
+                {
+                    this.progressbar.ProgressBar.Dispatcher.Invoke(__setMax, new object[] { this, max });
+                }
+            }
+
+            public void SetProgress(long value)
+            {
+                Interlocked.Exchange(ref this._value, value);
+                // Interlocked.Add(ref this._value, value);
+                this.debouncer.Throttle(30, this.SetProgressLatest);
+            }
+
+            private void SetProgressLatest()
+            {
+                this.progressbar.ProgressBar.Value = Interlocked.Read(ref this._value);
+            }
+
+            private static readonly Action<ProgressController, string> __setText = (obj, val) => obj.progressbar.Text = val;
+            public void SetText(string text)
+            {
+                if (this.progressbar.CheckAccess())
+                {
+                    __setText(this, text);
+                }
+                else
+                {
+                    this.progressbar.Dispatcher.Invoke(__setText, new object[] { this, text });
+                }
+            }
+
+            private static readonly Action<ProgressController, bool> __setTextVisible = (obj, val) => obj.progressbar.ShowProgressText = val;
+            public void SetTextVislble(bool value)
+            {
+                if (this.progressbar.CheckAccess())
+                {
+                    __setTextVisible(this, value);
+                }
+                else
+                {
+                    this.progressbar.Dispatcher.Invoke(__setTextVisible, new object[] { this, value });
+                }
+            }
+
+            private static readonly Action<ProgressController, long, long, string, bool> __setData = (obj, max, value, text, visibility) =>
+            {
+                obj.SetMaximum(max);
+                obj.SetProgress(value);
+                obj.SetText(text);
+                obj.SetTextVislble(visibility);
+            };
+            public void SetData(long maximum, long value, string text, bool visibility)
+            {
+                if (this.progressbar.CheckAccess())
+                {
+                    __setData(this, maximum, value, text, visibility);
+                }
+                else
+                {
+                    this.progressbar.Dispatcher.Invoke(__setData, new object[] { this, maximum, value, text, visibility });
+                }
             }
         }
 

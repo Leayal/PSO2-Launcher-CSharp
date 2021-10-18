@@ -10,16 +10,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     public partial class GameClientUpdater
     {
         public event ProgressReportHandler ProgressReport;
-        private void OnProgressReport(PatchListItem currentFile, in long currentProgress)
-            => this.ProgressReport?.Invoke(currentFile, in currentProgress);
+        private void OnProgressReport(int TaskID, PatchListItem currentFile, in long currentProgress)
+            => this.ProgressReport?.Invoke(TaskID, currentFile, in currentProgress);
 
         public event ProgressBeginHandler ProgressBegin;
-        private void OnProgressBegin(PatchListItem currentFile, in long totalProgress)
-            => this.ProgressBegin?.Invoke(currentFile, in totalProgress);
+        private void OnProgressBegin(int TaskID, PatchListItem currentFile, in long totalProgress)
+            => this.ProgressBegin?.Invoke(TaskID, currentFile, in totalProgress);
 
         public event ProgressEndHandler ProgressEnd;
-        private void OnProgressEnd(PatchListItem currentFile, in bool isSuccess)
-            => this.ProgressEnd?.Invoke(currentFile, in isSuccess);
+        private void OnProgressEnd(int TaskID, PatchListItem currentFile, in bool isSuccess)
+            => this.ProgressEnd?.Invoke(TaskID, currentFile, in isSuccess);
+
+        public event OperationBeginHandler OperationBegin;
+        private void OnOperationBegin(int concurrentlevel)
+        => this.OperationBegin?.Invoke(this, concurrentlevel);
 
         public event OperationCompletedHandler OperationCompleted;
         //private void OnClientOperationComplete1(string dir_pso2bin, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
@@ -72,9 +76,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public event FileCheckEndHandler FileCheckEnd;
         private void OnFileCheckEnd() => this.FileCheckEnd?.Invoke(this);
 
-        public delegate void ProgressBeginHandler(PatchListItem file, in long totalProgressValue);
-        public delegate void ProgressReportHandler(PatchListItem file, in long currentProgressValue);
-        public delegate void ProgressEndHandler(PatchListItem file, in bool isSuccess);
+        public delegate void ProgressBeginHandler(int ConcurrentId, PatchListItem file, in long totalProgressValue);
+        public delegate void ProgressReportHandler(int ConcurrentId, PatchListItem file, in long currentProgressValue);
+        public delegate void ProgressEndHandler(int ConcurrentId, PatchListItem file, in bool isSuccess);
 
         public delegate void FileCheckEndHandler(GameClientUpdater sender);
         public delegate void FileCheckBeginHandler(GameClientUpdater sender, int total);
@@ -82,6 +86,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void FileCheckReportHandler(GameClientUpdater sender, in int current);
         // public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList);
         public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list);
+        public delegate void OperationBeginHandler(GameClientUpdater sender, int concurrentlevel);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
         private delegate void DownloadFinishCallback(in DownloadItem item, in bool success);

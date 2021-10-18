@@ -18,8 +18,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private readonly ConcurrentDictionary<PatchListItem, int> gameupdater_dictionaryInUse;
-
         private async void ButtonCheckForUpdate_Click(object sender, RoutedEventArgs e)
         {
             await StartGameClientUpdate(false, true);
@@ -339,6 +337,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.RefreshGameUpdaterOptions(result);
 
+            result.OperationBegin += this.GameClientUpdater_OperationBegin;
             result.BackupFileFound += this.GameClientUpdater_BackupFileFound;
             result.OperationCompleted += this.GameUpdaterComponent_OperationCompleted;
             result.ProgressReport += this.GameUpdaterComponent_ProgressReport;
@@ -351,45 +350,46 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return result;
         }
 
-        public void GameUpdaterComponent_ProgressReport(PatchListItem file, in long downloadedByteCount)
+        private void GameClientUpdater_OperationBegin(GameClientUpdater sender, int concurrentlevel)
         {
-            if (this.gameupdater_dictionaryInUse.TryGetValue(file, out var index))
+            var tab = this.TabGameClientUpdateProgressBar;
+            if (tab.Dispatcher.CheckAccess())
             {
-                this.TabGameClientUpdateProgressBar.SetSubProgressValue(index, Convert.ToDouble(downloadedByteCount));
+                tab.ResetMainProgressBarState();
+                tab.SetProgressBarCount(concurrentlevel);
+                tab.ResetAllSubDownloadState();
+            }
+            else
+            {
+                tab.Dispatcher.Invoke(new Action<GameClientUpdater, int>(this.GameClientUpdater_OperationBegin), new object[] { sender, concurrentlevel });
             }
         }
 
-        public void GameUpdaterComponent_ProgressBegin(PatchListItem file, in long byteCount)
+        public void GameUpdaterComponent_ProgressReport(int taskId, PatchListItem file, in long downloadedByteCount)
         {
-
-            if (this.TabGameClientUpdateProgressBar.Book_A_Slot(out var index, file.GetFilenameWithoutAffix(), Convert.ToDouble(byteCount)))
-            {
-                this.gameupdater_dictionaryInUse.AddOrUpdate(file, index, (key, existing) => index);
-            }
+            this.TabGameClientUpdateProgressBar.GetProgressController(taskId).SetProgress(downloadedByteCount);
         }
 
-        public void GameUpdaterComponent_ProgressEnd(PatchListItem file, in bool success)
+        public void GameUpdaterComponent_ProgressBegin(int taskId, PatchListItem file, in long byteCount)
+        {
+            this.TabGameClientUpdateProgressBar.GetProgressController(taskId).SetData(byteCount, 0, file.GetFilenameWithoutAffix(), true);
+        }
+
+        public void GameUpdaterComponent_ProgressEnd(int taskId, PatchListItem file, in bool success)
         {
             if (success)
             {
                 this.TabGameClientUpdateProgressBar.IncreaseDownloadedCount(in file.FileSize);
             }
-            if (this.gameupdater_dictionaryInUse.TryRemove(file, out var index))
-            {
-                this.TabGameClientUpdateProgressBar.ResetSubDownloadState(in index);
-            }
+            this.TabGameClientUpdateProgressBar.GetProgressController(taskId).Reset();
         }
 
         private void GameUpdaterComponent_FileCheckBegin(GameClientUpdater sender, int total)
         {
             if (this.Dispatcher.CheckAccess())
             {
-                this.gameupdater_dictionaryInUse.Clear();
                 var tab = this.TabGameClientUpdateProgressBar;
-                tab.SetProgressBarCount(sender.ConcurrentDownloadCount);
-                tab.ResetAllSubDownloadState();
                 // this.TabGameClientUpdateProgressBar.ResetMainProgressBarState();
-
                 if (total == -1)
                 {
                     tab.UpdateMainProgressBarState("Check file", 100d, false);
@@ -543,6 +543,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 this.CreateNewParagraphInLog(logtext);
+            }
+
+            var tab = this.TabGameClientUpdateProgressBar;
+            if (tab.Dispatcher.CheckAccess())
+            {
+                this.TabGameClientUpdateProgressBar.ResetAllSubDownloadState();
+            }
+            else
+            {
+                tab.Dispatcher.InvokeAsync(tab.ResetAllSubDownloadState);
             }
         }
 

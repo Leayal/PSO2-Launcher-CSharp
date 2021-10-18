@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerDownloadSingleFile(BlockingCollection<DownloadItem> pendingFiles, FileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
+        private async Task InnerDownloadSingleFile(int id, BlockingCollection<DownloadItem> pendingFiles, FileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
             // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
@@ -61,7 +61,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                             using (var remoteStream = response.Content.ReadAsStream())
                             {
-                                this.OnProgressBegin(downloadItem.PatchInfo, in remoteSizeInBytes);
+                                this.OnProgressBegin(id, downloadItem.PatchInfo, in remoteSizeInBytes);
                                 if (remoteSizeInBytes == -1)
                                 {
                                     // Download without knowing total size, until upstream get EOF.
@@ -93,7 +93,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         localStream.Write(downloadbuffer, 0, byteRead);
                                         bytesDownloaded += byteRead;
                                         // Report progress here
-                                        this.OnProgressReport(downloadItem.PatchInfo, in bytesDownloaded);
+                                        this.OnProgressReport(id, downloadItem.PatchInfo, in bytesDownloaded);
                                         byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, downloadbuffer.Length, cancellationToken);
                                     }
                                 }
