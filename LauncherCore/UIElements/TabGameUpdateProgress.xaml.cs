@@ -77,7 +77,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private DispatcherQueueItem dispatcherQueueItem_IncreaseDownloadedCount, dispatcherQueueItem_IncreaseNeedToDownloadCount;
         private DispatcherQueueItem dispatcherQueueItem_MainProgressValue;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
-        private ProgressController[] controllers;
+        private readonly List<ProgressController> controllers;
 
         private int downloadedCount, totalDownloadCount;
         private long downloadedByteCount;
@@ -87,6 +87,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.downloadedByteCount = 0L;
             this.downloadedCount = 0;
             this.totalDownloadCount = 0;
+            this.controllers = new List<ProgressController>(Environment.ProcessorCount);
             this.indexing = new ObservableCollection<ExtendedProgressBar>();
             this.debounceDispatcher = SimpleDispatcherQueue.CreateDefault(TimeSpan.FromMilliseconds(15), System.Windows.Threading.DispatcherPriority.DataBind, this.Dispatcher);
             InitializeComponent();
@@ -186,7 +187,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.SetValue(TotalFileNeedToDownloadPropertyKey, 0);
             this.SetValue(TotalDownloadedBytesPropertyKey, 0L);
 
-            var count = this.controllers.Length;
+            var count = this.controllers.Count;
             for (int index = 0; index < count; index++)
             {
                 this.controllers[index].Reset();
@@ -204,14 +205,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (count != currentHaving)
             {
                 this.indexing.Clear();
-                this.controllers = new ProgressController[count];
+                this.controllers.Clear();
                 for (int i = 0; i < count; i++)
                 {
                     // this.DownloadFileTable.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(40) });
-                    var progressbar = new ExtendedProgressBar() { Margin = new Thickness(1) };
+                    var progressbar = new ExtendedProgressBar() { Margin = new Thickness(1), Text = string.Empty, ShowDetailedProgressPercentage = true, ShowProgressText = false };
                     Grid.SetRow(progressbar, i);
                     this.indexing.Add(progressbar);
-                    this.controllers[i] = new ProgressController(progressbar);
+                    this.controllers.Add(new ProgressController(progressbar));
                 }
             }
         }
