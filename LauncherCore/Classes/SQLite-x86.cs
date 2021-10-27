@@ -4817,7 +4817,7 @@ namespace SQLite.X86
 			Serialized = 3
 		}
 
-		const string LibraryPath = "x86/e_sqlcipher";
+		const string LibraryPath = "native-x86/e_sqlcipher";
 
 #if !USE_CSHARP_SQLITE && !USE_WP8_NATIVE_SQLITE && !USE_SQLITEPCL_RAW
 		[DllImport(LibraryPath, EntryPoint = "sqlite3_threadsafe", CallingConvention = CallingConvention.Cdecl)]
