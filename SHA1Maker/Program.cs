@@ -46,14 +46,14 @@ namespace SHA1Maker
                         {
                             sha1.Initialize();
                             writer.WriteStartObject(relativePath);
-                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x86", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
                                 {
                                     writer.WriteString("cpu", "x86");
                                 }
                             }
-                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x64", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
                                 {
@@ -86,14 +86,14 @@ namespace SHA1Maker
                         {
                             sha1.Initialize();
                             writer.WriteStartObject(relativePath);
-                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x86", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
                                 {
                                     writer.WriteString("cpu", "x86");
                                 }
                             }
-                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x64", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
                                 {
@@ -116,14 +116,14 @@ namespace SHA1Maker
                         {
                             sha1.Initialize();
                             writer.WriteStartObject(relativePath);
-                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x86", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
                                 {
                                     writer.WriteString("cpu", "x86");
                                 }
                             }
-                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x64", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
                                 {
@@ -151,14 +151,14 @@ namespace SHA1Maker
                         {
                             sha1.Initialize();
                             writer.WriteStartObject(relativePath);
-                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x86", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
                                 {
                                     writer.WriteString("cpu", "x86");
                                 }
                             }
-                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("native-x64", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
                                 {
