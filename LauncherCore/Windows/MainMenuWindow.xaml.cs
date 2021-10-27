@@ -75,6 +75,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.consolelog_hyperlinkparser = new CustomHyperlinkElementGenerator();
             this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
+            this.RSSFeedPresenter.SelectedFeedChanged += this.RSSFeedPresenter_SelectedFeedChanged;
             this.pso2HttpClient = new PSO2HttpClient(this.webclient);
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
             {
@@ -176,7 +177,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
             this.TabMainMenu.IsSelected = true;
-            RSSFeedPresenter_Loaded();
+            this.RSSFeedPresenter_Loaded();
         }
 
         protected override async void OnFirstShown(EventArgs e)
@@ -577,37 +578,72 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async void WindowsCommandButtons_InvokeGCFromUI_Click(object sender, RoutedEventArgs e)
         {
-            e.Handled = true;
-            try
+            
+            if (sender is Button btn)
             {
-                if (Prompt_Generic.Show(this, "Are you sure you want tell Garbarge Collector to clean up memory forcefully right now?" + Environment.NewLine + Environment.NewLine +
-                    "This operation is not cancellable and you must wait until it's completed before doing anything else." + Environment.NewLine + Environment.NewLine +
-                    "GC won't just just reduce the currently in-use memory down to a few MBs. It will only reclaim parts which are no longer in use and are available to be collected." + Environment.NewLine + Environment.NewLine +
-                    "You may need to clean several times (about twice or 3 times) in order for the launcher to trim down the allocated memory." + Environment.NewLine +
-                    "And you shouldn't clean memory up while the launcher is updating the PSO2 game client.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                e.Handled = true;
+                btn.Click -= this.WindowsCommandButtons_InvokeGCFromUI_Click;
+                try
                 {
-                    var controller = await MahApps.Metro.Controls.Dialogs.DialogManager.ShowProgressAsync(this, "Cleaning up memory", "Please wait...", isCancelable: false, settings: new MahApps.Metro.Controls.Dialogs.MetroDialogSettings() { OwnerCanCloseWithDialog = true, AnimateShow = false });
-                    controller.SetIndeterminate();
-                    // var dialog = await MahApps.Metro.Controls.Dialogs.DialogManager.GetCurrentDialogAsync<MahApps.Metro.Controls.Dialogs.ProgressDialog>(this);
-                    try
+                    if (Prompt_Generic.Show(this, "Are you sure you want tell Garbarge Collector to clean up memory forcefully right now?" + Environment.NewLine + Environment.NewLine +
+                        "This operation is not cancellable and you must wait until it's completed before doing anything else." + Environment.NewLine + Environment.NewLine +
+                        "GC won't just just reduce the currently in-use memory down to a few MBs. It will only reclaim parts which are no longer in use and are available to be collected." + Environment.NewLine + Environment.NewLine +
+                        "You may need to clean several times (about twice or 3 times) in order for the launcher to trim down the allocated memory." + Environment.NewLine +
+                        "And you shouldn't clean memory up while the launcher is updating the PSO2 game client.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                     {
-                        await Task.Factory.StartNew(delegate
+                        bool hasWebBrowser;
+                        if (this.LauncherWebView.Child is IWebViewCompatControl webBrowserControl)
                         {
-                            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-                            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
-                            GC.WaitForPendingFinalizers();
-                        });
-                        if (controller.IsOpen)
+                            hasWebBrowser = true;
+                        }
+                        else
                         {
-                            await controller.CloseAsync();
+                            hasWebBrowser = false;
+                        }
+                        var controller = await MahApps.Metro.Controls.Dialogs.DialogManager.ShowProgressAsync(this, "Cleaning up memory", "Please wait...", isCancelable: false, settings: new MahApps.Metro.Controls.Dialogs.MetroDialogSettings() { OwnerCanCloseWithDialog = true, AnimateShow = false });
+                        bool isBrowserVisible;
+                        if (hasWebBrowser && this.ToggleBtn_PSO2News.IsChecked == true)
+                        {
+                            isBrowserVisible = true;
+                            this.ToggleBtn_PSO2News.IsChecked = false;
+                        }
+                        else
+                        {
+                            isBrowserVisible = false;
+                        }
+                        controller.SetIndeterminate();
+                        // var dialog = await MahApps.Metro.Controls.Dialogs.DialogManager.GetCurrentDialogAsync<MahApps.Metro.Controls.Dialogs.ProgressDialog>(this);
+                        try
+                        {
+                            await Task.Factory.StartNew(delegate
+                            {
+                                GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+                                GC.WaitForPendingFinalizers();
+                            });
+                        }
+                        catch { }
+                        finally
+                        {
+                            if (controller.IsOpen)
+                            {
+                                await controller.CloseAsync();
+                            }
+                            if (isBrowserVisible)
+                            {
+                                this.ToggleBtn_PSO2News.IsChecked = true;
+                            }
                         }
                     }
-                    catch { }
                 }
-            }
-            catch
-            {
+                catch
+                {
 
+                }
+                finally
+                {
+                    btn.Click += this.WindowsCommandButtons_InvokeGCFromUI_Click;
+                }
             }
         }
 

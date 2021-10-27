@@ -23,16 +23,18 @@ namespace Leayal.PSO2Launcher.Updater
         private readonly Assembly ThisAssembly;
         private readonly string AssemblyFilenameOfMySelf;
         private readonly string[] ReferencedAssemblyFilenameOfMySelf;
+        private readonly AssemblyLoadContext _loadedAssemblies;
 
         private readonly HttpClient wc;
-        private bool requireBootstrapUpdate, recommendBootstrapUpdate;
-        private readonly AssemblyLoadContext? _loadedAssemblies;
-
+        private bool recommendBootstrapUpdate; // requireBootstrapUpdate
+        
         private readonly int bootstrapversion;
 
         private bool failToCheck;
 
         public BootstrapUpdater() : this(0, null) { }
+
+#nullable enable
 
         public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies)
         {
@@ -43,7 +45,62 @@ namespace Leayal.PSO2Launcher.Updater
                     if (waitHandle.Set())
                     {
                         Application.Exit();
+                        return;
                     }
+                }
+            }
+
+            // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
+            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture;
+            if (arch != System.Runtime.InteropServices.Architecture.X64)
+            {
+                Form? targetForm = null;
+                var forms = Application.OpenForms;
+                for (int i = 0; i < forms.Count; i++)
+                {
+                    if (forms[i] is Bootstrap mainwindow)
+                    {
+                        targetForm = mainwindow;
+                        break;
+                    }
+                }
+                if (targetForm == null && forms.Count != 0)
+                {
+                    for (int i = 0; i < forms.Count; i++)
+                    {
+                        var form = forms[i];
+                        if (!form.IsDisposed && form.Visible)
+                        {
+                            targetForm = form;
+                            break;
+                        }
+                    }
+                }
+                var sb = new StringBuilder("Phantasy Star Online 2: New Genesis (Japan) only has 64-bit (specifically, 'AMD64' or 'x86_64' architecture) game client.");
+                sb.AppendLine().AppendLine().Append("Your current operating system is ");
+                switch (arch)
+                {
+                    case System.Runtime.InteropServices.Architecture.X86:
+                        sb.Append("32-bit (or 'x86')").Append(", which will not be able to run the game client.");
+                        break;
+                    case System.Runtime.InteropServices.Architecture.Arm:
+                        sb.Append("ARM 32-bit (or 'ARM')").Append(", which will not be able to run the game client.");
+                        break;
+                    case System.Runtime.InteropServices.Architecture.Arm64:
+                        sb.Append("ARM 64-bit (or 'ARM64')").Append(", which will not be able to run the game client.");
+                        break;
+                    default:
+                        sb.Append("'Unknown Architecture', which may not be able to run the game client.");
+                        break;
+                }
+                sb.AppendLine().AppendLine().Append("Are you sure you want to continue anyway?");
+                var informResult = targetForm == null ? MessageBox.Show(sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    : MessageBox.Show(targetForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (informResult != DialogResult.Yes)
+                {
+                    Application.Exit();
+                    // mainwindow.Close();
+                    return;
                 }
             }
 
@@ -58,7 +115,7 @@ namespace Leayal.PSO2Launcher.Updater
 
             this.failToCheck = false;
             this.bootstrapversion = bootstrapversion;
-            this.requireBootstrapUpdate = false;
+            // this.requireBootstrapUpdate = false;
             this.recommendBootstrapUpdate = false;
             this._loadedAssemblies = loadedAssemblies;
             this.wc = new HttpClient(new SocketsHttpHandler()
@@ -76,6 +133,7 @@ namespace Leayal.PSO2Launcher.Updater
             });
             this.wc.DefaultRequestHeaders.Add("User-Agent", "PSO2LeaLauncher");
         }
+#nullable restore
 
         public event EventHandler<FileDownloadedEventArgs> FileDownloaded;
         public event Action<long> ProgressBarValueChanged;
@@ -147,6 +205,7 @@ namespace Leayal.PSO2Launcher.Updater
             });
         }
 
+#nullable enable
         public bool? DisplayUpdatePrompt(Form? parent)
         {
             DialogResult result;
@@ -203,6 +262,7 @@ namespace Leayal.PSO2Launcher.Updater
                 };
             }
         }
+#nullable restore
 
         public Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo)
         {

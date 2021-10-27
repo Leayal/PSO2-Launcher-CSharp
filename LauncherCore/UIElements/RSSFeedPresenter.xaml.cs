@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -72,14 +73,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                                 this.NoFeedLabel.Visibility = Visibility.Collapsed;
                             }
                             // Ignore "Deferred" setting because we need to poke the feed at least once.
-                            _ = Task.Run(async () =>
-                            {
-                                await feedAdded.Fetch();
-                            });
+                            Task.Run(feedAdded.Fetch);
+
+                            /*
                             if (this.FeedList.SelectedItem == null)
                             {
                                 this.FeedList.SelectedIndex = 0;
                             }
+                            */
                         }
                     }
                     break;
@@ -120,10 +121,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private async void PrintFeed()
         {
             var blocks = this.FeedContent.Document.Blocks;
-            var currentFeedDom = this.currentFeedDom;
+            var _currentFeedDom = Interlocked.CompareExchange(ref this.currentFeedDom, null, null);
+            if (_currentFeedDom == null)
+            {
+                blocks.Clear();
+                blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
+                return;
+            }
             try
             {
-                var task = currentFeedDom.Feed.GetPreviousFeedItems();
+                var task = _currentFeedDom.Feed.GetPreviousFeedItems();
                 if (!task.IsCompleted)
                 {
                     blocks.Clear();
@@ -172,7 +179,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 blocks.Clear();
                 blocks.Add(new Paragraph(new Run("Loading the feed. Please wait....")));
-                _ = Task.Run(currentFeedDom.Feed.Fetch);
+                _ = Task.Run(_currentFeedDom.Feed.Fetch);
             }
         }
 
@@ -230,12 +237,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 if (e.AddedItems[0] is RSSFeedDom dom)
                 {
-                    this.currentFeedDom = dom;
+                    Interlocked.Exchange(ref this.currentFeedDom, dom);
                     var feed = dom.Feed;
                     this.PrintFeed();
                     feed.FeedUpdated += this.Feed_FeedUpdated;
                     feed.DeferredRefreshReady += this.CurrentFeed_DeferredRefreshReady;
                     Task.Run(feed.Refresh);
+
+                    this.SelectedFeedChanged?.Invoke(this, feed);
                 }
             }
 
@@ -252,6 +261,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
         }
+
+        public event Action<RSSFeedPresenter, RSSFeedHandler> SelectedFeedChanged;
 
         private void CurrentFeed_DeferredRefreshReady(object sender, EventArgs e)
         {
@@ -272,13 +283,92 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        public void LoadFeedConfig(string data)
+        public void SelectFirstFeed()
         {
-            var conf = Classes.RSS.FeedChannelConfig.FromData(data);
-            this.LoadFeedConfig(in conf);
+            var _feedlist = this.FeedList;
+            if (_feedlist.Dispatcher.CheckAccess())
+            {
+                if (_feedlist.SelectedItem == null)
+                {
+                    _feedlist.SelectedIndex = 0;
+                }
+            }
+            else
+            {
+                _feedlist.Dispatcher.InvokeAsync(this.SelectFirstFeed);
+            }
         }
 
-        public void LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
+        public RSSFeedHandler GetSelectedFeedHandler()
+        {
+            var current = this.currentFeedDom;
+            if (current == null)
+            {
+                return null;
+            }
+            else
+            {
+                return current.Feed;
+            }
+
+
+        }
+
+        public void SelectFeed(RSSFeedHandler feedhandler)
+        {
+            if (this.FeedList.Dispatcher.CheckAccess())
+            {
+                var i = this.rssfeedhandlers.IndexOf(feedhandler);
+                if (i == -1)
+                {
+                    return;
+                }
+
+                RSSFeedDom found;
+                if (this.rssfeeds.Count > i)
+                {
+                    found = this.rssfeeds[i];
+                    if (found.Feed == feedhandler)
+                    {
+                        // this.FeedList.SelectedItem = dom;
+                        this.FeedList.SelectedIndex = i;
+                    }
+                    else
+                    {
+                        found = null;
+                    }
+                }
+                else
+                {
+                    found = null;
+                }
+
+                // Fallback to index interation
+                if (found == null)
+                {
+                    foreach (var dom in this.rssfeeds)
+                    {
+                        if (found.Feed == feedhandler)
+                        {
+                            this.FeedList.SelectedItem = dom;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                this.FeedList.Dispatcher.BeginInvoke(new Action<RSSFeedHandler>(this.SelectFeed), new object[] { feedhandler });
+            }
+        }
+
+        public RSSFeedHandler LoadFeedConfig(string data)
+        {
+            var conf = Classes.RSS.FeedChannelConfig.FromData(data);
+            return this.LoadFeedConfig(in conf);
+        }
+
+        public RSSFeedHandler LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
         {
             if (!string.IsNullOrEmpty(config.FeedChannelUrl) && Uri.TryCreate(config.FeedChannelUrl, UriKind.Absolute, out var url))
             {
@@ -297,6 +387,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                             this.rssfeedhandlers.Add(handler);
                         }), baseHandler);
                     }
+                    return baseHandler;
                 }
                 else
                 {
@@ -399,8 +490,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                             }), basehandler);
                         }
                     }
+                    return basehandler;
                 }
             }
+            return null;
         }
 
         class RSSFeedDom : Border

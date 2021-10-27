@@ -95,7 +95,7 @@ namespace Leayal.PSO2Launcher.Updater
                         for (int i = 0; i < this.ReferencedAssemblyFilenameOfMySelf.Length; i++)
                         {
                             var asm_name = this.ReferencedAssemblyFilenameOfMySelf[i];
-                            if (prop_files.TryGetProperty(asm_name, out var prop_depend) && prop_depend.ValueKind == JsonValueKind.Object)
+                            if (!string.IsNullOrEmpty(asm_name) && prop_files.TryGetProperty(asm_name, out var prop_depend) && prop_depend.ValueKind == JsonValueKind.Object)
                             {
                                 if (avoidRecheck.Add(AssemblyFilenameOfMySelf))
                                 {
