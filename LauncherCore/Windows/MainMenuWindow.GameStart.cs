@@ -459,7 +459,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
                     Prompt_Generic.ShowError(this, ex, "Network Error (Code: " + errorCode + ")");
                 }
-                catch (FileCheckHashCache.DatabaseErrorException)
+                catch (DatabaseErrorException)
                 {
                     this.CreateNewParagraphInLog("[GameUpdater] Error occured when opening file check cache database.");
                     Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

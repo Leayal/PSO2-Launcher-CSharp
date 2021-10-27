@@ -288,7 +288,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             }
-            catch (FileCheckHashCache.DatabaseErrorException)
+            catch (DatabaseErrorException)
             {
                 Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }

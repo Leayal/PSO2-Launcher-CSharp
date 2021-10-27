@@ -15,6 +15,7 @@ using System.Runtime.Loader;
 using System.Threading;
 using System.Diagnostics;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -24,6 +25,7 @@ namespace Leayal.PSO2Launcher.Updater
         private readonly string AssemblyFilenameOfMySelf;
         private readonly string[] ReferencedAssemblyFilenameOfMySelf;
         private readonly AssemblyLoadContext _loadedAssemblies;
+        private readonly Architecture _osArch;
 
         private readonly HttpClient wc;
         private bool recommendBootstrapUpdate; // requireBootstrapUpdate
@@ -51,8 +53,8 @@ namespace Leayal.PSO2Launcher.Updater
             }
 
             // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
-            var arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture;
-            if (arch != System.Runtime.InteropServices.Architecture.X64)
+            this._osArch = RuntimeInformation.OSArchitecture;
+            if (this._osArch != Architecture.X64)
             {
                 Form? targetForm = null;
                 var forms = Application.OpenForms;
@@ -78,15 +80,15 @@ namespace Leayal.PSO2Launcher.Updater
                 }
                 var sb = new StringBuilder("Phantasy Star Online 2: New Genesis (Japan) only has 64-bit (specifically, 'AMD64' or 'x86_64' architecture) game client.");
                 sb.AppendLine().AppendLine().Append("Your current operating system is ");
-                switch (arch)
+                switch (this._osArch)
                 {
-                    case System.Runtime.InteropServices.Architecture.X86:
+                    case Architecture.X86:
                         sb.Append("32-bit (or 'x86')").Append(", which will not be able to run the game client.");
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm:
+                    case Architecture.Arm:
                         sb.Append("ARM 32-bit (or 'ARM')").Append(", which will not be able to run the game client.");
                         break;
-                    case System.Runtime.InteropServices.Architecture.Arm64:
+                    case Architecture.Arm64:
                         sb.Append("ARM 64-bit (or 'ARM64')").Append(", which will not be able to run the game client.");
                         break;
                     default:

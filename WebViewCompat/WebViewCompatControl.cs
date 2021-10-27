@@ -5,11 +5,11 @@ using System.Net;
 using WinForm = System.Windows.Forms;
 using System.Windows.Data;
 using System.Windows.Interop;
-using Microsoft.Web.WebView2.Wpf;
+// using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Forms.Integration;
 using System.Windows.Controls;
 using StackOverflow;
-using Microsoft.Web.WebView2.Core;
+// using Microsoft.Web.WebView2.Core;
 using Leayal.SharedInterfaces;
 
 namespace Leayal.WebViewCompat
@@ -20,7 +20,7 @@ namespace Leayal.WebViewCompat
         public static string DefaultUserAgent { get; set; } = string.Empty;
 
         private readonly WinForm.WebBrowser _fallbackControl;
-        private readonly WebView2 _webView2;
+        // private readonly WebView2 _webView2;
         private readonly string _userAgent;
 
         public WebViewCompatControl() : this(DefaultUserAgent) { }
@@ -34,6 +34,7 @@ namespace Leayal.WebViewCompat
             this._userAgent = userAgent;
             if (WebViewCompat.HasWebview2Runtime())
             {
+                /*
                 this._webView2 = new WebView2();
                 this._webView2.CreationProperties = new CoreWebView2CreationProperties() { UserDataFolder = Path.GetFullPath("BrowserCache", RuntimeValues.RootDirectory), Language = "" };
                 this._webView2.CoreWebView2.Settings.UserAgent = this._userAgent;
@@ -44,6 +45,7 @@ namespace Leayal.WebViewCompat
                 this._webView2.CoreWebView2InitializationCompleted += this.Wv_CoreWebView2InitializationCompleted;
                 // this._webView2.WebMessageReceived += Wv_WebMessageReceived;
                 this.Content = this._webView2;
+                */
             }
             else
             {
@@ -81,6 +83,8 @@ namespace Leayal.WebViewCompat
         {
             get
             {
+                return this._fallbackControl.Url;
+                /*
                 if (this._webView2 != null)
                 {
                     return this._webView2.Source;
@@ -89,6 +93,7 @@ namespace Leayal.WebViewCompat
                 {
                     return this._fallbackControl.Url;
                 }
+                */
             }
         }
 
@@ -98,6 +103,7 @@ namespace Leayal.WebViewCompat
             var ev = new NavigationEventArgs(e.Url);
             this.Navigated?.Invoke(this, ev);
         }
+        /*
         private void Wv_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             NavigationEventArgs ev;
@@ -118,8 +124,10 @@ namespace Leayal.WebViewCompat
                 this.Navigated?.Invoke(this, ev);
             }
         }
+        */
 
         public event EventHandler<NavigatingEventArgs> Navigating;
+        /*
         private void Wv_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
         {
             var ev = new NavigatingEventArgs(new Uri(e.Uri));
@@ -128,6 +136,7 @@ namespace Leayal.WebViewCompat
             // System.Windows.Navigation.NavigatingCancelEventArgs.
             // this.Navigating?.Invoke(this, new System.Windows.Navigation.NavigatingCancelEventArgs() { });
         }
+        */
         private void FallbackControl_Navigating2(object sender, WinForm.WebBrowserNavigatingEventArgs e)
         {
             var ev = new NavigatingEventArgs(e.Url);
@@ -163,6 +172,7 @@ namespace Leayal.WebViewCompat
         {
             this.OnInitialized(EventArgs.Empty);
         }
+        /*
         private void Wv_CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
         {
             this._webView2.CoreWebView2.NavigationStarting += this.Wv_NavigationStarting;
@@ -170,12 +180,12 @@ namespace Leayal.WebViewCompat
             this.OnInitialized(EventArgs.Empty);
         }
         
-
         // Document events here.
         private void Wv_WebMessageReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
         {
             // this._fallbackControl.Document.AttachEventHandler();
         }
+        */
 
         private static System.Drawing.Size GetDocumentBodySize(WinForm.WebBrowser webBrowser)
         {
@@ -196,6 +206,8 @@ namespace Leayal.WebViewCompat
 
         public void NavigateTo(Uri url)
         {
+            this._fallbackControl.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
+            /*
             if (this._webView2 != null)
             {
                 this._webView2.Source = url;
@@ -204,11 +216,12 @@ namespace Leayal.WebViewCompat
             {
                 this._fallbackControl.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
             }
+            */
         }
 
         public void Dispose()
         {
-            this._webView2?.Dispose();
+            // this._webView2?.Dispose();
             this._fallbackControl?.Dispose();
         }
     }

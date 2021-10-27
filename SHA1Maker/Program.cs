@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
+
 
 namespace SHA1Maker
 {
@@ -24,6 +26,7 @@ namespace SHA1Maker
             }
 
             using (var outputFS = File.Create(outputFile))
+            using (var sha1 = SHA1.Create())
             using (var writer = new System.Text.Json.Utf8JsonWriter(outputFS))
             {
                 writer.WriteStartObject();
@@ -39,10 +42,26 @@ namespace SHA1Maker
                     {
                         var relativePath = file.Remove(0, currentProbe.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
                         using (var fs = File.OpenRead(file))
-                        using (var sha1 = SHA1.Create())
+                        using (var pe = new PEReader(fs))
                         {
+                            sha1.Initialize();
                             writer.WriteStartObject(relativePath);
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
+                                {
+                                    writer.WriteString("cpu", "x86");
+                                }
+                            }
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
+                                {
+                                    writer.WriteString("cpu", "x64");
+                                }
+                            }
                             writer.WriteNumber("size", fs.Length);
+                            fs.Position = 0;
                             var sha1hash = Convert.ToHexString(sha1.ComputeHash(fs));
                             writer.WriteString("sha1", sha1hash);
                             writer.WriteEndObject();
@@ -63,10 +82,26 @@ namespace SHA1Maker
                     {
                         var relativePath = entryFilePath.Remove(0, dir.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
                         using (var fs = File.OpenRead(entryFilePath))
-                        using (var sha1 = SHA1.Create())
+                        using (var pe = new PEReader(fs))
                         {
+                            sha1.Initialize();
                             writer.WriteStartObject(relativePath);
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
+                                {
+                                    writer.WriteString("cpu", "x86");
+                                }
+                            }
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
+                                {
+                                    writer.WriteString("cpu", "x64");
+                                }
+                            }
                             writer.WriteNumber("size", fs.Length);
+                            fs.Position = 0;
                             writer.WriteBoolean("entry", true);
                             var sha1hash = Convert.ToHexString(sha1.ComputeHash(fs));
                             writer.WriteString("sha1", sha1hash);
@@ -77,10 +112,26 @@ namespace SHA1Maker
                     {
                         var relativePath = file.Remove(0, dir.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
                         using (var fs = File.OpenRead(file))
-                        using (var sha1 = SHA1.Create())
+                        using (var pe = new PEReader(fs))
                         {
+                            sha1.Initialize();
                             writer.WriteStartObject(relativePath);
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
+                                {
+                                    writer.WriteString("cpu", "x86");
+                                }
+                            }
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
+                                {
+                                    writer.WriteString("cpu", "x64");
+                                }
+                            }
                             writer.WriteNumber("size", fs.Length);
+                            fs.Position = 0;
                             var sha1hash = Convert.ToHexString(sha1.ComputeHash(fs));
                             writer.WriteString("sha1", sha1hash);
                             writer.WriteEndObject();
@@ -96,11 +147,27 @@ namespace SHA1Maker
                         writer.WriteStartObject("critical-files");
                         var relativePath = entryFilePath.Remove(0, dir.Length).Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
                         using (var fs = File.OpenRead(entryFilePath))
-                        using (var sha1 = SHA1.Create())
+                        using (var pe = new PEReader(fs))
                         {
+                            sha1.Initialize();
                             writer.WriteStartObject(relativePath);
+                            if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x86", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.I386)
+                                {
+                                    writer.WriteString("cpu", "x86");
+                                }
+                            }
+                            else if (Path.GetFileName(Path.GetDirectoryName(fs.Name.AsSpan())).Equals("x64", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (pe.PEHeaders.CoffHeader.Machine == Machine.Amd64)
+                                {
+                                    writer.WriteString("cpu", "x64");
+                                }
+                            }
                             writer.WriteNumber("size", fs.Length);
                             writer.WriteBoolean("entry", true);
+                            fs.Position = 0;
                             var sha1hash = Convert.ToHexString(sha1.ComputeHash(fs));
                             writer.WriteString("sha1", sha1hash);
                             writer.WriteEndObject();

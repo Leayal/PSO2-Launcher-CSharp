@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
-        private async Task InnerDownloadSingleFile(int id, BlockingCollection<DownloadItem> pendingFiles, FileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
+        private async Task InnerDownloadSingleFile(int id, BlockingCollection<DownloadItem> pendingFiles, IFileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
             // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.

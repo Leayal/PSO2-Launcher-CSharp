@@ -142,7 +142,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.t_operation = Task.Factory.StartNew(async () =>
                 {
                     bool isOperationSuccess = false;
-                    FileCheckHashCache? duhB = null;
+                    IFileCheckHashCache? duhB = null;
                     PSO2Version ver = default;
 
                     PatchListMemory? patchlist = null;
@@ -161,7 +161,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnOperationBegin(taskCount);
 
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
-                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
+                        duhB = Environment.Is64BitProcess ? new FileCheckHashCacheX64(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1) : new FileCheckHashCacheX86(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
                         patchlist = await t_patchlist;
                         resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
@@ -253,11 +253,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             public readonly int Id;
             private readonly GameClientUpdater thisRef;
             public readonly BlockingCollection<DownloadItem>? pendingFiles;
-            public readonly FileCheckHashCache? duhB;
+            public readonly IFileCheckHashCache? duhB;
             public readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
             public readonly CancellationToken cancellationToken;
 
-            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, FileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token)
+            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, IFileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token)
             {
                 this.Id = id;
                 this.thisRef = updater;

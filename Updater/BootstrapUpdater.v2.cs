@@ -6,13 +6,33 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Updater
 {
     public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
-        private static async Task<bool> FileCheck_2(Dictionary<string, UpdateItem> needtobeupdated, Uri rootUrl, string displayName, JsonElement prop_val, string rootDirectory, bool iscritical, string entryExecutableName)
+        private static async Task<bool> FileCheck_2(Dictionary<string, UpdateItem> needtobeupdated, Uri rootUrl, string displayName, JsonElement prop_val, string rootDirectory, bool iscritical, string entryExecutableName, Architecture arch)
         {
+            if (prop_val.TryGetProperty("cpu", out var item_cpu) && item_cpu.ValueKind == JsonValueKind.String)
+            {
+                if (string.Equals(item_cpu.GetString(), "x86", StringComparison.OrdinalIgnoreCase) && arch != Architecture.X86)
+                {
+                    return false;
+                }
+                else if (string.Equals(item_cpu.GetString(), "x64", StringComparison.OrdinalIgnoreCase) && arch != Architecture.X64)
+                {
+                    return false;
+                }
+                else if (string.Equals(item_cpu.GetString(), "arm64", StringComparison.OrdinalIgnoreCase) && arch != Architecture.Arm64)
+                {
+                    return false;
+                }
+                else if (string.Equals(item_cpu.GetString(), "arm", StringComparison.OrdinalIgnoreCase) && arch != Architecture.Arm)
+                {
+                    return false;
+                }
+            }
             if (prop_val.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
             {
                 var localFilename = Path.GetFullPath(Path.Combine("bin", displayName), rootDirectory);
@@ -66,7 +86,7 @@ namespace Leayal.PSO2Launcher.Updater
                             while (objWalker.MoveNext())
                             {
                                 var item = objWalker.Current;
-                                await FileCheck_2(needtobeupdated, rootUrl, item.Name, item.Value, rootDirectory, true, entryExecutableName);
+                                await FileCheck_2(needtobeupdated, rootUrl, item.Name, item.Value, rootDirectory, true, entryExecutableName, this._osArch);
                             }
                         }
                     }
@@ -87,7 +107,7 @@ namespace Leayal.PSO2Launcher.Updater
                         if (prop_files.TryGetProperty(AssemblyFilenameOfMySelf, out var prop_thisself) && prop_thisself.ValueKind == JsonValueKind.Object)
                         {
                             avoidRecheck.Add(AssemblyFilenameOfMySelf);
-                            if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName))
+                            if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName, this._osArch))
                             {
                                 shouldReload = true;
                             }
@@ -99,7 +119,7 @@ namespace Leayal.PSO2Launcher.Updater
                             {
                                 if (avoidRecheck.Add(AssemblyFilenameOfMySelf))
                                 {
-                                    if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName))
+                                    if (await FileCheck_2(needtobeupdated, rootUrl, AssemblyFilenameOfMySelf, prop_thisself, rootDirectory, false, entryExecutableName, this._osArch))
                                     {
                                         shouldReload = true;
                                     }
@@ -117,7 +137,7 @@ namespace Leayal.PSO2Launcher.Updater
                                     var asm_name = item.Name;
                                     if (avoidRecheck.Add(asm_name))
                                     {
-                                        await FileCheck_2(needtobeupdated, rootUrl, asm_name, item.Value, rootDirectory, false, entryExecutableName);
+                                        await FileCheck_2(needtobeupdated, rootUrl, asm_name, item.Value, rootDirectory, false, entryExecutableName, this._osArch);
                                     }
                                 }
                             }

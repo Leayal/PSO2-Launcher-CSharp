@@ -6,9 +6,18 @@ if not exist docs\publish\files (
  mkdir "docs\publish\files"
 )
 
+dotnet build -c Release -o "Build\LauncherCore-natives" "LauncherCore\LauncherCore.csproj"
 dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCore" "LauncherCore\LauncherCore.csproj"
+del /Q /F "Build\LauncherCore\e_sqlcipher.dll"
 copy /B /L /Y "Build\LauncherCore\*.dll" "docs\publish\files\"
-copy /B /L /Y "Build\LauncherCore\runtimes\win-x64\native\*.dll" "docs\publish\files\"
+if not exist docs\publish\files\x64 (
+ mkdir "docs\publish\files\x64"
+)
+copy /B /L /Y "Build\LauncherCore-natives\runtimes\win-x64\native\*.dll" "docs\publish\files\x64"
+if not exist docs\publish\files\x86 (
+ mkdir "docs\publish\files\x86"
+)
+copy /B /L /Y "Build\LauncherCore-natives\runtimes\win-x86\native\*.dll" "docs\publish\files\x86"
 
 dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\Updater" "Updater\Updater.csproj"
 copy /B /L /Y "Build\Updater\*.dll" "docs\publish\files\"
