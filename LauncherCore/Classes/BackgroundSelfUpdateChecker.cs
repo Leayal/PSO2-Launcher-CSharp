@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Text.Json;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
@@ -18,6 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private readonly SynchronizationContext syncContext;
         private DateTime lastchecktime;
         private readonly HttpClient webclient;
+        private readonly static Architecture __arch = RuntimeInformation.ProcessArchitecture;
 
         private TimeSpan _ticktime;
         public TimeSpan TickTime
@@ -25,10 +27,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
             get => this._ticktime;
             set
             {
-                var onesec = TimeSpan.FromSeconds(10);
-                if (value < onesec)
+                var tensec = TimeSpan.FromSeconds(10);
+                if (value < tensec)
                 {
-                    this._ticktime = onesec;
+                    this._ticktime = tensec;
                 }
                 else
                 {
@@ -128,7 +130,27 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                 while (objWalker.MoveNext())
                                 {
                                     var item = objWalker.Current;
-                                    if (item.Value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
+                                    var value = item.Value;
+                                    if (value.TryGetProperty("cpu", out var item_cpu) && item_cpu.ValueKind == JsonValueKind.String)
+                                    {
+                                        if (string.Equals(item_cpu.GetString(), "x86", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.X86)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "x64", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.X64)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "arm64", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.Arm64)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "arm", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.Arm)
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                    if (value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
                                         var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                                         if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
@@ -155,7 +177,27 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                 while (objWalker.MoveNext())
                                 {
                                     var item = objWalker.Current;
-                                    if (item.Value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
+                                    var value = item.Value;
+                                    if (value.TryGetProperty("cpu", out var item_cpu) && item_cpu.ValueKind == JsonValueKind.String)
+                                    {
+                                        if (string.Equals(item_cpu.GetString(), "x86", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.X86)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "x64", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.X64)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "arm64", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.Arm64)
+                                        {
+                                            continue;
+                                        }
+                                        else if (string.Equals(item_cpu.GetString(), "arm", StringComparison.OrdinalIgnoreCase) && __arch != Architecture.Arm)
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                    if (value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
                                         var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                                         if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
@@ -164,7 +206,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                         }
                                         if (!dictionary.ContainsKey(item_name))
                                         {
-                                            
                                             dictionary.Add(item_name, item_prop_sha1.GetString());
                                         }
                                     }

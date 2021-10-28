@@ -79,27 +79,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.pso2HttpClient = new PSO2HttpClient(this.webclient);
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
             {
-                var binDir = Path.Combine(RuntimeValues.RootDirectory, "bin");
+                var binDir = Path.GetFullPath("bin", RuntimeValues.RootDirectory);
                 var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var removelen = binDir.Length + 1;
 
-                if (Directory.Exists(binDir))
+                static void AddToDictionary(Dictionary<string, string> d, string p, int o)
                 {
-                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.TopDirectoryOnly))
+                    if (Directory.Exists(p))
                     {
-                        var sha1 = SHA1Hash.ComputeHashFromFile(filename);
-                        dictionary.Add(filename.Remove(0, removelen), sha1);
+                        foreach (var filename in Directory.EnumerateFiles(p, "*.dll", SearchOption.TopDirectoryOnly))
+                        {
+                            var sha1 = SHA1Hash.ComputeHashFromFile(filename);
+                            d.Add(filename.Remove(0, o), sha1);
+                        }
                     }
                 }
 
-                binDir = Path.Combine(RuntimeValues.RootDirectory, "bin", "plugins", "rss");
-                if (Directory.Exists(binDir))
+                AddToDictionary(dictionary, binDir, removelen);
+                AddToDictionary(dictionary, Path.Combine(binDir, "plugins", "rss"), removelen);
+                if (Environment.Is64BitProcess)
                 {
-                    foreach (var filename in Directory.EnumerateFiles(binDir, "*.dll", SearchOption.TopDirectoryOnly))
-                    {
-                        var sha1 = SHA1Hash.ComputeHashFromFile(filename);
-                        dictionary.Add(filename.Remove(0, removelen), sha1);
-                    }
+                    AddToDictionary(dictionary, Path.Combine(binDir, "native-x64"), removelen);
+                }
+                else
+                {
+                    AddToDictionary(dictionary, Path.Combine(binDir, "native-x86"), removelen);
                 }
 
                 dictionary.TrimExcess();
