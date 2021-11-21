@@ -22,7 +22,7 @@
         </local:WeirdButton>
         
         <Slider Grid.Column="1" x:Name="slider" ValueChanged="Slider_ValueChanged" />
-        <TextBox Grid.Column="2" x:Name="textbox" PreviewTextInput="TextBox_PreviewTextInput" TextChanged="TextBox_TextChanged" />
+        <TextBox Grid.Column="2" x:Name="textbox" PreviewTextInput="TextBox_PreviewTextInput" TextChanged="TextBox_TextChanged" Text="0" />
 
         <local:WeirdButton Grid.Column="3" Grid.RowSpan="2" BorderBrush="{x:Null}" Click="WeirdButtonNext_Click"  x:Name="WeirdButtonNext">
             <iconPacks:PackIconFontAwesome Kind="CaretRightSolid" />

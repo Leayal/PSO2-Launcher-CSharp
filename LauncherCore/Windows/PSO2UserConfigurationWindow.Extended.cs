@@ -25,59 +25,49 @@ namespace Leayal.PSO2Launcher.Core.Windows
             new ScreenResolution(3840, 2160, KnownRatio._16_9)
         };
 
-        private void OnBeforeCreatingOptionDom(PropertyInfo[] propertyInfos, Dictionary<string, List<OptionDOM>> options)
+        private void HandleSpecialConfigurationDom(PropertyInfo item)
         {
-            // Inefficient
-            int count = 0; // Maybe premature optimization
-            foreach (var item in propertyInfos)
+            if (item.PropertyType == typeof(MonitorCountWrapper))
             {
-                if (item.PropertyType == typeof(MonitorCountWrapper))
+                if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
                 {
-                    if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
-                    {
-                        categoryName = string.Empty;
-                    }
-                    if (!EnumDisplayNameAttribute.TryGetDisplayName(item, out var displayName))
-                    {
-                        displayName = item.Name;
-                    }
-                    var option = new MonitorCountOptionDOM(item.Name, displayName);
-                    option.Reload(this._configR);
-                    option.Slider.ValueChanged += this.SliderMonitorNo_ValueChanged;
-                    if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
-                    {
-                        opts = new List<OptionDOM>();
-                        this.listOfOptions.Add(categoryName, opts);
-                    }
-                    opts.Add(option);
-                    count++;
+                    categoryName = string.Empty;
                 }
-                else if (item.PropertyType == typeof(ScreenResolution))
+                if (!EnumDisplayNameAttribute.TryGetDisplayName(item, out var displayName))
                 {
-                    if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
-                    {
-                        categoryName = string.Empty;
-                    }
-                    if (!EnumDisplayNameAttribute.TryGetDisplayName(item, out var displayName))
-                    {
-                        displayName = item.Name;
-                    }
-                    var option = new ResolutionOptionDOM(item.Name, displayName);
-                    option.Reload(this._configR);
-                    option.ComboBox.SelectedValueChanged += this.OptionResolution_ValueChanged;
-                    if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
-                    {
-                        opts = new List<OptionDOM>();
-                        this.listOfOptions.Add(categoryName, opts);
-                    }
-                    opts.Add(option);
-                    count++;
+                    displayName = item.Name;
                 }
-                if (count >= 2)
+                var option = new MonitorCountOptionDOM(item.Name, displayName);
+                option.Reload(this._configR);
+                option.Slider.ValueChanged += this.SliderMonitorNo_ValueChanged;
+                if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
                 {
-                    break;
+                    opts = new List<OptionDOM>();
+                    this.listOfOptions.Add(categoryName, opts);
                 }
+                opts.Add(option);
             }
+            else if (item.PropertyType == typeof(ScreenResolution))
+            {
+                if (!CategoryAttribute.TryGetCategoryName(item, out var categoryName))
+                {
+                    categoryName = string.Empty;
+                }
+                if (!EnumDisplayNameAttribute.TryGetDisplayName(item, out var displayName))
+                {
+                    displayName = item.Name;
+                }
+                var option = new ResolutionOptionDOM(item.Name, displayName);
+                option.Reload(this._configR);
+                option.ComboBox.SelectedValueChanged += this.OptionResolution_ValueChanged;
+                if (!this.listOfOptions.TryGetValue(categoryName, out var opts))
+                {
+                    opts = new List<OptionDOM>();
+                    this.listOfOptions.Add(categoryName, opts);
+                }
+                opts.Add(option);
+            }
+
         }
 
         private void SliderMonitorNo_ValueChanged(object sender, RoutedPropertyChangedEventArgs<int> e)
@@ -177,7 +167,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.DisplayName = displayname;
             }
 
-            public abstract void Reload(PSO2RebootUserConfig conf);
+            public abstract void Reload(PSO2FacadeUserConfig conf);
 
             public abstract FrameworkElement ValueController { get; }
         }
@@ -196,7 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.CheckBox = new WeirdSlider() { Tag = this, Name = "PSO2GameOption_" + name, ItemsSource = lookupDictionary };
             }
 
-            public override void Reload(PSO2RebootUserConfig conf)
+            public override void Reload(PSO2FacadeUserConfig conf)
             {
                 var prop = conf.GetType().GetProperty(this.Name);
                 if (prop != null)
@@ -219,7 +209,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.Slider.slider.Maximum = max;
             }
 
-            public override void Reload(PSO2RebootUserConfig conf)
+            public override void Reload(PSO2FacadeUserConfig conf)
             {
                 var prop = conf.GetType().GetProperty(this.Name);
                 if (prop != null)
@@ -249,7 +239,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             public override FrameworkElement ValueController => this.Slider;
 
-            public override void Reload(PSO2RebootUserConfig conf)
+            public override void Reload(PSO2FacadeUserConfig conf)
             {
                 var prop = conf.GetType().GetProperty(this.Name);
                 if (prop != null && prop.GetValue(conf) is MonitorCountWrapper wrapper)
@@ -286,7 +276,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.Slider.ItemsSource = d;
             }
 
-            public override void Reload(PSO2RebootUserConfig conf)
+            public override void Reload(PSO2FacadeUserConfig conf)
             {
                 var t = conf.GetType();
                 var prop = t.GetProperty(this.Name);
@@ -311,7 +301,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.ComboBox.ItemsSource = CommonResolutions;
             }
 
-            public override void Reload(PSO2RebootUserConfig conf)
+            public override void Reload(PSO2FacadeUserConfig conf)
             {
                 var t = conf.GetType();
                 var prop = t.GetProperty(this.Name);

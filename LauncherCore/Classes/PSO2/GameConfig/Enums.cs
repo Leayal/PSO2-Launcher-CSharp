@@ -14,6 +14,23 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         Maximum
     }
 
+    enum FrameRate_Reboot
+    {
+        Unlimited,
+        [EnumDisplayName("30 FPS")]
+        _30,
+        [EnumDisplayName("60 FPS")]
+        _60,
+        [EnumDisplayName("90 FPS")]
+        _90,
+        [EnumDisplayName("120 FPS")]
+        _120,
+        [EnumDisplayName("144 FPS")]
+        _144,
+        [EnumDisplayName("165 FPS")]
+        _165
+    }
+
     enum ScreenMode
     {
         Windowed,
@@ -50,5 +67,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         TAA,
         [EnumDisplayName("FXAA + TAA")]
         FXAA_TAA
+    }
+
+    enum RenderResolution
+    {
+        Low,
+        Medium,
+        [EnumDisplayName("High (native)")]
+        High
     }
 }

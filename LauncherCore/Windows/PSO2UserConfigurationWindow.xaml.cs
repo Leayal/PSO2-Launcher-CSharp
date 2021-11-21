@@ -29,7 +29,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private readonly string path_conf;
         private UserConfig _conf;
-        private PSO2RebootUserConfig _configR;
+        private PSO2FacadeUserConfig _configR;
         private readonly Dictionary<string, List<OptionDOM>> listOfOptions;
 
         private static readonly Lazy<IHighlightingDefinition> highlighter_dark = new Lazy<IHighlightingDefinition>(() =>
@@ -74,7 +74,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this._conf = new UserConfig("Ini");
             }
 
-            this._configR = new PSO2RebootUserConfig(this._conf);
+            this._configR = new PSO2FacadeUserConfig(this._conf);
             this.listOfOptions = new Dictionary<string, List<OptionDOM>>(6, StringComparer.OrdinalIgnoreCase);
             InitializeComponent();
             this.Box_ManualConfig.TextArea.Options.EnableHyperlinks = false;
@@ -93,10 +93,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             Type t_bool = typeof(bool),
                 t_int = typeof(int);
             this.listOfOptions.Clear();
-
-            // Hackish. Append the resolution selecting first.
-            // ResolutionOptionDOM
-            this.OnBeforeCreatingOptionDom(props, this.listOfOptions);
 
             for (int i = 0; i < props.Length; i++)
             {
@@ -148,6 +144,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.listOfOptions.Add(categoryName, opts);
                     }
                     opts.Add(opt);
+                }
+                else
+                {
+                    this.HandleSpecialConfigurationDom(t);
                 }
             }
 
@@ -235,7 +235,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var conf = UserConfig.Parse(this.Box_ManualConfig.Text);
                     _ = conf.ToString();
                     this._conf = conf;
-                    this._configR = new PSO2RebootUserConfig(conf);
+                    this._configR = new PSO2FacadeUserConfig(conf);
                     foreach (var opts in this.listOfOptions)
                     {
                         foreach (var opt in opts.Value)

@@ -73,6 +73,7 @@ namespace Leayal.PSO2.UserConfig
 
         protected virtual void WriteValueTo(StringBuilder sb, int depth)
         {
+            const string s_equal = " = ";
             sb.Append('{');
             sb.AppendLine();
             object val;
@@ -86,7 +87,7 @@ namespace Leayal.PSO2.UserConfig
                         if (token.values.Count != 0)
                         {
                             PrintIndent(sb, depth);
-                            sb.Append($"{item.Key} = ");
+                            sb.Append(item.Key).Append(s_equal);
                             token.WriteValueTo(sb, depth + 1);
                             sb.Append(',').AppendLine();
                         }
@@ -97,17 +98,25 @@ namespace Leayal.PSO2.UserConfig
                         if (val is bool b)
                         {
                             // Hardcode for boolean. This is better than trying to write val.ToString().ToLower() as it will alloc another 2 strings.
+                            sb.Append(item.Key).Append(s_equal);
+                            (b ? sb.Append("true,") : sb.Append("false,")).AppendLine();
+                            /*
                             if (b)
                             {
-                                sb.AppendLine($"{item.Key} = true,");
+                                sb.Append("true,");
                             }
                             else
                             {
-                                sb.AppendLine($"{item.Key} = false,");
+                                sb.Append($"false,");
                             }
+                            sb.AppendLine();
+                            */
                         }
                         else if (val is double d)
                         {
+                            sb.Append(item.Key).Append(s_equal);
+                            (IsLong(in d) ? sb.Append(Convert.ToInt64(d)) : sb.Append(d)).Append(',').AppendLine();
+                            /*
                             if (IsLong(in d))
                             {
                                 sb.AppendLine($"{item.Key} = {Convert.ToInt64(d)},");
@@ -116,18 +125,22 @@ namespace Leayal.PSO2.UserConfig
                             {
                                 sb.AppendLine($"{item.Key} = {d},");
                             }
+                            */
                         }
                         else if (val is string wstr)
                         {
-                            sb.AppendLine($"{item.Key} = \"{wstr}\",");
+                            sb.Append(item.Key).Append(s_equal).Append('"').Append(wstr).AppendLine("\",");
+                            // sb.AppendLine($"{item.Key} = \"{wstr}\",");
                         }
                         else if (val is ReadOnlyMemory<char> c)
                         {
-                            sb.Append($"{item.Key} = ").Append(c).Append(',').AppendLine();
+                            sb.Append(item.Key).Append(s_equal).Append(c).Append(',').AppendLine();
+                            // sb.Append($"{item.Key} = ").Append(c).Append(',').AppendLine();
                         }
                         else
                         {
-                            sb.AppendLine($"{item.Key} = {val},");
+                            sb.Append(item.Key).Append(s_equal).Append(val).Append(',').AppendLine();
+                            // sb.AppendLine($"{item.Key} = {val},");
                         }
                     }
                 }

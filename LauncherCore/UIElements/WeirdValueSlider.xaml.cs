@@ -21,7 +21,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// </summary>
     public partial class WeirdValueSlider : UserControl
     {
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(int), typeof(WeirdValueSlider), new UIPropertyMetadata(0, (obj, e) =>
+        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(int), typeof(WeirdValueSlider), new PropertyMetadata(0, (obj, e) =>
         {
             if (obj is WeirdValueSlider slider)
             {
@@ -62,8 +62,6 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     return;
                 }
             }
-
-            
         }
 
         private void WeirdButtonNext_Click(object sender, RoutedEventArgs e)

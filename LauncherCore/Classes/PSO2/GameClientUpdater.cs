@@ -163,6 +163,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
                         duhB = Environment.Is64BitProcess ? new FileCheckHashCacheX64(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1) : new FileCheckHashCacheX86(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
+
+                        var ev_backup = await SearchForBackup(dir_pso2bin, selection);
+                        if (ev_backup != null)
+                        {
+                            RestoreBackups(ev_backup, in cancellationToken);
+                        }
+
                         patchlist = await t_patchlist;
                         resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
                         ver = await GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
