@@ -219,7 +219,7 @@ namespace Leayal.PSO2Launcher.Updater
             DialogResult result;
             if (this.isRuntimeObsoleted)
             {
-                result = MsgBoxShortHand(parent, $"The current release of the bootstrap is obsolete.{Environment.NewLine}It is recommended to download the newer bootstrap release.{Environment.NewLine}{Environment.NewLine}Do you want to download now or keep using the current version?{Environment.NewLine}Yes = Open the download page{Environment.NewLine}No = Continue using this{Environment.NewLine}Cancel = Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                result = MsgBoxShortHand(parent, $"The current release version of the launcher's bootstrap is obsolete.{Environment.NewLine}It is recommended to download the newer bootstrap release.{Environment.NewLine}{Environment.NewLine}Do you want to download now or keep using the current version?{Environment.NewLine}Yes = Open the download page{Environment.NewLine}No = Continue using this{Environment.NewLine}Cancel = Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 if (result == DialogResult.Yes)
                 {
                     Process.Start(Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows)), @"https://github.com/Leayal/PSO2-Launcher-CSharp/releases/latest")?.Dispose();
