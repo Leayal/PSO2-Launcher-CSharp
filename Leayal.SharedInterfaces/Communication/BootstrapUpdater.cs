@@ -193,7 +193,7 @@ namespace Leayal.SharedInterfaces.Communication
         /// 
         /// </summary>
         /// <param name="parent"></param>
-        /// <returns>Null to cancel. True to proceed. False to ignore and continue.</returns>
+        /// <returns>Null to cancel. True to proceed updating. False to ignore and continue.</returns>
         bool? DisplayUpdatePrompt(System.Windows.Forms.Form? parent);
 #nullable restore
 

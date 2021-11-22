@@ -28,7 +28,7 @@ namespace Leayal.PSO2Launcher.Updater
         private readonly Architecture _osArch;
 
         private readonly HttpClient wc;
-        private bool recommendBootstrapUpdate; // requireBootstrapUpdate
+        private bool recommendBootstrapUpdate, isRuntimeObsoleted; // requireBootstrapUpdate
         
         private readonly int bootstrapversion;
 
@@ -191,7 +191,13 @@ namespace Leayal.PSO2Launcher.Updater
                             }
                             else
                             {
-                                return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
+                                var result_list = await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
+                                if (result_list.Items.Count == 0)
+                                {
+                                    isRuntimeObsoleted = true;
+                                    result_list.Items.Add(string.Empty, new UpdateItem(string.Empty, string.Empty, string.Empty, string.Empty));
+                                }
+                                return result_list;
                             }
                         }
                         else
@@ -211,16 +217,22 @@ namespace Leayal.PSO2Launcher.Updater
         public bool? DisplayUpdatePrompt(Form? parent)
         {
             DialogResult result;
-            if (this.failToCheck)
+            if (this.isRuntimeObsoleted)
             {
-                if (parent == null)
+                result = MsgBoxShortHand(parent, $"The current release of the bootstrap is obsolete.{Environment.NewLine}It is recommended to download the newer bootstrap release.{Environment.NewLine}{Environment.NewLine}Do you want to download now or keep using the current version?{Environment.NewLine}Yes = Open the download page{Environment.NewLine}No = Continue using this{Environment.NewLine}Cancel = Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                if (result == DialogResult.Yes)
                 {
-                    result = MessageBox.Show("Failed to check for launcher updates.\r\nDo you want to continue anyway?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    Process.Start(Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows)), @"https://github.com/Leayal/PSO2-Launcher-CSharp/releases/latest")?.Dispose();
                 }
-                else
+                return result switch
                 {
-                    result = MessageBox.Show(parent, "Failed to check for launcher updates.\r\nDo you want to continue anyway?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                }
+                    DialogResult.No => false,
+                    _ => null
+                };
+            }
+            else if (this.failToCheck)
+            {
+                result = MsgBoxShortHand(parent, $"Failed to check for launcher updates.{Environment.NewLine}Do you want to continue anyway?", "Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 return result switch
                 {
                     DialogResult.Yes => false,
@@ -231,14 +243,7 @@ namespace Leayal.PSO2Launcher.Updater
             {
                 if (this.recommendBootstrapUpdate)
                 {
-                    if (parent == null)
-                    {
-                        result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-                    }
-                    else
-                    {
-                        result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-                    }
+                    result = MsgBoxShortHand(parent, $"Found new version. Update the launcher?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 }
                 else
                 {
@@ -247,14 +252,7 @@ namespace Leayal.PSO2Launcher.Updater
                     {
                         return true;
                     }
-                    if (parent == null)
-                    {
-                        result = MessageBox.Show("Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-                    }
-                    else
-                    {
-                        result = MessageBox.Show(parent, "Found new version. Update the launcher?\r\nYes: Update [Recommended]\r\nNo: Continue using old version\r\nCancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
-                    }
+                    result = MsgBoxShortHand(parent, $"Found new version. Update the launcher?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 }
                 return result switch
                 {
@@ -263,6 +261,11 @@ namespace Leayal.PSO2Launcher.Updater
                     _ => null
                 };
             }
+        }
+
+        private static DialogResult MsgBoxShortHand(Form? parent, string msg, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            return (parent == null) ? MessageBox.Show(msg, title, buttons, icon) : MessageBox.Show(parent, msg, title, buttons, icon);
         }
 #nullable restore
 
