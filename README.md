@@ -1,5 +1,5 @@
 # PSO2-Launcher-CSharp
- An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET5).
+ An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET6).
  
  This project is just a hobby one.
 
@@ -28,9 +28,7 @@
       - Forget SEGA Login (Forget the SEGA login if user logged in with `remember the login info`).
     - Check for PSO2 updates.
 - Configure PSO2 Client's options.
-  - Only some NGS settings are supported in simple mode right now.
   - Classic options are planned.
-  - More game options are planned.
 - Customizable RSS Feeds:
   - Add or remove RSS Feeds by URLs (When adding, the `Default` Base Handler or `Leayal.PSO2Launcher.RSS.Handlers.WordpressRSSFeed` Base Handler should be sufficient for most cases).
   - Plugin system is available to add more handler to handle special RSS Feeds.
