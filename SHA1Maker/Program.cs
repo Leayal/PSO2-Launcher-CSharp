@@ -30,7 +30,7 @@ namespace SHA1Maker
             using (var writer = new System.Text.Json.Utf8JsonWriter(outputFS))
             {
                 writer.WriteStartObject();
-                writer.WriteNumber("rep-version", 2);
+                writer.WriteNumber("rep-version", 3);
                 var baseUrl = new Uri(url);
                 writer.WriteString("root-url", (new Uri(baseUrl, "files/")).AbsoluteUri);
                 writer.WriteString("root-url-critical", baseUrl.AbsoluteUri);

@@ -200,6 +200,18 @@ namespace Leayal.PSO2Launcher.Updater
                                 return result_list;
                             }
                         }
+                        else if (response_ver == 3)
+                        {
+                            if (this.bootstrapversion < 2)
+                            {
+                                this.recommendBootstrapUpdate = true;
+                                return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
+                            }
+                            else
+                            {
+                                return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
+                            }
+                        }
                         else
                         {
                             return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);

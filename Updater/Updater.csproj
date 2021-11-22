@@ -22,13 +22,6 @@
     </ProjectReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="SharpCompress">
-      <HintPath>..\Dependencies\Build\net5.0\SharpCompress.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="setlocal EnableDelayedExpansion&#xD;&#xA;&#xD;&#xA;SET &quot;localvar_buildconfigname=$(ConfigurationName)&quot;&#xD;&#xA;SET &quot;localvar_targetfilename=$(TargetFileName)&quot;&#xD;&#xA;SET &quot;localvar_solutiondir=$(SolutionDir)&quot;&#xD;&#xA;SET &quot;localvar_targetpath=$(TargetPath)&quot;&#xD;&#xA;&#xD;&#xA;if &quot;%25localvar_buildconfigname:~0,5%25&quot;==&quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_targetpath!&quot; &quot;!localvar_solutiondir!Test\bin\!localvar_targetfilename!&quot;&#xD;&#xA;)&#xD;&#xA;endlocal" />
   </Target>
