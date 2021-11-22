@@ -151,9 +151,9 @@ namespace Leayal.PSO2Launcher.Updater
                 try
                 {
 #if DEBUG
-                    jsonData = File.ReadAllText(Path.Combine(rootDirectory, @"..\docs\publish\update.json"));
+                    jsonData = File.ReadAllText(Path.Combine(rootDirectory, @"..\docs\publish\v6\update.json"));
 #else
-                    jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
+                    jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json");
 #endif
                 }
                 catch

@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Leayal.PSO2.UserConfig</RootNamespace>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
+    <DebugType>full</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

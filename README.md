@@ -66,6 +66,6 @@
   - Anything else is self-explained, such as `minor updates`, `bugfixes` and `feature update`. They are the releases which are published and so they contain short description to summarize the changes. If you are curious about what's the changes, these commits are what you're probably looking for.
 
 # Development
-As of writing this `README.md`, I am using: `Visual Studio 2019` (stable channel) with `.NET cross-platform development` bundle. Specifically, the launcher was written with `C# 8.0` of `.NET5` and `.NET Standard 2.0`.
-- Any IDEs supporting `.NET5 SDK` and `.NET Standard` development should be usable to develop or compile this launcher.
+As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET cross-platform development` bundle. Specifically, the launcher was written with `C# 9.0` of `.NET6`.
+- Any IDEs supporting `.NET6 SDK` development should be usable to develop or compile this launcher.
 
