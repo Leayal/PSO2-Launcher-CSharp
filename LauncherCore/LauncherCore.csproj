@@ -30,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Classes\BackgroundSelfUpdateChecker.cs~RFf5c6b3.TMP" />
     <None Remove="Resources\SyntaxHighlightRuleDarkTheme.xml" />
     <None Remove="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <None Remove="Resources\_bgimg.png" />

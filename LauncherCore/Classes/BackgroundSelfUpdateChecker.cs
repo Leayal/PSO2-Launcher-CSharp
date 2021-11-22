@@ -111,7 +111,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         private async Task<IReadOnlyDictionary<string, string>> GetFileList()
         {
-            var data = await this.webclient.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/update.json");
+            var data = await this.webclient.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json");
             var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             using (var document = JsonDocument.Parse(data))
