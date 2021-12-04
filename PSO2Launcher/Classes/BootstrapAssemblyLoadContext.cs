@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher
+namespace Leayal.PSO2Launcher.Classes
 {
     class BootstrapUpdaterAssemblyLoadContext : AssemblyLoadContext
     {
-        private AssemblyDependencyResolver solver;
+        private AssemblyDependencyResolver? solver;
         public BootstrapUpdaterAssemblyLoadContext() : base("BootstrapUpdater", true) { }
 
         public Assembly Init(string entryPath)
@@ -31,7 +27,7 @@ namespace Leayal.PSO2Launcher
             return result;
         }
 
-        protected override Assembly Load(AssemblyName assemblyName)
+        protected override Assembly? Load(AssemblyName assemblyName)
         {
             var fullname = assemblyName.FullName;
             foreach (var asm in this.Assemblies)
@@ -41,12 +37,16 @@ namespace Leayal.PSO2Launcher
                     return asm;
                 }
             }
-            var path = this.solver.ResolveAssemblyToPath(assemblyName);
-            if (path != null)
+
+            if (this.solver is not null)
             {
-                using (var fs = File.OpenRead(path))
+                var path = this.solver.ResolveAssemblyToPath(assemblyName);
+                if (path != null)
                 {
-                    return base.LoadFromStream(fs);
+                    using (var fs = File.OpenRead(path))
+                    {
+                        return base.LoadFromStream(fs);
+                    }
                 }
             }
             return null;
@@ -54,10 +54,13 @@ namespace Leayal.PSO2Launcher
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
-            var path = this.solver.ResolveUnmanagedDllToPath(unmanagedDllName);
-            if (path != null)
+            if (this.solver is not null)
             {
-                return base.LoadUnmanagedDll(path);
+                var path = this.solver.ResolveUnmanagedDllToPath(unmanagedDllName);
+                if (path != null)
+                {
+                    return base.LoadUnmanagedDll(path);
+                }
             }
             return IntPtr.Zero;
         }

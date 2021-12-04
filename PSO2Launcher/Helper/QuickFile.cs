@@ -38,19 +38,19 @@ namespace Leayal.PSO2Launcher.Helper
             }
         }
 
-        public static string ReadFirstLine(string filename, bool detectEncodingByteOrderMask)
+        public static string? ReadFirstLine(string filename, bool detectEncodingByteOrderMask)
         {
             using (var sr = new StreamReader(filename, detectEncodingByteOrderMask))
                 return sr.ReadLine();
         }
 
-        public static string ReadFirstLine(string filename)
+        public static string? ReadFirstLine(string filename)
         {
             using (var sr = new StreamReader(filename))
                 return sr.ReadLine();
         }
 
-        public static string ReadFirstLine(string filename, Encoding encoding)
+        public static string? ReadFirstLine(string filename, Encoding encoding)
         {
             using (var sr = new StreamReader(filename, encoding))
                 return sr.ReadLine();

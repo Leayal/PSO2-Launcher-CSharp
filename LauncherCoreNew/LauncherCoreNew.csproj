@@ -1,23 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Library</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
-    <RootNamespace>Leayal.PSO2Launcher.Updater</RootNamespace>
-    <AssemblyName>BootstrapUpdater</AssemblyName>
-    <ApplicationIcon />
-    <StartupObject />
-    <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Leayal.PSO2Launcher.Core</RootNamespace>
     <DebugType>full</DebugType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
-    <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj" />
+    <ProjectReference Include="..\LauncherCore\LauncherCore.csproj" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

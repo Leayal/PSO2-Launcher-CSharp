@@ -6,12 +6,16 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Leayal.PSO2Launcher</RootNamespace>
     <AssemblyName>PSO2LeaLauncher</AssemblyName>
-    <StartupObject>Leayal.PSO2Launcher.ProgramWrapper</StartupObject>
+    <StartupObject />
     <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
     <ApplicationIcon>Resources\1.ico</ApplicationIcon>
     <Version>3.0.0</Version>
     <UseWPF>True</UseWPF>
     <DebugType>full</DebugType>
+    <Nullable>enable</Nullable>
+    <Authors>Dramiel Leayal</Authors>
+    <Description>PSO2 Launcher for PSO2: NGS JP</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

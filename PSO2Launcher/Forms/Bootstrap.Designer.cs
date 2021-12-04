@@ -1,5 +1,5 @@
 ﻿
-namespace Leayal.PSO2Launcher
+namespace Leayal.PSO2Launcher.Forms
 {
     partial class Bootstrap
     {
@@ -47,6 +47,7 @@ namespace Leayal.PSO2Launcher
             this.progressBar1.Location = new System.Drawing.Point(12, 27);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(408, 23);
+            this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             this.progressBar1.TabIndex = 1;
             // 
             // Bootstrap

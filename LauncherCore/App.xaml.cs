@@ -20,16 +20,21 @@ namespace Leayal.PSO2Launcher.Core
     {
         public new static App Current => ((App)(Application.Current));
 
+        public readonly int BootstrapVersion;
+
         private bool isLightMode;
 
         public bool IsLightMode => this.isLightMode;
 
         private readonly Classes.ConfigurationFile config_main;
 
-        public App() : base()
+        public App() : this(1) { }
+
+        public App(int bootstrapversion) : base()
         {
+            this.BootstrapVersion = bootstrapversion;
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
-            
+
             this.InitializeComponent();
 
             if (File.Exists(this.config_main.Filename))

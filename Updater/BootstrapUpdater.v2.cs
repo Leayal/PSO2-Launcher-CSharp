@@ -1,5 +1,4 @@
-﻿using Leayal.PSO2Launcher.Helper;
-using Leayal.SharedInterfaces.Communication;
+﻿using Leayal.SharedInterfaces.Communication;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +6,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using Leayal.PSO2Launcher.Helper;
 
 namespace Leayal.PSO2Launcher.Updater
 {

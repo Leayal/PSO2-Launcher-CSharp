@@ -1,5 +1,4 @@
-﻿using Leayal.PSO2Launcher.Helper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
@@ -16,6 +15,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
+using Leayal.PSO2Launcher.Helper;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -31,53 +31,38 @@ namespace Leayal.PSO2Launcher.Updater
         private bool recommendBootstrapUpdate, isRuntimeObsoleted; // requireBootstrapUpdate
         
         private readonly int bootstrapversion;
-
         private bool failToCheck;
 
         public BootstrapUpdater() : this(0, null) { }
 
 #nullable enable
+        private readonly Form? bootstrapForm;
 
-        public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies)
+        public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies) : this(bootstrapversion, loadedAssemblies, null) { }
+
+        public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies, Form? mainWindow)
         {
-            if (EventWaitHandle.TryOpenExisting("pso2lealauncher-v2-waiter", out var waitHandle))
+            if (bootstrapversion < 4)
             {
-                using (waitHandle)
+                if (EventWaitHandle.TryOpenExisting("pso2lealauncher-v2-waiter", out var waitHandle))
                 {
-                    if (waitHandle.Set())
+                    using (waitHandle)
                     {
-                        Application.Exit();
-                        return;
+                        if (waitHandle.Set())
+                        {
+                            Application.Exit();
+                            return;
+                        }
                     }
                 }
             }
+
+            this.bootstrapForm = mainWindow;
 
             // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
             this._osArch = RuntimeInformation.OSArchitecture;
             if (this._osArch != Architecture.X64)
             {
-                Form? targetForm = null;
-                var forms = Application.OpenForms;
-                for (int i = 0; i < forms.Count; i++)
-                {
-                    if (forms[i] is Bootstrap mainwindow)
-                    {
-                        targetForm = mainwindow;
-                        break;
-                    }
-                }
-                if (targetForm == null && forms.Count != 0)
-                {
-                    for (int i = 0; i < forms.Count; i++)
-                    {
-                        var form = forms[i];
-                        if (!form.IsDisposed && form.Visible)
-                        {
-                            targetForm = form;
-                            break;
-                        }
-                    }
-                }
                 var sb = new StringBuilder("Phantasy Star Online 2: New Genesis (Japan) only has 64-bit (specifically, 'AMD64' or 'x86_64' architecture) game client.");
                 sb.AppendLine().AppendLine().Append("Your current operating system is ");
                 switch (this._osArch)
@@ -96,8 +81,8 @@ namespace Leayal.PSO2Launcher.Updater
                         break;
                 }
                 sb.AppendLine().AppendLine().Append("Are you sure you want to continue anyway?");
-                var informResult = targetForm == null ? MessageBox.Show(sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-                    : MessageBox.Show(targetForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var informResult = this.bootstrapForm == null ? MessageBox.Show(sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (informResult != DialogResult.Yes)
                 {
                     Application.Exit();

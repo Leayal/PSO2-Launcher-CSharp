@@ -12,7 +12,7 @@ namespace Leayal.PSO2Launcher.Core
     public class GameLauncher : IWPFApp
     {
         // private App _app;
-
+        
         public GameLauncher()
         {
             // var adminClient = new Leayal.PSO2Launcher.AdminProcess.AdminClient();

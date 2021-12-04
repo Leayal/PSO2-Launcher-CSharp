@@ -1,244 +1,86 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Windows.Forms;
-using Microsoft.VisualBasic.ApplicationServices;
-using System.IO.MemoryMappedFiles;
-using System.Diagnostics;
-using System.Reflection;
-using Leayal.SharedInterfaces.Communication;
-using System.ComponentModel;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Leayal.PSO2Launcher
 {
     static class Program
     {
-        private static bool flag_reload, flag_switchtoWPF;
-        private static SingleAppController _appController;
-        private static IWPFApp wpfController;
+        internal static readonly string RootDirectory;
+        internal static readonly Dictionary<string, Assembly> _preloaded;
 
-        // Should add before the library is loaded.
-        public static HashSet<string> LoadWithoutLock => ProgramWrapper.DemandLoadWithoutLock;
-
-        public static void Main(string[] args)
+        static Program()
         {
-            flag_reload = true;
-            flag_switchtoWPF = false;
-            _appController = null;
-            
-            if (args != null && args.Length == 2)
+            RootDirectory = System.Windows.Forms.Application.StartupPath;
+            var myself = Assembly.GetExecutingAssembly();
+            _preloaded = new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase)
             {
-                if (string.Equals(args[0], "--launch-elevated", StringComparison.OrdinalIgnoreCase))
-                {
-                    var memoryId = args[1];
-                    try
-                    {
-                        RestartObj<BootstrapElevation> data = null;
-                        try
-                        {
-                            using (var fs = new FileStream(memoryId, FileMode.Open, FileAccess.Read))
-                            // using (var mmf = MemoryMappedFile.OpenExisting(Path.Combine("Global", $"leapso2{memoryId}")))
-                            // using (var dataStream = mmf.CreateViewStream())
-                            {
-                                var bytes = new byte[fs.Length];
-                                fs.Read(bytes);
-                                data = RestartObj<BootstrapElevation>.DeserializeJson(bytes);
-                            }
-                        }
-                        catch
-                        {
-                            data = null;
-                            // data = RestartObj<BootstrapElevation>.DeserializeJson(File.ReadAllBytes(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\testelevation.json"));
-                        }
-
-                        if (data == null)
-                        {
-                            Environment.Exit(-1);
-                        }
-                        else
-                        {
-                            using (var process = new Process())
-                            {
-                                process.StartInfo.FileName = data.DataObj.Filename;
-                                if (!string.IsNullOrEmpty(data.DataObj.WorkingDirectory))
-                                {
-                                    process.StartInfo.WorkingDirectory = data.DataObj.WorkingDirectory;
-                                }
-
-                                if (!string.IsNullOrEmpty(data.DataObj.Arguments))
-                                {
-                                    process.StartInfo.Arguments = data.DataObj.Arguments;
-                                }
-
-                                if (data.DataObj.ArgumentList.Count != 0)
-                                {
-                                    foreach (var item in data.DataObj.ArgumentList)
-                                    {
-                                        process.StartInfo.ArgumentList.Add(item);
-                                    }
-                                }
-
-                                if (data.DataObj.EnvironmentVars.Count != 0)
-                                {
-                                    foreach (var item in data.DataObj.EnvironmentVars)
-                                    {
-                                        if (process.StartInfo.EnvironmentVariables.ContainsKey(item.Key))
-                                        {
-                                            process.StartInfo.EnvironmentVariables[item.Key] = item.Value;
-                                        }
-                                        else
-                                        {
-                                            process.StartInfo.EnvironmentVariables.Add(item.Key, item.Value);
-                                        }
-                                    }
-                                }
-                                process.StartInfo.Verb = "runas";
-                                process.StartInfo.UseShellExecute = false;
-
-                                process.Start();
-
-                                if (data.DataObj.LingerTime != 0)
-                                {
-                                    process.WaitForExit(data.DataObj.LingerTime);
-                                }
-                                // Require shell =false
-                            }
-                            Environment.Exit(0);
-                        }
-                    }
-                    catch (Win32Exception ex)
-                    {
-                        Environment.Exit(ex.NativeErrorCode);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        // Derp, what happen.
-                    }
-                }
-                else if (string.Equals(args[0], "--restart-update", StringComparison.OrdinalIgnoreCase))
-                {
-                    var memoryId = args[1];
-                    try
-                    {
-                        if (EventWaitHandle.TryOpenExisting($"{memoryId}-wait", out var waithandle))
-                        {
-                            RestartObj<BootstrapUpdater_CheckForUpdates> data = null;
-                            try
-                            {
-                                using (var mmf = MemoryMappedFile.OpenExisting(memoryId))
-                                using (var dataStream = mmf.CreateViewStream())
-                                {
-                                    var bytes = new byte[dataStream.Length];
-                                    dataStream.Read(bytes);
-                                    data = RestartObj<BootstrapUpdater_CheckForUpdates>.DeserializeJson(bytes);
-                                }
-                            }
-                            catch
-                            {
-                                data = null;
-                            }
-                            finally
-                            {
-                                waithandle.Dispose();
-                            }
-
-                            if (data == null)
-                            {
-                                Environment.Exit(-1);
-                            }
-                            else
-                            {
-                                if (data.DataObj != null && data.DataObj.RestartMoveItems != null && data.DataObj.RestartMoveItems.Count != 0)
-                                {
-                                    foreach (var item in data.DataObj.RestartMoveItems)
-                                    {
-                                        File.Move(item.Value, item.Key, true);
-                                    }
-                                }
-                                if (!string.IsNullOrWhiteSpace(data.ParentFilename))
-                                {
-                                    // Replace files
-
-                                    using (var process = new Process())
-                                    {
-                                        process.StartInfo.FileName = data.ParentFilename;
-                                        if (data.ParentParams != null && data.ParentParams.Count != 0)
-                                        {
-                                            foreach (var arg in data.ParentParams)
-                                            {
-                                                process.StartInfo.ArgumentList.Add(arg);
-                                            }
-                                        }
-                                        process.StartInfo.UseShellExecute = false;
-
-                                        process.Start();
-                                        process.WaitForExit(500);
-                                    }
-                                }
-                                Environment.Exit(0);
-                            }
-                        }
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        // Derp, what happen.
-                    }
-                }
-            }
-
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.EnableVisualStyles();
-
-            while (flag_reload)
+                { GetFilenameFromAssemblyFullname(myself.FullName ?? myself.GetName().Name ?? "PSO2LeaLauncher"), myself }
+            };
+            var names = new string[] { "Leayal.SharedInterfaces" };
+            foreach (var name in names)
             {
-                flag_reload = false;
-
-                if (flag_switchtoWPF && wpfController != null)
+                var path = Path.GetFullPath(Path.Combine("bin", name + ".dll"), RootDirectory);
+                if (File.Exists(path))
                 {
-                    wpfController.Run(args);
-                }
-                else
-                {
-                    _appController = new SingleAppController();
-                    _appController.Run(args);
+                    using (var fs = File.OpenRead(path))
+                    {
+                        var buffer = new byte[fs.Length];
+                        var read = fs.Read(buffer, 0, buffer.Length);
+                        if (read == buffer.Length)
+                        {
+                            var asm = Assembly.Load(buffer);
+                            _preloaded.Add(name, asm);
+                        }
+                    }
                 }
             }
         }
 
-        public static void Reload()
+        [STAThread]
+        static void Main(string[] args)
         {
-            if (_appController != null)
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            try
             {
-                flag_reload = true;
-                _appController.CloseMainForm();
+                LauncherController.Initialize(args);
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
             }
         }
 
-        public static void SwitchToWPF(IWPFApp applicationBase)
+        private static Assembly CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
         {
-            flag_switchtoWPF = true;
-            flag_reload = true;
-            wpfController = applicationBase;
-            _appController?.CloseMainForm();
-        }
-    }
+            var filename = GetFilenameFromAssemblyFullname(args.Name);
+            if (_preloaded.TryGetValue(filename, out var asm))
+            {
+                return asm;
+            }
 
-    class SingleAppController : WindowsFormsApplicationBase
-    {
-        public SingleAppController() : base(AuthenticationMode.Windows)
-        {
-            this.IsSingleInstance = true;
-            this.EnableVisualStyles = true;
-            this.ShutdownStyle = ShutdownMode.AfterMainFormCloses;
-        }
-
-        protected override void OnCreateMainForm()
-        {
-            this.MainForm = new Bootstrap();
+            // Extending probing path: \bin\*;
+            var filepath = Path.GetFullPath(Path.Combine("bin", filename + ".dll"), RootDirectory);
+            if (File.Exists(filepath))
+            {
+                return Assembly.LoadFrom(filepath);
+            }
+            return null;
         }
 
-        public void CloseMainForm() => this.MainForm?.Close();
+        private static string GetFilenameFromAssemblyFullname(string fullname)
+        {
+            var index = fullname.IndexOf(',');
+            if (index == -1)
+            {
+                return fullname;
+            }
+            else
+            {
+                return fullname.Substring(0, index);
+            }
+        }
     }
 }
