@@ -1,9 +1,13 @@
 # PSO2-Launcher-CSharp
- An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET6).
- 
- This project is just a hobby one.
+
+An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET6).
+
+The launcher only targets PSO2 Japan. It may not work for other regions without modifications.
+
+This project is just a hobby one.
 
 # Feature Overviews
+
 - The launcher is designed to be left running for a very long time. Therefore, it is not necessary to close the launcher shortly after using, but it's totally okay to do it, too.
   - If leaving the launcher's window visible on the screen is not a good taste for you, please try `Minimize to tray` feature (read below).
 - All functions related to update PSO2 JP client.
@@ -37,33 +41,39 @@
   - The feature is currently in beta, but it's not changing anything to the system or any files so it's perfectly safe to try. Any technical advices, fixes and explanations are welcomed to share, but please do so by [Creating issues](https://github.com/Leayal/PSO2-Launcher-CSharp/issues) with `label` including `enhancement`. The more you explain about how and why the problem is there, and how the fix works is valuable information.
   - Main purpose is to help player who has technical issue(s) with the game client. However, anything outside of the game client is not mentioned, such as Internet's problem, damaged OS's important files, etc...
   - Most of results and words are "advices", it is not a 'must' to follow accordingly unless stated.
-
+- Convenient Utilities/Toolbox:
+  - Currently, the toolbox has the only experimental `PSO2 Alpha Reactor Counter` which helps user to keep track of the amount of Alpha Reactor that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
+  - The toolbox is accessible via the main menu and via the quick menu if you minimize the launcher to tray.
 
 ### Launcher arguments:
+
 - `--tray`: Launch the launcher and minimize to tray immediately.
 
 # UI Previews
+
 - Theming: User can let the launcher sync with Windows 10's `Dark|Light App Mode` setting or manually select a theme that you prefer.
 
-| | Dark theme      | Light theme     |
-| :-- | :-------------: | :-------------: |
-| Main menu | ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-dark.png) | ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-light.png) |
-| Main menu (RSS Feeds) | ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-rss-dark.png) | ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-rss-light.png) |
-| Main menu (Console log) | ![Dark theme mainmenu console](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-console-dark.png) | ![Light theme mainmenu console](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-console-light.png) |
-| Dialog: Launcher Behavior Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-light.png) |
-| Dialog: PSO2 Data Manager | ![Dark theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-dark.png) | ![Light theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-light.png) |
-| Dialog: RSS Feeds Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-light.png) |
-| Dialog: Launcher Theming Manager | ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-dark.png) | ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-light.png) |
-| Dialog: PSO2 Configuration | ![Dark theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-dark.png) | ![Light theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-light.png) |
+|                                       |                                                          Dark theme                                                          |                                                          Light theme                                                           |
+| :------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
+| Main menu                             |             ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-dark.png)             |             ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-light.png)             |
+| Main menu (RSS Feeds)                 |           ![Dark theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-rss-dark.png)           |           ![Light theme mainmenu](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-rss-light.png)           |
+| Main menu (Console log)               |     ![Dark theme mainmenu console](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-console-dark.png)     |     ![Light theme mainmenu console](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/mainmenu-console-light.png)     |
+| Dialog: Launcher Behavior Manager     |             ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-dark.png)             |             ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/behavior-light.png)             |
+| Dialog: PSO2 Data Manager             |           ![Dark theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-dark.png)           |           ![Light theme data manager](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/data-mgr-light.png)           |
+| Dialog: RSS Feeds Manager             |         ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-dark.png)         |         ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/rss-feed-manager-light.png)         |
+| Dialog: Launcher Theming Manager      |             ![Dark theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-dark.png)             |             ![Light theme behavior](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/thememgr-light.png)             |
+| Dialog: PSO2 Configuration            |       ![Dark theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-dark.png)        |       ![Light theme PSO2 User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-light.png)        |
 | Dialog: PSO2 Configuration (Advanced) | ![Dark theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-dark.png) | ![Light theme PSO2 Advanced User Config](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/pso2options-adv-light.png) |
 
 # Download Releases
+
 - If you are interested in using this launcher, please check out the [Release section of this repository](https://github.com/Leayal/PSO2-Launcher-CSharp/releases/).
 - If you are curious about what changes are made (or `change log`), please check out the [Git commit log](https://github.com/Leayal/PSO2-Launcher-CSharp/commits/main):
   - "Checkpoint" commits are non-release commits. Their main purpose is to make a revertible point (in case I mess things up).
   - Anything else is self-explained, such as `minor updates`, `bugfixes` and `feature update`. They are the releases which are published and so they contain short description to summarize the changes. If you are curious about what's the changes, these commits are what you're probably looking for.
 
 # Development
-As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET desktop development` bundle. Specifically, the launcher was written with `C# 9.0` of `.NET6`.
-- Any IDEs supporting `.NET6 SDK` development should be usable to develop or compile this launcher.
 
+As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET desktop development` bundle. Specifically, the launcher was written with `C# 9.0` of `.NET6`.
+
+- Any IDEs supporting `.NET6 SDK` development should be usable to develop or compile this launcher.
