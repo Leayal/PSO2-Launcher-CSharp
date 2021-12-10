@@ -125,8 +125,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     this.Dispatcher.Invoke(this.characters.Clear);
                 }
-                await this.logreader.DisposeAsync();
                 this.logreader.DataReceived -= this.Logreader_DataReceived;
+                await this.logreader.DisposeAsync();
             }
         }
 
