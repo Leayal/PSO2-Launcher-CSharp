@@ -12,7 +12,7 @@
                      Loaded="ThisSelf_Loaded">
     <local:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
-            <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=Topmost,Mode=TwoWay}" ToolTip="Toggle TopMost">
+            <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=Topmost,Mode=TwoWay}" ToolTip="Toggle 'Always On Top'">
                 <iconPacks:PackIconFontAwesome Kind="DesktopSolid" />
             </ToggleButton>
         </mah:WindowCommands>

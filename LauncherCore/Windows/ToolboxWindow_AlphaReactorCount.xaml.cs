@@ -34,7 +34,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override async Task OnCleanupBeforeClosed()
         {
-            await this.CloseCurrentLog();
+            try
+            {
+                await this.CloseCurrentLog();
+            }
+            catch { }
         }
 
         private async void ThisSelf_Loaded(object sender, RoutedEventArgs e)

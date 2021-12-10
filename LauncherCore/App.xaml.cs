@@ -387,8 +387,15 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_Toolbox_AlphaReactorCounter.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    var window = new Windows.ToolboxWindow_AlphaReactorCount();
-                    window.Show();
+                    try
+                    {
+                        var window = new Windows.ToolboxWindow_AlphaReactorCount();
+                        window.Show();
+                    }
+                    catch (Exception ex)
+                    {
+                        Core.Windows.Prompt_Generic.ShowError(this.MainWindow, ex);
+                    }
                 }
                 else if (!string.IsNullOrEmpty(urlstr) && urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {

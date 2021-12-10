@@ -85,7 +85,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var typical_checkforPSO2Updates = new ToolStripMenuItem("Check for PSO2 Updates");
             typical_checkforPSO2Updates.Click += this.Typical_checkforPSO2Updates_Click;
 
-            typicalMenu.DropDownItems.Add(typical_checkforPSO2Updates);
+            var typical_scanMissingDamaged = new ToolStripMenuItem("Scan for missing or damaged files");
+            typical_scanMissingDamaged.Click += this.Typical_ScanForMissingDamaged_Click;
+            typicalMenu.DropDownItems.AddRange(new[] { typical_checkforPSO2Updates, typical_scanMissingDamaged });
+
+            var toolboxMenu = new ToolStripMenuItem("Toolbox");
+
+            var toolbox_openPSO2AlphaReactorCounter = new ToolStripMenuItem("Open PSO2 Alpha Reactor Counter")
+            {
+                Tag = StaticResources.Url_Toolbox_AlphaReactorCounter
+            };
+            toolbox_openPSO2AlphaReactorCounter.Click += this.MenuItem_UrlCommand_Click;
+            toolboxMenu.DropDownItems.Add(toolbox_openPSO2AlphaReactorCounter);
 
             var menuitem_showLauncher = new ToolStripMenuItem("Show launcher") { Font = new System.Drawing.Font(typicalMenu.Font, System.Drawing.FontStyle.Bold) };
             menuitem_showLauncher.Tag = ico;
@@ -100,6 +111,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 bool isenabled = tab.IsSelected && tab.GameStartEnabled;
                 typical_startGame.Enabled = isenabled;
                 typical_checkforPSO2Updates.Enabled = isenabled;
+                typical_scanMissingDamaged.Enabled = isenabled;
                 foreach (var item in typical_startGame.DropDownItems)
                 {
                     if (item is ToolStripMenuItem dropitem)
@@ -153,20 +165,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
             };
             var performRestartToSelfUpdate = new ToolStripMenuItem("Restart launcher to update launcher")
             {
-                Visible = hasupdatenotificationalready
+                Visible = hasupdatenotificationalready,
+                Tag = StaticResources.Url_ConfirmSelfUpdate
             };
-            performRestartToSelfUpdate.Tag = StaticResources.Url_ConfirmSelfUpdate;
             performRestartToSelfUpdate.VisibleChanged += (sender, e) =>
             {
                 selfupdate_separator.Visible = performRestartToSelfUpdate.Visible;
             };
-            performRestartToSelfUpdate.Click += this.PerformRestartToSelfUpdate_Click;
+            performRestartToSelfUpdate.Click += this.MenuItem_UrlCommand_Click;
 
             ico_contextmenu.Items.AddRange(new ToolStripItem[] {
                 menuitem_showLauncher,
                 new ToolStripSeparator(),
                 typical_startGame,
                 typicalMenu,
+                toolboxMenu,
                 selfupdate_separator, // This is already a separator
                 performRestartToSelfUpdate,
                 new ToolStripSeparator(),
@@ -179,7 +192,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void MenuItemForgetSEGALogin_Click(object sender, EventArgs e)
             => this.ForgetSEGALogin();
 
-        private void PerformRestartToSelfUpdate_Click(object sender, EventArgs e)
+        private void MenuItem_UrlCommand_Click(object sender, EventArgs e)
         {
             if (sender is ToolStripMenuItem menuitem && menuitem.Tag is Uri uri && uri.IsAbsoluteUri)
             {
@@ -201,6 +214,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
             {
                 this.TabMainMenu.TriggerButtonCheckForPSO2Update();
+            }
+        }
+
+        private void Typical_ScanForMissingDamaged_Click(object sender, EventArgs e)
+        {
+            // Unnecessary 'if' but it doesn't hurt to use it.
+            if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
+            {
+                this.TabMainMenu.TriggerScanForMissingOrDamagedFiles(Classes.PSO2.GameClientSelection.Auto);
             }
         }
 

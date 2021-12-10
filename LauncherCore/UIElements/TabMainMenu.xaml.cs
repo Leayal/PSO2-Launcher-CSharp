@@ -174,6 +174,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
         private void ButtonCheckForPSO2Update_Click(object sender, RoutedEventArgs e) => this.TriggerButtonCheckForPSO2Update();
         public void TriggerButtonCheckForPSO2Update() => this.RaiseEvent(new RoutedEventArgs(ButtonCheckForPSO2UpdateClickedEvent));
+        public void TriggerScanForMissingOrDamagedFiles(Classes.PSO2.GameClientSelection selection) => this.RaiseEvent(new ButtonScanFixGameDataClickRoutedEventArgs(selection, ButtonScanFixGameDataClickedEvent));
 
         public event RoutedEventHandler ButtonManageGameDataClicked
         {
