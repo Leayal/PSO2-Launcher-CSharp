@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DebugType>full</DebugType>
+    <Authors>Dramiel Leayal</Authors>
+    <RootNamespace>Leayal.PSO2Launcher.AdminProcess</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj" />
+  </ItemGroup>
+
+</Project>

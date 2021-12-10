@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
-    <RootNamespace>Leayal.PSO2.Installer</RootNamespace>
-    <UseWPF>true</UseWPF>
-    <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <DebugType>full</DebugType>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <RootNamespace>Leayal.PSO2Launcher.Toolbox</RootNamespace>
     <Authors>Dramiel Leayal</Authors>
   </PropertyGroup>
 

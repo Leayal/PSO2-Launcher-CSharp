@@ -32,15 +32,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
+#nullable enable
+        private static readonly Lazy<BitmapSource?> lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
+            lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
+#nullable restore
+
         internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private readonly GameClientUpdater pso2Updater;
         private readonly CancellationTokenSource cancelAllOperation;
         private CancellationTokenSource cancelSrc_gameupdater;
         private readonly ConfigurationFile config_main;
-#nullable enable
-        private readonly Lazy<BitmapSource?> lazybg_dark, lazybg_light;
-#nullable restore
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
@@ -119,10 +121,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.config_main.Load();
             }
             */
-#nullable enable
-            this.lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png"));
-            this.lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
-#nullable restore
             this.trayIcon = new Lazy<System.Windows.Forms.NotifyIcon>(CreateNotifyIcon);
 
             this.cancelAllOperation = new CancellationTokenSource();

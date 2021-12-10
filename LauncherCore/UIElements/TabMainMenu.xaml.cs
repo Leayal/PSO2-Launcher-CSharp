@@ -22,6 +22,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// </summary>
     public partial class TabMainMenu : MetroTabItem
     {
+        private static readonly Lazy<BitmapSource> ico_alphareactor = new Lazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources.ico-item-AlphaReactor.png"));
+
         public static readonly RoutedEvent ButtonCheckForPSO2UpdateClickedEvent = EventManager.RegisterRoutedEvent("ButtonCheckForPSO2UpdateClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameDataClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameDataClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent GameStartRequestedEvent = EventManager.RegisterRoutedEvent("GameStartRequested", RoutingStrategy.Direct, typeof(GameStartRequestEventHandler), typeof(TabMainMenu));
@@ -288,5 +290,25 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         private void ButtonManageGameLauncherTheming_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ButtonManageLauncherThemingClickedEvent));
+
+        private void MenuItem_AlphaReactorCounter_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item)
+            {
+                if (item.Icon is Image img)
+                {
+                    img.Source = ico_alphareactor.Value;
+                }
+                item.Tag = StaticResources.Url_Toolbox_AlphaReactorCounter;
+            }
+        }
+
+        private void MenuItemToolBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is Uri url && url.IsAbsoluteUri)
+            {
+                App.Current.ExecuteCommandUrl(url);
+            }
+        }
     }
 }

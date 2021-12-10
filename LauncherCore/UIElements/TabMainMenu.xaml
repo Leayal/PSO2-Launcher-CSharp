@@ -28,8 +28,20 @@
         </local:SplitButton>
         
         <local:WeirdButton Grid.Row="1" Content="Check for game updates" Click="ButtonCheckForPSO2Update_Click" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <!--<local:WeirdButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />-->
-        <!--<local:CircleButton Grid.Row="2" Content="Manage mods" HorizontalAlignment="Center" VerticalAlignment="Center" Width="100" Height="100" />-->
+        <local:WeirdButton Grid.Row="2" Content="Toolbox" Click="WeirdButtonDropDownAble_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <local:WeirdButton.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Click="MenuItemToolBox_Click" Loaded="MenuItem_AlphaReactorCounter_Loaded">
+                        <MenuItem.Header>
+                            <TextBlock Text="PSO2 Alpha Reactor Count (Experimental)" VerticalAlignment="Center" />
+                        </MenuItem.Header>
+                        <MenuItem.Icon>
+                            <Image Stretch="UniformToFill" StretchDirection="DownOnly" MaxHeight="32" MaxWidth="32" MinHeight="16" MinWidth="16" />
+                        </MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </local:WeirdButton.ContextMenu>
+        </local:WeirdButton>
 
         <local:WeirdButton Grid.Row="0" Grid.Column="2" Content="PSO2 Game Options" HorizontalAlignment="Center" VerticalAlignment="Center" Click="WeirdButtonPSO2GameOption_Click" />
         

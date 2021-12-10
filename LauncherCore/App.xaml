@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core"
              xmlns:localclasses="clr-namespace:Leayal.PSO2Launcher.Core.Classes"
              Exit="Application_Exit"
+             ShutdownMode="OnMainWindowClose"
              Startup="Application_Startup" DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
         <ResourceDictionary>

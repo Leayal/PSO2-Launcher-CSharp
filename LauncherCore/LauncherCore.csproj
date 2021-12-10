@@ -10,6 +10,7 @@
     <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
+    <Authors>Dramiel Leayal</Authors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
@@ -31,6 +32,7 @@
 
   <ItemGroup>
     <None Remove="Classes\BackgroundSelfUpdateChecker.cs~RFf5c6b3.TMP" />
+    <None Remove="Resources\ico-item-AlphaReactor.png" />
     <None Remove="Resources\SyntaxHighlightRuleDarkTheme.xml" />
     <None Remove="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <None Remove="Resources\_bgimg.png" />
@@ -39,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\ico-item-AlphaReactor.png" />
     <EmbeddedResource Include="Resources\SyntaxHighlightRuleDarkTheme.xml" />
     <EmbeddedResource Include="Resources\SyntaxHighlightRuleLightTheme.xml" />
     <EmbeddedResource Include="Resources\_bgimg_dark.png" />
@@ -55,6 +58,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
+    <ProjectReference Include="..\LauncherToolbox\LauncherToolbox.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Installer\Leayal.PSO2Installer.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj" />
     <ProjectReference Include="..\Leayal.Shared.Windows\Leayal.Shared.Windows.csproj" />

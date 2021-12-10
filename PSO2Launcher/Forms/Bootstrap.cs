@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Threading;
 using Leayal.SharedInterfaces.Communication;
+using Leayal.PSO2Launcher.Helper;
 
 namespace Leayal.PSO2Launcher.Forms
 {
@@ -186,7 +187,7 @@ namespace Leayal.PSO2Launcher.Forms
                     break;
                 case false:
                     this.shouldExitApp = false;
-                    LauncherController.Current.Reload();
+                    LauncherController.Current.RestartApplication();
                     break;
                 default:
                     return true;
@@ -233,25 +234,9 @@ namespace Leayal.PSO2Launcher.Forms
             return true;
         }
 
-        private static Assembly LoadAssemblyFromFile(string path)
-        {
-            try
-            {
-                return AssemblyLoadContext.Default.LoadFromNativeImagePath(path, path);
-            }
-            catch (FileLoadException)
-            {
-                return AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
-            }
-            catch (BadImageFormatException)
-            {
-                return AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
-            }
-        }
-
         private object? TryLoadLauncherAssembly(string asmPath, int bootstrapVersion)
         {
-            var asm_launcher = LoadAssemblyFromFile(asmPath);
+            var asm_launcher = AssemblyLoadContext.Default.FromFileWithNative(asmPath);
             if (asm_launcher is not null)
             {
                 if (asm_launcher.GetType("Leayal.PSO2Launcher.Core.GameLauncherNew") is Type newModel)

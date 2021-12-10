@@ -9,6 +9,7 @@
     <StartupObject />
     <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
     <DebugType>full</DebugType>
+    <Authors>Dramiel Leayal</Authors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">

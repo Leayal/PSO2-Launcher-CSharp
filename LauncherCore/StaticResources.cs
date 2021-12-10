@@ -17,5 +17,7 @@ namespace Leayal.PSO2Launcher.Core
         public static readonly Uri Url_ShowLogDialogFromGuid = new Uri("pso2lealauncher://showdialog.fromguid/");
 
         public static readonly Uri Url_ShowPathInExplorer_SpecialFolder_JP_PSO2Config = new Uri("pso2lealauncher://showpathinexplorer/specialfolder/jp/pso2config");
+
+        public static readonly Uri Url_Toolbox_AlphaReactorCounter = new Uri("pso2lealauncher://toolbox/alphareactorcounter");
     }
 }

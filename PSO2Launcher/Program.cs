@@ -10,33 +10,18 @@ namespace Leayal.PSO2Launcher
     {
         internal static readonly string RootDirectory;
         internal static readonly Dictionary<string, Assembly> _preloaded;
+        internal static readonly HashSet<string> _specialOnes = new HashSet<string>(new string[] { "Leayal.SharedInterfaces" }, StringComparer.OrdinalIgnoreCase);
 
         static Program()
         {
             RootDirectory = System.Windows.Forms.Application.StartupPath;
+            _specialOnes = new HashSet<string>(new string[] { "Leayal.SharedInterfaces" }, StringComparer.OrdinalIgnoreCase);
+            _specialOnes.TrimExcess();
             var myself = Assembly.GetExecutingAssembly();
             _preloaded = new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase)
             {
                 { GetFilenameFromAssemblyFullname(myself.FullName ?? myself.GetName().Name ?? "PSO2LeaLauncher"), myself }
             };
-            var names = new string[] { "Leayal.SharedInterfaces" };
-            foreach (var name in names)
-            {
-                var path = Path.GetFullPath(Path.Combine("bin", name + ".dll"), RootDirectory);
-                if (File.Exists(path))
-                {
-                    using (var fs = File.OpenRead(path))
-                    {
-                        var buffer = new byte[fs.Length];
-                        var read = fs.Read(buffer, 0, buffer.Length);
-                        if (read == buffer.Length)
-                        {
-                            var asm = Assembly.Load(buffer);
-                            _preloaded.Add(name, asm);
-                        }
-                    }
-                }
-            }
         }
 
         [STAThread]
@@ -53,7 +38,7 @@ namespace Leayal.PSO2Launcher
             }
         }
 
-        private static Assembly CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+        private static Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
         {
             var filename = GetFilenameFromAssemblyFullname(args.Name);
             if (_preloaded.TryGetValue(filename, out var asm))
@@ -65,7 +50,24 @@ namespace Leayal.PSO2Launcher
             var filepath = Path.GetFullPath(Path.Combine("bin", filename + ".dll"), RootDirectory);
             if (File.Exists(filepath))
             {
-                return Assembly.LoadFrom(filepath);
+                if (_specialOnes.Contains(filename))
+                {
+                    using (var fs = File.OpenRead(filepath))
+                    {
+                        var buffer = new byte[fs.Length];
+                        var read = fs.Read(buffer, 0, buffer.Length);
+                        if (read == buffer.Length)
+                        {
+                            asm = Assembly.Load(buffer);
+                            _preloaded.Add(filename, asm);
+                            return asm;
+                        }
+                    }
+                }
+                else
+                {
+                    return Assembly.LoadFrom(filepath);
+                }
             }
             return null;
         }

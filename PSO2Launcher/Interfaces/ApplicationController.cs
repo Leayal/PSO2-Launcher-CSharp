@@ -140,7 +140,6 @@ namespace Leayal.PSO2Launcher.Interfaces
                 this.Dispose(true);
                 GC.SuppressFinalize(this);
             }
-            
         }
 
         /// <summary>When override, provides the cleanup of all resources allocated.</summary>
@@ -177,7 +176,7 @@ namespace Leayal.PSO2Launcher.Interfaces
             return count - left;
         }
 
-        /// <summary></summary>
+        /// <summary>Execute the application.</summary>
         /// <param name="args"></param>
         public void Run(string[] args)
         {
@@ -214,40 +213,48 @@ namespace Leayal.PSO2Launcher.Interfaces
                 {
                     procId = proc.Id;
                 }
-                var bufferWriter = new System.Buffers.ArrayBufferWriter<byte>();
-                using (var encoder = new Utf8JsonWriter(bufferWriter, new JsonWriterOptions() { Indented = false, SkipValidation = false }))
-                {
-                    encoder.WriteStartObject();
-                    encoder.WriteNumber("processid", procId);
-                    if (args != null && args.Length != 0)
-                    {
-                        encoder.WriteStartArray("args");
-                        for (int i = 0; i < args.Length; i++)
-                        {
-                            encoder.WriteStringValue(args[i]);
-                        }
-                        encoder.WriteEndArray();
-                    }
-                    encoder.WriteEndObject();
-                    encoder.Flush();
-                }
-                var span = bufferWriter.WrittenSpan;
-
-                using (var clientPipe = new NamedPipeClientStream(".", this.identifierString + "-pipe", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
-                {
-                    clientPipe.Connect(5000);
-                    clientPipe.Write(BitConverter.GetBytes(span.Length));
-                    clientPipe.Write(span);
-                    try
-                    {
-                        clientPipe.WaitForPipeDrain();
-                    }
-                    catch (ObjectDisposedException) { }
-                    catch (IOException) { }
-                }
-
-                bufferWriter.Clear();
+                this.OnRemoteProcessRun(procId, args);
             }
+        }
+
+        /// <summary>Application execution on the subsequent processes.</summary>
+        /// <param name="args">The arguments which are going to be sent to the first instance.</param>
+        /// <remarks>By default implementation, this method is to send arguments from subsequent processes to the first instance.</remarks>
+        protected virtual void OnRemoteProcessRun(int processId, string[] args)
+        {
+            var bufferWriter = new System.Buffers.ArrayBufferWriter<byte>();
+            using (var encoder = new Utf8JsonWriter(bufferWriter, new JsonWriterOptions() { Indented = false, SkipValidation = false }))
+            {
+                encoder.WriteStartObject();
+                encoder.WriteNumber("processid", processId);
+                if (args != null && args.Length != 0)
+                {
+                    encoder.WriteStartArray("args");
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        encoder.WriteStringValue(args[i]);
+                    }
+                    encoder.WriteEndArray();
+                }
+                encoder.WriteEndObject();
+                encoder.Flush();
+            }
+            var span = bufferWriter.WrittenSpan;
+
+            using (var clientPipe = new NamedPipeClientStream(".", this.identifierString + "-pipe", PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+            {
+                clientPipe.Connect(5000);
+                clientPipe.Write(BitConverter.GetBytes(span.Length));
+                clientPipe.Write(span);
+                try
+                {
+                    clientPipe.WaitForPipeDrain();
+                }
+                catch (ObjectDisposedException) { }
+                catch (IOException) { }
+            }
+
+            bufferWriter.Clear();
         }
 
         private class NextInstanceData

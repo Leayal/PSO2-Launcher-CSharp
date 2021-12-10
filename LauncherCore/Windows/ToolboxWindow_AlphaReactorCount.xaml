@@ -1,0 +1,60 @@
+﻿<local:MetroWindowEx x:Class="Leayal.PSO2Launcher.Core.Windows.ToolboxWindow_AlphaReactorCount"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+                     xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                     mc:Ignorable="d"
+                     x:Name="ThisSelf"
+                     Title="Toolbox: Alpha Reactor Count" MinWidth="350" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                     Loaded="ThisSelf_Loaded">
+    <local:MetroWindowEx.RightWindowCommands>
+        <mah:WindowCommands>
+            <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=Topmost,Mode=TwoWay}" ToolTip="Toggle TopMost">
+                <iconPacks:PackIconFontAwesome Kind="DesktopSolid" />
+            </ToggleButton>
+        </mah:WindowCommands>
+    </local:MetroWindowEx.RightWindowCommands>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="Select Character: " VerticalAlignment="Center" TextAlignment="Center" />
+        <ComboBox Grid.Column="1" x:Name="CharacterSelector" Loaded="CharacterSelector_Loaded" SelectionChanged="CharacterSelector_SelectionChanged">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name, Mode=OneTime}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="AlphaCounter">
+            <Run Text="{Binding Name, Mode=OneWay}" />
+            <Run Text="has picked up" />
+            <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
+            <Run>
+                <Run.Style>
+                    <Style TargetType="Run">
+                        <Setter Property="Text" Value="Alpha Reactors" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding AlphaReactorCount, Mode=OneWay}" Value="0">
+                                <Setter Property="Text" Value="Alpha Reactor" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding AlphaReactorCount, Mode=OneWay}" Value="1">
+                                <Setter Property="Text" Value="Alpha Reactor" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Run.Style>
+            </Run>
+            <Run Text="for today." />
+        </TextBlock>
+    </Grid>
+</local:MetroWindowEx>
