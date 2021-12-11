@@ -4,41 +4,15 @@ using System.Windows.Media.Imaging;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Windows.Interop;
+using System.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     static class BitmapSourceHelper
     {
-        /* WritableBitmapEx's stuffs
-        public unsafe static void InverseColorWithoutCreatingCopy(this WriteableBitmap bm)
-        {
-            bm.Lock();
-            try
-            {
-                using (var context = bm.GetBitmapContext(ReadWriteMode.ReadWrite))
-                {
-                    Color color;
-                    for (int y = 0; y < context.Height; y++)
-                        for (int x = 0; x < context.Width; x++)
-                        {
-                            color = bm.GetPixel(x, y);
-                            bm.SetPixel(x, y, new Color()
-                            {
-                                A = color.A,
-                                R = color.R,
-                                G = color.G,
-                                B = color.B
-                            });
-                        }
-                    bm.AddDirtyRect(new System.Windows.Int32Rect(0, 0, context.Width, context.Height));
-                }
-            }
-            finally
-            {
-                bm.Unlock();
-            }
-        }
-        */
+        public static BitmapSource FromWin32Icon(System.Drawing.Icon ico)
+            => Imaging.CreateBitmapSourceFromHIcon(ico.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
 
         public static BitmapImage FromEmbedResourcePath(string path)
             => FromEmbedResourcePath(Assembly.GetExecutingAssembly(), path);

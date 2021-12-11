@@ -7,7 +7,7 @@
                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                      xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                      mc:Ignorable="d"
-                     x:Name="ThisSelf"
+                     x:Name="ThisSelf" TitleCharacterCasing="Normal"
                      Title="Toolbox: Alpha Reactor Counter" MinWidth="350" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                      Loaded="ThisSelf_Loaded">
     <local:MetroWindowEx.RightWindowCommands>
@@ -26,11 +26,11 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock Text="Select Character: " VerticalAlignment="Center" TextAlignment="Center" />
-        <ComboBox Grid.Column="1" x:Name="CharacterSelector" Loaded="CharacterSelector_Loaded" SelectionChanged="CharacterSelector_SelectionChanged">
+        <TextBlock Text="Select Account: " VerticalAlignment="Center" TextAlignment="Center" />
+        <ComboBox Grid.Column="1" x:Name="AccountSelector" Loaded="AccountSelector_Loaded" SelectionChanged="AccountSelector_SelectionChanged">
             <ComboBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Name, Mode=OneTime}" />
+                    <TextBlock Text="{Binding Name, Mode=OneWay}" />
                 </DataTemplate>
             </ComboBox.ItemTemplate>
         </ComboBox>

@@ -127,6 +127,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             InitializeComponent();
 
+            this.Icon = App.DefaultAppIcon;
+
             this.ConsoleLog.Options.EnableHyperlinks = true;
             this.ConsoleLog.Options.EnableImeSupport = false;
             this.ConsoleLog.Options.EnableEmailHyperlinks = false;

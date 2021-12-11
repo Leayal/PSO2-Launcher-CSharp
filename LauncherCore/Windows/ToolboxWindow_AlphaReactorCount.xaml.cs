@@ -56,6 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.SetTime(TimeZoneHelper.ConvertTimeToCustom(DateTime.UtcNow));
             this.Logfiles_NewFileFound = new Action<LogCategories, List<string>>(this.Logfiles_OnNewFileFound);
             InitializeComponent();
+            this.Icon = App.DefaultAppIcon;
         }
 
         protected override Task OnCleanupBeforeClosed()
@@ -164,7 +165,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.characters.Add(data);
                     if (this.characters.Count == 1)
                     {
-                        this.CharacterSelector.SelectedIndex = 0;
+                        this.AccountSelector.SelectedIndex = 0;
                     }
                 }
                 data.AddName(charName);
@@ -186,7 +187,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.characters.Add(data);
                     if (this.characters.Count == 1)
                     {
-                        this.CharacterSelector.SelectedIndex = 0;
+                        this.AccountSelector.SelectedIndex = 0;
                     }
                 }
                 data.AddName(charName);
@@ -267,7 +268,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public bool Equals(CharacterData other) => this.AccountID == other.AccountID;
         }
 
-        private void CharacterSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void AccountSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems is not null && e.AddedItems.Count != 0)
             {
@@ -279,7 +280,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void CharacterSelector_Loaded(object sender, RoutedEventArgs e)
+        private void AccountSelector_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is ComboBox box)
             {

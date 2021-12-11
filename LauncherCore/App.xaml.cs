@@ -10,6 +10,9 @@ using System.Windows;
 using Microsoft.Win32;
 using System.Diagnostics;
 using Leayal.Shared;
+using Leayal.PSO2Launcher.Helper;
+using System.Windows.Media.Imaging;
+using Leayal.PSO2Launcher.Core.Classes;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -20,10 +23,11 @@ namespace Leayal.PSO2Launcher.Core
     {
         public new static App Current => ((App)(Application.Current));
 
+        public static readonly BitmapSource DefaultAppIcon = BitmapSourceHelper.FromWin32Icon(BootstrapResources.ExecutableIcon);
+
         public readonly int BootstrapVersion;
 
         private bool isLightMode;
-
         public bool IsLightMode => this.isLightMode;
 
         private readonly Classes.ConfigurationFile config_main;
