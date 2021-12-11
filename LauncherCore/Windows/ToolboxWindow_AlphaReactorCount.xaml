@@ -80,9 +80,28 @@
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="for today. (" />
+            <Run Text="for today." />
+            <LineBreak />
+            <Run Text="JST Time: " />
             <Run Text="{Binding ElementName=ThisSelf,Path=CurrentDate,Mode=OneWay}" />
-            <Run Text=")" />
+            <Run>
+                <Run.Style>
+                    <Style TargetType="Run">
+                        <Setter Property="Text" Value="" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ElementName=ThisSelf, Path=IsBeforeReset, Mode=OneWay}" Value="True">
+                                <Setter Property="Text" Value="before spawn reset" />        
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding ElementName=ThisSelf, Path=IsBeforeReset, Mode=OneWay}" Value="False">
+                                <Setter Property="Text" Value="after spawn reset" />        
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Run.Style>
+            </Run>
+            <Run Text="(Reset at 4AM JST)" />
+            <LineBreak />
+            
         </TextBlock>
     </Grid>
 </local:MetroWindowEx>

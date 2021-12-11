@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -9,8 +10,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Toolbox;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -19,6 +22,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
     {
+        private static readonly TimeOnly DailyResetTime = new TimeOnly(4, 0);
+
         private static readonly DependencyPropertyKey CurrentDatePropertyKey = DependencyProperty.RegisterReadOnly("CurrentDate", typeof(DateOnly), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(DateOnly.MinValue, (obj, e) =>
         {
             if (obj is ToolboxWindow_AlphaReactorCount window)
@@ -30,19 +35,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }));
         public static readonly DependencyProperty CurrentDateProperty = CurrentDatePropertyKey.DependencyProperty;
+
+        private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(null));
+        public static readonly DependencyProperty IsBeforeResetProperty = IsBeforeResetPropertyKey.DependencyProperty;
+
         public DateOnly CurrentDate => (DateOnly)this.GetValue(CurrentDateProperty);
+        public bool? IsBeforeReset => (bool?)this.GetValue(IsBeforeResetProperty);
         private DateOnly myToday;
 
         private PSO2LogAsyncReader? logreader;
-        public static readonly Lazy<LogCategories> PSO2LogWatcher = new Lazy<LogCategories>();
+        public static readonly Lazy<LogCategories> PSO2LogWatcher = new Lazy<LogCategories>(() => new LogCategories(App.Current.Dispatcher));
         private readonly ObservableCollection<CharacterData> characters;
+        private readonly Dictionary<long, CharacterData> mapping;
         private readonly Action<LogCategories, List<string>> Logfiles_NewFileFound;
 
         public ToolboxWindow_AlphaReactorCount() : base()
         {
+            this.mapping = new Dictionary<long, CharacterData>();
             this.characters = new ObservableCollection<CharacterData>();
-            this.myToday = DateOnly.FromDateTime(DateTime.Today);
-            this.SetValue(CurrentDatePropertyKey, this.myToday);
+            this.SetTime(TimeZoneHelper.ConvertTimeToCustom(DateTime.UtcNow));
             this.Logfiles_NewFileFound = new Action<LogCategories, List<string>>(this.Logfiles_OnNewFileFound);
             InitializeComponent();
         }
@@ -78,7 +89,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public void SelectLog(List<string> logcategory, int index)
         {
-            if (logcategory.Count == 0)
+            if (logcategory.Count == 0 && index < 0)
             {
                 this.CloseCurrentLog();
             }
@@ -97,28 +108,44 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        private void SetTime(DateTime datetime)
+        {
+            this.SetValue(CurrentDatePropertyKey, DateOnly.FromDateTime(datetime));
+            this.SetValue(IsBeforeResetPropertyKey, TimeOnly.FromDateTime(datetime) < DailyResetTime);
+        }
+
         public void RefreshDate()
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            if (this.myToday != today)
+            var today = TimeZoneHelper.ConvertTimeToCustom(DateTime.UtcNow);
+            if (this.Dispatcher.CheckAccess())
             {
-                if (this.Dispatcher.CheckAccess())
-                {
-                    this.SetValue(CurrentDatePropertyKey, today);
-                }
-                else
-                {
-                    this.Dispatcher.Invoke(new Action<DependencyProperty, object>(this.SetValue), new object[] { CurrentDatePropertyKey, today });
-                }
+                this.SetTime(today);
+            }
+            else
+            {
+                this.Dispatcher.Invoke(new Action<DateTime>(this.SetTime), new object[] { today });
             }
         }
 
         private void Logreader_DataReceived(PSO2LogAsyncReader arg1, LogReaderDataReceivedEventArgs arg2)
         {
             var datas = arg2.GetDatas();
-            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase) && (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase)) && DateOnly.TryParse(datas[0].Span.Slice(0, 10), out var dateonly) && dateonly == this.myToday)
+            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase) && (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase)))
             {
-                this.IncreaseCharacterAlphaCount(long.Parse(datas[3].Span), new string(datas[4].Span));
+                var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), "yyyy-MM-dd");
+                var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
+                var localtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
+                var customTime = TimeZoneHelper.ConvertTimeToCustom(localtime);
+                dateonly = DateOnly.FromDateTime(customTime);
+                timeonly = TimeOnly.FromDateTime(customTime);
+                if ((dateonly == this.myToday && timeonly > DailyResetTime) || dateonly > this.myToday)
+                {
+                    this.RefreshDate();
+                }
+                if (dateonly == this.myToday && timeonly > DailyResetTime)
+                {
+                    this.IncreaseCharacterAlphaCount(long.Parse(datas[3].Span), new string(datas[4].Span));
+                }
             }
             else
             {
@@ -130,16 +157,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (this.Dispatcher.CheckAccess())
             {
-                var data = new CharacterData(charId, charName);
-                var i = this.characters.IndexOf(data);
-                if (i == -1)
+                if (!this.mapping.TryGetValue(charId, out var data))
                 {
+                    data = new CharacterData(charId);
+                    this.mapping.Add(charId, data);
                     this.characters.Add(data);
                     if (this.characters.Count == 1)
                     {
                         this.CharacterSelector.SelectedIndex = 0;
                     }
                 }
+                data.AddName(charName);
             }
             else
             {
@@ -151,21 +179,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (this.Dispatcher.CheckAccess())
             {
-                var data = new CharacterData(charId, charName);
-                var i = this.characters.IndexOf(data);
-                if (i != -1)
+                if (!this.mapping.TryGetValue(charId, out var data))
                 {
-                    this.characters[i].AlphaReactorCount++;
-                }
-                else
-                {
-                    data.AlphaReactorCount++;
+                    data = new CharacterData(charId);
+                    this.mapping.Add(charId, data);
                     this.characters.Add(data);
                     if (this.characters.Count == 1)
                     {
                         this.CharacterSelector.SelectedIndex = 0;
                     }
                 }
+                data.AddName(charName);
+                data.AlphaReactorCount++;
             }
             else
             {
@@ -175,27 +200,32 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public void CloseCurrentLog()
         {
-            if (this.logreader is not null)
+            if (this.Dispatcher.CheckAccess())
             {
-                if (this.Dispatcher.CheckAccess())
+                this.characters.Clear();
+                this.mapping.Clear();
+                if (this.logreader is not null)
                 {
-                    this.characters.Clear();
+                    this.logreader.DataReceived -= this.Logreader_DataReceived;
+                    this.logreader.Dispose();
                 }
-                else
-                {
-                    this.Dispatcher.Invoke(this.characters.Clear);
-                }
-                this.logreader.DataReceived -= this.Logreader_DataReceived;
-                this.logreader.Dispose();
+            }
+            else
+            {
+                this.Dispatcher.Invoke(this.CloseCurrentLog);
             }
         }
 
         sealed class CharacterData : DependencyObject, IEquatable<CharacterData>
         {
-            public readonly string CharacterName;
-            public readonly long CharacterID;
+            public readonly long AccountID;
+            private readonly HashSet<string> names;
+            private readonly StringBuilder sb;
 
-            public string Name => $"{this.CharacterName} (ID: {this.CharacterID})";
+            private static readonly DependencyPropertyKey NamePropertyKey = DependencyProperty.RegisterReadOnly("Name", typeof(string), typeof(CharacterData), new PropertyMetadata(string.Empty));
+            public static readonly DependencyProperty NameProperty = NamePropertyKey.DependencyProperty;
+
+            public string Name => (string)this.GetValue(NameProperty);
 
             public static readonly DependencyProperty AlphaReactorCountProperty = DependencyProperty.Register("AlphaReactorCount", typeof(int), typeof(CharacterData), new PropertyMetadata(0));
             public int AlphaReactorCount
@@ -204,13 +234,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 set => this.SetValue(AlphaReactorCountProperty, value);
             }
 
-            public CharacterData(long characterID, string characterName)
+            public CharacterData(long characterID)
             {
-                this.CharacterID = characterID;
-                this.CharacterName = characterName;
+                this.sb = new StringBuilder();
+                this.names = new HashSet<string>();
+                this.AccountID = characterID;
             }
 
-            public bool Equals(CharacterData other) => (this.CharacterID == other.CharacterID && this.CharacterName == other.CharacterName);
+            public void AddName(string name)
+            {
+                if (this.names.Add(name))
+                {
+                    this.sb.Clear();
+                    bool isFirst = true;
+                    foreach (var n in this.names)
+                    {
+                        if (isFirst)
+                        {
+                            isFirst = false;
+                            this.sb.Append(n);
+                        }
+                        else
+                        {
+                            this.sb.Append(", ").Append(n);
+                        }
+                    }
+                    this.sb.Append(" (Account ID: ").Append(this.AccountID).Append(')');
+                    this.SetValue(NamePropertyKey, this.sb.ToString());
+                }
+            }
+
+            public bool Equals(CharacterData other) => this.AccountID == other.AccountID;
         }
 
         private void CharacterSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -237,18 +291,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             private static readonly string LogDir = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "log_ngs"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
+            private readonly DispatcherTimer ddActionLog, ddRewardLog;
             public readonly List<string> ActionLog, RewardLog;
             public readonly FileSystemWatcher watcher;
 
             private int refcount;
             private readonly Task t_refresh;
 
-            public LogCategories()
+            public LogCategories(Dispatcher dispatcher)
             {
                 this.refcount = 0;
                 this.ActionLog = new List<string>();
                 this.RewardLog = new List<string>();
-                // this.RewardLog = new SortedSet<string>(FileDateComparer.Default);
+                var ts = TimeSpan.FromMilliseconds(50);
+                this.ddActionLog = new DispatcherTimer(ts, DispatcherPriority.Normal, this.OnNewActionLogFound, dispatcher) { IsEnabled = false };
+                this.ddRewardLog = new DispatcherTimer(ts, DispatcherPriority.Normal, this.OnNewRewardLogFound, dispatcher) { IsEnabled = false };
                 this.watcher = new FileSystemWatcher();
                 this.watcher.BeginInit();
                 Directory.CreateDirectory(LogDir);
@@ -275,7 +332,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.ActionLog.Add(e.FullPath);
                         this.ActionLog.Sort(FileDateComparer.Default);
                     }
-                    this.NewFileFound?.Invoke(this, this.ActionLog);
+                    this.ddActionLog.Stop();
+                    this.ddActionLog.Start();
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                 {
@@ -285,8 +343,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.RewardLog.Add(e.FullPath);
                         this.RewardLog.Sort(FileDateComparer.Default);
                     }
-                    this.NewFileFound?.Invoke(this, this.RewardLog);
+                    this.ddRewardLog.Stop();
+                    this.ddRewardLog.Start();
                 }
+            }
+
+            private void OnNewActionLogFound(object? sender, EventArgs e)
+            {
+                this.ddActionLog.Stop();
+                this.NewFileFound?.Invoke(this, this.ActionLog);
+            }
+            private void OnNewRewardLogFound(object? sender, EventArgs e)
+            {
+                this.ddRewardLog.Stop();
+                this.NewFileFound?.Invoke(this, this.RewardLog);
             }
 
             public async void StartWatching(Action<LogCategories, List<string>> callback)
@@ -337,7 +407,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     if (isremoved)
                     {
-                        this.NewFileFound?.Invoke(this, this.ActionLog);
+                        this.ddActionLog.Stop();
+                        this.ddActionLog.Start();
                     }
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
@@ -349,7 +420,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     if (isremoved)
                     {
-                        this.NewFileFound?.Invoke(this, this.RewardLog);
+                        this.ddRewardLog.Stop();
+                        this.ddRewardLog.Start();
                     }
                 }
             }
@@ -366,7 +438,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.ActionLog.Add(e.FullPath);
                         this.ActionLog.Sort(FileDateComparer.Default);
                     }
-                    this.NewFileFound?.Invoke(this, this.ActionLog);
+                    this.ddActionLog.Stop();
+                    this.ddActionLog.Start();
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                 {
@@ -375,7 +448,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.RewardLog.Add(e.FullPath);
                         this.RewardLog.Sort(FileDateComparer.Default);
                     }
-                    this.NewFileFound?.Invoke(this, this.RewardLog);
+                    this.ddRewardLog.Stop();
+                    this.ddRewardLog.Start();
                 }
             }
 
