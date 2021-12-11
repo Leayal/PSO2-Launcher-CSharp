@@ -5,11 +5,16 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Toolbox
 {
-    public struct LogReaderDataReceivedEventArgs
+    /// <summary>Event data for <seealso cref="PSO2LogAsyncReader.DataReceived"/>.</summary>
+    public readonly struct LogReaderDataReceivedEventArgs
     {
         private const char DataSplitter = '\t';
+
+        /// <summary>The raw data (a log line) that is fetched from the file.</summary>
         public readonly string Data;
 
+        /// <summary>Split the log line into parts by their space/tab.</summary>
+        /// <returns>A list of text parts</returns>
         public List<ReadOnlyMemory<char>> GetDatas()
         {
             var result = new List<ReadOnlyMemory<char>>(8);
@@ -26,8 +31,8 @@ namespace Leayal.PSO2Launcher.Toolbox
             return result;
         }
 
-
-
+        /// <summary>Create a new event data from the raw log line.</summary>
+        /// <param name="data">The log line which is read from the log file.</param>
         public LogReaderDataReceivedEventArgs(string data)
         {
             this.Data = data;

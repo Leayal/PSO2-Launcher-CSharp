@@ -4,10 +4,19 @@ namespace Leayal.PSO2Launcher.Toolbox
 {
     /// <summary>Provides an implementation to read a text file in async manner.</summary>
     /// <remarks>This class is single-use. Once started, it can only be stopped by calling <seealso cref="DisposeAsync"/>. Likewise, once stopped, it can't be started again.</remarks>
-    public class PSO2LogAsyncReader : IAsyncDisposable
+    public class PSO2LogAsyncReader : IDisposable
     {
-        private readonly StreamReader sr;
+        private readonly CancellationTokenSource cancelSrc;
+        private readonly FileStream fs;
         private Task? t_readFile;
+        private readonly bool _leaveOpen;
+
+        /// <summary>Gets the full path to the log file.</summary>
+        public string Fullpath => this.fs.Name;
+
+        /// <summary>Creates a new instance with the given file path.</summary>
+        /// <param name="filepath">The path to the log file.</param>
+        public PSO2LogAsyncReader(string filepath) : this(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), false) { }
 
         /// <summary>Creates a new instance with the given <seealso cref="FileStream"/> that will close the <paramref name="fs"/> stream when the instance is disposed.</summary>
         /// <param name="fs">The file stream to read the log.</param>
@@ -19,7 +28,9 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <param name="keepOpen">The boolean to determine whether the <paramref name="fs"/> stream should be closed when this instance is disposed.</param>
         public PSO2LogAsyncReader(FileStream fs, bool keepOpen)
         {
-            this.sr = new StreamReader(fs, leaveOpen: keepOpen);
+            this.cancelSrc = new CancellationTokenSource();
+            this._leaveOpen = keepOpen;
+            this.fs = fs;
         }
 
         /// <summary>Begin the async operation.</summary>
@@ -27,44 +38,44 @@ namespace Leayal.PSO2Launcher.Toolbox
         public void StartReceiving()
         {
             if (this.t_readFile is not null) return;
-            this.t_readFile = Task.Run(this.ReadFileAsync);
+            this.t_readFile = Task.Factory.StartNew(this.ReadFileAsync, TaskCreationOptions.LongRunning).Unwrap();
         }
 
         private async Task ReadFileAsync()
         {
-            while (true)
+            using (var cancel = this.cancelSrc)
+            using (var sr = new StreamReader(this.fs))
             {
+                var token = this.cancelSrc.Token;
                 try
                 {
-                    var line = await this.sr.ReadLineAsync();
-                    if (string.IsNullOrEmpty(line))
+                    while (!token.IsCancellationRequested)
                     {
-                        await Task.Delay(10);
-                    }
-                    else
-                    {
-                        this.DataReceived?.Invoke(this, new LogReaderDataReceivedEventArgs(line));
+                        var line = sr.ReadLine();
+                        if (string.IsNullOrEmpty(line))
+                        {
+                            await Task.Delay(5, token);
+                        }
+                        else
+                        {
+                            this.DataReceived?.Invoke(this, new LogReaderDataReceivedEventArgs(line));
+                        }
                     }
                 }
-                catch (ObjectDisposedException) // Silent the disposed exception as we will actually use it to "cancel" the async ReadLine above.
-                {
-                    // Exit the infinite loop
-                    break;
-                }
+                catch (ObjectDisposedException) { }
+                catch (TaskCanceledException) { }
             }
         }
 
         /// <summary>Close the reader</summary>
-        public async ValueTask DisposeAsync()
+        public void Dispose()
         {
+            this.DataReceived = null;
+            this.cancelSrc.Cancel();
             // Trigger ObjectDisposedException on the Task.
-            this.sr.Dispose();
-
-            if (this.t_readFile is not null)
+            if (!this._leaveOpen)
             {
-                // If the async operation has been started. Gracefully wait for it to be finished so that the GC can consider this whole thing is instance is no longer used.
-                // This also provides some kind of safe code flow if there is a need of ensuring the FileHandle is closed before doing anything else.
-                await this.t_readFile;
+                this.fs.Dispose();
             }
         }
 

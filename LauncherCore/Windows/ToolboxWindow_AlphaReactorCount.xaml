@@ -8,7 +8,7 @@
                      xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                      mc:Ignorable="d"
                      x:Name="ThisSelf"
-                     Title="Toolbox: Alpha Reactor Count" MinWidth="350" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                     Title="Toolbox: Alpha Reactor Counter" MinWidth="350" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                      Loaded="ThisSelf_Loaded">
     <local:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
@@ -35,7 +35,33 @@
             </ComboBox.ItemTemplate>
         </ComboBox>
 
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="350">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SelectedItem, ElementName=CharacterSelector, Mode=OneWay}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+            <Run Text="No character has been found." />
+            <LineBreak />
+            <Run Text="Please login the game and pick anything up with your character so that the counter can start tracking." />
+        </TextBlock>
+
         <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="AlphaCounter">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SelectedItem, ElementName=CharacterSelector, Mode=OneWay}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
             <Run Text="{Binding Name, Mode=OneWay}" />
             <Run Text="has picked up" />
             <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
@@ -54,7 +80,9 @@
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="for today." />
+            <Run Text="for today. (" />
+            <Run Text="{Binding ElementName=ThisSelf,Path=CurrentDate,Mode=OneWay}" />
+            <Run Text=")" />
         </TextBlock>
     </Grid>
 </local:MetroWindowEx>

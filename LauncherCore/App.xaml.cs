@@ -417,7 +417,11 @@ namespace Leayal.PSO2Launcher.Core
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
-
+            var lazy_pso2LogWatcher = Core.Windows.ToolboxWindow_AlphaReactorCount.PSO2LogWatcher;
+            if (lazy_pso2LogWatcher.IsValueCreated)
+            {
+                lazy_pso2LogWatcher.Value.Dispose();
+            }
             // Double check and close all database connections.
             // Optimally, this should does nothing because all databases have been finalized and closed.
             // SQLite.SQLiteAsyncConnection.ResetPool();

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,77 +19,135 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
     {
-        private const char LogLineSplitter = '\t';
-        
+        private static readonly DependencyPropertyKey CurrentDatePropertyKey = DependencyProperty.RegisterReadOnly("CurrentDate", typeof(DateOnly), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(DateOnly.MinValue, (obj, e) =>
+        {
+            if (obj is ToolboxWindow_AlphaReactorCount window)
+            {
+                if (e.NewValue is DateOnly val)
+                {
+                    window.myToday = val;
+                }
+            }
+        }));
+        public static readonly DependencyProperty CurrentDateProperty = CurrentDatePropertyKey.DependencyProperty;
+        public DateOnly CurrentDate => (DateOnly)this.GetValue(CurrentDateProperty);
         private DateOnly myToday;
 
         private PSO2LogAsyncReader? logreader;
-        private readonly LogCategories logfiles;
+        public static readonly Lazy<LogCategories> PSO2LogWatcher = new Lazy<LogCategories>();
         private readonly ObservableCollection<CharacterData> characters;
 
         public ToolboxWindow_AlphaReactorCount() : base()
         {
             this.characters = new ObservableCollection<CharacterData>();
-            this.logfiles = new LogCategories();
+            this.myToday = DateOnly.FromDateTime(DateTime.Today);
+            this.SetValue(CurrentDatePropertyKey, this.myToday);
             InitializeComponent();
         }
 
-        protected override async Task OnCleanupBeforeClosed()
+        protected override Task OnCleanupBeforeClosed()
         {
+            var logfiles = PSO2LogWatcher.Value;
+            logfiles.NewFileFound -= this.Logfiles_NewFileFound;
+            logfiles.StopWatching();
             try
             {
-                await this.CloseCurrentLog();
+                this.CloseCurrentLog();
             }
             catch { }
+            return Task.CompletedTask;
         }
 
-        private async void ThisSelf_Loaded(object sender, RoutedEventArgs e)
+        private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
-            await this.logfiles.Refresh();
-            await this.SelecNewestLog(this.logfiles.ActionLog);
-            this.logfiles.NewFileFound += this.Logfiles_NewFileFound;
+            var logfiles = PSO2LogWatcher.Value;
+            logfiles.StartWatching();
+            this.SelectNewestLog(logfiles.ActionLog);
+            logfiles.NewFileFound += this.Logfiles_NewFileFound;
         }
 
-        private async Task Logfiles_NewFileFound(object sender, List<string> ev)
+        private void Logfiles_NewFileFound(object sender, List<string> ev)
         {
-            if (ev == this.logfiles.ActionLog)
+            if (ev == PSO2LogWatcher.Value.ActionLog)
             {
-                await this.SelecNewestLog(ev);
+                this.SelectNewestLog(ev);
             }
         }
 
-        public Task SelecNewestLog(List<string> logcategory) => this.SelectLog(logcategory, logcategory.Count - 1);
+        public void SelectNewestLog(List<string> logcategory) => this.SelectLog(logcategory, logcategory.Count - 1);
 
-        public async Task SelectLog(List<string> logcategory, int index)
+        public void SelectLog(List<string> logcategory, int index)
         {
-            var filepath = logcategory[index];
-            if (File.Exists(filepath))
+            if (logcategory.Count == 0)
             {
-                await this.CloseCurrentLog();
-                this.myToday = DateOnly.FromDateTime(DateTime.Today);
-                this.logreader = new PSO2LogAsyncReader(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous));
-                this.logreader.DataReceived += this.Logreader_DataReceived;
-                this.logreader.StartReceiving();
+                this.CloseCurrentLog();
+            }
+            else
+            {
+                var filepath = logcategory[index];
+                if (this.logreader is not null && string.Equals(Path.IsPathFullyQualified(filepath) ? filepath : Path.GetFullPath(filepath), this.logreader.Fullpath, StringComparison.OrdinalIgnoreCase)) return;
+                if (File.Exists(filepath))
+                {
+                    this.CloseCurrentLog();
+                    this.RefreshDate();
+                    this.logreader = new PSO2LogAsyncReader(filepath);
+                    this.logreader.DataReceived += this.Logreader_DataReceived;
+                    this.logreader.StartReceiving();
+                }
+            }
+        }
+
+        public void RefreshDate()
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            if (this.myToday != today)
+            {
+                if (this.Dispatcher.CheckAccess())
+                {
+                    this.SetValue(CurrentDatePropertyKey, today);
+                }
+                else
+                {
+                    this.Dispatcher.Invoke(new Action<DependencyProperty, object>(this.SetValue), new object[] { CurrentDatePropertyKey, today });
+                }
             }
         }
 
         private void Logreader_DataReceived(PSO2LogAsyncReader arg1, LogReaderDataReceivedEventArgs arg2)
         {
             var datas = arg2.GetDatas();
-            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase))
+            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase) && (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase)) && DateOnly.TryParse(datas[0].Span.Slice(0, 10), out var dateonly) && dateonly == this.myToday)
             {
-                if (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase))
-                {
-                    var dateonly = DateOnly.Parse(datas[0].Span.Slice(0, 10));
-                    if (dateonly == this.myToday)
-                    {
-                        this.ProcessCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
-                    }
-                }
+                this.IncreaseCharacterAlphaCount(long.Parse(datas[3].Span), new string(datas[4].Span));
+            }
+            else
+            {
+                this.AddCharacter(long.Parse(datas[3].Span), new string(datas[4].Span));
             }
         }
 
-        private void ProcessCharacterData(long charId, string charName)
+        private void AddCharacter(long charId, string charName)
+        {
+            if (this.Dispatcher.CheckAccess())
+            {
+                var data = new CharacterData(charId, charName);
+                var i = this.characters.IndexOf(data);
+                if (i == -1)
+                {
+                    this.characters.Add(data);
+                    if (this.characters.Count == 1)
+                    {
+                        this.CharacterSelector.SelectedIndex = 0;
+                    }
+                }
+            }
+            else
+            {
+                this.Dispatcher.Invoke(new Action<long, string>(this.AddCharacter), new object[] { charId, charName });
+            }
+        }
+
+        private void IncreaseCharacterAlphaCount(long charId, string charName)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -109,11 +169,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.Dispatcher.Invoke(new Action<long, string>(this.ProcessCharacterData), new object[] { charId, charName });
+                this.Dispatcher.Invoke(new Action<long, string>(this.IncreaseCharacterAlphaCount), new object[] { charId, charName });
             }
         }
 
-        public async ValueTask CloseCurrentLog()
+        public void CloseCurrentLog()
         {
             if (this.logreader is not null)
             {
@@ -126,7 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.Dispatcher.Invoke(this.characters.Clear);
                 }
                 this.logreader.DataReceived -= this.Logreader_DataReceived;
-                await this.logreader.DisposeAsync();
+                this.logreader.Dispose();
             }
         }
 
@@ -153,32 +213,66 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public bool Equals(CharacterData other) => (this.CharacterID == other.CharacterID && this.CharacterName == other.CharacterName);
         }
 
-        sealed class LogCategories
+        public sealed class LogCategories : IDisposable
         {
             private static readonly string LogDir = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "log_ngs"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
             public readonly List<string> ActionLog, RewardLog;
             public readonly FileSystemWatcher watcher;
 
+            private int refcount;
+
             public LogCategories()
             {
+                this.refcount = 0;
                 this.ActionLog = new List<string>();
                 this.RewardLog = new List<string>();
+                // this.RewardLog = new SortedSet<string>(FileDateComparer.Default);
                 this.watcher = new FileSystemWatcher();
                 this.watcher.BeginInit();
+                Directory.CreateDirectory(LogDir);
                 this.watcher.Path = LogDir;
                 this.watcher.Filter = "*.txt";
                 this.watcher.IncludeSubdirectories = false;
                 this.watcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.Size;
                 this.watcher.Created += this.Watcher_FileCreated;
+                this.watcher.Renamed += this.Watcher_Renamed;
                 this.watcher.Deleted += this.Watcher_Deleted;
-                this.watcher.EnableRaisingEvents = true;
+                this.watcher.EnableRaisingEvents = false;
                 this.watcher.EndInit();
+            }
+
+            private void Watcher_Renamed(object sender, RenamedEventArgs e)
+            {
+                // e.OldName
+            }
+
+            public void StartWatching()
+            {
+                if (Interlocked.Increment(ref this.refcount) == 1)
+                {
+                    Directory.CreateDirectory(this.watcher.Path);
+                    this.watcher.EnableRaisingEvents = true;
+                }
+            }
+
+            public void StopWatching()
+            {
+                if (Interlocked.Decrement(ref this.refcount) == 0)
+                {
+                    this.watcher.EnableRaisingEvents = false;
+                }
+            }
+
+            public void Dispose()
+            {
+                this.watcher.EnableRaisingEvents = false;
+                this.watcher.Dispose();
             }
 
             private void Watcher_Deleted(object sender, FileSystemEventArgs e)
             {
-                var span = Path.GetFileNameWithoutExtension(e.FullPath.AsSpan());
+                var span = e.Name.AsSpan();
                 if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
                 {
                     if (this.ActionLog.Remove(e.FullPath))
@@ -195,19 +289,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            public event Func<LogCategories, List<string>, Task> NewFileFound;
+            public event Action<LogCategories, List<string>> NewFileFound;
 
             private void Watcher_FileCreated(object sender, FileSystemEventArgs e)
             {
-                var span = Path.GetFileNameWithoutExtension(e.FullPath.AsSpan());
+                var span = e.Name.AsSpan();
                 if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
                 {
                     this.ActionLog.Add(e.FullPath);
+                    this.ActionLog.Sort(FileDateComparer.Default);
                     this.NewFileFound?.Invoke(this, this.ActionLog);
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                 {
                     this.RewardLog.Add(e.FullPath);
+                    this.RewardLog.Sort(FileDateComparer.Default);
                     this.NewFileFound?.Invoke(this, this.RewardLog);
                 }
             }
@@ -246,8 +342,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     var span_x = Path.GetFileNameWithoutExtension(x.AsSpan());
                     var span_y = Path.GetFileNameWithoutExtension(y.AsSpan());
                     int i_x = span_x.IndexOf("Log", StringComparison.OrdinalIgnoreCase);
-                    span_x = span_x.Slice(i_x + 3, span_x.Length - i_x - 6);
                     int i_y = span_y.IndexOf("Log", StringComparison.OrdinalIgnoreCase);
+                    if (i_x == -1 && i_y == -1) return 0;
+                    else if (i_x == -1) return -1;
+                    else if (i_y == -1) return 1;
+                    span_x = span_x.Slice(i_x + 3, span_x.Length - i_x - 6);
                     span_y = span_y.Slice(i_y + 3, span_y.Length - i_y - 6);
 
                     // yyymmdd
