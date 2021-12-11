@@ -36,20 +36,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private PSO2LogAsyncReader? logreader;
         public static readonly Lazy<LogCategories> PSO2LogWatcher = new Lazy<LogCategories>();
         private readonly ObservableCollection<CharacterData> characters;
+        private readonly Action<LogCategories, List<string>> Logfiles_NewFileFound;
 
         public ToolboxWindow_AlphaReactorCount() : base()
         {
             this.characters = new ObservableCollection<CharacterData>();
             this.myToday = DateOnly.FromDateTime(DateTime.Today);
             this.SetValue(CurrentDatePropertyKey, this.myToday);
+            this.Logfiles_NewFileFound = new Action<LogCategories, List<string>>(this.Logfiles_OnNewFileFound);
             InitializeComponent();
         }
 
         protected override Task OnCleanupBeforeClosed()
         {
             var logfiles = PSO2LogWatcher.Value;
-            logfiles.NewFileFound -= this.Logfiles_NewFileFound;
-            logfiles.StopWatching();
+            logfiles.StopWatching(this.Logfiles_NewFileFound);
             try
             {
                 this.CloseCurrentLog();
@@ -61,12 +62,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
             var logfiles = PSO2LogWatcher.Value;
-            logfiles.StartWatching();
+            logfiles.StartWatching(this.Logfiles_NewFileFound);
             this.SelectNewestLog(logfiles.ActionLog);
-            logfiles.NewFileFound += this.Logfiles_NewFileFound;
         }
 
-        private void Logfiles_NewFileFound(object sender, List<string> ev)
+        private void Logfiles_OnNewFileFound(object sender, List<string> ev)
         {
             if (ev == PSO2LogWatcher.Value.ActionLog)
             {
@@ -213,6 +213,26 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public bool Equals(CharacterData other) => (this.CharacterID == other.CharacterID && this.CharacterName == other.CharacterName);
         }
 
+        private void CharacterSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems is not null && e.AddedItems.Count != 0)
+            {
+                this.AlphaCounter.DataContext = e.AddedItems[0];
+            }
+            else
+            {
+                this.AlphaCounter.DataContext = null;
+            }
+        }
+
+        private void CharacterSelector_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox box)
+            {
+                box.ItemsSource = this.characters;
+            }
+        }
+
         public sealed class LogCategories : IDisposable
         {
             private static readonly string LogDir = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "log_ngs"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
@@ -221,6 +241,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public readonly FileSystemWatcher watcher;
 
             private int refcount;
+            private readonly Task t_refresh;
 
             public LogCategories()
             {
@@ -240,24 +261,58 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.watcher.Deleted += this.Watcher_Deleted;
                 this.watcher.EnableRaisingEvents = false;
                 this.watcher.EndInit();
+                this.t_refresh = this.Refresh();
             }
 
             private void Watcher_Renamed(object sender, RenamedEventArgs e)
             {
-                // e.OldName
+                var span = e.OldName.AsSpan();
+                if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
+                {
+                    lock (this.RewardLog)
+                    {
+                        this.ActionLog.Remove(e.OldFullPath);
+                        this.ActionLog.Add(e.FullPath);
+                        this.ActionLog.Sort(FileDateComparer.Default);
+                    }
+                    this.NewFileFound?.Invoke(this, this.ActionLog);
+                }
+                else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
+                {
+                    lock (this.RewardLog)
+                    {
+                        this.RewardLog.Remove(e.OldFullPath);
+                        this.RewardLog.Add(e.FullPath);
+                        this.RewardLog.Sort(FileDateComparer.Default);
+                    }
+                    this.NewFileFound?.Invoke(this, this.RewardLog);
+                }
             }
 
-            public void StartWatching()
+            public async void StartWatching(Action<LogCategories, List<string>> callback)
             {
                 if (Interlocked.Increment(ref this.refcount) == 1)
                 {
                     Directory.CreateDirectory(this.watcher.Path);
-                    this.watcher.EnableRaisingEvents = true;
+                    this.NewFileFound += callback;
+                    if (this.t_refresh.IsCompleted)
+                    {
+                        this.watcher.EnableRaisingEvents = true;
+                    }
+                    else
+                    {
+                        await this.t_refresh;
+                        callback.Invoke(this, this.ActionLog);
+                        callback.Invoke(this, this.RewardLog);
+                        this.watcher.EnableRaisingEvents = (Interlocked.CompareExchange(ref this.refcount, 0, -1) > 0);
+                    }
+
                 }
             }
 
-            public void StopWatching()
+            public void StopWatching(Action<LogCategories, List<string>> callback)
             {
+                this.NewFileFound -= callback;
                 if (Interlocked.Decrement(ref this.refcount) == 0)
                 {
                     this.watcher.EnableRaisingEvents = false;
@@ -275,45 +330,68 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 var span = e.Name.AsSpan();
                 if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (this.ActionLog.Remove(e.FullPath))
+                    bool isremoved;
+                    lock (this.RewardLog)
+                    {
+                        isremoved = this.ActionLog.Remove(e.FullPath);
+                    }
+                    if (isremoved)
                     {
                         this.NewFileFound?.Invoke(this, this.ActionLog);
                     }
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (this.RewardLog.Remove(e.FullPath))
+                    bool isremoved;
+                    lock (this.RewardLog)
+                    {
+                        isremoved = this.RewardLog.Remove(e.FullPath);
+                    }
+                    if (isremoved)
                     {
                         this.NewFileFound?.Invoke(this, this.RewardLog);
                     }
                 }
             }
 
-            public event Action<LogCategories, List<string>> NewFileFound;
+            private Action<LogCategories, List<string>>? NewFileFound;
 
             private void Watcher_FileCreated(object sender, FileSystemEventArgs e)
             {
                 var span = e.Name.AsSpan();
                 if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
                 {
-                    this.ActionLog.Add(e.FullPath);
-                    this.ActionLog.Sort(FileDateComparer.Default);
+                    lock (this.ActionLog)
+                    {
+                        this.ActionLog.Add(e.FullPath);
+                        this.ActionLog.Sort(FileDateComparer.Default);
+                    }
                     this.NewFileFound?.Invoke(this, this.ActionLog);
                 }
                 else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                 {
-                    this.RewardLog.Add(e.FullPath);
-                    this.RewardLog.Sort(FileDateComparer.Default);
+                    lock (this.RewardLog)
+                    {
+                        this.RewardLog.Add(e.FullPath);
+                        this.RewardLog.Sort(FileDateComparer.Default);
+                    }
                     this.NewFileFound?.Invoke(this, this.RewardLog);
                 }
             }
 
-            public async Task Refresh()
+            private Task Refresh()
             {
-                await Task.Run(() =>
+                return Task.Run(() =>
                 {
-                    this.ActionLog.Clear();
-                    this.RewardLog.Clear();
+                    lock (this.ActionLog)
+                    {
+                        this.ActionLog.Clear();
+                    }
+                    lock (this.RewardLog)
+                    {
+                        this.RewardLog.Clear();
+                    }
+
                     if (Directory.Exists(LogDir))
                     {
                         foreach (var file in Directory.EnumerateFiles(LogDir, "*.txt", SearchOption.TopDirectoryOnly))
@@ -321,15 +399,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             var span = Path.GetFileNameWithoutExtension(file.AsSpan());
                             if (span.StartsWith("ActionLog", StringComparison.OrdinalIgnoreCase))
                             {
-                                this.ActionLog.Add(file);
+                                lock (this.ActionLog)
+                                {
+                                    this.ActionLog.Add(file);
+                                }
                             }
                             else if (span.StartsWith("RewardLog", StringComparison.OrdinalIgnoreCase))
                             {
-                                this.RewardLog.Add(file);
+                                lock (this.RewardLog)
+                                {
+                                    this.RewardLog.Add(file);
+                                }
                             }
                         }
-                        this.ActionLog.Sort(FileDateComparer.Default);
-                        this.RewardLog.Sort(FileDateComparer.Default);
+                        lock (this.ActionLog)
+                        {
+                            this.ActionLog.Sort(FileDateComparer.Default);
+                        }
+                        lock (this.RewardLog)
+                        {
+                            this.RewardLog.Sort(FileDateComparer.Default);
+                        }
                     }
                 });
             }
@@ -355,26 +445,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                     return date_x.CompareTo(date_y);
                 }
-            }
-        }
-
-        private void CharacterSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems is not null && e.AddedItems.Count != 0)
-            {
-                this.AlphaCounter.DataContext = e.AddedItems[0];
-            }
-            else
-            {
-                this.AlphaCounter.DataContext = null;
-            }
-        }
-
-        private void CharacterSelector_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is ComboBox box)
-            {
-                box.ItemsSource = this.characters;
             }
         }
     }
