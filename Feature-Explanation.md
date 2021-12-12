@@ -8,4 +8,4 @@
   - I used local time to eliminate the need of Internet.
 - Referenced files: [ToolboxWindow_AlphaReactorCount.xaml.cs](LauncherToolbox.Windows/ToolboxWindow_AlphaReactorCount.xaml.cs), [PSO2LogAsyncReader.cs](LauncherToolbox/PSO2LogAsyncReader.cs)
 
-[Dark theme preview](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/toolbox/alphareactorcounter-dark.png)
+![Dark theme preview](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/toolbox/alphareactorcounter-dark.png)
