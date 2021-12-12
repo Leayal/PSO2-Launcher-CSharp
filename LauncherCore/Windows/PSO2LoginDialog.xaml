@@ -1,15 +1,16 @@
-﻿<local:MetroWindowEx  x:Class="Leayal.PSO2Launcher.Core.Windows.PSO2LoginDialog"
-                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                      xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
-                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-                      mc:Ignorable="d" x:Name="thisSelf"
-                      ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" ShowCloseButton="False"
-                      Loaded="ThisSelf_Loaded"
-                      Title="Login to PSO2" Height="170" Width="400">
+﻿<leawindow:MetroWindowEx  x:Class="Leayal.PSO2Launcher.Core.Windows.PSO2LoginDialog"
+                          xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                          xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+                          xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
+                          mc:Ignorable="d" x:Name="thisSelf"
+                          ResizeMode="NoResize" ShowTitleBar="False" WindowStartupLocation="CenterOwner" ShowCloseButton="False"
+                          Loaded="ThisSelf_Loaded"
+                          Title="Login to PSO2" Height="170" Width="400">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -71,4 +72,4 @@
             </Button.Style>
         </Button>
     </Grid>
-</local:MetroWindowEx>
+</leawindow:MetroWindowEx>

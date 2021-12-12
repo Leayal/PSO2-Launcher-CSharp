@@ -10,9 +10,11 @@ using System.Windows;
 using Microsoft.Win32;
 using System.Diagnostics;
 using Leayal.Shared;
+using Leayal.Shared.Windows;
 using Leayal.PSO2Launcher.Helper;
 using System.Windows.Media.Imaging;
 using Leayal.PSO2Launcher.Core.Classes;
+using Leayal.PSO2Launcher.Toolbox.Windows;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -82,7 +84,7 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     for (int i = count - 1; i >= 0; i--)
                     {
-                        if (collection[i] is Windows.MetroWindowEx windowex)
+                        if (collection[i] is MetroWindowEx windowex)
                         {
                             if (windowex.IsActive || windowex.IsVisible)
                             {
@@ -117,7 +119,7 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     for (int i = count - 1; i >= 0; i--)
                     {
-                        if (collection[i] is Windows.MetroWindowEx windowex)
+                        if (collection[i] is MetroWindowEx windowex)
                         {
                             if (windowex.IsActive || windowex.IsVisible)
                             {
@@ -166,7 +168,7 @@ namespace Leayal.PSO2Launcher.Core
                     }
                     foreach (var window in this.Windows)
                     {
-                        if (window is Windows.MetroWindowEx windowex)
+                        if (window is MetroWindowEx windowex)
                         {
                             windowex.RefreshTheme();
                         }
@@ -393,7 +395,7 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     try
                     {
-                        var window = new Windows.ToolboxWindow_AlphaReactorCount();
+                        var window = new ToolboxWindow_AlphaReactorCount(DefaultAppIcon);
                         window.Show();
                     }
                     catch (Exception ex)
@@ -421,11 +423,7 @@ namespace Leayal.PSO2Launcher.Core
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
-            var lazy_pso2LogWatcher = Core.Windows.ToolboxWindow_AlphaReactorCount.PSO2LogWatcher;
-            if (lazy_pso2LogWatcher.IsValueCreated)
-            {
-                lazy_pso2LogWatcher.Value.Dispose();
-            }
+            ToolboxWindow_AlphaReactorCount.DisposeLogWatcherIfCreated();
             // Double check and close all database connections.
             // Optimally, this should does nothing because all databases have been finalized and closed.
             // SQLite.SQLiteAsyncConnection.ResetPool();

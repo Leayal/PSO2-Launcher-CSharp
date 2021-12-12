@@ -58,6 +58,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
+    <ProjectReference Include="..\LauncherToolbox.Windows\LauncherToolbox.Windows.csproj" />
     <ProjectReference Include="..\LauncherToolbox\LauncherToolbox.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Installer\Leayal.PSO2Installer.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj" />

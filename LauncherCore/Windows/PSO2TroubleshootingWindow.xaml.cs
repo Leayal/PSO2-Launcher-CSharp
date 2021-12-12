@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using Leayal.PSO2.Installer;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.Shared;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {

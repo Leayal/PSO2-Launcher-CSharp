@@ -8,6 +8,7 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <RootNamespace>Leayal.PSO2Launcher.Toolbox</RootNamespace>
     <Authors>Dramiel Leayal</Authors>
+    <Description>Provides logic and convenient classes for PSO2 Tools. This is standalone and does not require PSO2LeaLauncher's core components.</Description>
   </PropertyGroup>
 
 </Project>

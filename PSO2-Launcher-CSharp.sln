@@ -35,7 +35,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherCoreNew", "Launcher
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminProcess", "AdminProcess\AdminProcess.csproj", "{6B564E9C-026E-4AC8-BED1-E8B3055B1859}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherToolbox", "LauncherToolbox\LauncherToolbox.csproj", "{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox", "LauncherToolbox\LauncherToolbox.csproj", "{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -146,6 +148,12 @@ Global
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Debug HTTP Requests|Any CPU.ActiveCfg = Debug|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Debug HTTP Requests|Any CPU.Build.0 = Debug|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{664516AC-3941-4801-B070-5E7864B0D70A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

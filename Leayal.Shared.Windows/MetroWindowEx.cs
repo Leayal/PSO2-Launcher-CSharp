@@ -1,33 +1,33 @@
-﻿using Leayal.PSO2Launcher.Core.Classes;
-using MahApps.Metro.Controls;
+﻿using MahApps.Metro.Controls;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
-namespace Leayal.PSO2Launcher.Core.Windows
+namespace Leayal.Shared.Windows
 {
+    /// <summary>A base class which has all convenient properties and wrapper in place.</summary>
+    /// <remarks>Please note that you still need to properly setup an <seealso cref="Application"/> for <seealso cref="MetroWindowEx"/> in case of you don't use Launcher's core.</remarks>
     public class MetroWindowEx : MetroWindow, System.Windows.Interop.IWin32Window, System.Windows.Forms.IWin32Window
     {
         private static readonly DependencyProperty WindowCloseIsDefaultedCancelProperty = DependencyProperty.Register("WindowCloseIsDefaultedCancel", typeof(bool), typeof(MetroWindowEx), new PropertyMetadata(false));
-
         private static readonly DependencyPropertyKey IsMaximizedPropertyKey = DependencyProperty.RegisterReadOnly("IsMaximized", typeof(bool), typeof(MetroWindowEx), new UIPropertyMetadata(false));
+        private static readonly DependencyPropertyKey WindowCommandButtonsWidthPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsWidth", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
+        private static readonly DependencyPropertyKey WindowCommandButtonsHeightPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsHeight", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
+
+        /// <summary>Identifies the <seealso cref="IsMaximized"/> dependency property.</summary>
         public static readonly DependencyProperty IsMaximizedProperty = IsMaximizedPropertyKey.DependencyProperty;
 
-        private static readonly DependencyPropertyKey WindowCommandButtonsWidthPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsWidth", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
+        /// <summary>Identifies the <seealso cref="WindowCommandButtonsWidth"/> dependency property.</summary>
         public static readonly DependencyProperty WindowCommandButtonsWidthProperty = WindowCommandButtonsWidthPropertyKey.DependencyProperty;
-        
-        private static readonly DependencyPropertyKey WindowCommandButtonsHeightPropertyKey = DependencyProperty.RegisterReadOnly("WindowCommandButtonsHeight", typeof(double), typeof(MetroWindowEx), new PropertyMetadata(0d));
+
+        /// <summary>Identifies the <seealso cref="WindowCommandButtonsHeight"/> dependency property.</summary>
         public static readonly DependencyProperty WindowCommandButtonsHeightProperty = WindowCommandButtonsHeightPropertyKey.DependencyProperty;
 
+        /// <summary>Identifies the <seealso cref="AutoHideInTaskbarByOwnerIsVisible"/> dependency property.</summary>
         public static readonly DependencyProperty AutoHideInTaskbarByOwnerIsVisibleProperty = DependencyProperty.Register("AutoHideInTaskbarByOwnerIsVisible", typeof(bool), typeof(MetroWindowEx), new PropertyMetadata(false, (obj, e)=>
         {
             if (obj is MetroWindowEx metroex)
@@ -41,22 +41,30 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private int flag_disposing, flag_firstshown, flag_readied;
 
+        /// <summary>Gets a boolean determines whether the window is being maximized on desktop.</summary>
         public bool IsMaximized => (bool)this.GetValue(IsMaximizedProperty);
 
+        /// <summary>Gets the computed width (not pixel) of the windows command button area.</summary>
         public double WindowCommandButtonsWidth => (double)this.GetValue(WindowCommandButtonsWidthProperty);
 
+        /// <summary>Gets the computed height (not pixel) of the windows command button area.</summary>
         public double WindowCommandButtonsHeight => (double)this.GetValue(WindowCommandButtonsHeightProperty);
 
+        /// <summary>Gets a boolean determines whether the Windows Command [Close] button is the default button for cancel a dialog.</summary>
         public bool WindowCloseIsDefaultedCancel
         {
             get => (bool)this.GetValue(WindowCloseIsDefaultedCancelProperty);
             set => this.SetValue(WindowCloseIsDefaultedCancelProperty, value);
         }
 
+        /// <inheritdoc />
         public IntPtr Handle => this.CriticalHandle;
 
+        /// <summary>Gets or sets the dialog result when the dialog is opened with <seealso cref="ShowCustomDialog(Window)"/>.</summary>
+        /// <remarks>This will not automatically close the window upon setting.</remarks>
         public bool? CustomDialogResult { get; set; }
 
+        /// <summary>Gets or sets a boolean determines whether the window will be automatically be hidden from Taskbar if the parent window is visible.</summary>
         public bool AutoHideInTaskbarByOwnerIsVisible
         {
             get => (bool)this.GetValue(AutoHideInTaskbarByOwnerIsVisibleProperty);
@@ -66,6 +74,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private bool _autoassignedIcon;
         private Window _autoHideInTaskbarByOwnerIsVisibleAttached;
 
+        /// <summary>Applies required variables and property values to the implemented instance.</summary>
         public MetroWindowEx() : base() 
         {
             this.CustomDialogResult = null;
@@ -78,6 +87,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.WindowTransitionCompleted += MetroWindowEx_WindowTransitionCompleted;
         }
 
+        /// <inheritdoc/>
         protected override void OnContentRendered(EventArgs e)
         {
             bool firstTime = (Interlocked.CompareExchange(ref this.flag_firstshown, 1, 0) == 0);
@@ -98,8 +108,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         ownerWindow.IsVisibleChanged += this.OwnerWindow_IsVisibleChanged;
                     }
                 }
-
-                
             }
 
             base.OnContentRendered(e);
@@ -129,6 +137,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        /// <summary>Opens a window and returns only when the newly opened window is closed.</summary>
+        /// <param name="window">The parent window.</param>
+        /// <returns>A <seealso cref="Nullable{T}"/> value of type <seealso cref="bool"/> that specifies whether the activity 
+        /// was accepted (true) or canceled (false) or neither (null). The return value is the value of the
+        /// <seealso cref="CustomDialogResult"/> property before a window closes.</returns>
+        /// <exception cref="InvalidOperationException"><seealso cref="ShowCustomDialog(Window)"/> is called on a window that is closing or has been closed.
+        /// Or the calling thread is not on the same as the thread which created this window.</exception>
         public bool? ShowCustomDialog(Window window)
         {
             if (this.Dispatcher.CheckAccess())
@@ -144,6 +159,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        /// <summary>Opens a window and returns only when the newly opened window is closed.</summary>
+        /// <returns>A <seealso cref="Nullable{T}"/> value of type <seealso cref="bool"/> that specifies whether the activity 
+        /// was accepted (true) or canceled (false) or neither (null). The return value is the value of the
+        /// <seealso cref="Window.DialogResult"/> property before a window closes.</returns>
+        /// <exception cref="InvalidOperationException"><seealso cref="ShowDialog"/> is called on a window that is closing or has been closed.</exception>
         public new bool? ShowDialog()
         {
             this.EnsureHideInTaskbarByOwnerIsVisibleBeforeShown();
@@ -151,6 +171,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return base.ShowDialog();
         }
 
+        /// <summary>Opens a window and returns without waiting for the newly opened window to close.</summary>
+        /// <exception cref="InvalidOperationException"><seealso cref="Show"/> is called on a window that is closing or has been closed.</exception>
         public new void Show()
         {
             this.EnsureHideInTaskbarByOwnerIsVisibleBeforeShown();
@@ -158,8 +180,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             base.Show();
         }
 
+        /// <summary>Occurs before the window is shown "visibly".</summary>
         public event EventHandler BeforeShown;
 
+        /// <summary>Raises the <seealso cref="BeforeShown"/> event.</summary>
         protected virtual void OnBeforeShown()
         {
             this.BeforeShown?.Invoke(this, EventArgs.Empty);
@@ -183,12 +207,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.ShowInTaskbar = !isvisible;
         }
 
+        /// <inheritdoc/>
         protected override void OnStateChanged(EventArgs e)
         {
             this.SetValue(IsMaximizedPropertyKey, (this.WindowState == WindowState.Maximized));
             base.OnStateChanged(e);
         }
 
+        /// <inheritdoc/>
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -220,11 +246,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.OnThemeRefresh();
         }
 
+        /// <summary>Manually invoke <seealso cref="MetroWindowEx.OnThemeRefresh"/> method for the instance.</summary>
         public void RefreshTheme()
         {
             this.OnThemeRefresh();
         }
 
+        /// <inheritdoc/>
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
             if (e.Property == IconProperty)
@@ -243,18 +271,28 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        /// <summary>Occurs when the window's UI is ready to be manipulated.</summary>
         public event EventHandler Ready;
+
+        /// <summary>Raises the <seealso cref="Ready"/> event.</summary>
+        /// <param name="e">The event args. <seealso cref="EventArgs.Empty"/> should be used here.</param>
         protected virtual void OnReady(EventArgs e)
         {
             this.Ready?.Invoke(this, e);
         }
 
+        /// <summary>Occurs when the window is shown for the first time.</summary>
         public event EventHandler FirstShown;
+
+        /// <summary>Raises the <seealso cref="FirstShown"/> event.</summary>
+        /// <param name="e">The event args. <seealso cref="EventArgs.Empty"/> should be used here.</param>
         protected virtual void OnFirstShown(EventArgs e)
         {
             this.FirstShown?.Invoke(this, e);
         }
 
+        /// <summary>When overriden, provides execution logic when the application's theme is changed.</summary>
+        /// <remarks>Theme is changed by either user's settings or by Windows's setting (if the application is sync with the settings)</remarks>
         protected virtual void OnThemeRefresh() { }
 
         private void WinBtnCommands_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -272,6 +310,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         /// <summary>Event is used for synchronous clean up operations. This event will be raised when the window is certainly going to be closed (after <seealso cref="OnClosing(CancelEventArgs)"/>. Thus, not cancellable).</summary>
         public event EventHandler CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
 
+        /// <summary>When overriden, provides logic to clean up all resources (including async operations)</summary>
+        /// <returns>A <seealso cref="Task"/> that will complete when all resources have been disposed or cleaned up.</returns>
         protected virtual Task OnCleanupBeforeClosed()
         {
             try
@@ -296,6 +336,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             await this.OnCleanupBeforeClosed();
         }
 
+        /// <summary>Raises the <seealso cref="Window.Closing"/> event.</summary>
+        /// <param name="e">The event args. Should be a new instance of <seealso cref="CancelEventArgs"/> so that we can detect cancellation with <seealso cref="CancelEventArgs.Cancel"/> property.</param>
         protected override void OnClosing(CancelEventArgs e)
         {
             // 0 None

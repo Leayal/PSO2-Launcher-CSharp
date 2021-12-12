@@ -1,29 +1,23 @@
-﻿using MahApps.Metro.Controls;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
-using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using System.Threading;
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using Leayal.SharedInterfaces;
 using System.Reflection;
-using System.ComponentModel;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.PSO2Launcher.Core.Classes;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Controls.Primitives;
-using System.Windows.Documents;
 using System.Net.Http;
 using Leayal.Shared;
 using System.Runtime;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {

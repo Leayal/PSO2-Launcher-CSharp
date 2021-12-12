@@ -2,10 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
-    <RootNamespace>Leayal.Shared</RootNamespace>
+    <RootNamespace>Leayal.Shared.Windows</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
     <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ControlzEx" Version="5.0.1" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.9" />
+  </ItemGroup>
 
 </Project>

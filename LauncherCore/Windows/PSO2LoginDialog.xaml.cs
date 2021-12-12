@@ -2,23 +2,14 @@
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;
-using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {

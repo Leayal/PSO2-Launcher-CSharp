@@ -33,7 +33,7 @@ namespace Leayal.Shared
             }
         }
 
-        public static DateTime ConvertTimeToCustom(in DateTime dateTime)
+        public static DateTime ConvertTimeToLocalJST(in DateTime dateTime)
         {
             if (JapanTimeZone is not null)
             {

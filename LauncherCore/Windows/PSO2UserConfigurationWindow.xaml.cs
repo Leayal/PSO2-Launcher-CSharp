@@ -2,23 +2,18 @@
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig;
 using Leayal.PSO2Launcher.Core.UIElements;
-using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.IO;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Reflection;
-using System.Globalization;
 using ICSharpCode.AvalonEdit.Search;
 using ICSharpCode.AvalonEdit.Highlighting;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {

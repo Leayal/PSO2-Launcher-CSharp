@@ -42,7 +42,7 @@ This project is just a hobby one.
   - Main purpose is to help player who has technical issue(s) with the game client. However, anything outside of the game client is not mentioned, such as Internet's problem, damaged OS's important files, etc...
   - Most of results and words are "advices", it is not a 'must' to follow accordingly unless stated.
 - Convenient Utilities/Toolbox:
-  - Currently, the toolbox has the only experimental `PSO2 Alpha Reactor Counter` which helps user to keep track of the amount of Alpha Reactor that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
+  - Currently, the toolbox has only `PSO2 Alpha Reactor Counter` which helps user to keep track of the amount of Alpha Reactor that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
   - The toolbox is accessible via the main menu and via the quick menu if you minimize the launcher to tray.
 
 ### Launcher arguments:

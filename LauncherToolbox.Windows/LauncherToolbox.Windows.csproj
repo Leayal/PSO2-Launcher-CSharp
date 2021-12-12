@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <Authors>Dramiel Leayal</Authors>
+    <RootNamespace>Leayal.PSO2Launcher.Toolbox.Windows</RootNamespace>
+    <DebugType>full</DebugType>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Description>Provides UI for PSO2 Tools. This is standalone and does not require PSO2LeaLauncher's core components.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="4.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LauncherToolbox\LauncherToolbox.csproj" />
+    <ProjectReference Include="..\Leayal.Shared.Windows\Leayal.Shared.Windows.csproj" />
+    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ToolboxWindow_AlphaReactorCount.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="ToolboxWindow_AlphaReactorCount.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+</Project>

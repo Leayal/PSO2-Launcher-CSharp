@@ -1,23 +1,23 @@
-﻿<local:MetroWindowEx x:Class="Leayal.PSO2Launcher.Core.Windows.ToolboxWindow_AlphaReactorCount"
-                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                     xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
-                     xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-                     mc:Ignorable="d"
-                     x:Name="ThisSelf" TitleCharacterCasing="Normal"
-                     Title="Toolbox: Alpha Reactor Counter" MinWidth="350" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
-                     Loaded="ThisSelf_Loaded">
-    <local:MetroWindowEx.RightWindowCommands>
+﻿<leawindow:MetroWindowEx x:Class="Leayal.PSO2Launcher.Toolbox.Windows.ToolboxWindow_AlphaReactorCount"
+                         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                         xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
+                         mc:Ignorable="d" x:Name="ThisSelf" 
+                         TitleCharacterCasing="Normal"
+                         Title="Toolbox: Alpha Reactor Counter" MinWidth="350" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                         Loaded="ThisSelf_Loaded">
+    <leawindow:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
             <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=Topmost,Mode=TwoWay}" ToolTip="Toggle 'Always On Top'">
                 <iconPacks:PackIconFontAwesome Kind="DesktopSolid" />
             </ToggleButton>
         </mah:WindowCommands>
-    </local:MetroWindowEx.RightWindowCommands>
-    <Grid>
+    </leawindow:MetroWindowEx.RightWindowCommands>
+    <Grid Margin="2">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition />
@@ -25,9 +25,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock Text="Select Account: " VerticalAlignment="Center" TextAlignment="Center" />
-        <ComboBox Grid.Column="1" x:Name="AccountSelector" Loaded="AccountSelector_Loaded" SelectionChanged="AccountSelector_SelectionChanged">
+        <ComboBox Grid.Column="1" x:Name="AccountSelector" Loaded="AccountSelector_Loaded" SelectionChanged="AccountSelector_SelectionChanged" IsSynchronizedWithCurrentItem="True">
             <ComboBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding Name, Mode=OneWay}" />
@@ -40,30 +41,31 @@
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding SelectedItem, ElementName=CharacterSelector, Mode=OneWay}" Value="{x:Null}">
+                        <DataTrigger Binding="{Binding SelectedItem, ElementName=AccountSelector, Mode=OneWay}" Value="{x:Null}">
                             <Setter Property="Visibility" Value="Visible" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </TextBlock.Style>
-            <Run Text="No character has been found." />
+            <Run Text="No character [pickup] activity has been found." />
             <LineBreak />
             <Run Text="Please login the game and pick anything up with your character so that the counter can start tracking." />
         </TextBlock>
 
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="AlphaCounter">
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="AlphaCounter" TextWrapping="Wrap">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Visible" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding SelectedItem, ElementName=CharacterSelector, Mode=OneWay}" Value="{x:Null}">
+                        <DataTrigger Binding="{Binding SelectedItem, ElementName=AccountSelector, Mode=OneWay}" Value="{x:Null}">
                             <Setter Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </TextBlock.Style>
-            <Run Text="{Binding Name, Mode=OneWay}" />
-            <Run Text="has picked up" />
+            <Run Text="Account (ID:" />
+            <Run Text="{Binding ID, Mode=OneWay}" />
+            <Run Text=") has picked up" />
             <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
             <Run>
                 <Run.Style>
@@ -82,26 +84,30 @@
             </Run>
             <Run Text="for today." />
             <LineBreak />
-            <Run Text="JST Time: " />
-            <Run Text="{Binding ElementName=ThisSelf,Path=CurrentDate,Mode=OneWay}" />
+            <Run Text="Account's character(s):" />
+            <Run Text="{Binding NamesOnly,Mode=OneWay}" />
+        </TextBlock>
+
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap" ToolTip="The current JST time is calculated from your local time and clock. Please ensure that your local clock is correct.">
+            <Run Text="Current JST Time:" />
+            <Run Text="{Binding ElementName=ThisSelf,Path=CurrentTime,Mode=OneWay}" />
+            <Run Text="(" />
             <Run>
                 <Run.Style>
                     <Style TargetType="Run">
-                        <Setter Property="Text" Value="" />
+                        <Setter Property="Text" Value="Right at" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding ElementName=ThisSelf, Path=IsBeforeReset, Mode=OneWay}" Value="True">
-                                <Setter Property="Text" Value="before spawn reset" />        
+                                <Setter Property="Text" Value="Before" />        
                             </DataTrigger>
                             <DataTrigger Binding="{Binding ElementName=ThisSelf, Path=IsBeforeReset, Mode=OneWay}" Value="False">
-                                <Setter Property="Text" Value="after spawn reset" />        
+                                <Setter Property="Text" Value="After" />        
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="(Reset at 4AM JST)" />
-            <LineBreak />
-            
+            <Run Text="spawn reset which is at 4AM JST daily)" />
         </TextBlock>
     </Grid>
-</local:MetroWindowEx>
+</leawindow:MetroWindowEx>

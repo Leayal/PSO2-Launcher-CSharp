@@ -33,7 +33,7 @@
                 <ContextMenu>
                     <MenuItem Click="MenuItemToolBox_Click" Loaded="MenuItem_AlphaReactorCounter_Loaded">
                         <MenuItem.Header>
-                            <TextBlock Text="PSO2 Alpha Reactor Count (Experimental)" VerticalAlignment="Center" />
+                            <TextBlock Text="PSO2 Alpha Reactor Count" VerticalAlignment="Center" />
                         </MenuItem.Header>
                         <MenuItem.Icon>
                             <Image Stretch="UniformToFill" StretchDirection="DownOnly" MaxHeight="32" MaxWidth="32" MinHeight="16" MinWidth="16" />

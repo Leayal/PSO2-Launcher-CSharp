@@ -9,7 +9,6 @@ using System.Windows;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.PSO2Launcher.Core.Classes;
 using System.Globalization;
-using System.Windows.Controls;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
