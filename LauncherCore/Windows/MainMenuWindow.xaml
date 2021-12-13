@@ -19,6 +19,7 @@
             <RowDefinition />
             <RowDefinition MaxHeight="300" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Image x:Name="BgImg" Grid.RowSpan="4" IsHitTestVisible="False" Focusable="False" RenderOptions.BitmapScalingMode="Fant" Stretch="UniformToFill" />
         <Grid HorizontalAlignment="Right">
@@ -113,7 +114,24 @@
             </avalon:TextEditor>
         </Grid>
 
-        <Border Grid.Row="3" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" BorderThickness="1" Background="#33FFFFFF" x:Name="SelfUpdateNotification" Visibility="Collapsed">
+        <Border Grid.Row="3" BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}" BorderThickness="0,1,0,0" Background="#33FFFFFF" mah:VisibilityHelper.IsVisible="{Binding Path=UseClock,ElementName=thisWindow,Mode=OneWay}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="BorderThickness" Value="0,1,0,0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=UpdateNotificationBorder,Path=Visibility,Mode=OneWay}" Value="True">
+                            <Setter Property="BorderThickness" Value="0,1,0,1" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock VerticalAlignment="Center" TextAlignment="Center">
+                <Run Text="Current JST Time:" />
+                <Run Text="{Binding ElementName=thisWindow,Path=CurrentTime,Mode=OneWay}" />
+            </TextBlock>
+        </Border>
+
+        <Border Grid.Row="4" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}" BorderThickness="1" Background="#33FFFFFF" x:Name="UpdateNotificationBorder" mah:VisibilityHelper.IsVisible="{Binding IsUpdateNotificationVisible,ElementName=thisWindow,Mode=OneWay}">
             <TextBlock TextAlignment="Center" Padding="3" Background="{x:Null}">
                 <Run Background="{x:Null}">A launcher update has been found.</Run>
                 <localui:CommandHyperlink NavigateUri="pso2lealauncher://selfupdatechecker/confirm">

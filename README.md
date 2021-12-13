@@ -44,6 +44,10 @@ This project is just a hobby one.
 - Convenient Utilities/Toolbox:
   - Currently, the toolbox has only `PSO2 Alpha Reactor Counter` which helps user to keep track of the amount of Alpha Reactor that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
   - The toolbox is accessible via the main menu and via the quick menu if you minimize the launcher to tray.
+- Minimal JST clock:
+  - The clock can be enabled/disabled in Launcher Behavior Manager dialog.
+  - When enabled, it will be visible at the bottom of the launcher's window and at the context menu of the Tray Icon.
+  - When disabled, it will be hidden in all places and the clock instance will be stopped to save CPU. Though, the amount is very insignificant.
 
 ### Launcher arguments:
 

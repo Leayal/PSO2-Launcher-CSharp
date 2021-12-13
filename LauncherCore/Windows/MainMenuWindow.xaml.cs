@@ -31,6 +31,48 @@ namespace Leayal.PSO2Launcher.Core.Windows
             lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
 #nullable restore
 
+        // UseClock
+        public static readonly DependencyProperty UseClockProperty = DependencyProperty.Register("UseClock", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (e.NewValue is bool b)
+            {
+                if (obj is MainMenuWindow window)
+                {
+                    if (b)
+                    {
+                        App.Current.JSTClock.Register(window.clockCallback);
+                    }
+                    else
+                    {
+                        App.Current.JSTClock.Unregister(window.clockCallback);
+                    }
+                    window.menuItem_TimeClock.Visible = b;
+                }
+                foreach (var w in App.Current.Windows)
+                {
+                    if (w is Toolbox.Windows.ToolboxWindow_AlphaReactorCount tbw)
+                    {
+                        tbw.IsClockVisible = b;
+                    }
+                }
+            }
+        }));
+        private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(MainMenuWindow), new PropertyMetadata(DateTime.MinValue, (obj, e) =>
+        {
+            if (obj is MainMenuWindow window && e.NewValue is DateTime d)
+            {
+                window.menuItem_TimeClock.Text = $"JST: {d}";
+            }
+        }));
+        public static readonly DependencyProperty CurrentTimeProperty = CurrentTimePropertyKey.DependencyProperty;
+
+        public DateTime CurrentTime => (DateTime)this.GetValue(CurrentTimeProperty);
+        public bool UseClock
+        {
+            get => (bool)this.GetValue(UseClockProperty);
+            set => this.SetValue(UseClockProperty, value);
+        }
+
         internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private readonly GameClientUpdater pso2Updater;
@@ -41,8 +83,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly ToggleButton[] toggleButtons;
         private readonly Lazy<Task<BackgroundSelfUpdateChecker>> backgroundselfupdatechecker;
         private readonly RSSFeedPresenter RSSFeedPresenter;
+        private readonly Toolbox.ClockTickerCallback clockCallback;
+        private readonly Action<DependencyPropertyKey, object> @delegateSetCurrentTime;
+        private readonly object[] @delegateSetCurrentTime_params;
         // private readonly SimpleDispatcherQueue dispatcherqueue;
-        
+
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
             this.config_main = conf;
@@ -119,6 +164,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.cancelAllOperation = new CancellationTokenSource();
 
+            this.@delegateSetCurrentTime = new Action<DependencyPropertyKey, object>(this.SetValue);
+            this.delegateSetCurrentTime_params = new object[2] { CurrentTimePropertyKey, null };
+            this.clockCallback = new Toolbox.ClockTickerCallback(this.OnClockTicked);
+
             InitializeComponent();
 
             this.Icon = App.DefaultAppIcon;
@@ -175,6 +224,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
             this.TabMainMenu.IsSelected = true;
+            this.UseClock = this.config_main.LauncherUseClock;
             this.RSSFeedPresenter_Loaded();
         }
 
@@ -209,6 +259,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.LoadLauncherWebView_Click(btn, null);
                 }
             }
+        }
+
+        private void OnClockTicked(in DateTime oldTime, in DateTime newTime)
+        {
+            this.@delegateSetCurrentTime_params[1] = newTime;
+            this.Dispatcher.BeginInvoke(this.delegateSetCurrentTime, this.@delegateSetCurrentTime_params);
         }
 
         protected override void OnThemeRefresh()
@@ -437,7 +493,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (dialog.ShowCustomDialog(this) == true)
                     {
                         this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
-
+                        this.UseClock = this.config_main.LauncherUseClock;
                         if (this.config_main.LauncherCheckForSelfUpdates)
                         {
                             var isnewselfchecker = this.backgroundselfupdatechecker.IsValueCreated;
@@ -501,8 +557,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
-
-        
 
         private void ConsoleLog_ContextMenuOpening(object sender, RoutedEventArgs e)
         {

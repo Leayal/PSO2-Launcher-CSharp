@@ -38,6 +38,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.checkbox_lauchlauncherasadmin.Checked += this.Checkbox_lauchlauncherasadmin_Checked;
 
             this.checkbox_checkpso2updatebeforegamestart.IsChecked = this._config.CheckForPSO2GameUpdateBeforeLaunchingGame;
+            this.checkbox_useclock.IsChecked = this._config.LauncherUseClock;
             this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
 
             var defaultval_GameStartStyle = this._config.DefaultGameStartStyle;
@@ -89,6 +90,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
             this._config.LaunchLauncherAsAdmin = (this.checkbox_lauchlauncherasadmin.IsChecked == true);
 
+            this._config.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
 

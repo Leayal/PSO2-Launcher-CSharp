@@ -15,6 +15,7 @@ using Leayal.PSO2Launcher.Helper;
 using System.Windows.Media.Imaging;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Toolbox.Windows;
+using Leayal.PSO2Launcher.Toolbox;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -24,8 +25,8 @@ namespace Leayal.PSO2Launcher.Core
     public partial class App : Application
     {
         public new static App Current => ((App)(Application.Current));
-
         public static readonly BitmapSource DefaultAppIcon = BitmapSourceHelper.FromWin32Icon(BootstrapResources.ExecutableIcon);
+        public readonly JSTClockTimer JSTClock;
 
         public readonly int BootstrapVersion;
 
@@ -40,6 +41,7 @@ namespace Leayal.PSO2Launcher.Core
         {
             this.BootstrapVersion = bootstrapversion;
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
+            this.JSTClock = new JSTClockTimer();
 
             this.InitializeComponent();
 
@@ -367,7 +369,7 @@ namespace Leayal.PSO2Launcher.Core
                     {
                         if (this.MainWindow is Windows.MainMenuWindow window)
                         {
-                            window.SelfUpdateNotification.Visibility = Visibility.Collapsed;
+                            window.IsUpdateNotificationVisible = false;
                         }
                     });
                 }
@@ -395,7 +397,7 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     try
                     {
-                        var window = new ToolboxWindow_AlphaReactorCount(DefaultAppIcon);
+                        var window = new ToolboxWindow_AlphaReactorCount(DefaultAppIcon, this.JSTClock, false, this.config_main.LauncherUseClock);
                         window.Show();
                     }
                     catch (Exception ex)
@@ -403,7 +405,7 @@ namespace Leayal.PSO2Launcher.Core
                         Core.Windows.Prompt_Generic.ShowError(this.MainWindow, ex);
                     }
                 }
-                else if (!string.IsNullOrEmpty(urlstr) && urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                else if (urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     var dialogguide = Guid.Parse(urlstr.AsSpan(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri.Length));
                     if (dialogguide != Guid.Empty)
@@ -423,6 +425,7 @@ namespace Leayal.PSO2Launcher.Core
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
+            this.JSTClock.Dispose();
             ToolboxWindow_AlphaReactorCount.DisposeLogWatcherIfCreated();
             // Double check and close all database connections.
             // Optimally, this should does nothing because all databases have been finalized and closed.

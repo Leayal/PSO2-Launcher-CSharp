@@ -12,6 +12,32 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
+        public static readonly DependencyProperty IsUpdateNotificationVisibleProperty = DependencyProperty.Register("IsUpdateNotificationVisible", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (obj is MainMenuWindow window && e.NewValue is bool b)
+            {
+                if (window.trayIcon.IsValueCreated)
+                {
+                    var _trayicon = window.trayIcon.Value;
+                    foreach (var item in _trayicon.ContextMenuStrip.Items)
+                    {
+                        if (item is System.Windows.Forms.ToolStripMenuItem menuitem)
+                        {
+                            if (menuitem.Tag is Uri uri && uri.Equals(StaticResources.Url_ConfirmSelfUpdate))
+                            {
+                                menuitem.Visible = b;
+                            }
+                        }
+                    }
+                }
+            }
+        }));
+        public bool IsUpdateNotificationVisible
+        {
+            get => (bool)this.GetValue(IsUpdateNotificationVisibleProperty);
+            set => this.SetValue(IsUpdateNotificationVisibleProperty, value);
+        }
+
         private void OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
         {
             sender.Stop();
@@ -34,21 +60,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                     }
                 }
-                this.SelfUpdateNotification.Visibility = Visibility.Visible;
-                if (this.trayIcon.IsValueCreated)
-                {
-                    var _trayicon = this.trayIcon.Value;
-                    foreach (var item in _trayicon.ContextMenuStrip.Items)
-                    {
-                        if (item is System.Windows.Forms.ToolStripMenuItem menuitem)
-                        {
-                            if (menuitem.Tag is Uri uri && uri.Equals(StaticResources.Url_ConfirmSelfUpdate))
-                            {
-                                menuitem.Visible = true;
-                            }
-                        }
-                    }
-                }
+                this.IsUpdateNotificationVisible = true;
             });
         }
     }

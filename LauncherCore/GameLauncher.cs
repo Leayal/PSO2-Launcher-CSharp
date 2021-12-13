@@ -5,7 +5,6 @@ using System;
 using System.Threading;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.VisualBasic.ApplicationServices;
 
 namespace Leayal.PSO2Launcher.Core
 {

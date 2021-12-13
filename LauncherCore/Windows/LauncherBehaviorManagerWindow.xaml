@@ -39,6 +39,8 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
 
@@ -60,7 +62,9 @@
                 <TextBlock Margin="1,0,0,0" Grid.Column="1" Text="hour(s) interval" VerticalAlignment="Center" TextAlignment="Left" />
             </Grid>
 
-            <CheckBox Grid.Row="5" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
+            <CheckBox Grid.Row="5" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
+            
+            <CheckBox Grid.Row="7" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">

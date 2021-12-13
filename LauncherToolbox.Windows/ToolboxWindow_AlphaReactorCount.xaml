@@ -88,7 +88,9 @@
             <Run Text="{Binding NamesOnly,Mode=OneWay}" />
         </TextBlock>
 
-        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap" ToolTip="The current JST time is calculated from your local time and clock. Please ensure that your local clock is correct.">
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap"
+                   mah:VisibilityHelper.IsVisible="{Binding ElementName=ThisSelf,Mode=OneWay,Path=IsClockVisible}"
+                   ToolTip="The current JST time is calculated from your local time and clock. Please ensure that your local clock is correct.">
             <Run Text="Current JST Time:" />
             <Run Text="{Binding ElementName=ThisSelf,Path=CurrentTime,Mode=OneWay}" />
             <Run Text="(" />
@@ -107,7 +109,7 @@
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="spawn reset which is at 4AM JST daily)" />
+            <Run Text="spawn reset which is at 4AM JST daily )" />
         </TextBlock>
     </Grid>
 </leawindow:MetroWindowEx>

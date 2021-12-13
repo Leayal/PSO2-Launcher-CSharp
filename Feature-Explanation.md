@@ -6,6 +6,8 @@
   - This is absolutely safe as the launcher does not patch or touch anything of the game.
 - The JST time is calculated from your local clock. Therefore, if the local time is not correct, calculated JST time won't be, too.
   - I used local time to eliminate the need of Internet.
+- The JST clock's visibility is sync with the launcher's setting.
+  - To disable the clock, simply disable in the Launcher Behavior Manager.
 - Referenced files: [ToolboxWindow_AlphaReactorCount.xaml.cs](LauncherToolbox.Windows/ToolboxWindow_AlphaReactorCount.xaml.cs), [PSO2LogAsyncReader.cs](LauncherToolbox/PSO2LogAsyncReader.cs)
 
 ![Dark theme preview](https://leayal.github.io/PSO2-Launcher-CSharp/imgs/preview/toolbox/alphareactorcounter-dark.png)

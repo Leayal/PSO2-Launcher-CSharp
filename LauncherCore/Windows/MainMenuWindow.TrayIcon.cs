@@ -13,7 +13,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        public static readonly DependencyProperty IsMinimizedToTrayProperty = DependencyProperty.Register("IsMinimizedToTray", typeof(bool), typeof(MainMenuWindow), new UIPropertyMetadata(false, (obj, e) =>
+        public static readonly DependencyProperty IsMinimizedToTrayProperty = DependencyProperty.Register("IsMinimizedToTray", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
         {
             if (obj is MainMenuWindow window)
             {
@@ -39,6 +39,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             get => (bool)this.GetValue(IsMinimizedToTrayProperty);
             set => this.SetValue(IsMinimizedToTrayProperty, value);
         }
+
+        private readonly ToolStripMenuItem menuItem_TimeClock = new ToolStripMenuItem() { Text = $"JST: {DateTime.MinValue}", Visible = false, Enabled = false };
 
         private NotifyIcon CreateNotifyIcon()
         {
@@ -158,12 +160,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             };
 
-            var hasupdatenotificationalready = (this.SelfUpdateNotification.Visibility == Visibility.Visible);
+            var hasupdatenotificationalready = this.IsUpdateNotificationVisible;
             var selfupdate_separator = new ToolStripSeparator()
             {
                 Visible = hasupdatenotificationalready
             };
-            var performRestartToSelfUpdate = new ToolStripMenuItem("Restart launcher to update launcher")
+            var performRestartToSelfUpdate = new ToolStripMenuItem("Restart launcher to perform update")
             {
                 Visible = hasupdatenotificationalready,
                 Tag = StaticResources.Url_ConfirmSelfUpdate
@@ -176,6 +178,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             ico_contextmenu.Items.AddRange(new ToolStripItem[] {
                 menuitem_showLauncher,
+                menuItem_TimeClock,
                 new ToolStripSeparator(),
                 typical_startGame,
                 typicalMenu,

@@ -11,4 +11,8 @@
     <Description>Provides logic and convenient classes for PSO2 Tools. This is standalone and does not require PSO2LeaLauncher's core components.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
+  </ItemGroup>
+
 </Project>
