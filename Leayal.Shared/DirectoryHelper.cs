@@ -10,14 +10,18 @@ namespace Leayal.Shared
         {
             if (Directory.Exists(path))
             {
-                IEnumerable<string> walk = includingFolder ? Directory.EnumerateFileSystemEntries(path, "*", SearchOption.AllDirectories) : Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories);
-                using (var walker = walk.GetEnumerator())
+                return IsDirectoryNotEmpty(path);
+            }
+            return false;
+        }
+
+        public static bool IsDirectoryNotEmpty(string path, bool includingFolders = false)
+        {
+            using (var walker = (includingFolders ? Directory.EnumerateFileSystemEntries(path, "*", SearchOption.AllDirectories) : Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)).GetEnumerator())
+            {
+                if (walker.MoveNext())
                 {
-                    walk = null;
-                    if (walker.MoveNext())
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             return false;

@@ -94,7 +94,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             
         public class BackupFileFoundEventArgs : EventArgs
         {
-            private readonly string root;
+            public readonly string Root;
             private IEnumerable<BackupRestoreItem> walking;
             private readonly bool doesReboot, doesClassic;
 
@@ -128,7 +128,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 string currentDir, bakDir;
                 if (this.doesReboot)
                 {
-                    currentDir = Path.GetFullPath(Path.Combine("data", "win32reboot"), this.root);
+                    currentDir = Path.GetFullPath(Path.Combine("data", "win32reboot"), this.Root);
                     bakDir = Path.Combine(currentDir, "backup");
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.AllDirectories))
                     {
@@ -139,7 +139,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                 if (this.doesClassic)
                 {
-                    currentDir = Path.GetFullPath(Path.Combine("data", "win32"), this.root);
+                    currentDir = Path.GetFullPath(Path.Combine("data", "win32"), this.Root);
                     bakDir = Path.Combine(currentDir, "backup");
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.TopDirectoryOnly))
                     {
@@ -152,7 +152,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             public BackupFileFoundEventArgs(string pso2_bin, bool reboot, bool classic)
             {
                 this.Handled = false;
-                this.root = pso2_bin;
+                this.Root = pso2_bin;
                 this.doesReboot = reboot;
                 this.doesClassic = classic;
             }

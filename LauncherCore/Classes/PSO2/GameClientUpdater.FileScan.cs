@@ -157,6 +157,39 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
                     }
                 }
+
+                // This should clean up all empty directories created by backup.
+                // However, it does not hurt if the empty directories still there.
+                // So optional, silent the error since it's okay even if it fails.
+                if (e_onBackup.HasRebootBackup)
+                {
+                    var reboot = Path.GetFullPath(Path.Combine("data", "win32reboot", "backup"), e_onBackup.Root);
+                    if (Directory.Exists(reboot) && !DirectoryHelper.IsDirectoryNotEmpty(reboot))
+                    {
+                        try
+                        {
+                            Directory.Delete(reboot, true);
+                        }
+                        catch { }
+                    }
+                }
+
+                // Technically, this can't happen as classic files are all non-directory files.
+                // But add it, just-in-case.
+                // However, it does not hurt if the empty directories still there.
+                // So optional, silent the error since it's okay even if it fails.
+                if (e_onBackup.HasClassicBackup)
+                {
+                    var classic = Path.GetFullPath(Path.Combine("data", "win32", "backup"), e_onBackup.Root);
+                    if (Directory.Exists(classic) && !DirectoryHelper.IsDirectoryNotEmpty(classic))
+                    {
+                        try
+                        {
+                            Directory.Delete(classic, true);
+                        }
+                        catch { }
+                    }
+                }
             }
         }
 
