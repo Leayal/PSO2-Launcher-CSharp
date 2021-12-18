@@ -150,7 +150,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
             var logfiles = PSO2LogWatcher.Value;
-            this.SelectNewestLog(logfiles.ActionLog);
             logfiles.StartWatching(this.Logfiles_NewFileFound);
             this.IsClockVisible = this.clockInitiallyVisible;
         }
@@ -258,38 +257,51 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private void Logreader_DataReceived(PSO2LogAsyncReader arg1, LogReaderDataReceivedEventArgs arg2)
         {
             var datas = arg2.GetDatas();
-            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase) && (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase)))
+            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase))
             {
-                var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), "yyyy-MM-dd");
-                var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
-                var logtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
-
-                // Consider push the datetime before reset to become previous day.
-                logtime = TimeZoneHelper.ConvertTimeToLocalJST(logtime);
-                var logtime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
-                logtime = TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now);
-                var currenttime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
-
-                // Consider push the datetime before reset to become previous day.
-                var dateonly_logtime_jst = DateOnly.FromDateTime(logtime_jst);
-                var dateonly_currenttime_jst = DateOnly.FromDateTime(currenttime_jst);
-
-                if (dateonly_logtime_jst != dateonly_currenttime_jst)
+                bool isAlphaReactor = (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase));
+                bool isStellaSeed = (datas[5].Span.Equals("Stellar Shard", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("Stellar Seed", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("ステラーシード", StringComparison.OrdinalIgnoreCase));
+                if (isAlphaReactor || isStellaSeed)
                 {
-                    this.RefreshDate();
+                    var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), "yyyy-MM-dd");
+                    var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
+                    var logtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
+
+                    // Consider push the datetime before reset to become previous day.
+                    logtime = TimeZoneHelper.ConvertTimeToLocalJST(logtime);
+                    var logtime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
+                    logtime = TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now);
+                    var currenttime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
+
+                    // Consider push the datetime before reset to become previous day.
+                    var dateonly_logtime_jst = DateOnly.FromDateTime(logtime_jst);
+                    var dateonly_currenttime_jst = DateOnly.FromDateTime(currenttime_jst);
+
+                    if (dateonly_logtime_jst != dateonly_currenttime_jst)
+                    {
+                        this.RefreshDate();
+                    }
+                    if (dateonly_logtime_jst == dateonly_currenttime_jst)
+                    {
+                        this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
+                    }
+                    else
+                    {
+                        this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
+                    }
                 }
-                if (dateonly_logtime_jst == dateonly_currenttime_jst)
+                else
                 {
-                    this.IncreaseCharacterAlphaCount(long.Parse(datas[3].Span), new string(datas[4].Span));
+                    this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
                 }
             }
             else
             {
-                this.AddCharacter(long.Parse(datas[3].Span), new string(datas[4].Span));
+                this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
             }
         }
 
-        private void AddCharacter(long charId, string charName)
+        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -304,33 +316,18 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     }
                 }
                 data.AddName(charName);
-            }
-            else
-            {
-                this.Dispatcher.Invoke(new Action<long, string>(this.AddCharacter), new object[] { charId, charName });
-            }
-        }
-
-        private void IncreaseCharacterAlphaCount(long charId, string charName)
-        {
-            if (this.Dispatcher.CheckAccess())
-            {
-                if (!this.mapping.TryGetValue(charId, out var data))
+                if (alphaReactorIncrement != 0)
                 {
-                    data = new AccountData(charId);
-                    this.mapping.Add(charId, data);
-                    this.characters.Add(data);
-                    if (this.characters.Count == 1)
-                    {
-                        this.AccountSelector.SelectedIndex = 0;
-                    }
+                    data.AlphaReactorCount += alphaReactorIncrement;
                 }
-                data.AddName(charName);
-                data.AlphaReactorCount++;
+                if (stellarSeedIncrement != 0)
+                {
+                    data.StellarSeedCount += stellarSeedIncrement;
+                }
             }
             else
             {
-                this.Dispatcher.Invoke(new Action<long, string>(this.IncreaseCharacterAlphaCount), new object[] { charId, charName });
+                this.Dispatcher.Invoke((Action<long, string, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement });
             }
         }
 

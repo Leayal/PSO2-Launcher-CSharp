@@ -83,14 +83,10 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         public async void StartWatching(Action<LogCategories, List<string>> callback)
         {
             this.NewFileFound += callback;
-            bool deferred = !this.t_refresh.IsCompleted;
             await this.t_refresh;
+            callback.Invoke(this, this.ActionLog);
+            callback.Invoke(this, this.RewardLog);
             this.RequestActive();
-            if (deferred)
-            {
-                callback.Invoke(this, this.ActionLog);
-                callback.Invoke(this, this.RewardLog);
-            }
         }
 
         public void StopWatching(Action<LogCategories, List<string>> callback)

@@ -30,6 +30,13 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             set => this.SetValue(AlphaReactorCountProperty, value);
         }
 
+        public static readonly DependencyProperty StellarSeedCountProperty = DependencyProperty.Register("StellarSeedCount", typeof(int), typeof(AccountData), new PropertyMetadata(0));
+        public int StellarSeedCount
+        {
+            get => (int)this.GetValue(StellarSeedCountProperty);
+            set => this.SetValue(StellarSeedCountProperty, value);
+        }
+
         public AccountData(long characterID)
         {
             this.sb = new StringBuilder();

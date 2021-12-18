@@ -63,9 +63,12 @@
                     </Style.Triggers>
                 </Style>
             </TextBlock.Style>
-            <Run Text="Account (ID:" />
+            <Run Text="Account ID:" />
             <Run Text="{Binding ID, Mode=OneWay}" />
-            <Run Text=") has picked up" />
+            <Run Text="| Character(s):" />
+            <Run Text="{Binding NamesOnly,Mode=OneWay}" />
+            <LineBreak />
+            <Run Text="The account has picked up these for today:" />
             <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
             <Run>
                 <Run.Style>
@@ -82,10 +85,23 @@
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="for today." />
-            <LineBreak />
-            <Run Text="Account's character(s):" />
-            <Run Text="{Binding NamesOnly,Mode=OneWay}" />
+            <Run Text="and" />
+            <Run Text="{Binding StellarSeedCount, Mode=OneWay}"/>
+            <Run>
+                <Run.Style>
+                    <Style TargetType="Run">
+                        <Setter Property="Text" Value="Stella Shards" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="0">
+                                <Setter Property="Text" Value="Stellar Shard" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="1">
+                                <Setter Property="Text" Value="Stella Shard" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Run.Style>
+            </Run>
         </TextBlock>
 
         <TextBlock Grid.Row="2" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap"
