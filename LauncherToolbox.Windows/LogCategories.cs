@@ -111,8 +111,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         protected override void OnActivation()
         {
-            this.watcher.Path = Directory.CreateDirectory(LogDir).FullName;
-            this.watcher.EnableRaisingEvents = true;
+            if (!this.watcher.EnableRaisingEvents)
+            {
+                this.watcher.Path = Directory.CreateDirectory(LogDir).FullName;
+                this.watcher.EnableRaisingEvents = true;
+            }
         }
 
         protected override void OnDeactivation()
