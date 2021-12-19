@@ -82,7 +82,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly bool shouldDisposeClock, clockInitiallyVisible;
         private readonly ObservableCollection<AccountData> characters;
         private readonly Dictionary<long, AccountData> mapping;
-        private readonly Action<LogCategories, List<string>> Logfiles_NewFileFound;
+        private readonly NewFileFoundEventHandler Logfiles_NewFileFound;
         private readonly JSTClockTimer timerclock;
         private readonly ClockTickerCallback timerCallback;
         private readonly DelegateSetTime_params @delegateSetTime;
@@ -110,7 +110,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.mapping = new Dictionary<long, AccountData>();
             this.characters = new ObservableCollection<AccountData>();
             this.SetTime(TimeZoneHelper.ConvertTimeToLocalJST(DateTime.UtcNow));
-            this.Logfiles_NewFileFound = new Action<LogCategories, List<string>>(this.Logfiles_OnNewFileFound);
+            this.Logfiles_NewFileFound = new NewFileFoundEventHandler(this.Logfiles_OnNewFileFound);
             this.timerCallback = new ClockTickerCallback(this.OnClockTicked);
             this.@delegateSetTime = new DelegateSetTime_params(this);
             if (clock == null)
@@ -141,7 +141,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             PSO2LogWatcher.Value.StopWatching(this.Logfiles_NewFileFound);
             try
             {
-                this.CloseCurrentLog();
+                this.CloseLog();
             }
             catch { }
             return Task.CompletedTask;
@@ -154,11 +154,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.IsClockVisible = this.clockInitiallyVisible;
         }
 
-        private void Logfiles_OnNewFileFound(object sender, List<string> ev)
+        private void Logfiles_OnNewFileFound(LogCategories sender, NewFileFoundEventArgs e)
         {
-            if (ev == PSO2LogWatcher.Value.ActionLog)
+            if (e.CategoryName == null || e.CategoryName == LogCategories.ActionLog)
             {
-                this.SelectNewestLog(ev);
+                this.SelectNewestLog(LogCategories.ActionLog);
             }
         }
 
@@ -175,59 +175,41 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void ForceSelectNewestActionLog() => this.SelectNewestLog(PSO2LogWatcher.Value.ActionLog, true);
+        private void ForceSelectNewestActionLog() => this.SelectNewestLog(LogCategories.ActionLog, true);
 
         /// <summary>Select the newest log file from the given category.</summary>
-        /// <param name="logcategory">The log category to get the log file.</param>
+        /// <param name="categoryName">The name of log category to get the log file.</param>
         /// <param name="force">Determines whether a force reload the log file is required.</param>
-        public void SelectNewestLog(List<string> logcategory, bool force = false) => this.SelectLog(logcategory, -1, force);
-
-        /// <summary>Select a certain log file from the given category.</summary>
-        /// <param name="logcategory">The log category to get the log file.</param>
-        /// <param name="index">The index of the log file from the category.</param>
-        /// <param name="force">Determines whether a force reload the log file is required.</param>
-        public void SelectLog(List<string> logcategory, int index, bool force = false)
+        public void SelectNewestLog(string categoryName, bool force = false)
         {
-            string filepath;
-            int count;
-            lock (logcategory)
+            string? filepath = PSO2LogWatcher.Value.SelectLog(categoryName, -1);
+            if (string.IsNullOrEmpty(filepath))
             {
-                count = logcategory.Count;
-                if (count != 0)
-                {
-                    if (index == -1)
-                    {
-                        filepath = logcategory[count - 1];
-                    }
-                    else if (index < 0)
-                    {
-                        count = 0;
-                        filepath = string.Empty;
-                    }
-                    else
-                    {
-                        filepath = logcategory[index];
-                    }
-                }
-                else
-                {
-                    filepath = string.Empty;
-                }
+                this.CloseLog();
             }
-            if (count == 0)
-            {
-                this.CloseCurrentLog();
-            }
-            else if (!string.IsNullOrEmpty(filepath))
+            else
             {
                 if (!force && this.logreader is not null && string.Equals(Path.IsPathFullyQualified(filepath) ? filepath : Path.GetFullPath(filepath), this.logreader.Fullpath, StringComparison.OrdinalIgnoreCase)) return;
                 if (File.Exists(filepath))
                 {
-                    this.CloseCurrentLog();
+                    this.CloseLog();
                     this.RefreshDate();
-                    this.logreader = new PSO2LogAsyncReader(filepath);
-                    this.logreader.DataReceived += this.Logreader_DataReceived;
-                    this.logreader.StartReceiving();
+                    string? secondLast = PSO2LogWatcher.Value.SelectLog(categoryName, -2);
+                    if (!string.IsNullOrEmpty(secondLast) && File.Exists(secondLast))
+                    {
+                        using (var sr = new StreamReader(secondLast))
+                        {
+                            string? line;
+                            while ((line = sr.ReadLine()) != null)
+                            {
+                                if (!string.IsNullOrEmpty(line))
+                                {
+                                    this.Logreader_DataReceived(null, new LogReaderDataReceivedEventArgs(line));
+                                }
+                            }
+                        }
+                    }
+                    this.LoadLog(filepath);
                 }
             }
         }
@@ -254,7 +236,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void Logreader_DataReceived(PSO2LogAsyncReader arg1, LogReaderDataReceivedEventArgs arg2)
+        private void Logreader_DataReceived(PSO2LogAsyncReader? arg1, LogReaderDataReceivedEventArgs arg2)
         {
             var datas = arg2.GetDatas();
             if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase))
@@ -367,13 +349,25 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
+        /// <summary>Load log file.</summary>
+        /// <remarks>Don't use it directly.</remarks>
+        private void LoadLog(string filepath)
+        {
+            this.logreader = new PSO2LogAsyncReader(filepath);
+            this.logreader.DataReceived += this.Logreader_DataReceived;
+            this.logreader.StartReceiving();
+        }
+
         /// <summary>Close the current opening log file if there is one. Otherwise does nothing.</summary>
-        public void CloseCurrentLog()
+        public void CloseLog()
         {
             if (this.Dispatcher.CheckAccess())
             {
-                this.characters.Clear();
-                this.mapping.Clear();
+                foreach (var character in this.characters)
+                {
+                    character.AlphaReactorCount = 0;
+                    character.StellarSeedCount = 0;
+                }
                 if (this.logreader is not null)
                 {
                     this.logreader.DataReceived -= this.Logreader_DataReceived;
@@ -382,7 +376,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
             else
             {
-                this.Dispatcher.Invoke(this.CloseCurrentLog);
+                this.Dispatcher.Invoke(this.CloseLog);
             }
         }
     }
