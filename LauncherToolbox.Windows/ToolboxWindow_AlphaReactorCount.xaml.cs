@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Leayal.Shared;
 using Leayal.Shared.Windows;
 
@@ -15,19 +16,20 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
     /// <remarks>
     /// <para>This class is standalone and does not require the Launcher's Core. If you want to use this class as standalone tool, feel free to do so.</para>
     /// <para>Please note that you still need to properly setup an <seealso cref="Application"/> for <seealso cref="MetroWindowEx"/> in case of standalone.</para>
+    /// <para>If you have an instance of <seealso cref="ToolboxWindow_AlphaReactorCount"/>, please call <seealso cref="DisposeLogWatcherIfCreated"/> when you exit the application.</para>
     /// </remarks>
     public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
     {
-        private static Lazy<LogCategories> PSO2LogWatcher = new Lazy<LogCategories>(() => new LogCategories(Application.Current.Dispatcher));
-
         /// <summary>Dispose the log watcher if it has been created. Otherwise does nothing</summary>
+        /// <remarks>You should call this only when you are certain that your application would exit.</remarks>
         public static void DisposeLogWatcherIfCreated()
         {
             try
             {
-                if (PSO2LogWatcher.IsValueCreated)
+                var lazy = LogCategories.Default;
+                if (lazy.IsValueCreated)
                 {
-                    PSO2LogWatcher.Value.Dispose();
+                    lazy.Value.Dispose();
                 }
             }
             catch { } // Silent everything as we will terminate the process anyway.
@@ -86,6 +88,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly JSTClockTimer timerclock;
         private readonly ClockTickerCallback timerCallback;
         private readonly DelegateSetTime_params @delegateSetTime;
+        private readonly DispatcherTimer logcategoryThrottle;
 
         /// <summary>Creates a new window.</summary>
         public ToolboxWindow_AlphaReactorCount() : this(null) { }
@@ -113,6 +116,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.Logfiles_NewFileFound = new NewFileFoundEventHandler(this.Logfiles_OnNewFileFound);
             this.timerCallback = new ClockTickerCallback(this.OnClockTicked);
             this.@delegateSetTime = new DelegateSetTime_params(this);
+            this.logcategoryThrottle = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Normal, OnThrottleEventInvocation, this.Dispatcher) { Tag = this, IsEnabled = false };
             if (clock == null)
             {
                 clock = new JSTClockTimer();
@@ -138,7 +142,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             {
                 this.timerclock.Dispose();
             }
-            PSO2LogWatcher.Value.StopWatching(this.Logfiles_NewFileFound);
+            LogCategories.Default.Value.StopWatching(this.Logfiles_NewFileFound);
             try
             {
                 this.CloseLog();
@@ -149,7 +153,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
-            var logfiles = PSO2LogWatcher.Value;
+            var logfiles = LogCategories.Default.Value;
             logfiles.StartWatching(this.Logfiles_NewFileFound);
             this.IsClockVisible = this.clockInitiallyVisible;
         }
@@ -158,7 +162,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         {
             if (e.CategoryName == null || e.CategoryName == LogCategories.ActionLog)
             {
-                this.SelectNewestLog(LogCategories.ActionLog);
+                lock (this.logcategoryThrottle)
+                {
+                    this.logcategoryThrottle.Stop();
+                    this.logcategoryThrottle.Start();
+                }
             }
         }
 
@@ -182,7 +190,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         /// <param name="force">Determines whether a force reload the log file is required.</param>
         public void SelectNewestLog(string categoryName, bool force = false)
         {
-            string? filepath = PSO2LogWatcher.Value.SelectLog(categoryName, -1);
+            var logCategory = LogCategories.Default.Value;
+            string? filepath = logCategory.SelectLog(categoryName, -1);
             if (string.IsNullOrEmpty(filepath))
             {
                 this.CloseLog();
@@ -194,7 +203,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     this.CloseLog();
                     this.RefreshDate();
-                    string? secondLast = PSO2LogWatcher.Value.SelectLog(categoryName, -2);
+                    string? secondLast = logCategory.SelectLog(categoryName, -2);
                     if (!string.IsNullOrEmpty(secondLast) && File.Exists(secondLast))
                     {
                         using (var sr = new StreamReader(secondLast))
@@ -333,22 +342,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        class DelegateSetTime_params
-        {
-            public DateTime arg;
-            public readonly ToolboxWindow_AlphaReactorCount window;
-
-            public DelegateSetTime_params(ToolboxWindow_AlphaReactorCount w)
-            {
-                this.window = w;
-            }
-
-            public void Invoke()
-            {
-                this.window.SetTime(arg);
-            }
-        }
-
         /// <summary>Load log file.</summary>
         /// <remarks>Don't use it directly.</remarks>
         private void LoadLog(string filepath)
@@ -377,6 +370,31 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             else
             {
                 this.Dispatcher.Invoke(this.CloseLog);
+            }
+        }
+
+        private static void OnThrottleEventInvocation(object? sender, EventArgs e)
+        {
+            if (sender is DispatcherTimer timer && timer.Tag is ToolboxWindow_AlphaReactorCount window)
+            {
+                timer.Stop();
+                window.SelectNewestLog(LogCategories.ActionLog);
+            }
+        }
+
+        class DelegateSetTime_params
+        {
+            public DateTime arg;
+            public readonly ToolboxWindow_AlphaReactorCount window;
+
+            public DelegateSetTime_params(ToolboxWindow_AlphaReactorCount w)
+            {
+                this.window = w;
+            }
+
+            public void Invoke()
+            {
+                this.window.SetTime(arg);
             }
         }
     }

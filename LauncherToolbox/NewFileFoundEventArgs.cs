@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Leayal.PSO2Launcher.Toolbox.Windows
+namespace Leayal.PSO2Launcher.Toolbox
 {
-    /// <summary>Provides handler for the <seealso cref="LogCategories.StartWatching(Action{LogCategories, List{string}})"/> method.</summary>
-    delegate void NewFileFoundEventHandler(LogCategories sender, NewFileFoundEventArgs e);
+    /// <summary>Provides handler for the <seealso cref="LogCategories.StartWatching(NewFileFoundEventHandler)"/> method.</summary>
+    public delegate void NewFileFoundEventHandler(LogCategories sender, NewFileFoundEventArgs e);
 
     /// <summary>Provides data for the <seealso cref="NewFileFoundEventHandler"/> handler.</summary>
     public class NewFileFoundEventArgs : EventArgs
