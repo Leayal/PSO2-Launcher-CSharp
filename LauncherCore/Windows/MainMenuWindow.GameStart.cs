@@ -22,6 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
+        private bool _isTweakerRunning;
 #nullable enable
         private SecureString? ss_id, ss_pw;
 
@@ -395,7 +396,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     this.pso2Updater.OperationCompleted -= completed;
                                     this.Dispatcher.TryInvoke(delegate
                                     {
-                                        this.TabMainMenu.IsSelected = true;
+                                        if (isLaunchWithTweaker)
+                                        {
+                                            this.TabGameClientUpdateProgressBar.IsIndetermined = true;
+                                        }
+                                        else
+                                        {
+                                            this.TabMainMenu.IsSelected = true;
+                                        }
                                     });
                                 }
                                 this.pso2Updater.OperationCompleted += completed;
@@ -429,6 +437,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                         if (pso2tweakerconfig.Load())
                                         {
+                                            this._isTweakerRunning = true;
                                             string tweakerpso2bin = string.IsNullOrWhiteSpace(pso2tweakerconfig.PSO2JPBinFolder) ? string.Empty : Path.GetFullPath(pso2tweakerconfig.PSO2JPBinFolder);
                                             bool differentpath = !string.Equals(tweakerpso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase);
                                             string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
@@ -444,6 +453,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             {
                                                 File.WriteAllText(pso2tweakerpso2clientversionpath, pso2versionlocal);
                                             }
+                                            this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been patched.");
                                             try
                                             {
                                                 using (var proc = new Process())
@@ -478,6 +488,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                         }
                                                     }
                                                 }
+                                                this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been restored.");
+                                                this._isTweakerRunning = false;
+                                                this.TabMainMenu.IsSelected = true;
                                             }
                                         }
                                     }

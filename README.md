@@ -48,6 +48,10 @@ This project is just a hobby one.
   - The clock can be enabled/disabled in Launcher Behavior Manager dialog.
   - When enabled, it will be visible at the bottom of the launcher's window and at the context menu of the Tray Icon.
   - When disabled, it will be hidden in all places and the clock instance will be stopped to save CPU. Though, the amount is very insignificant.
+- Minimal compatibility with [PSO2 Tweaker](https://arks-layer.com/):
+  - **It is disabled by default**. To enable, please press `Launcher Options` and then select `Manage launcher's compatibility` in the dropdown.
+  - Update Tweaker's hash cache (which is used to speed up game client updating progress) when updating the game client with this launcher. However, you should **NOT** using both to update the game at the same time.
+  - Allow user to launch the game via PSO2 Tweaker instead of launching the game client directly. This also allows Tweaker to manage Patches and perform its workaround magics. But you shouldn't exit this launcher before Tweaker is closed in order to avoid corrupting Tweaker's config. To enable this launching game method, you can the setting in Launcher's behavior or in the GameStart's dropdown menu.
 
 ### Launcher arguments:
 

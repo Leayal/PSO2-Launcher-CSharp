@@ -48,9 +48,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 Visible = false,
                 Icon = BootstrapResources.ExecutableIcon,
-                Text = "PSO2Launcher"
+                Text = "PSO2LeaLauncher"
             };
-            ico.ShowBalloonTip(10000, "PSO2Launcher", "Double-click this icon in order to show the launcher again.", ToolTipIcon.Info);
+            ico.ShowBalloonTip(10000, "PSO2LeaLauncher", "Double-click this icon in order to show the launcher again.", ToolTipIcon.Info);
             ico.DoubleClick += this.Ico_DoubleClick;
             var ico_contextmenu = new ContextMenuStrip();
 
@@ -79,6 +79,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     typical_startGame.DropDownItems.Add(menuitem);
                 }
             }
+
+            if (!EnumDisplayNameAttribute.TryGetDisplayName(GameStartStyle.StartWithPSO2Tweaker, out var displayname_launchTweaker))
+            {
+                displayname_launchTweaker = GameStartStyle.StartWithPSO2Tweaker.ToString();
+            }
+            var menuitem_launchTweaker = new ToolStripMenuItem(displayname_launchTweaker) { Tag = GameStartStyle.StartWithPSO2Tweaker, Visible = this.TabMainMenu.GameStartWithPSO2TweakerEnabled };
+            menuitem_launchTweaker.Click += this.Typical_startGame_SubItemsClick;
+            typical_startGame.DropDownItems.Add(menuitem_launchTweaker);
 
             var forgetSEGALogin = new ToolStripMenuItem("Forget remembered SEGA login");
             forgetSEGALogin.Click += this.MenuItemForgetSEGALogin_Click;
@@ -114,6 +122,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 typical_startGame.Enabled = isenabled;
                 typical_checkforPSO2Updates.Enabled = isenabled;
                 typical_scanMissingDamaged.Enabled = isenabled;
+                menuitem_launchTweaker.Visible = this.TabMainMenu.GameStartWithPSO2TweakerEnabled;
                 foreach (var item in typical_startGame.DropDownItems)
                 {
                     if (item is ToolStripMenuItem dropitem)

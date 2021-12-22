@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <mah:ProgressRing Grid.RowSpan="3" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
-        <Label Content="Preparing" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
+        <TextBlock Text="Preparing" VerticalAlignment="Center" HorizontalAlignment="Center" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
         
         <local:ExtendedProgressBar Text="Checking file" x:Name="TopProgressBar" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}" />
         <TextBlock Grid.Row="1" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=thisSelf,Path=IsIndetermined,Mode=OneWay}">
