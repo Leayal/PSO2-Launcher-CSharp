@@ -243,7 +243,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return e_onBackup;
         }
 
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, GameClientSelection selection, FileScanFlags flags, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags flags, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
@@ -368,7 +368,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
                                         duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, in localFileLen, localMd5), localLastModifiedTimeUtc);
 
-                                        if (!bool_compareMD5)
+                                        if (bool_compareMD5)
+                                        {
+                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
+                                        }
+                                        else
                                         {
                                             AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                         }
@@ -410,7 +414,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 using (var fs = File.OpenRead(localFilePath))
                                 {
                                     var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
-                                    cachedHash = duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5), localLastModifiedTimeUtc);
+                                    var newCacheItem = new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5);
+                                    cachedHash = duhB.SetPatchItem(newCacheItem, localLastModifiedTimeUtc);
+                                    tweakerHashCache?.WriteString(newCacheItem.GetSpanFilenameWithoutAffix(), localMd5);
                                 }
                             }
 
@@ -423,6 +429,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
                                 {
                                     AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                }
+                                else
+                                {
+                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
                                 }
                             }
                         }
@@ -475,6 +485,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             {
                                                 AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                             }
+                                            else
+                                            {
+                                                tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                            }
                                         }
                                         else
                                         {
@@ -482,6 +496,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
                                             {
                                                 duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
+                                                tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
                                             }
                                             else
                                             {
@@ -495,6 +510,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         {
                                             AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                         }
+                                        else
+                                        {
+                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                        }
                                     }
                                 }
                                 else if (flag_useMd5)
@@ -505,6 +524,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         {
                                             AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
                                         }
+                                        else
+                                        {
+                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                        }
                                     }
                                     else
                                     {
@@ -513,6 +536,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
                                         {
                                             duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
+                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
                                         }
                                         else
                                         {

@@ -1,48 +1,30 @@
-﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
-using SQLite.X64;
+﻿using SQLite.X64;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
-using System.IO;
-using Leayal.SharedInterfaces;
-using System.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    public class FileCheckHashCacheX64 : IFileCheckHashCache
+    class FileCheckHashCacheX64 : FileCheckHashCache
     {
-        private const int LatestVersion = 2;
-
-        private readonly int concurrentlevel;
         private readonly SQLiteConnection sqlConn;
-        private readonly Task t_write;
-        private int state;
 
-        private ConcurrentDictionary<string, PatchRecordItemValue> buffering;
-        private readonly BlockingCollection<PatchRecordItemValue> writebuffer;
-
-        public FileCheckHashCacheX64(string filepath, in int concurrentLevel)
+        public FileCheckHashCacheX64(string filepath, in int concurrentLevel) : base(in concurrentLevel)
         {
-            this.state = 0;
-            this.buffering = null;
-            this.concurrentlevel = Math.Min(Environment.ProcessorCount, concurrentLevel);
-            this.writebuffer = new BlockingCollection<PatchRecordItemValue>(new ConcurrentQueue<PatchRecordItemValue>());
             var connectionStr = new SQLiteConnectionString(filepath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapso2ngshashtable");
             this.sqlConn = new SQLiteConnection(connectionStr);
-            this.t_write = Task.Factory.StartNew(this.PollingWrite, TaskCreationOptions.LongRunning).Unwrap();
         }
 
-        private async Task PollingWrite()
+        protected override async Task PollingWrite(BlockingCollection<PatchRecordItemValue> writebuffer)
         {
             // INSERT OR REPLACE INTO PatchRecordItem (RemoteFilename,FileSize,MD5,LastModifiedTimeUTC) VALUES (?,?,?,?)
             //var statementHandle = SQLite3.Prepare2(this.sqlConn.Handle, "INSERT OR REPLACE INTO PatchRecordItem(RemoteFilename,FileSize,MD5,LastModifiedTimeUTC) VALUES (?,?,?,?)");   
             var singular = new PatchRecordItem(); // Re-use this object to insert.
             try
             {
-                while (!this.writebuffer.IsCompleted)
+                while (!writebuffer.IsCompleted)
                 {
-                    if (this.writebuffer.TryTake(out var item))
+                    if (writebuffer.TryTake(out var item))
                     {
                         this.sqlConn.BeginTransaction();
                         try
@@ -52,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             singular.MD5 = item.MD5;
                             singular.LastModifiedTimeUTC = item.LastModifiedTimeUTC;
                             this.sqlConn.InsertOrReplace(singular);
-                            while (this.writebuffer.TryTake(out item))
+                            while (writebuffer.TryTake(out item))
                             {
                                 singular.FileSize = item.FileSize;
                                 singular.RemoteFilename = item.RemoteFilename;
@@ -69,7 +51,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     else
                     {
-                        if (!this.writebuffer.IsAddingCompleted)
+                        if (!writebuffer.IsAddingCompleted)
                         {
                             await Task.Delay(200).ConfigureAwait(false);
                         }
@@ -82,58 +64,52 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public void Load()
+        protected override void OnLoad()
         {
-            if (Interlocked.CompareExchange(ref this.state, 1, 0) == 0)
+            this.sqlConn.EnableWriteAheadLogging();
+            var versionTb = this.sqlConn.CreateTable<Versioning>();
+            var oldRecordTb = this.sqlConn.CreateTable<PatchRecordItem>();
+            if (versionTb == CreateTableResult.Created)
             {
-                this.sqlConn.EnableWriteAheadLogging();
-                var versionTb = this.sqlConn.CreateTable<Versioning>();
-                var oldRecordTb = this.sqlConn.CreateTable<PatchRecordItem>();
-                if (versionTb == CreateTableResult.Created)
+                this.sqlConn.Insert(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
+                if (oldRecordTb == CreateTableResult.Migrated)
                 {
-                    this.sqlConn.Insert(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
-                    if (oldRecordTb == CreateTableResult.Migrated)
+                    this.sqlConn.DropTable<PatchRecordItem>();
+                    this.sqlConn.CreateTable<PatchRecordItem>();
+                }
+            }
+            else
+            {
+                try
+                {
+                    var verRecordTb = this.sqlConn.Find<Versioning>("Ver");
+                    if (verRecordTb == null)
                     {
+                        this.sqlConn.Insert(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
                         this.sqlConn.DropTable<PatchRecordItem>();
                         this.sqlConn.CreateTable<PatchRecordItem>();
                     }
+                    else if (verRecordTb.TableVersion != LatestVersion)
+                    {
+                        this.Upgrading(verRecordTb.TableVersion);
+                    }
                 }
-                else
+                catch (InvalidOperationException) // Why do you even call this as "Not found" exception
                 {
-                    try
-                    {
-                        var verRecordTb = this.sqlConn.Find<Versioning>("Ver");
-                        if (verRecordTb == null)
-                        {
-                            this.sqlConn.Insert(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
-                            this.sqlConn.DropTable<PatchRecordItem>();
-                            this.sqlConn.CreateTable<PatchRecordItem>();
-                        }
-                        else if (verRecordTb.TableVersion != LatestVersion)
-                        {
-                            this.Upgrading(verRecordTb.TableVersion);
-                        }
-                    }
-                    catch (InvalidOperationException) // Why do you even call this as "Not found" exception
-                    {
-                        this.sqlConn.InsertOrReplace(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
-                        this.sqlConn.DropTable<PatchRecordItem>();
-                        this.sqlConn.CreateTable<PatchRecordItem>();
-                    }
+                    this.sqlConn.InsertOrReplace(new Versioning() { TableName = "Ver", TableVersion = LatestVersion });
+                    this.sqlConn.DropTable<PatchRecordItem>();
+                    this.sqlConn.CreateTable<PatchRecordItem>();
                 }
-
-                // this.FetchAllRecords();
-                this.FetchAllRecordsValueType();
             }
         }
 
-        private void FetchAllRecordsValueType()
+        protected override void FetchAllRecordsValueType()
         {
             // Buffering data into memory.
 
             // Live on edge.
             // Using low-level. LET'S GO!!!
-            var count = this.sqlConn.ExecuteScalar<int>("SELECT COUNT(*) FROM PatchRecordItem");
+            var count = this.ExecuteScalar<int>("SELECT COUNT(*) FROM PatchRecordItem");
             if (count <= 0)
             {
                 this.buffering = new ConcurrentDictionary<string, PatchRecordItemValue>(this.concurrentlevel, 331, StringComparer.InvariantCultureIgnoreCase);
@@ -190,57 +166,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public bool TryGetPatchItem(string filename, out PatchRecordItemValue item)
-        {
-            switch (Interlocked.CompareExchange(ref this.state, -1, -1))
-            {
-                case 0:
-                    throw new InvalidOperationException("Please call Load() before using.");
-                case 1:
-                    return this.buffering.TryGetValue(filename, out item);
-                case 2:
-                    throw new ObjectDisposedException(nameof(FileCheckHashCacheX64));
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
+        protected override void CloseConnection() => this.sqlConn.Close();
 
-        public PatchRecordItemValue SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC)
-        {
-            switch (Interlocked.CompareExchange(ref this.state, -1, -1))
-            {
-                case 0:
-                    throw new InvalidOperationException("Please call Load() before using.");
-                case 1:
-                    // this.buffering.AddOrUpdate(item.RemoteFilename, )
-                    // var obj = new PatchRecordItem() { RemoteFilename = string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC };
-                    return this.buffering.AddOrUpdate(item.RemoteFilename, (key, args) =>
-                    {
-                        var _item = args.Item1;
-                        var result = new PatchRecordItemValue(string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), in _item.FileSize, _item.MD5, in args.Item2);
-                        args.Item3.Add(result);
-                        return result;
-                    }, (key, existing, args) =>
-                    {
-                        var _item = args.Item1;
-                        var str = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c));
-                        if (!PatchRecordItemValue.IsEquals(existing, str, _item.MD5, in _item.FileSize, in args.Item2))
-                        {
-                            var result = new PatchRecordItemValue(str, in _item.FileSize, _item.MD5, in args.Item2);
-                            args.Item3.Add(result);
-                            return result;
-                        }
-                        else
-                        {
-                            return existing;
-                        }
-                    }, new ValueTuple<PatchListItem, DateTime, BlockingCollection<PatchRecordItemValue>>(item, lastModifiedTimeUTC, this.writebuffer));
-                case 2:
-                    throw new ObjectDisposedException(nameof(FileCheckHashCacheX64));
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
+        protected override void DisposeConnection() => this.sqlConn.Dispose();
+
+        protected override T ExecuteScalar<T>(string cmd, params object[] args) => this.sqlConn.ExecuteScalar<T>(cmd, args);
 
         class Versioning
         {
@@ -260,24 +190,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             public long FileSize { get; set; }
             [NotNull]
             public DateTime LastModifiedTimeUTC { get; set; }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            var oldstate = Interlocked.Exchange(ref this.state, 2);
-            if (oldstate != 2)
-            {
-                this.writebuffer.CompleteAdding();
-
-                await this.t_write;
-
-                this.sqlConn.ExecuteScalar<string>("PRAGMA optimize;", Array.Empty<object>());
-
-                this.buffering.Clear();
-
-                this.sqlConn.Close();
-                this.sqlConn.Dispose();
-            }
         }
     }
 }

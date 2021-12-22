@@ -63,6 +63,12 @@ namespace Leayal.SharedInterfaces
                 this.ValueKind = JsonValueKind.Number;
             }
 
+            public ValueWrap()
+            {
+                this.Value = null;
+                this.ValueKind = JsonValueKind.Null;
+            }
+
             public ValueWrap(string value)
             {
                 this.Value = value;
@@ -147,6 +153,9 @@ namespace Leayal.SharedInterfaces
                                     break;
                                 case JsonValueKind.False:
                                     this.keyValuePairs.Add(element.Name, new ValueWrap(false));
+                                    break;
+                                case JsonValueKind.Null:
+                                        this.keyValuePairs.Add(element.Name, new ValueWrap());
                                     break;
                             }
                         }

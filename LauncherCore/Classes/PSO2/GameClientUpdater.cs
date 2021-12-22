@@ -148,7 +148,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.t_operation = Task.Factory.StartNew(async () =>
                 {
                     bool isOperationSuccess = false;
-                    IFileCheckHashCache? duhB = null;
+                    FileCheckHashCache? duhB = null;
                     PSO2Version ver = default;
 
                     PatchListMemory? patchlist = null;
@@ -156,6 +156,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     ConcurrentDictionary<PatchListItem, bool?>? resultsOfDownloads = null;
                     // ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(), bag_success = new ConcurrentBag<PatchListItem>(), bag_failure = new ConcurrentBag<PatchListItem>();
                     var pendingFiles = new BlockingCollection<DownloadItem>();
+                    PSO2TweakerHashCache? tweakerhashcacheDump = null;
                     try
                     {
                         var taskCount = this.ConcurrentDownloadCount;
@@ -179,11 +180,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         patchlist = await t_patchlist;
                         resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
                         ver = await GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
+                        if (!string.IsNullOrWhiteSpace(pso2tweaker_dirpath) && Directory.Exists(pso2tweaker_dirpath))
+                        {
+                            var tweakerCachePath = Path.Combine(pso2tweaker_dirpath, "client.json");
+                            tweakerhashcacheDump = new PSO2TweakerHashCache(tweakerCachePath);
+                            tweakerhashcacheDump.Load();
+                        }
+
                         var t_check = Task.Factory.StartNew(async () =>
                         {
                             try
-                            {
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, selection, flags, duhB, patchlist, (in DownloadItem item) =>
+                            { 
+                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, tweakerhashcacheDump, selection, flags, duhB, patchlist, (in DownloadItem item) =>
                                 {
                                     // bag_needtodownload.Add(item.PatchInfo);
                                     resultsOfDownloads.TryAdd(item.PatchInfo, null);
@@ -200,7 +208,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         var tasks = new Task[taskCount];
                         for (int i = 0; i < taskCount; i++)
                         {
-                            var wrapped = new UglyWrapper_MetaObj(i, this, pendingFiles, duhB, resultsOfDownloads, cancellationToken);
+                            var wrapped = new UglyWrapper_MetaObj(i, this, pendingFiles, duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump);
                             tasks[i] = Task.Factory.StartNew(wrapped.Start, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                         }
 
@@ -247,7 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         if (Interlocked.CompareExchange(ref this.flag_operationStarted, 0, 1) == 1)
                         {
                             // this.OnClientOperationComplete1(dir_pso2bin, selection, list_all, bag_needtodownload, bag_success, bag_failure, ver, isOperationSuccess, cancellationToken);
-                            this.OnClientOperationComplete1(dir_pso2bin, pso2tweaker_dirpath, selection, list_all, resultsOfDownloads, ver, isOperationSuccess, cancellationToken);
+                            this.OnClientOperationComplete1(dir_pso2bin, pso2tweaker_dirpath, tweakerhashcacheDump, selection, list_all, resultsOfDownloads, ver, isOperationSuccess, cancellationToken);
                         }
 
                         // For debugging purpose.
@@ -269,8 +277,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             public readonly IFileCheckHashCache? duhB;
             public readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
             public readonly CancellationToken cancellationToken;
+            private readonly PSO2TweakerHashCache? tweakerhashcacheDump;
 
-            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, IFileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token)
+            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, IFileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token, PSO2TweakerHashCache? tweakerhashcacheDump)
             {
                 this.Id = id;
                 this.thisRef = updater;
@@ -278,6 +287,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.duhB = db;
                 this.resultsOfDownloads = results;
                 this.cancellationToken = token;
+                this.tweakerhashcacheDump = tweakerhashcacheDump;
             }
 
             public Task Start()
@@ -298,6 +308,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         return existing;
                     }
                 }, success);
+
+                if (success)
+                {
+                    this.tweakerhashcacheDump?.WriteString(item.PatchInfo.GetSpanFilenameWithoutAffix(), item.PatchInfo.MD5);
+                }
                 thisRef.OnProgressEnd(this.Id, item.PatchInfo, in success);
             }
 

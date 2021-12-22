@@ -27,7 +27,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public event OperationCompletedHandler OperationCompleted;
         //private void OnClientOperationComplete1(string dir_pso2bin, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
-        private void OnClientOperationComplete1(string dir_pso2bin, string? pso2tweaker_dirpath, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
+        private void OnClientOperationComplete1(string dir_pso2bin, string? pso2tweaker_dirpath, PSO2TweakerHashCache? tweakerhashcacheDump, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
         {
             // Everything is completed.
             // Write the version file out.
@@ -36,6 +36,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 if (noError && !cancellationToken.IsCancellationRequested && downloadMode != GameClientSelection.Always_Only && ver != default(PSO2Version))
                 {
+                    var versionStringRaw = ver.ToString();
                     var localFilePath = Path.GetFullPath("version.ver", dir_pso2bin);
                     if (Directory.Exists(localFilePath))
                     {
@@ -49,102 +50,98 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             File.SetAttributes(localFilePath, attr & ~FileAttributes.ReadOnly);
                         }
                     }
-                    File.WriteAllText(localFilePath, ver.ToString());
+                    File.WriteAllText(localFilePath, versionStringRaw);
 
                     localFilePath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
-                    if (Directory.Exists(localFilePath))
-                    {
-                        Directory.Delete(localFilePath);
-                    }
-                    else if (File.Exists(localFilePath))
+                    if (File.Exists(localFilePath))
                     {
                         var attr = File.GetAttributes(localFilePath);
                         if (attr.HasFlag(FileAttributes.ReadOnly))
                         {
                             File.SetAttributes(localFilePath, attr & ~FileAttributes.ReadOnly);
                         }
+                        File.WriteAllText(localFilePath, versionStringRaw);
                     }
-                    File.WriteAllText(localFilePath, ver.ToString());
 
                     if (!string.IsNullOrWhiteSpace(pso2tweaker_dirpath))
                     {
-                        var data_clientjson = Path.Combine(pso2tweaker_dirpath, "client.json");
-                        if (File.Exists(data_clientjson))
-                        {
-                            var lookup = new Dictionary<ReadOnlyMemory<char>, PatchListItem>(results.Count, OrdinalIgnoreCaseMemoryStringComparer.Default);
-                            foreach (var item in results)
-                            {
-                                lookup.Add(item.Key.GetMemoryFilenameWithoutAffix(), item.Key);
-                            }
-                            var newone = data_clientjson + "new";
-                            using (var fs_data_clientjson = File.OpenRead(data_clientjson))
-                            using (var doc = System.Text.Json.JsonDocument.Parse(fs_data_clientjson, new System.Text.Json.JsonDocumentOptions() { AllowTrailingCommas = true, CommentHandling = System.Text.Json.JsonCommentHandling.Skip }))
-                            using (var fs_data_clientjson_new = File.Create(data_clientjson + "new"))
-                            using (var writer = new System.Text.Json.Utf8JsonWriter(fs_data_clientjson_new, new System.Text.Json.JsonWriterOptions() { Indented = true }))
-                            {
-                                writer.WriteStartObject();
-                                foreach (var prop in doc.RootElement.EnumerateObject())
-                                {
-                                    var mem = prop.Name.AsMemory();
-                                    if (lookup.Remove(mem, out var item) && results.TryGetValue(item, out var isSuccess) && isSuccess == true)
-                                    {
-                                        writer.WriteString(mem.Span, item.MD5);
-                                    }
-                                    else
-                                    {
-                                        writer.WritePropertyName(mem.Span);
-                                        prop.Value.WriteTo(writer);
-                                    }
-                                }
-
-                                foreach (var prop in lookup)
-                                {
-                                    writer.WriteString(prop.Key.Span, prop.Value.MD5);
-                                }
-
-                                writer.WriteEndObject();
-                                writer.Flush();
-                            }
-                            var attr = File.GetAttributes(data_clientjson);
-                            if (attr.HasFlag(FileAttributes.ReadOnly))
-                            {
-                                File.SetAttributes(data_clientjson, attr & ~FileAttributes.ReadOnly);
-                            }
-                            File.SetAttributes(newone, attr);
-                            File.Move(newone, data_clientjson, true);
-                        }
-
-                        var data_filestxt = Path.Combine(pso2tweaker_dirpath, "data_files.txt");
-                        if (File.Exists(data_filestxt))
-                        {
-                            var attr = File.GetAttributes(data_filestxt);
-                            if (attr.HasFlag(FileAttributes.ReadOnly))
-                            {
-                                File.SetAttributes(data_filestxt, attr & ~FileAttributes.ReadOnly);
-                            }
-                            using (var fs = File.Create(data_filestxt))
-                            using (var sw = new StreamWriter(fs, new System.Text.UTF8Encoding(false)))
-                            {
-                                foreach (var item in patchlist)
-                                {
-                                    sw.WriteLine(Path.GetFullPath(item.GetFilenameWithoutAffix(), dir_pso2bin));
-                                }
-                                sw.Flush();
-                            }
-                            
-                            if (attr.HasFlag(FileAttributes.ReadOnly))
-                            {
-                                File.SetAttributes(data_filestxt, attr);
-                            }
-                        }
-
                         var pso2tweakerconfig = new PSO2TweakerConfig();
                         if (pso2tweakerconfig.Load())
                         {
-                            pso2tweakerconfig.ResetFanPatchVersion();
-                            pso2tweakerconfig.Save();
+                            var pso2tweakerconfig_pso2bin = pso2tweakerconfig.PSO2JPBinFolder;
+                            if (!string.IsNullOrWhiteSpace(pso2tweakerconfig_pso2bin))
+                            {
+                                pso2tweakerconfig_pso2bin = Path.GetFullPath(pso2tweakerconfig_pso2bin);
+
+                                // Check whether Tweaker is targeting the same pso2_bin this launcher is managing.
+                                if (string.Equals(pso2tweakerconfig_pso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    pso2tweakerconfig.ResetFanPatchVersion();
+                                    pso2tweakerconfig.PSO2JPRemoteVersion = versionStringRaw;
+
+                                    if (tweakerhashcacheDump != null)
+                                    {
+                                        var lookup = new Dictionary<ReadOnlyMemory<char>, PatchListItem>(results.Count, OrdinalIgnoreCaseMemoryStringComparer.Default);
+                                        foreach (var item in results)
+                                        {
+                                            if (item.Value == true)
+                                            {
+                                                tweakerhashcacheDump.WriteString(item.Key.GetSpanFilenameWithoutAffix(), item.Key.MD5);
+                                            }
+                                        }
+
+                                        var attr = File.Exists(tweakerhashcacheDump.CachePath) ? File.GetAttributes(tweakerhashcacheDump.CachePath) : FileAttributes.Normal;
+                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        {
+                                            File.SetAttributes(tweakerhashcacheDump.CachePath, attr & ~FileAttributes.ReadOnly);
+                                        }
+                                        tweakerhashcacheDump.Save();
+                                        if (attr != FileAttributes.Normal)
+                                        {
+                                            File.SetAttributes(tweakerhashcacheDump.CachePath, attr);
+                                        }
+                                    }
+
+                                    var data_filestxt = Path.Combine(pso2tweaker_dirpath, "data_files.txt");
+                                    if (File.Exists(data_filestxt))
+                                    {
+                                        var attr = File.GetAttributes(data_filestxt);
+                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        {
+                                            File.SetAttributes(data_filestxt, attr & ~FileAttributes.ReadOnly);
+                                        }
+                                        using (var fs = File.Create(data_filestxt))
+                                        using (var sw = new StreamWriter(fs, new System.Text.UTF8Encoding(false)))
+                                        {
+                                            foreach (var item in patchlist)
+                                            {
+                                                sw.WriteLine(Path.GetFullPath(item.GetFilenameWithoutAffix(), dir_pso2bin));
+                                            }
+                                            sw.Flush();
+                                        }
+
+                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        {
+                                            File.SetAttributes(data_filestxt, attr);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        using (var fs = File.Create(data_filestxt))
+                                        using (var sw = new StreamWriter(fs, new System.Text.UTF8Encoding(false)))
+                                        {
+                                            foreach (var item in patchlist)
+                                            {
+                                                sw.WriteLine(Path.GetFullPath(item.GetFilenameWithoutAffix(), dir_pso2bin));
+                                            }
+                                            sw.Flush();
+                                        }
+                                    }
+
+                                    pso2tweakerconfig.Save();
+                                }
+                            }
                         }
-                        // LatestWin32RebootFanPatchVersion
                     }
                 }
             }

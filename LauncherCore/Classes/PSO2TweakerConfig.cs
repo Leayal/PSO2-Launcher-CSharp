@@ -24,6 +24,19 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this.Set("LatestWin32RebootFanPatchVersion", "0");
         }
 
+        public string PSO2JPRemoteVersion
+        {
+            get
+            {
+                if (this.TryGetRaw("PSO2JPRemoteVersion", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return (string)val.Value;
+                }
+                return string.Empty;
+            }
+            set => this.Set("PSO2JPRemoteVersion", value ?? string.Empty);
+        }
+
         public string PSO2JPBinFolder
         {
             get
