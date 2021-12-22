@@ -35,15 +35,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonInstallPSO2ClickedEvent = EventManager.RegisterRoutedEvent("ButtonInstallPSO2Clicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonPSO2TroubleshootingClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2TroubleshootingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageLauncherThemingClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageLauncherThemingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent ButtonManageGameLauncherCompatibilityClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherCompatibilityClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
 
-        public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(true, (obj, e) =>
+        public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(true, (obj, e) =>
         {
             if (obj is TabMainMenu tab)
             {
                 tab.RaiseEvent(new RoutedEventArgs(GameStartEnabledChangedEvent));
             }
         }));
-        public static readonly DependencyProperty ForgetLoginInfoEnabledProperty = DependencyProperty.Register("ForgetLoginInfoEnabled", typeof(bool), typeof(TabMainMenu), new UIPropertyMetadata(false, (obj, val)=>
+        public static readonly DependencyProperty ForgetLoginInfoEnabledProperty = DependencyProperty.Register("ForgetLoginInfoEnabled", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(false, (obj, val)=>
         {
             if (obj is TabMainMenu tab)
             {
@@ -63,7 +64,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             add => this.AddHandler(ForgetLoginInfoEnabledChangedEvent, value);
             remove => this.RemoveHandler(ForgetLoginInfoEnabledChangedEvent, value);
         }
-        public static readonly DependencyProperty DefaultGameStartStyleProperty = DependencyProperty.Register("DefaultGameStartStyle", typeof(GameStartStyle), typeof(TabMainMenu), new UIPropertyMetadata(GameStartStyle.Default, (obj, e) =>
+        public static readonly DependencyProperty DefaultGameStartStyleProperty = DependencyProperty.Register("DefaultGameStartStyle", typeof(GameStartStyle), typeof(TabMainMenu), new PropertyMetadata(GameStartStyle.Default, (obj, e) =>
         {
             if (obj is TabMainMenu tab && e.NewValue is GameStartStyle style)
             {
@@ -83,7 +84,37 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
                 tab.RaiseEvent(new ChangeDefaultGameStartStyleEventArgs(style, DefaultGameStartStyleChangedEvent));
             }
+        }, (obj, val) =>
+        {
+            if (obj is TabMainMenu tab && tab.GameStartWithPSO2TweakerChecked)
+            {
+                return GameStartStyle.StartWithPSO2Tweaker;
+            }
+            return val;
         }));
+
+        public static readonly DependencyProperty GameStartWithPSO2TweakerEnabledProperty = DependencyProperty.Register("GameStartWithPSO2TweakerEnabled", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (obj is TabMainMenu tab)
+            {
+                tab.CoerceValue(GameStartWithPSO2TweakerCheckedProperty);
+            }
+        }));
+        public static readonly DependencyProperty GameStartWithPSO2TweakerCheckedProperty = DependencyProperty.Register("GameStartWithPSO2TweakerChecked", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (obj is TabMainMenu tab)
+            {
+                tab.CoerceValue(DefaultGameStartStyleProperty);
+            }
+        }, (obj, val) =>
+        {
+            if (obj is TabMainMenu tab && !tab.GameStartWithPSO2TweakerEnabled)
+            {
+                return false;
+            }
+            return val;
+        }));
+
         public GameStartStyle DefaultGameStartStyle
         {
             get => (GameStartStyle)this.GetValue(DefaultGameStartStyleProperty);
@@ -112,6 +143,18 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             get => (bool)this.GetValue(ForgetLoginInfoEnabledProperty);
             set => this.SetValue(ForgetLoginInfoEnabledProperty, value);
+        }
+
+        public bool GameStartWithPSO2TweakerEnabled
+        {
+            get => (bool)this.GetValue(GameStartWithPSO2TweakerEnabledProperty);
+            set => this.SetValue(GameStartWithPSO2TweakerEnabledProperty, value);
+        }
+
+        public bool GameStartWithPSO2TweakerChecked
+        {
+            get => (bool)this.GetValue(GameStartWithPSO2TweakerCheckedProperty);
+            set => this.SetValue(GameStartWithPSO2TweakerCheckedProperty, value);
         }
 
         private MenuItem MenuItemForgetSavedLogin;
@@ -150,6 +193,20 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
 
+            if (!EnumDisplayNameAttribute.TryGetDisplayName(GameStartStyle.StartWithPSO2Tweaker, out var displayName_startwithTweaker))
+            {
+                displayName_startwithTweaker = "Start with PSO2 Tweaker";
+            }
+            var menuitem_startwithTweaker = new MenuItem() { Header = displayName_startwithTweaker, Tag = GameStartStyle.StartWithPSO2Tweaker };
+            menuitem_startwithTweaker.Click += this.MenuItemChangeDefaultGameStartMethod_SubItemsClick;
+            this.MenuItemChangeDefaultGameStartMethod.Items.Add(menuitem_startwithTweaker);
+            menuitem_startwithTweaker.SetBinding(VisibilityHelper.IsVisibleProperty, new Binding(GameStartWithPSO2TweakerEnabledProperty.Name) { Source = this, Mode = BindingMode.OneWay });
+
+            menuitem_startwithTweaker = new MenuItem() { Header = displayName_startwithTweaker, Tag = GameStartStyle.StartWithPSO2Tweaker };
+            menuitem_startwithTweaker.Click += this.MenuItemSpecificGameStartRequest_Click;
+            contextMenu.Items.Add(menuitem_startwithTweaker);
+            menuitem_startwithTweaker.SetBinding(VisibilityHelper.IsVisibleProperty, new Binding(GameStartWithPSO2TweakerEnabledProperty.Name) { Source = this, Mode = BindingMode.OneWay });
+
             this.MenuItemForgetSavedLogin = new MenuItem() { Header = "Forget remembered SEGA login", IsEnabled = false };
             this.MenuItemForgetSavedLogin.Click += this.MenuItemForgetSavedLogin_Click;
             contextMenu.Items.Add(this.MenuItemForgetSavedLogin);
@@ -163,7 +220,16 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             if (sender is MenuItem item && item.Tag is GameStartStyle style)
             {
-                this.DefaultGameStartStyle = style;
+                if (style == GameStartStyle.StartWithPSO2Tweaker)
+                {
+                    this.GameStartWithPSO2TweakerChecked = true;
+                    // this.CoerceValue(DefaultGameStartStyleProperty);
+                }
+                else
+                {
+                    this.GameStartWithPSO2TweakerChecked = false;
+                    this.DefaultGameStartStyle = style;
+                }
             }
         }
 
@@ -253,6 +319,15 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
         private void ButtonManageGameLauncherBehavior_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherBehaviorClickedEvent));
+
+        private void ButtonManageGameLauncherCompatibility_Click(object sender, RoutedEventArgs e)
+            => this.RaiseEvent(new RoutedEventArgs(ButtonManageGameLauncherCompatibilityClickedEvent));
+
+        public event RoutedEventHandler ButtonManageGameLauncherCompatibilityClicked
+        {
+            add { this.AddHandler(ButtonManageGameLauncherCompatibilityClickedEvent, value); }
+            remove { this.RemoveHandler(ButtonManageGameLauncherCompatibilityClickedEvent, value); }
+        }
 
         public event RoutedEventHandler ButtonManageGameLauncherRSSFeedsClicked
         {

@@ -71,6 +71,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             }
+            if (this._config.PSO2Tweaker_CompatEnabled)
+            {
+                var tweakerexe = this._config.PSO2Tweaker_Bin_Path;
+                if (!string.IsNullOrWhiteSpace(tweakerexe) && System.IO.File.Exists(tweakerexe))
+                {
+                    var dom_StartWithPSO2Tweaker = new EnumComboBox.ValueDOM<GameStartStyle>(GameStartStyle.StartWithPSO2Tweaker);
+                    listOfGameStartStyles.Add(dom_StartWithPSO2Tweaker);
+                    if (this._config.PSO2Tweaker_LaunchGameWithTweaker)
+                    {
+                        default_GameStartStyle = dom_StartWithPSO2Tweaker;
+                    }
+                }
+            }
             this.combobox_defaultgamestartstyle.ItemsSource = listOfGameStartStyles;
             if (default_GameStartStyle == null)
             {
@@ -96,7 +109,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
             {
-                this._config.DefaultGameStartStyle = dom_GameStartStyle.Value;
+                var val = dom_GameStartStyle.Value;
+                switch (val)
+                {
+                    case GameStartStyle.StartWithPSO2Tweaker:
+                        this._config.PSO2Tweaker_LaunchGameWithTweaker = true;
+                        break;
+                    default:
+                        this._config.PSO2Tweaker_LaunchGameWithTweaker = false;
+                        this._config.DefaultGameStartStyle = val;
+                        break;
+                }
             }
 
             this._config.Save();

@@ -117,9 +117,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
+                dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null,
+                dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
             dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
             dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data, dir_pso2bin);
+            dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
 
             var downloaderProfile = this.config_main.DownloaderProfile;
             var conf_DownloadType = this.config_main.DownloadSelection;
@@ -257,7 +259,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, downloadType, downloaderProfile, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, cancelToken);
                 }
                 else
                 {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -80,7 +81,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         /// </remarks>
         public bool? IsBeforeReset => (bool?)this.GetValue(IsBeforeResetProperty);
 
-        private PSO2LogAsyncReader? logreader;
+        private PSO2LogAsyncListener? logreader;
         private readonly bool shouldDisposeClock, clockInitiallyVisible;
         private readonly ObservableCollection<AccountData> characters;
         private readonly Dictionary<long, AccountData> mapping;
@@ -89,6 +90,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly ClockTickerCallback timerCallback;
         private readonly DelegateSetTime_params @delegateSetTime;
         private readonly DispatcherTimer logcategoryThrottle;
+
+        private CancellationTokenSource? cancelSrcLoad;
 
         /// <summary>Creates a new window.</summary>
         public ToolboxWindow_AlphaReactorCount() : this(null) { }
@@ -148,6 +151,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 this.CloseLog();
             }
             catch { }
+            try
+            {
+                this.cancelSrcLoad?.Cancel();
+            }
+            catch { }
             return Task.CompletedTask;
         }
 
@@ -183,12 +191,12 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void ForceSelectNewestActionLog() => this.SelectNewestLog(LogCategories.ActionLog, true);
+        private async void ForceSelectNewestActionLog() => await this.SelectNewestLog(LogCategories.ActionLog, true);
 
         /// <summary>Select the newest log file from the given category.</summary>
         /// <param name="categoryName">The name of log category to get the log file.</param>
         /// <param name="force">Determines whether a force reload the log file is required.</param>
-        public void SelectNewestLog(string categoryName, bool force = false)
+        public async Task SelectNewestLog(string categoryName, bool force = false)
         {
             var logCategory = LogCategories.Default.Value;
             string? filepath = logCategory.SelectLog(categoryName, -1);
@@ -203,22 +211,31 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     this.CloseLog();
                     this.RefreshDate();
+                    this.LoadLog(filepath);
                     string? secondLast = logCategory.SelectLog(categoryName, -2);
                     if (!string.IsNullOrEmpty(secondLast) && File.Exists(secondLast))
                     {
-                        using (var sr = new StreamReader(secondLast))
+                        using (var cancel = new CancellationTokenSource())
                         {
-                            string? line;
-                            while ((line = sr.ReadLine()) != null)
+                            try
                             {
-                                if (!string.IsNullOrEmpty(line))
-                                {
-                                    this.Logreader_DataReceived(null, new LogReaderDataReceivedEventArgs(line));
-                                }
+                                this.cancelSrcLoad?.Cancel();
+                            }
+                            catch (ObjectDisposedException) { }
+                            catch (InvalidOperationException) { }
+                            this.cancelSrcLoad = cancel;
+                            try
+                            {
+                                await PSO2LogAsyncListener.FetchAllData(secondLast, this.cancelSrcLoad.Token, this.ConvertDataReceivedCallbackToEventHandler);
+                            }
+                            catch (ObjectDisposedException) { }
+                            catch (InvalidOperationException) { }
+                            finally
+                            {
+                                this.cancelSrcLoad = null;
                             }
                         }
                     }
-                    this.LoadLog(filepath);
                 }
             }
         }
@@ -245,7 +262,12 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void Logreader_DataReceived(PSO2LogAsyncReader? arg1, LogReaderDataReceivedEventArgs arg2)
+        private void ConvertDataReceivedCallbackToEventHandler(in PSO2LogData data)
+        {
+            this.Logreader_DataReceived(null, in data);
+        }
+
+        private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
             var datas = arg2.GetDatas();
             if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase))
@@ -346,7 +368,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         /// <remarks>Don't use it directly.</remarks>
         private void LoadLog(string filepath)
         {
-            this.logreader = new PSO2LogAsyncReader(filepath);
+            this.logreader = new PSO2LogAsyncListener(filepath);
             this.logreader.DataReceived += this.Logreader_DataReceived;
             this.logreader.StartReceiving();
         }
@@ -378,7 +400,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             if (sender is DispatcherTimer timer && timer.Tag is ToolboxWindow_AlphaReactorCount window)
             {
                 timer.Stop();
-                window.SelectNewestLog(LogCategories.ActionLog);
+                _ = window.SelectNewestLog(LogCategories.ActionLog);
             }
         }
 

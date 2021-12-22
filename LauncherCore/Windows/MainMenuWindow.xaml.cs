@@ -222,7 +222,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            this.TabMainMenu.GameStartWithPSO2TweakerChecked = this.config_main.PSO2Tweaker_LaunchGameWithTweaker;
+            this.TabMainMenu.GameStartWithPSO2TweakerEnabled = this.config_main.PSO2Tweaker_CompatEnabled;
             this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
+            
             this.TabMainMenu.IsSelected = true;
             this.UseClock = this.config_main.LauncherUseClock;
             this.RSSFeedPresenter_Loaded();
@@ -512,6 +515,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 (await this.backgroundselfupdatechecker.Value).Stop();
                             }
                         }
+
+                        if (this.config_main.PSO2Tweaker_CompatEnabled)
+                        {
+                            var tweakerexe = this.config_main.PSO2Tweaker_Bin_Path;
+                            if (!string.IsNullOrWhiteSpace(tweakerexe) && File.Exists(tweakerexe))
+                            {
+                                tab.GameStartWithPSO2TweakerChecked = this.config_main.PSO2Tweaker_LaunchGameWithTweaker;
+                                tab.GameStartWithPSO2TweakerEnabled = true;
+                            }
+                            else
+                            {
+                                tab.GameStartWithPSO2TweakerEnabled = false;
+                            }
+                        }
+                        else
+                        {
+                            tab.GameStartWithPSO2TweakerEnabled = false;
+                        }
                     }
                 }
                 finally
@@ -609,7 +630,42 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-#region | WindowsCommandButtons |
+        private void TabMainMenu_ButtonManageGameLauncherCompatibilityClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is TabMainMenu tab)
+            {
+                tab.ButtonManageGameLauncherCompatibilityClicked -= this.TabMainMenu_ButtonManageGameLauncherCompatibilityClicked;
+                try
+                {
+                    var dialog = new LauncherCompatibilityWindow(this.config_main);
+                    if (dialog.ShowCustomDialog(this) == true)
+                    {
+                        if (this.config_main.PSO2Tweaker_CompatEnabled)
+                        {
+                            var tweakerexe = this.config_main.PSO2Tweaker_Bin_Path;
+                            if (!string.IsNullOrWhiteSpace(tweakerexe) && File.Exists(tweakerexe))
+                            {
+                                tab.GameStartWithPSO2TweakerEnabled = true;
+                            }
+                            else
+                            {
+                                tab.GameStartWithPSO2TweakerEnabled = false;
+                            }
+                        }
+                        else
+                        {
+                            tab.GameStartWithPSO2TweakerEnabled = false;
+                        }
+                    }
+                }
+                finally
+                {
+                    tab.ButtonManageGameLauncherCompatibilityClicked += this.TabMainMenu_ButtonManageGameLauncherCompatibilityClicked;
+                }
+            }
+        }
+
+        #region | WindowsCommandButtons |
         private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -704,7 +760,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             e.Handled = true;
             SystemCommands.MinimizeWindow(this);
         }
-
 #endregion
     }
 }

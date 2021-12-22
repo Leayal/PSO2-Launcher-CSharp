@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Toolbox
 {
     /// <summary>Event data for <seealso cref="PSO2LogAsyncReader.DataReceived"/>.</summary>
-    public readonly struct LogReaderDataReceivedEventArgs
+    public readonly struct PSO2LogData
     {
         private const char DataSplitter = '\t';
 
@@ -33,7 +33,7 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         /// <summary>Create a new event data from the raw log line.</summary>
         /// <param name="data">The log line which is read from the log file.</param>
-        public LogReaderDataReceivedEventArgs(string data)
+        public PSO2LogData(string data)
         {
             this.Data = data;
         }

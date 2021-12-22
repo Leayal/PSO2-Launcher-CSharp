@@ -2,84 +2,64 @@
 
 namespace Leayal.PSO2Launcher.Toolbox
 {
-    /// <summary>Provides an implementation to read a text file in async manner.</summary>
-    /// <remarks>This class is single-use. Once started, it can only be stopped by calling <seealso cref="DisposeAsync"/>. Likewise, once stopped, it can't be started again.</remarks>
-    public class PSO2LogAsyncReader : IDisposable
+    sealed class PSO2LogAsyncReader : IAsyncDisposable
     {
-        private readonly CancellationTokenSource cancelSrc;
-        private readonly FileStream fs;
-        private Task? t_readFile;
-        private readonly bool _leaveOpen;
+        private readonly bool _leaveopen;
+        private readonly StreamReader sr;
+        private readonly DataReceivedCallback callback;
+        private readonly CancellationToken cancelToken;
+        private Task? t;
 
-        /// <summary>Gets the full path to the log file.</summary>
-        public string Fullpath => this.fs.Name;
-
-        /// <summary>Creates a new instance with the given file path.</summary>
-        /// <param name="filepath">The path to the log file.</param>
-        public PSO2LogAsyncReader(string filepath) : this(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), false) { }
-
-        /// <summary>Creates a new instance with the given <seealso cref="FileStream"/> that will close the <paramref name="fs"/> stream when the instance is disposed.</summary>
-        /// <param name="fs">The file stream to read the log.</param>
-        /// <remarks>This is equal to with <code>PSO2LogAsyncReader(FileStream, false)</code>.</remarks>
-        public PSO2LogAsyncReader(FileStream fs) : this(fs, false) { }
-
-        /// <summary>Creates a new instance with the given <seealso cref="FileStream"/></summary>
-        /// <param name="fs">The file stream to read the log.</param>
-        /// <param name="keepOpen">The boolean to determine whether the <paramref name="fs"/> stream should be closed when this instance is disposed.</param>
-        public PSO2LogAsyncReader(FileStream fs, bool keepOpen)
+        public PSO2LogAsyncReader(FileStream fs, bool keepOpen, DataReceivedCallback callback, CancellationToken token)
         {
-            this.cancelSrc = new CancellationTokenSource();
-            this._leaveOpen = keepOpen;
-            this.fs = fs;
+            this.t = null;
+            this.callback = callback;
+            this.cancelToken = token;
+            this._leaveopen = keepOpen;
+            this.sr = new StreamReader(fs, encoding: null, detectEncodingFromByteOrderMarks: true, bufferSize: -1, leaveOpen: true);
         }
 
-        /// <summary>Begin the async operation.</summary>
-        /// <remarks>When log data is available, the <seealso cref="DataReceived"/> event will be invoked with the given data.</remarks>
-        public void StartReceiving()
+        public Task StartOperation()
         {
-            if (this.t_readFile is not null) return;
-            this.t_readFile = Task.Factory.StartNew(this.ReadFileAsync, TaskCreationOptions.LongRunning).Unwrap();
-        }
-
-        private async Task ReadFileAsync()
-        {
-            using (var cancel = this.cancelSrc)
-            using (var sr = new StreamReader(this.fs))
+            if (this.t == null)
             {
-                var token = this.cancelSrc.Token;
-                try
+                this.t = Task.Factory.StartNew(this.InternalStartOperation, TaskCreationOptions.LongRunning);
+            }
+            return this.t;
+        }
+
+        private void InternalStartOperation()
+        {
+            while (!this.cancelToken.IsCancellationRequested)
+            {
+                var line = this.sr.ReadLine();
+                if (line == null)
                 {
-                    while (!token.IsCancellationRequested)
-                    {
-                        var line = sr.ReadLine();
-                        if (string.IsNullOrEmpty(line))
-                        {
-                            await Task.Delay(5, token);
-                        }
-                        else
-                        {
-                            this.DataReceived?.Invoke(this, new LogReaderDataReceivedEventArgs(line));
-                        }
-                    }
+                    break;
                 }
-                catch (ObjectDisposedException) { }
-                catch (TaskCanceledException) { }
+                else
+                {
+                    var data = new PSO2LogData(line);
+                    this.callback.Invoke(in data);
+                }
             }
         }
 
-        /// <summary>Close the reader</summary>
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            this.DataReceived = null;
-            this.cancelSrc.Cancel();
-            // Trigger ObjectDisposedException on the Task.
-            if (!this._leaveOpen)
+            this.sr.Dispose();
+            if (!this._leaveopen)
             {
-                this.fs.Dispose();
+                var fs = (FileStream)this.sr.BaseStream;
+                if (fs.IsAsync)
+                {
+                    await fs.DisposeAsync();
+                }
+                else
+                {
+                    fs.Dispose();
+                }
             }
         }
-
-        /// <summary>Occurs when new log data is read.</summary>
-        public event Action<PSO2LogAsyncReader, LogReaderDataReceivedEventArgs>? DataReceived;
     }
 }

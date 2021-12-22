@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public class ConfigurationFile : ConfigurationFileBase
+    public sealed partial class ConfigurationFile : ConfigurationFileBase
     {
         public readonly string Filename;
 
@@ -28,7 +28,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 return string.Empty;
             }
-            set => this.Set("pso2_bin", value);
+            set => this.Set("pso2_bin", value ?? string.Empty);
         }
 
         public string PSO2Directory_Reboot
@@ -41,7 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 return string.Empty;
             }
-            set => this.Set("pso2_data_reboot", value);
+            set => this.Set("pso2_data_reboot", value ?? string.Empty);
         }
 
         public bool PSO2Enabled_Reboot
@@ -67,7 +67,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 return string.Empty;
             }
-            set => this.Set("pso2_data_classic", value);
+            set => this.Set("pso2_data_classic", value ?? string.Empty);
         }
 
         public bool PSO2Enabled_Classic

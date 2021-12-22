@@ -15,7 +15,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
         StartWithoutToken,
 
         [EnumDisplayName("Start game with SEGA login")]
-        StartWithToken
+        StartWithToken,
+
+        [EnumDisplayName("Start game with PSO2 Tweaker"), EnumVisibleInOption(false)]
+        StartWithPSO2Tweaker
     }
 
     public enum LoginPasswordRememberStyle

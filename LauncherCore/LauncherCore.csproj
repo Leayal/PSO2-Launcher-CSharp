@@ -77,6 +77,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Windows\LauncherCompatibilityWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Windows\PSO2UserConfigurationWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -86,6 +89,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Page Update="Windows\LauncherCompatibilityWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="Windows\PSO2UserConfigurationWindow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>

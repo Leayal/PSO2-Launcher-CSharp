@@ -42,7 +42,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void TabMainMenu_DefaultGameStartStyleChanged(object sender, ChangeDefaultGameStartStyleEventArgs e)
         {
-            this.config_main.DefaultGameStartStyle = e.SelectedStyle;
+            switch (e.SelectedStyle)
+            {
+                case GameStartStyle.StartWithPSO2Tweaker:
+                    this.config_main.PSO2Tweaker_LaunchGameWithTweaker = true;
+                    break;
+                default:
+                    this.config_main.PSO2Tweaker_LaunchGameWithTweaker = false;
+                    this.config_main.DefaultGameStartStyle = e.SelectedStyle;
+                    break;
+            }
+            
             this.config_main.Save();
         }
 
@@ -151,6 +161,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
+                        bool isLaunchWithTweaker = e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker;
+                        string tweakerPath = this.config_main.PSO2Tweaker_Bin_Path;
+                        if (isLaunchWithTweaker)
+                        {
+                            if (string.IsNullOrWhiteSpace(tweakerPath) || !File.Exists(tweakerPath))
+                            {
+                                Prompt_Generic.Show(this, "PSO2 Tweaker compatibility is enabled but you haven't specify the Tweaker's executable path.", "Error", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+                                return;
+                            }
+                        }
+
                         using (var existingProcess = await TryFindPSO2Process(filename))
                         {
                             if (existingProcess != null)
@@ -251,9 +272,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
 
                         string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null;
+                            dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null,
+                            dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
                         dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
                         dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data, dir_pso2bin);
+                        dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
 
                         var configFolderPath = Path.GetFullPath("config", RuntimeValues.RootDirectory);
                         var usernamePath = Path.Combine(configFolderPath, "SavedUsername.txt");
@@ -349,7 +372,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
 
-                        if ((requestedStyle == GameStartStyle.StartWithToken && token != null) || requestedStyle == GameStartStyle.StartWithoutToken)
+                        if ((requestedStyle == GameStartStyle.StartWithToken && token != null) || requestedStyle == GameStartStyle.StartWithoutToken || isLaunchWithTweaker)
                         {
                             try
                             {
@@ -396,24 +419,85 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.CreateNewParagraphInLog("[GameStart] Quick check executable files...");
 
                                 // Safety reason => Balanced.
-                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
+                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, cancelToken);
 
                                 if (!cancelToken.IsCancellationRequested)
                                 {
-                                    using (var proc = new Process())
+                                    if (isLaunchWithTweaker)
                                     {
-                                        proc.StartInfo.UseShellExecute = true;
-                                        proc.StartInfo.Verb = "runas";
-                                        proc.StartInfo.FileName = filename;
-                                        proc.StartInfo.ArgumentList.Add("-reboot");
-                                        if (requestedStyle == GameStartStyle.StartWithToken && token != null)
+                                        var pso2tweakerconfig = new PSO2TweakerConfig();
+
+                                        if (pso2tweakerconfig.Load())
                                         {
-                                            token.AppendToStartInfo(proc.StartInfo);
+                                            string tweakerpso2bin = string.IsNullOrWhiteSpace(pso2tweakerconfig.PSO2JPBinFolder) ? string.Empty : Path.GetFullPath(pso2tweakerconfig.PSO2JPBinFolder);
+                                            bool differentpath = !string.Equals(tweakerpso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase);
+                                            string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                                            string pso2tweakerpso2clientversion = File.Exists(pso2tweakerpso2clientversionpath) ? File.ReadAllText(pso2tweakerpso2clientversionpath) : string.Empty;
+                                            if (differentpath)
+                                            {
+                                                pso2tweakerconfig.PSO2JPBinFolder = dir_pso2bin;
+                                                pso2tweakerconfig.Save();
+                                            }
+                                            var pso2versionlocal = pso2Updater.GetLocalPSO2Version(dir_pso2bin);
+                                            bool differentversion = string.Equals(pso2tweakerpso2clientversion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
+                                            if (differentversion)
+                                            {
+                                                File.WriteAllText(pso2tweakerpso2clientversionpath, pso2versionlocal);
+                                            }
+                                            try
+                                            {
+                                                using (var proc = new Process())
+                                                {
+                                                    proc.StartInfo.UseShellExecute = true;
+                                                    proc.StartInfo.Verb = "runas";
+                                                    proc.StartInfo.FileName = tweakerPath;
+                                                    proc.StartInfo.ArgumentList.Add("-pso2jp");
+                                                    proc.StartInfo.WorkingDirectory = Path.GetDirectoryName(tweakerPath);
+                                                    this.CreateNewParagraphInLog("[GameStart] Starting PSO2 Tweaker...");
+                                                    proc.Start();
+                                                    await proc.WaitForExitAsync(cancelToken);
+                                                }
+                                            }
+                                            finally
+                                            {
+                                                if (differentpath)
+                                                {
+                                                    if (differentversion)
+                                                    {
+                                                        File.WriteAllText(pso2tweakerpso2clientversionpath, pso2tweakerpso2clientversion);
+                                                    }
+                                                    File.WriteAllText(pso2tweakerpso2clientversionpath, pso2Updater.GetLocalPSO2Version(dir_pso2bin));
+                                                    if (pso2tweakerconfig.Load()) // Refresh everything.
+                                                    {
+                                                        // In case the path setting is not changed AGAIN while Tweaker is running.
+                                                        if (string.Equals(string.IsNullOrWhiteSpace(pso2tweakerconfig.PSO2JPBinFolder) ? string.Empty : Path.GetFullPath(pso2tweakerconfig.PSO2JPBinFolder), dir_pso2bin, StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            // Revert it back.
+                                                            pso2tweakerconfig.PSO2JPBinFolder = tweakerpso2bin;
+                                                            pso2tweakerconfig.Save();
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
-                                        proc.StartInfo.ArgumentList.Add("-optimize");
-                                        proc.StartInfo.WorkingDirectory = dir_pso2bin;
-                                        proc.Start();
-                                        this.CreateNewParagraphInLog("[GameStart] Starting game...");
+                                    }
+                                    else
+                                    {
+                                        using (var proc = new Process())
+                                        {
+                                            proc.StartInfo.UseShellExecute = true;
+                                            proc.StartInfo.Verb = "runas";
+                                            proc.StartInfo.FileName = filename;
+                                            proc.StartInfo.ArgumentList.Add("-reboot");
+                                            if (requestedStyle == GameStartStyle.StartWithToken && token != null)
+                                            {
+                                                token.AppendToStartInfo(proc.StartInfo);
+                                            }
+                                            proc.StartInfo.ArgumentList.Add("-optimize");
+                                            proc.StartInfo.WorkingDirectory = dir_pso2bin;
+                                            proc.Start();
+                                            this.CreateNewParagraphInLog("[GameStart] Starting game...");
+                                        }
                                     }
                                 }
                             }

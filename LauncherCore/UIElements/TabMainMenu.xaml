@@ -58,6 +58,11 @@
                             <iconPacks:PackIconFontAwesome Kind="LaptopCodeSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <MenuItem Header="Manage launcher's compatibility" Click="ButtonManageGameLauncherCompatibility_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="CompactDiscSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                     <MenuItem Header="Manage launcher's RSS Feeds" Click="ButtonManageGameLauncherRSSFeeds_Click">
                         <MenuItem.Icon>
                             <iconPacks:PackIconFontAwesome Kind="RssSquareSolid" />
