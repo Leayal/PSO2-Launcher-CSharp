@@ -443,15 +443,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
                                             string pso2tweakerpso2clientversion = File.Exists(pso2tweakerpso2clientversionpath) ? File.ReadAllText(pso2tweakerpso2clientversionpath) : string.Empty;
                                             string pso2tweakercheckforgameupdate = pso2tweakerconfig.UpdateChecks;
+                                            bool shouldSave = false;
                                             if (differentpath)
                                             {
                                                 pso2tweakerconfig.PSO2JPBinFolder = dir_pso2bin;
-                                                pso2tweakerconfig.Save();
+                                                shouldSave = true;
                                             }
                                             bool differentUpdateChecks = !string.Equals(pso2tweakercheckforgameupdate, "Manual", StringComparison.Ordinal);
                                             if (differentUpdateChecks)
                                             {
                                                 pso2tweakerconfig.UpdateChecks = "Manual";
+                                                shouldSave = true;
+                                            }
+                                            if (shouldSave)
+                                            {
+                                                pso2tweakerconfig.Save();
+                                                shouldSave = false;
                                             }
                                             var pso2versionlocal = pso2Updater.GetLocalPSO2Version(dir_pso2bin);
                                             bool differentversion = string.Equals(pso2tweakerpso2clientversion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
@@ -476,7 +483,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             }
                                             finally
                                             {
-                                                bool shouldSave = false;
                                                 if (differentpath && differentversion)
                                                 {
                                                     File.WriteAllText(pso2tweakerpso2clientversionpath, pso2tweakerpso2clientversion);
