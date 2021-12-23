@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Collections.ObjectModel;
 
 namespace Leayal.SharedInterfaces
 {
@@ -12,9 +13,11 @@ namespace Leayal.SharedInterfaces
     {
         protected readonly Dictionary<string, ValueWrap> keyValuePairs;
 
-        protected ConfigurationFileBase()
+        protected ConfigurationFileBase() : this(StringComparer.OrdinalIgnoreCase) { }
+
+        protected ConfigurationFileBase(IEqualityComparer<string?> comparer)
         {
-            this.keyValuePairs = new Dictionary<string, ValueWrap>(StringComparer.OrdinalIgnoreCase);
+            this.keyValuePairs = new Dictionary<string, ValueWrap>(comparer);
         }
 
         protected void Set(string key, string value)
@@ -41,6 +44,47 @@ namespace Leayal.SharedInterfaces
             }
         }
 
+        protected void SetNull(string key)
+        {
+            lock (this.keyValuePairs)
+            {
+                this.keyValuePairs[key] = new ValueWrap();
+            }
+        }
+
+        /// <summary>Creates a save of all values which can be used to restore later with <seealso cref="LoadSavedValues(ConfigurationFileSave, bool)"/>.</summary>
+        /// <returns>A save which can be restored with <seealso cref="LoadSavedValues(ConfigurationFileSave, bool)"/>.</returns>
+        /// <remarks>This save can only be used with this instance.</remarks>
+        public ConfigurationFileSave SaveCurrentValues()
+        {
+            ConfigurationFileSave result;
+            lock (this.keyValuePairs)
+            {
+                result = new ConfigurationFileSave(this);
+            }
+            return result;
+        }
+
+        /// <summary>Restore saved values from a <seealso cref="ConfigurationFileSave"/> created by this instance.</summary>
+        /// <param name="saved">The saved values to restore</param>
+        /// <param name="clearBeforeRestore">A boolean determines whether to clear all existing values before restoring. Set false to keep any values which aren't in the saved values.</param>
+        /// <exception cref="InvalidOperationException">Throws when trying to restore a save which was created by other instance.</exception>
+        public void LoadSavedValues(ConfigurationFileSave saved, bool clearBeforeRestore = true)
+        {
+            if (!object.ReferenceEquals(saved.source, this)) throw new InvalidOperationException();
+            lock (this.keyValuePairs)
+            {
+                if (clearBeforeRestore)
+                {
+                    this.keyValuePairs.Clear();
+                }
+                foreach (var item in saved.saved)
+                {
+                    this.keyValuePairs.Add(item.Key, item.Value);
+                }
+            }
+        }
+
         protected bool TryGetRaw(string key, out ValueWrap value)
         {
             bool result;
@@ -49,6 +93,18 @@ namespace Leayal.SharedInterfaces
                 result = this.keyValuePairs.TryGetValue(key, out value);
             }
             return result;
+        }
+
+        public sealed class ConfigurationFileSave
+        {
+            internal readonly ConfigurationFileBase source;
+            internal readonly Dictionary<string, ValueWrap> saved;
+
+            internal ConfigurationFileSave(ConfigurationFileBase src)
+            {
+                this.source = src;
+                this.saved = new Dictionary<string, ValueWrap>(src.keyValuePairs, src.keyValuePairs.Comparer);
+            }
         }
 
         public class ValueWrap

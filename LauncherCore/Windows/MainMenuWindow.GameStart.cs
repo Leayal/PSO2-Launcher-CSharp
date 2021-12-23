@@ -442,10 +442,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             bool differentpath = !string.Equals(tweakerpso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase);
                                             string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
                                             string pso2tweakerpso2clientversion = File.Exists(pso2tweakerpso2clientversionpath) ? File.ReadAllText(pso2tweakerpso2clientversionpath) : string.Empty;
+                                            string pso2tweakercheckforgameupdate = pso2tweakerconfig.UpdateChecks;
                                             if (differentpath)
                                             {
                                                 pso2tweakerconfig.PSO2JPBinFolder = dir_pso2bin;
                                                 pso2tweakerconfig.Save();
+                                            }
+                                            bool differentUpdateChecks = !string.Equals(pso2tweakercheckforgameupdate, "Manual", StringComparison.Ordinal);
+                                            if (differentUpdateChecks)
+                                            {
+                                                pso2tweakerconfig.UpdateChecks = "Manual";
                                             }
                                             var pso2versionlocal = pso2Updater.GetLocalPSO2Version(dir_pso2bin);
                                             bool differentversion = string.Equals(pso2tweakerpso2clientversion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
@@ -470,23 +476,32 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             }
                                             finally
                                             {
-                                                if (differentpath)
+                                                bool shouldSave = false;
+                                                if (differentpath && differentversion)
                                                 {
-                                                    if (differentversion)
-                                                    {
-                                                        File.WriteAllText(pso2tweakerpso2clientversionpath, pso2tweakerpso2clientversion);
-                                                    }
-                                                    File.WriteAllText(pso2tweakerpso2clientversionpath, pso2Updater.GetLocalPSO2Version(dir_pso2bin));
-                                                    if (pso2tweakerconfig.Load()) // Refresh everything.
+                                                    File.WriteAllText(pso2tweakerpso2clientversionpath, pso2tweakerpso2clientversion);
+                                                }
+                                                if (pso2tweakerconfig.Load()) // Refresh everything.
+                                                {
+                                                    if (differentpath)
                                                     {
                                                         // In case the path setting is not changed AGAIN while Tweaker is running.
                                                         if (string.Equals(string.IsNullOrWhiteSpace(pso2tweakerconfig.PSO2JPBinFolder) ? string.Empty : Path.GetFullPath(pso2tweakerconfig.PSO2JPBinFolder), dir_pso2bin, StringComparison.OrdinalIgnoreCase))
                                                         {
                                                             // Revert it back.
                                                             pso2tweakerconfig.PSO2JPBinFolder = tweakerpso2bin;
-                                                            pso2tweakerconfig.Save();
+                                                            shouldSave = true;
                                                         }
                                                     }
+                                                    if (differentUpdateChecks)
+                                                    {
+                                                        pso2tweakerconfig.UpdateChecks = pso2tweakercheckforgameupdate;
+                                                        shouldSave = true;
+                                                    }
+                                                }
+                                                if (shouldSave)
+                                                {
+                                                    pso2tweakerconfig.Save();
                                                 }
                                                 this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been restored.");
                                                 this._isTweakerRunning = false;
