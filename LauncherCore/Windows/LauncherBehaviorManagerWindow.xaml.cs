@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Documents;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -17,10 +18,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
     public partial class LauncherBehaviorManagerWindow : MetroWindowEx
     {
         private readonly ConfigurationFile _config;
+        private readonly bool _webbrowserloaded;
 
-        public LauncherBehaviorManagerWindow(ConfigurationFile config)
+        public LauncherBehaviorManagerWindow(ConfigurationFile config, bool webbrowserloaded)
         {
             this._config = config;
+            this._webbrowserloaded = webbrowserloaded;
             InitializeComponent();
         }
 
@@ -32,6 +35,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.checkbox_backgroundselfupdatechecker.IsChecked = this._config.LauncherCheckForSelfUpdates;
             this.numbericbox_backgroundselfupdatechecker_intervalhour.Value = this._config.LauncherCheckForSelfUpdates_IntervalHour;
+
+            this.checkbox_useusewebview2.IsChecked = this._config.UseWebView2IfAvailable;
 
 
             this.checkbox_lauchlauncherasadmin.IsChecked = this._config.LaunchLauncherAsAdmin;
@@ -97,6 +102,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
+            if (this._webbrowserloaded)
+            {
+                if (this.checkbox_useusewebview2.IsChecked != this._config.UseWebView2IfAvailable)
+                {
+                    if (Prompt_Generic.Show(this, "The launcher will have to re-initialize the web browser control because it has already been loaded with a different framework." + Environment.NewLine + "This re-initialization process may make the UI freeze a little bit." + Environment.NewLine + "Are you sure you want to continue?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
+                    {
+                        return;
+                    }
+                }
+            }
+
             this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
             this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
@@ -106,6 +122,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
+            this._config.UseWebView2IfAvailable = (this.checkbox_useusewebview2.IsChecked == true);
 
             if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
             {
@@ -198,6 +215,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     e.Handled = true;
                 }
+            }
+        }
+
+        private void HyperlinkWebView2Intro_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Hyperlink link && link.NavigateUri != null && link.NavigateUri.IsAbsoluteUri)
+            {
+                try
+                {
+                    Shared.WindowsExplorerHelper.OpenUrlWithDefaultBrowser(link.NavigateUri.AbsoluteUri);
+                }
+                catch { }
             }
         }
     }

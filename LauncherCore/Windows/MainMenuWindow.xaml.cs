@@ -345,6 +345,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     trayicon.Visible = false;
                 }
             }
+
+            if (this.LauncherWebView.Child is IWebViewCompatControl webview)
+            {
+                this.LauncherWebView.Child = null;
+                webview.Dispose();
+            }
+
             foreach (var btn in this.toggleButtons)
             {
                 if (btn.IsChecked == true)
@@ -371,33 +378,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 e.Handled = true;
             }
             // this.RemoveLogicalChild(btn);
-            try
-            {
-                using (var hive = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "Internet Explorer", "Main", "FeatureControl", "FEATURE_BROWSER_EMULATION"), true))
-                {
-                    if (hive != null)
-                    {
-                        string filename = Path.GetFileName(RuntimeValues.EntryExecutableFilename);
-                        if (hive.GetValue(filename) is int verNum)
-                        {
-                            if (verNum < 11001)
-                            {
-                                hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
-                                hive.Flush();
-                            }
-                        }
-                        else
-                        {
-                            hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
-                            hive.Flush();
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Optional anyway.
-            }
 
             try
             {
@@ -407,24 +387,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     false,
                     BindingFlags.CreateInstance,
                     null,
-                    new object[] { "PSO2Launcher" },
+                    new object[] { "PSO2Launcher", this.config_main.UseWebView2IfAvailable },
                     null,
                     null);
                 if (obj is IWebViewCompatControl webview)
                 {
-                    webview.Initialized += this.WebViewCompatControl_Initialized;
-                    this.LauncherWebView.Child = (Control)obj;
+                    webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
+                    this.LauncherWebView.Child = (UIElement)obj;
                     this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
                 }
                 else
                 {
-                    if (obj is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
-                    else if (obj is IAsyncDisposable asyncdisposable)
+                    if (obj is IAsyncDisposable asyncdisposable)
                     {
                         await asyncdisposable.DisposeAsync();
+                    }
+                    else if (obj is IDisposable disposable)
+                    {
+                        disposable.Dispose();
                     }
                     Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -492,7 +472,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonManageGameLauncherBehaviorClicked -= this.TabMainMenu_ButtonManageGameLauncherBehaviorClicked;
                 try
                 {
-                    var dialog = new LauncherBehaviorManagerWindow(this.config_main);
+                    var dialog = new LauncherBehaviorManagerWindow(this.config_main, this.LauncherWebView.Child is IWebViewCompatControl);
                     if (dialog.ShowCustomDialog(this) == true)
                     {
                         this.TabMainMenu.DefaultGameStartStyle = this.config_main.DefaultGameStartStyle;
@@ -527,6 +507,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             else
                             {
                                 tab.GameStartWithPSO2TweakerEnabled = false;
+                            }
+                            if (this.LauncherWebView.Child is IWebViewCompatControl webview)
+                            {
+                                if (this.config_main.UseWebView2IfAvailable != webview.IsUsingWebView2)
+                                {
+                                    this.LoadLauncherWebView_Click(null, null);
+                                    webview.Dispose();
+                                }
                             }
                         }
                         else

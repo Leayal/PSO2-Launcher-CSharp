@@ -34,5 +34,8 @@ copy /B /L /Y "Build\WordpressRSSFeed\WordpressRSSFeed.dll" "%PublishRootDir%\fi
 dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\PSUBlogRSSFeed" "PSUBlogRSSFeed\PSUBlogRSSFeed.csproj"
 copy /B /L /Y "Build\PSUBlogRSSFeed\PSUBlogRSSFeed.dll" "%PublishRootDir%\files\plugins\rss\"
 
+REM Remove unncessary files
+del /F /Q "%PublishRootDir%\files\Microsoft.Web.WebView2.WPF.dll"
+
 Tools\SHA1Maker.exe "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"
 ENDLOCAL

@@ -6,7 +6,9 @@ namespace Leayal.SharedInterfaces
     {
         public Uri CurrentUrl { get; }
 
-        event EventHandler Initialized;
+        bool IsUsingWebView2 { get; }
+
+        event EventHandler BrowserInitialized;
 
         event EventHandler<NavigationEventArgs> Navigated;
 

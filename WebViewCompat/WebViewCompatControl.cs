@@ -1,77 +1,113 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Net;
 using WinForm = System.Windows.Forms;
-using System.Windows.Data;
-using System.Windows.Interop;
-// using Microsoft.Web.WebView2.Wpf;
-using System.Windows.Forms.Integration;
+using Microsoft.Web.WebView2.WinForms;
 using System.Windows.Controls;
 using StackOverflow;
-// using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Core;
 using Leayal.SharedInterfaces;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace Leayal.WebViewCompat
 {
     [ToolboxItem(true)]
     public class WebViewCompatControl : ScrollViewer, IWebViewCompatControl
     {
+        private const int _Width = 822, _Height = 670;
         public static string DefaultUserAgent { get; set; } = string.Empty;
 
-        private readonly WinForm.WebBrowser _fallbackControl;
-        // private readonly WebView2 _webView2;
+        private WinForm.WebBrowser _fallbackControl;
+        private WebView2 _webView2;
         private readonly string _userAgent;
+        private readonly IntPtr loadedWebView2Core;
+        private readonly string webview2runtime_directory;
+
+        private bool isInit;
+        private EventHandler _browserInitialized;
+        public event EventHandler BrowserInitialized
+        {
+            add
+            {
+                this._browserInitialized += value;
+                if (this.isInit)
+                {
+                    if (this.Dispatcher.CheckAccess())
+                    {
+                        value.Invoke(this, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        this.Dispatcher.BeginInvoke(value, new object[] { this, EventArgs.Empty });
+                    }
+                }
+            }
+            remove => this._browserInitialized -= value;
+        }
+
+        public bool IsUsingWebView2 => (this._webView2 != null && !this._webView2.IsDisposed);
 
         public WebViewCompatControl() : this(DefaultUserAgent) { }
 
-        public WebViewCompatControl(string userAgent)
+        public WebViewCompatControl(string userAgent) : this(userAgent, true) { }
+
+        public WebViewCompatControl(string userAgent, bool useWebView2IfPossible) : base()
         {
-            ScrollViewer.SetCanContentScroll(this, true);
+            this._userAgent = userAgent;
+            this.loadedWebView2Core = IntPtr.Zero;
+            this.HorizontalAlignment = HorizontalAlignment.Center;
+            this.VerticalAlignment = VerticalAlignment.Center;
             VirtualizingPanel.SetIsVirtualizing(this, true);
             VirtualizingPanel.SetScrollUnit(this, ScrollUnit.Pixel);
             VirtualizingPanel.SetVirtualizationMode(this, VirtualizationMode.Recycling);
-            this._userAgent = userAgent;
-            if (WebViewCompat.HasWebview2Runtime())
-            {
-                /*
-                this._webView2 = new WebView2();
-                this._webView2.CreationProperties = new CoreWebView2CreationProperties() { UserDataFolder = Path.GetFullPath("BrowserCache", RuntimeValues.RootDirectory), Language = "" };
-                this._webView2.CoreWebView2.Settings.UserAgent = this._userAgent;
-                // this._webView2.NavigationStarting += this.Wv_NavigationStarting;
-                // this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
+            ScrollViewer.SetCanContentScroll(this, true);
+            ScrollViewer.SetVerticalScrollBarVisibility(this, ScrollBarVisibility.Auto);
+            this.isInit = false;
 
-                //this._webView2. += this.FallbackControl_LoadCompleted;
-                this._webView2.CoreWebView2InitializationCompleted += this.Wv_CoreWebView2InitializationCompleted;
-                // this._webView2.WebMessageReceived += Wv_WebMessageReceived;
-                this.Content = this._webView2;
-                */
+            if (useWebView2IfPossible && WebViewCompat.TryGetWebview2Runtime(out var webview2runtimedir) && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
+            {
+                var host = new WindowsFormsHostEx();
+                this.Content = host;
+                this.webview2runtime_directory = webview2runtimedir;
+                try
+                {
+                    this.loadedWebView2Core = loaded;
+                    //*
+                    this._webView2 = new WebView2();
+                    this._webView2.HandleCreated += this.OnWebView2WPFControlLoaded;
+                    host.Child = this._webView2;
+                    if (!this._webView2.Created)
+                    {
+                        this._webView2.CreateControl();
+                    }
+                    //*/
+                }
+                catch
+                {
+                    host.Child = null;
+                    if (this._webView2 != null)
+                    {
+                        this._webView2.Dispose();
+                        this._webView2 = null;
+                    }
+                    this.loadedWebView2Core = IntPtr.Zero;
+                    NativeLibrary.Free(loaded);
+                    SetIECompatVersion();
+                    this._fallbackControl = this.CreateIE();
+                    host.Child = this._fallbackControl;
+                    if (!this._fallbackControl.Created)
+                    {
+                        this._fallbackControl.CreateControl();
+                    }
+                }
             }
             else
             {
-                var host = new WindowsFormsHostEx();
-                host.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
-                host.VerticalAlignment = System.Windows.VerticalAlignment.Center;
-                this._fallbackControl = new WinForm.WebBrowser()
-                {
-                    Width = 820,
-                    Height = 680
-                };
-                this._fallbackControl.ScrollBarsEnabled = false;
-                // this._fallbackControl.Initialized += this.FallbackControl_Initialized;
-                // this._fallbackControl.Loaded += this.FallbackControl_Initialized;
-                // this._fallbackControl.Navigating += this.FallbackControl_Navigating;
-                // this._fallbackControl.Navigated += this.FallbackControl_Navigated;
-                this._fallbackControl.Dock = WinForm.DockStyle.Top;
-                host.Loaded += this.FallbackControl_Initialized;
-                // this._fallbackControl.HandleCreated += this.FallbackControl_Initialized;
-                this._fallbackControl.Navigating += this.FallbackControl_Navigating2;
-                // this._fallbackControl.Navigated += this.FallbackControl_Navigated2;
-                this._fallbackControl.DocumentCompleted += this.FallbackControl_DocumentCompleted;
-                // this._fallbackControl.LoadCompleted += this.FallbackControl_LoadCompleted;
-                // panel.Children.Add(this._fallbackControl);
-                host.Child = this._fallbackControl;
-                this.Content = host;
+                SetIECompatVersion();
+                this._fallbackControl = this.CreateIE();
+                this.Content = new WindowsFormsHostEx() { Child = this._fallbackControl };
                 if (!this._fallbackControl.Created)
                 {
                     this._fallbackControl.CreateControl();
@@ -79,12 +115,19 @@ namespace Leayal.WebViewCompat
             }
         }
 
+        private WinForm.WebBrowser CreateIE()
+        {
+            var wb = new WinForm.WebBrowser();
+            wb.HandleCreated += this.FallbackControl_Initialized;
+            wb.Navigating += this.FallbackControl_Navigating2;
+            wb.DocumentCompleted += this.FallbackControl_DocumentCompleted;
+            return wb;
+        }
+
         public Uri CurrentUrl
         {
             get
             {
-                return this._fallbackControl.Url;
-                /*
                 if (this._webView2 != null)
                 {
                     return this._webView2.Source;
@@ -93,7 +136,6 @@ namespace Leayal.WebViewCompat
                 {
                     return this._fallbackControl.Url;
                 }
-                */
             }
         }
 
@@ -103,7 +145,8 @@ namespace Leayal.WebViewCompat
             var ev = new NavigationEventArgs(e.Url);
             this.Navigated?.Invoke(this, ev);
         }
-        /*
+        
+        //*
         private void Wv_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             NavigationEventArgs ev;
@@ -124,11 +167,12 @@ namespace Leayal.WebViewCompat
                 this.Navigated?.Invoke(this, ev);
             }
         }
-        */
+        //*/
 
         public event EventHandler<NavigatingEventArgs> Navigating;
-        /*
-        private void Wv_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
+        
+        //*
+        private void Wv_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
         {
             var ev = new NavigatingEventArgs(new Uri(e.Uri));
             this.Navigating?.Invoke(this, ev);
@@ -136,56 +180,94 @@ namespace Leayal.WebViewCompat
             // System.Windows.Navigation.NavigatingCancelEventArgs.
             // this.Navigating?.Invoke(this, new System.Windows.Navigation.NavigatingCancelEventArgs() { });
         }
-        */
+        //*/
+
         private void FallbackControl_Navigating2(object sender, WinForm.WebBrowserNavigatingEventArgs e)
         {
             var ev = new NavigatingEventArgs(e.Url);
             this.Navigating?.Invoke(this, ev);
             e.Cancel = ev.Cancel;
         }
+
         private void FallbackControl_Navigating(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
         {
             var ev = new NavigatingEventArgs(e.Uri);
             this.Navigating?.Invoke(this, ev);
             e.Cancel = ev.Cancel;
-            /*
-            if (!ev.Cancel)
-            {
-                if (e.NavigationMode == System.Windows.Navigation.NavigationMode.New)
-                {
-                    return;
-                    this._fallbackControl.Navigating -= this.FallbackControl_Navigating;
-                    e.Cancel = true;
-                    this._fallbackControl.Navigate(e.Uri, null, null, "User-Agent: " + this._userAgent + "\r\n");
-                    this._fallbackControl.Navigating += this.FallbackControl_Navigating;
-                }
-                else
-                {
-                    e.WebRequest.Headers.Set("User-Agent", this._userAgent);
-                    e.WebRequest.Proxy = new WebProxy("127.0.0.1", 8866);
-                }
-            }
-            */
         }
 
         private void FallbackControl_Initialized(object sender, EventArgs e)
         {
-            this.OnInitialized(EventArgs.Empty);
+            this._fallbackControl.Width = _Width;
+            this._fallbackControl.Height = _Height;
+            this._fallbackControl.ScrollBarsEnabled = false;
+            this._fallbackControl.Dock = WinForm.DockStyle.Top;
+            // this.OnInitialized(EventArgs.Empty);
+            this._browserInitialized?.Invoke(this, EventArgs.Empty);
+            this.isInit = true;
         }
-        /*
-        private void Wv_CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e)
+
+        private void OnWebView2WPFControlLoaded(object sender, EventArgs e)
         {
-            this._webView2.CoreWebView2.NavigationStarting += this.Wv_NavigationStarting;
-            this._webView2.CoreWebView2.NavigationCompleted += this.Wv_NavigationCompleted;
-            this.OnInitialized(EventArgs.Empty);
+            this._webView2.Width = _Width;
+            this._webView2.Height = _Height;
+            this._webView2.NavigationStarting += this.Wv_NavigationStarting;
+            this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
+            this.OnWebView2CoreInit(this.webview2runtime_directory, Path.GetFullPath(Path.Combine("data", "webview2"), RuntimeValues.RootDirectory));
         }
         
+        //*
+        private async void OnWebView2CoreInit(string browserExecutablePath, string userDataFolder)
+        {
+            // Seems like "--disable-breakpad" does nothing??
+            // I can still see crashpad process running.
+            try
+            {
+                var env = await CoreWebView2Environment.CreateAsync(browserExecutablePath, userDataFolder, new CoreWebView2EnvironmentOptions("--disable-breakpad"));
+                await this._webView2.EnsureCoreWebView2Async(env);
+                var core = this._webView2.CoreWebView2;
+                var coresetting = core.Settings;
+                coresetting.UserAgent = this._userAgent;
+                coresetting.AreDevToolsEnabled = false;
+                coresetting.AreHostObjectsAllowed = false;
+                coresetting.IsGeneralAutofillEnabled = false;
+                coresetting.IsPasswordAutosaveEnabled = false;
+                coresetting.AreDefaultContextMenusEnabled = false;
+
+                this._browserInitialized?.Invoke(this, EventArgs.Empty);
+                this.isInit = true;
+                // this.OnInitialized(EventArgs.Empty);
+            }
+            catch
+            {
+                if (this.Content is WindowsFormsHostEx host)
+                {
+                    host.Child = null;
+                    if (this._webView2 != null)
+                    {
+                        this._webView2.Dispose();
+                        this._webView2 = null;
+                        if (this.loadedWebView2Core != IntPtr.Zero)
+                        {
+                            NativeLibrary.Free(this.loadedWebView2Core);
+                        }
+                    }
+                    this._fallbackControl = this.CreateIE();
+                    host.Child = this._fallbackControl;
+                    if (!this._fallbackControl.Created)
+                    {
+                        this._fallbackControl.CreateControl();
+                    }
+                }
+            }
+        }
+
         // Document events here.
-        private void Wv_WebMessageReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+        private void Wv_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             // this._fallbackControl.Document.AttachEventHandler();
         }
-        */
+        //*/
 
         private static System.Drawing.Size GetDocumentBodySize(WinForm.WebBrowser webBrowser)
         {
@@ -206,8 +288,6 @@ namespace Leayal.WebViewCompat
 
         public void NavigateTo(Uri url)
         {
-            this._fallbackControl.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
-            /*
             if (this._webView2 != null)
             {
                 this._webView2.Source = url;
@@ -216,13 +296,51 @@ namespace Leayal.WebViewCompat
             {
                 this._fallbackControl.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
             }
-            */
         }
 
         public void Dispose()
         {
-            // this._webView2?.Dispose();
+            if (this._webView2 != null)
+            {
+                this._webView2.Dispose();
+                this._webView2 = null;
+                if (this.loadedWebView2Core != IntPtr.Zero)
+                {
+                    NativeLibrary.Free(this.loadedWebView2Core);
+                }
+            }
             this._fallbackControl?.Dispose();
+        }
+
+        private static void SetIECompatVersion()
+        {
+            try
+            {
+                using (var hive = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "Internet Explorer", "Main", "FeatureControl", "FEATURE_BROWSER_EMULATION"), true))
+                {
+                    if (hive != null)
+                    {
+                        string filename = Path.GetFileName(RuntimeValues.EntryExecutableFilename);
+                        if (hive.GetValue(filename) is int verNum)
+                        {
+                            if (verNum < 11001)
+                            {
+                                hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
+                                hive.Flush();
+                            }
+                        }
+                        else
+                        {
+                            hive.SetValue(filename, 11001, Microsoft.Win32.RegistryValueKind.DWord);
+                            hive.Flush();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Optional anyway.
+            }
         }
     }
 }

@@ -403,6 +403,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_syncthemewithos", value);
         }
 
+        public bool UseWebView2IfAvailable
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_tryusewebview2", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_tryusewebview2", value);
+        }
+
         public int ManualSelectedThemeIndex
         {
             get

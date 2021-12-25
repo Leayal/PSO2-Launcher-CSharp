@@ -39,6 +39,8 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="5" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
@@ -63,8 +65,28 @@
             </Grid>
 
             <CheckBox Grid.Row="5" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
+            <CheckBox Grid.Row="6" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
+                <CheckBox.Content>
+                    <TextBlock>
+                        <Run Text="Allow using" />
+                        <Hyperlink NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">WebView2 Evergreen Runtime</Hyperlink>
+                        <Run Text="(if available) to display the PSO2 News web." />
+                    </TextBlock>
+                </CheckBox.Content>
+                <CheckBox.ToolTip>
+                    <TextBlock>
+                        <Run Text="Allow the launcher to use" />
+                        <Hyperlink NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">Chromium from WebView2 Evergreen Runtime</Hyperlink>
+                        <Run Text="to display the PSO2 News web." />
+                        <LineBreak />
+                        <Run Text="If the runtime is not installed on the machine or you disallow using the runtime, the launcher will use the old Internet Explorer component to display the web." />
+                        <LineBreak />
+                        <Run Text="Please note that the web browser control will only be initialized only when you load the PSO2 News web." />
+                    </TextBlock>
+                </CheckBox.ToolTip>
+            </CheckBox>
             
-            <CheckBox Grid.Row="7" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
+            <CheckBox Grid.Row="9" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">
