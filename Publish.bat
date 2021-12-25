@@ -37,6 +37,7 @@ copy /B /L /Y "Build\PSUBlogRSSFeed\PSUBlogRSSFeed.dll" "%PublishRootDir%\files\
 REM Remove unncessary files
 del /F /Q "%PublishRootDir%\files\Microsoft.Web.WebView2.WPF.dll"
 del /F /Q "%PublishRootDir%\files\WebView2Loader.dll"
+del /F /Q "%PublishRootDir%\files\PSO2LeaLauncher.dll"
 
 Tools\SHA1Maker.exe "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"
 ENDLOCAL
