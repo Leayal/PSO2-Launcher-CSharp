@@ -187,10 +187,18 @@ namespace Leayal.PSO2Launcher.Updater
                         }
                         else if (response_ver == 3)
                         {
-                            if (this.bootstrapversion < 2)
+                            var ver = typeof(Bootstrap).Assembly.GetName().Version;
+                            if (ver.Major < 3)
                             {
-                                this.recommendBootstrapUpdate = true;
-                                return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
+                                if (this.bootstrapversion < 2)
+                                {
+                                    this.recommendBootstrapUpdate = true;
+                                    return await this.ParseFileList_1(doc, rootDirectory, entryExecutableName);
+                                }
+                                else
+                                {
+                                    return await this.ParseFileList_2(doc, rootDirectory, entryExecutableName);
+                                }
                             }
                             else
                             {
@@ -238,17 +246,20 @@ namespace Leayal.PSO2Launcher.Updater
             }
             else
             {
+                foreach (var arg in Environment.GetCommandLineArgs())
+                {
+                    if (string.Equals(arg, "--no-self-update-prompt", StringComparison.OrdinalIgnoreCase))
+                    {
+                        result = DialogResult.Yes;
+                        return true;
+                    }
+                }
                 if (this.recommendBootstrapUpdate)
                 {
-                    result = MsgBoxShortHand(parent, $"Found new version. Update the launcher?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    result = MsgBoxShortHand(parent, $"Found new bootstrap version. Update the launcher's bootstrap?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 }
                 else
                 {
-                    var args = new HashSet<string>(Environment.GetCommandLineArgs(), StringComparer.OrdinalIgnoreCase);
-                    if (args.Contains("--no-self-update-prompt"))
-                    {
-                        return true;
-                    }
                     result = MsgBoxShortHand(parent, $"Found new version. Update the launcher?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 }
                 return result switch
@@ -266,9 +277,9 @@ namespace Leayal.PSO2Launcher.Updater
         }
 #nullable restore
 
-        public Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo)
+        public async Task<bool?> PerformUpdate(BootstrapUpdater_CheckForUpdates updateinfo)
         {
-            return Task.Run<bool?>(async () =>
+            return await Task.Run<bool?>(async () =>
             {
                 var e_filedownload = this.FileDownloaded;
                 var e_step = this.StepChanged;
