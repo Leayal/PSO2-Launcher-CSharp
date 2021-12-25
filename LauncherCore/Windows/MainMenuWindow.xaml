@@ -99,7 +99,7 @@
             </ToggleButton>
             <!--<RichTextBox Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_ConsoleLog,Mode=OneWay,Path=IsChecked}" Background="#33FFFFFF" IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" />-->
             <Border Grid.RowSpan="3" Grid.Column="1" x:Name="LauncherWebView" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_PSO2News,Mode=OneWay,Path=IsChecked}"
-                    BorderBrush="{x:Null}" >
+                    BorderBrush="{x:Null}" IsVisibleChanged="LauncherWebView_IsVisibleChanged">
                 <localui:WeirdButton Content="Click to load launcher web view" />
             </Border>
             <Border x:Name="RSSFeedPresenterBorder" Grid.RowSpan="3" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=ToggleBtn_RSSFeed,Mode=OneWay,Path=IsChecked}" />

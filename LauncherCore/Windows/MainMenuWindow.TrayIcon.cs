@@ -1,5 +1,6 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Helper;
+using Leayal.SharedInterfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 bool b = (bool)e.NewValue;
                 if (b)
                 {
+                    if (window.isWebBrowserLoaded && !window.timer_unloadWebBrowser.IsEnabled)
+                    {
+                        window.timer_unloadWebBrowser.Start();
+                    }
                     var ico = window.trayIcon.Value;
                     ico.Visible = true;
                     window.Hide();
@@ -27,6 +32,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
+                    if (window.isWebBrowserLoaded && window.LauncherWebView.IsVisible)
+                    {
+                        window.timer_unloadWebBrowser.Stop();
+                        if (!(window.LauncherWebView.Child is IWebViewCompatControl))
+                        {
+                            window.LoadLauncherWebView_Click(null, null);
+                        }
+                    }
                     window.ShowInTaskbar = true;
                     window.Show();
                     var ico = window.trayIcon.Value;

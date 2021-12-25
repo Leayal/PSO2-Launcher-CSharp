@@ -16,20 +16,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private void ToggleBtn_Checked(object sender, RoutedEventArgs e)
-        {
-            if (this.toggleButtons != null)
-            {
-                foreach (var btn in this.toggleButtons)
-                {
-                    if (!btn.Equals(sender))
-                    {
-                        btn.IsChecked = false;
-                    }
-                }
-            }
-        }
-
         private void RSSFeedPresenter_SelectedFeedChanged(RSSFeedPresenter sender, RSSFeedHandler selectedOne)
         {
             // Bad practice to use I/O for UI Thread, however, we want accuracy and want to avoid I/O overlap, so using UI thread's dispatcher as a form of sync context

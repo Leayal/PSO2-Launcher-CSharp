@@ -18,6 +18,7 @@ using System.Net.Http;
 using Leayal.Shared;
 using System.Runtime;
 using Leayal.Shared.Windows;
+using System.Windows.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -73,6 +74,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(UseClockProperty, value);
         }
 
+        private readonly DispatcherTimer timer_unloadWebBrowser;
         internal readonly HttpClient webclient;
         private readonly PSO2HttpClient pso2HttpClient;
         private readonly GameClientUpdater pso2Updater;
@@ -86,10 +88,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly Toolbox.ClockTickerCallback clockCallback;
         private readonly Action<DependencyPropertyKey, object> @delegateSetCurrentTime;
         private readonly object[] @delegateSetCurrentTime_params;
-        // private readonly SimpleDispatcherQueue dispatcherqueue;
+        private bool isWebBrowserLoaded;
 
         public MainMenuWindow(ConfigurationFile conf) : base()
         {
+            this.isWebBrowserLoaded = false;
             this.config_main = conf;
             this.ss_id = null;
             this.ss_pw = null;
@@ -218,6 +221,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             };
             this.CreateNewParagraphFormatHyperlinksInLog(str, placements, false);
             // this.CreateNewParagraphInLog("[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal", false);
+
+            this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
         }
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
@@ -394,6 +399,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
                     this.LauncherWebView.Child = (UIElement)obj;
+                    this.isWebBrowserLoaded = true;
                     this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
                 }
                 else
@@ -653,12 +659,60 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        private void Timer_UnloadWebBrowserControl(object sender, EventArgs e)
+        {
+            this.timer_unloadWebBrowser.Stop();
+            // this.isWebBrowserLoaded = false;
+            if (this.LauncherWebView.Child is IWebViewCompatControl webview)
+            {
+                this.LauncherWebView.Child = null;
+                webview.Dispose();
+            }
+        }
+
         private void ThisWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (this._isTweakerRunning
                 && Prompt_Generic.Show(this, $"The launcher is currently managing PSO2 Tweaker.{Environment.NewLine}It is recommended to exit the PSO2 Tweaker before closing this launcher to avoid config corruption.{Environment.NewLine}Are you sure you still want to close the launcher before closing PSO2 Tweaker?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) != MessageBoxResult.Yes)
             {
                 e.Cancel = true;
+            }
+        }
+
+        private void LauncherWebView_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (this.isWebBrowserLoaded)
+            {
+                var b = (bool)e.NewValue;
+                if (b && !this.IsMinimizedToTray)
+                {
+                    this.timer_unloadWebBrowser.Stop();
+                    if (!(this.LauncherWebView.Child is IWebViewCompatControl))
+                    {
+                        this.LoadLauncherWebView_Click(null, null);
+                    }
+                }
+                else
+                {
+                    if (!this.timer_unloadWebBrowser.IsEnabled)
+                    {
+                        this.timer_unloadWebBrowser.Start();
+                    }
+                }
+            }
+        }
+
+        private void ToggleBtn_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.toggleButtons != null)
+            {
+                foreach (var btn in this.toggleButtons)
+                {
+                    if (!btn.Equals(sender))
+                    {
+                        btn.IsChecked = false;
+                    }
+                }
             }
         }
 

@@ -233,6 +233,12 @@ namespace Leayal.WebViewCompat
                 coresetting.IsGeneralAutofillEnabled = false;
                 coresetting.IsPasswordAutosaveEnabled = false;
                 coresetting.AreDefaultContextMenusEnabled = false;
+                coresetting.AreBrowserAcceleratorKeysEnabled = false;
+                // coresetting.AreDefaultScriptDialogsEnabled = false;
+                coresetting.IsBuiltInErrorPageEnabled = false;
+                coresetting.IsPinchZoomEnabled = false;
+                coresetting.IsStatusBarEnabled = false;
+                coresetting.IsSwipeNavigationEnabled = true;
 
                 this._browserInitialized?.Invoke(this, EventArgs.Empty);
                 this.isInit = true;
