@@ -56,6 +56,7 @@ This project is just a hobby one.
 ### Launcher arguments:
 
 - `--tray`: Launch the launcher and minimize to tray immediately.
+- `--no-self-update`: Launcher the launcher without checking for self-updates. In the other words, ignore all launcher's updates.
 
 # UI Previews
 
