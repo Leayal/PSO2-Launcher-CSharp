@@ -6,7 +6,7 @@ namespace Leayal.WebViewCompat
 {
     public static class WebViewCompat
     {
-        public static bool TryGetWebview2Runtime(out string runtimeDirectory)
+        public static bool TryGetWebview2Runtime(out string runtimeDirectory, out string version)
         {
             // Temporarily not using WebView2, until it's matured or stable enough.
             // HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}
@@ -21,6 +21,7 @@ namespace Leayal.WebViewCompat
                             var result = Path.GetFullPath(Path.Combine(location, pv));
                             if (Directory.Exists(result))
                             {
+                                version = pv;
                                 runtimeDirectory = result;
                                 return true;
                             }
@@ -30,7 +31,7 @@ namespace Leayal.WebViewCompat
             }
             //*/
 
-            runtimeDirectory = string.Empty;
+            version = runtimeDirectory = string.Empty;
             return false;
         }
     }

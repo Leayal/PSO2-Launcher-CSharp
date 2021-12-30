@@ -4,19 +4,16 @@ using System.IO;
 using WinForm = System.Windows.Forms;
 using Microsoft.Web.WebView2.WinForms;
 using System.Windows.Controls;
-using StackOverflow;
 using Microsoft.Web.WebView2.Core;
 using Leayal.SharedInterfaces;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
-using System.Windows;
 
 namespace Leayal.WebViewCompat
 {
     [ToolboxItem(true)]
-    public class WebViewCompatControl : ScrollViewer, IWebViewCompatControl
+    public class WebViewCompatControl : Border, IWebViewCompatControl
     {
-        private const int _Width = 822, _Height = 670;
+        private const int _Width = 825, _Height = 670;
         public static string DefaultUserAgent { get; set; } = string.Empty;
 
         private WinForm.WebBrowser _fallbackControl;
@@ -24,6 +21,7 @@ namespace Leayal.WebViewCompat
         private readonly string _userAgent;
         private readonly IntPtr loadedWebView2Core;
         private readonly string webview2runtime_directory;
+        private readonly string webview2evergreenversion;
 
         private bool isInit;
         private EventHandler _browserInitialized;
@@ -49,6 +47,8 @@ namespace Leayal.WebViewCompat
 
         public bool IsUsingWebView2 => (this._webView2 != null && !this._webView2.IsDisposed);
 
+        public string WebView2Version => this.webview2evergreenversion;
+
         public WebViewCompatControl() : this(DefaultUserAgent) { }
 
         public WebViewCompatControl(string userAgent) : this(userAgent, true) { }
@@ -57,25 +57,23 @@ namespace Leayal.WebViewCompat
         {
             this._userAgent = userAgent;
             this.loadedWebView2Core = IntPtr.Zero;
-            this.HorizontalAlignment = HorizontalAlignment.Center;
-            this.VerticalAlignment = VerticalAlignment.Center;
-            VirtualizingPanel.SetIsVirtualizing(this, true);
-            VirtualizingPanel.SetScrollUnit(this, ScrollUnit.Pixel);
-            VirtualizingPanel.SetVirtualizationMode(this, VirtualizationMode.Recycling);
-            ScrollViewer.SetCanContentScroll(this, true);
-            ScrollViewer.SetVerticalScrollBarVisibility(this, ScrollBarVisibility.Auto);
             this.isInit = false;
 
-            if (useWebView2IfPossible && WebViewCompat.TryGetWebview2Runtime(out var webview2runtimedir) && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
+            if (useWebView2IfPossible && WebViewCompat.TryGetWebview2Runtime(out var webview2runtimedir, out var _webview2evergreenversion) && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
             {
-                var host = new WindowsFormsHostEx();
-                this.Content = host;
+                this.webview2evergreenversion = _webview2evergreenversion;
+                var host = new WindowsFormsHostEx2();
+                this.Child = host;
                 this.webview2runtime_directory = webview2runtimedir;
                 try
                 {
                     this.loadedWebView2Core = loaded;
                     //*
-                    this._webView2 = new WebView2();
+                    this._webView2 = new WebView2Ex()
+                    {
+                        Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Left,
+                        Location = System.Drawing.Point.Empty
+                    };
                     this._webView2.HandleCreated += this.OnWebView2WPFControlLoaded;
                     host.Child = this._webView2;
                     if (!this._webView2.Created)
@@ -105,9 +103,12 @@ namespace Leayal.WebViewCompat
             }
             else
             {
+                this.webview2runtime_directory = string.Empty;
+                this.webview2evergreenversion = string.Empty;
                 SetIECompatVersion();
                 this._fallbackControl = this.CreateIE();
-                this.Content = new WindowsFormsHostEx() { Child = this._fallbackControl };
+                var host = new WindowsFormsHostEx2() { Child = this._fallbackControl };
+                this.Child = host;
                 if (!this._fallbackControl.Created)
                 {
                     this._fallbackControl.CreateControl();
@@ -117,7 +118,11 @@ namespace Leayal.WebViewCompat
 
         private WinForm.WebBrowser CreateIE()
         {
-            var wb = new WinForm.WebBrowser();
+            var wb = new WinForm.WebBrowser()
+            {
+                Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Left,
+                Location = System.Drawing.Point.Empty
+            };
             wb.HandleCreated += this.FallbackControl_Initialized;
             wb.Navigating += this.FallbackControl_Navigating2;
             wb.DocumentCompleted += this.FallbackControl_DocumentCompleted;
@@ -246,7 +251,7 @@ namespace Leayal.WebViewCompat
             }
             catch
             {
-                if (this.Content is WindowsFormsHostEx host)
+                if (this.Child is WindowsFormsHostEx2 host)
                 {
                     host.Child = null;
                     if (this._webView2 != null)
@@ -316,6 +321,11 @@ namespace Leayal.WebViewCompat
                 }
             }
             this._fallbackControl?.Dispose();
+            if (this.Child is IDisposable cleanupableChildControl)
+            {
+                // CaptureMouseWheelWhenUnfocusedBehavior.SetIsEnabled(host, false);
+                cleanupableChildControl.Dispose();
+            }
         }
 
         private static void SetIECompatVersion()

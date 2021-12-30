@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
+using System.Windows.Input;
 using System.Windows.Media;
 
 #endregion
@@ -55,6 +56,16 @@ namespace StackOverflow
         #endregion
 
         #region Methods
+
+        public void RaiseMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnMouseWheel(e);
+        }
+
+        public void RaisePreviewMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnPreviewMouseWheel(e);
+        }
 
         protected override void OnWindowPositionChanged(Rect rcBoundingBox)
         {

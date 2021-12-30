@@ -27,12 +27,14 @@
         <TextBlock Text="{Binding ElementName=thisSelf,Path=Title,Mode=OneWay}" TextAlignment="Center" VerticalAlignment="Center" Margin="1" FontSize="15" IsHitTestVisible="False" TextTrimming="CharacterEllipsis" />
         <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="5,5,5,10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="10" />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
 
-            <Image MaxHeight="50" MaxWidth="50" x:Name="MsgIcon" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" StretchDirection="DownOnly" Margin="1" />
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True" IsDeferredScrollingEnabled="False"
+            <Image Grid.Column="1" MaxHeight="50" MaxWidth="50" x:Name="MsgIcon" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" StretchDirection="DownOnly" Margin="1" />
+            <ScrollViewer Grid.Column="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="True" IsDeferredScrollingEnabled="False"
                           VerticalAlignment="Center" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.VirtualizationMode="Recycling"
                           Content="{Binding ElementName=thisSelf,Mode=OneWay,Path=DialogTextContent}" />
         </Grid>

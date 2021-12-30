@@ -22,6 +22,21 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.CustomClickHandler = false;
         }
 
+        public CommandHyperlink(Inline inline) : base(inline) 
+        {
+            this.CustomClickHandler = false;
+        }
+
+        public CommandHyperlink(Inline inline, TextPointer insertPosition) : base(inline, insertPosition) 
+        {
+            this.CustomClickHandler = false;
+        }
+
+        public CommandHyperlink(TextPointer start, TextPointer end) : base(start, end) 
+        {
+            this.CustomClickHandler = false;
+        }
+
         protected override void OnClick()
         {
             if (this.CustomClickHandler)

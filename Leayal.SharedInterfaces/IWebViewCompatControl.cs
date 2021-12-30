@@ -8,6 +8,8 @@ namespace Leayal.SharedInterfaces
 
         bool IsUsingWebView2 { get; }
 
+        string WebView2Version { get; }
+
         event EventHandler BrowserInitialized;
 
         event EventHandler<NavigationEventArgs> Navigated;

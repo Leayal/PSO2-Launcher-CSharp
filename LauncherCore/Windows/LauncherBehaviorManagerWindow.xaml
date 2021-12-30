@@ -69,14 +69,14 @@
                 <CheckBox.Content>
                     <TextBlock>
                         <Run Text="Allow using" />
-                        <Hyperlink NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">WebView2 Evergreen Runtime</Hyperlink>
+                        <Hyperlink NavigateUri="https://developer.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">WebView2 Evergreen Runtime</Hyperlink>
                         <Run Text="(if available) to display the PSO2 News web." />
                     </TextBlock>
                 </CheckBox.Content>
                 <CheckBox.ToolTip>
                     <TextBlock>
                         <Run Text="Allow the launcher to use" />
-                        <Hyperlink NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">Chromium from WebView2 Evergreen Runtime</Hyperlink>
+                        <Hyperlink NavigateUri="https://developer.microsoft.com/en-us/microsoft-edge/webview2/" Click="HyperlinkWebView2Intro_Click">Chromium from WebView2 Evergreen Runtime</Hyperlink>
                         <Run Text="to display the PSO2 News web." />
                         <LineBreak />
                         <Run Text="If the runtime is not installed on the machine or you disallow using the runtime, the launcher will use the old Internet Explorer component to display the web." />

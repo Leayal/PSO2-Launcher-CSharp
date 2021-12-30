@@ -246,15 +246,27 @@ namespace Leayal.PSO2Launcher.Updater
             }
             else
             {
+                bool updatewitoutpromp = false, ignoreupdate = false;
                 foreach (var arg in Environment.GetCommandLineArgs())
                 {
                     if (string.Equals(arg, "--no-self-update-prompt", StringComparison.OrdinalIgnoreCase))
                     {
-                        result = DialogResult.Yes;
-                        return true;
+                        updatewitoutpromp = true;
+                    }
+                    else if (string.Equals(arg, "--no-self-update", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ignoreupdate = true;
                     }
                 }
-                if (this.recommendBootstrapUpdate)
+                if (ignoreupdate)
+                {
+                    result = DialogResult.No;
+                }
+                else if (updatewitoutpromp)
+                {
+                    result = DialogResult.Yes;
+                }
+                else if (this.recommendBootstrapUpdate)
                 {
                     result = MsgBoxShortHand(parent, $"Found new bootstrap version. Update the launcher's bootstrap?{Environment.NewLine}Yes: Update [Recommended]{Environment.NewLine}No: Continue using old version{Environment.NewLine}Cancel: Exit", "Question", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 }
@@ -433,19 +445,7 @@ namespace Leayal.PSO2Launcher.Updater
                     }
                 }
 
-                if (shouldRestart)
-                {
-                    var args = new List<string>(Environment.GetCommandLineArgs());
-                    args.RemoveAt(0);
-                    if (!args.Contains("--no-self-update-prompt"))
-                    {
-                        args.Add("--no-self-update-prompt");
-                    }
-                    RestartWithArgs(args);
-                    return true;
-                }
-
-                if (shouldReload)
+                if (shouldRestart || shouldReload)
                 {
                     var args = new List<string>(Environment.GetCommandLineArgs());
                     args.RemoveAt(0);

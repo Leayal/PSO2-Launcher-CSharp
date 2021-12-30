@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -40,32 +41,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(DialogTextContentProperty, value);
         }
 
-        public static MessageBoxResult? Show(Window parent, string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+#nullable enable
+        public static MessageBoxResult? Show(Window parent, Inline[] text, string? title, MessageBoxButton buttons, MessageBoxImage image)
         {
+            var tb = new TextBlock() { TextWrapping = TextWrapping.WrapWithOverflow };
+            if (text == null || text.Length == 0)
+            {
+                tb.Text = string.Empty;
+            }
+            else
+            {
+                tb.Inlines.AddRange(text);
+            }
             var dialog = new Prompt_Generic(in buttons, in image)
             {
-                DialogTextContent = new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow },
+                DialogTextContent = tb,
                 Title = title
             };
             dialog.ShowAsModal(parent);
             return dialog._result;
         }
 
-        public static MessageBoxResult? Show(Window parent, string text, string title)
+        public static MessageBoxResult? Show(Window parent, string? text, string? title, MessageBoxButton buttons, MessageBoxImage image)
+            => Show(parent, string.IsNullOrEmpty(text) ? Array.Empty<Inline>() : new Inline[] { new Run(text) }, title, buttons, image);
+
+        public static MessageBoxResult? Show(Window parent, string? text, string? title)
             => Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Information);
 
-#nullable enable
-        public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
+        public static MessageBoxResult? ShowError(Window parent, Inline[] text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
         {
             var dialog = new Prompt_Generic(in buttons, in image)
             {
-                DialogTextContent = new TextBlock() { Text = exception.ToString(), TextWrapping = TextWrapping.WrapWithOverflow },
                 Title = title ?? "Error"
             };
 
             Exception ex = exception.InnerException ?? exception;
 
-            if (string.IsNullOrEmpty(text))
+            if (text == null || text.Length == 0)
             {
                 if (string.IsNullOrWhiteSpace(ex.Message))
                 {
@@ -98,9 +110,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
+                var tb = new TextBlock() { TextWrapping = TextWrapping.WrapWithOverflow };
+                tb.Inlines.AddRange(text);
                 if (string.IsNullOrWhiteSpace(ex.StackTrace))
                 {
-                    dialog.DialogTextContent = new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow };
+                    dialog.DialogTextContent = tb;
                 }
                 else
                 {
@@ -109,7 +123,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
                     grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
 
-                    grid.Children.Add(new TextBlock() { Text = text, TextWrapping = TextWrapping.WrapWithOverflow });
+                    grid.Children.Add(tb);
 
                     var btnShowStackTrace = new ToggleButton() { Content = new TextBlock() { Text = "Show stacktrace", FontSize = 11 }, IsChecked = false, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Left };
                     Grid.SetRow(btnShowStackTrace, 1);
@@ -128,11 +142,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return dialog._result;
         }
 
+        public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
+            => ShowError(parent, string.IsNullOrEmpty(text) ? Array.Empty<Inline>() : new Inline[] { new Run(text) }, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+
         public static MessageBoxResult? ShowError(Window parent, Exception exception, string? title, MessageBoxButton buttons, MessageBoxImage image)
-            => ShowError(parent, null, title, exception, buttons, image);
+            => ShowError(parent, Array.Empty<Inline>(), title, exception, buttons, image);
 
         public static MessageBoxResult? ShowError(Window parent, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
-            => ShowError(parent, null, null, exception, buttons, image);
+            => ShowError(parent, Array.Empty<Inline>(), null, exception, buttons, image);
 
         public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception)
             => ShowError(parent, text, title, exception, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -141,7 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             => ShowError(parent, null, title, exception);
 
         public static MessageBoxResult? ShowError(Window parent, Exception exception)
-            => ShowError(parent, null, null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
+            => ShowError(parent, Array.Empty<Inline>(), null, exception, MessageBoxButton.OK, MessageBoxImage.Error);
 #nullable restore
 
         private MessageBoxResult? _result;

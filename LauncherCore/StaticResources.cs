@@ -13,6 +13,7 @@ namespace Leayal.PSO2Launcher.Core
 
         public static readonly Uri Url_ShowAuthor = new Uri("pso2lealauncher://myself/show-author");
         public static readonly Uri Url_ShowSourceCodeGithub = new Uri("pso2lealauncher://myself/show-source-code");
+        public static readonly Uri Url_ShowIssuesGithub = new Uri("pso2lealauncher://myself/show-github-issues");
 
         public static readonly Uri Url_ShowLogDialogFromGuid = new Uri("pso2lealauncher://showdialog.fromguid/");
 

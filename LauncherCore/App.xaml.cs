@@ -363,6 +363,17 @@ namespace Leayal.PSO2Launcher.Core
                         catch { }
                     });
                 }
+                else if (string.Equals(urlstr, StaticResources.Url_ShowIssuesGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp/issues");
+                        }
+                        catch { }
+                    });
+                }
                 else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.Dispatcher.InvokeAsync(delegate

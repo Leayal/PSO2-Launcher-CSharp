@@ -37,7 +37,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminProcess", "AdminProces
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox", "LauncherToolbox\LauncherToolbox.csproj", "{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

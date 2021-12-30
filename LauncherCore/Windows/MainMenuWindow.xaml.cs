@@ -374,7 +374,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn)
+            var btn = sender as Button;
+            if (btn != null)
             {
                 btn.Click -= this.LoadLauncherWebView_Click;
             }
@@ -400,7 +401,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
                     this.LauncherWebView.Child = (UIElement)obj;
                     this.isWebBrowserLoaded = true;
-                    this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded.");
+                    if (webview.IsUsingWebView2)
+                    {
+                        this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                    }
+                    else
+                    {
+                        this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                    }
                 }
                 else
                 {
@@ -415,8 +423,29 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+            catch (TypeLoadException ex)
+            {
+                if (btn != null)
+                {
+                    btn.Click += this.LoadLauncherWebView_Click;
+                }
+                Prompt_Generic.ShowError(this, new System.Windows.Documents.Inline[]
+                {
+                    new System.Windows.Documents.Run("An error has occurred while loading the web engine."),
+                    new System.Windows.Documents.LineBreak(),
+                    new System.Windows.Documents.Run("Please restart the launcher."),
+                    new System.Windows.Documents.LineBreak(),
+                    new System.Windows.Documents.Run("If the error still persists after restarting, please "),
+                    new CommandHyperlink(new System.Windows.Documents.Run("create an issue report")) { NavigateUri = StaticResources.Url_ShowIssuesGithub },
+                    new System.Windows.Documents.Run(" on Github."),
+                }, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             catch (Exception ex)
             {
+                if (btn != null)
+                {
+                    btn.Click += this.LoadLauncherWebView_Click;
+                }
                 Prompt_Generic.ShowError(this, ex);
             }
         }

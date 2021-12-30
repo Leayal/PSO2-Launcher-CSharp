@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
-    <ProjectReference Include="..\StackOverflow.Core\StackOverflow.Core.csproj" />
   </ItemGroup>
 
 </Project>
