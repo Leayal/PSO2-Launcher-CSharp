@@ -269,11 +269,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
-            var datas = arg2.GetDatas();
-            if (datas[2].Span.Equals("[Pickup]", StringComparison.OrdinalIgnoreCase))
+            var datas = arg2.GetDataColumns();
+            if (MemoryExtensions.Equals(datas[2].Span, "[Pickup]", StringComparison.OrdinalIgnoreCase))
             {
-                bool isAlphaReactor = (datas[5].Span.Equals("Alpha Reactor", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("アルファリアクター", StringComparison.OrdinalIgnoreCase));
-                bool isStellaSeed = (datas[5].Span.Equals("Stellar Shard", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("Stellar Seed", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("ステラーシード", StringComparison.OrdinalIgnoreCase));
+                bool isAlphaReactor = (MemoryExtensions.Equals(datas[5].Span, "Alpha Reactor", StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(datas[5].Span, "アルファリアクター", StringComparison.OrdinalIgnoreCase));
+                bool isStellaSeed = (MemoryExtensions.Equals(datas[5].Span, "Stellar Shard", StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(datas[5].Span, "Stellar Seed", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("ステラーシード", StringComparison.OrdinalIgnoreCase));
                 if (isAlphaReactor || isStellaSeed)
                 {
                     var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), "yyyy-MM-dd");
