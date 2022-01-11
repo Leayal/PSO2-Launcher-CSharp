@@ -10,6 +10,7 @@
     <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
     <ApplicationIcon>Resources\1.ico</ApplicationIcon>
     <Version>3.0.0</Version>
+	<FileVersion>3.1.0</FileVersion>
     <UseWPF>True</UseWPF>
     <DebugType>full</DebugType>
     <Nullable>enable</Nullable>
@@ -33,12 +34,6 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( copy /B /L /Y &quot;$(OutDir)\*&quot; &quot;$(SolutionDir)Test\&quot; )" />
   </Target>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj">
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

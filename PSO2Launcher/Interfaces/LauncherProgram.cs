@@ -17,7 +17,7 @@ namespace Leayal.PSO2Launcher.Interfaces
 
         public bool HasWinForm => this.haswinform;
 
-        public event EventHandler? Initialized;
+        public event EventHandler? Initialized, Exited;
 
         protected LauncherProgram(bool hasWinform, bool hasWPF)
         {
@@ -43,12 +43,18 @@ namespace Leayal.PSO2Launcher.Interfaces
             if (Interlocked.CompareExchange(ref this.hasRunFirstTime, 1, 0) == 0)
             {
                 this.OnFirstInstance(args);
+                this.Exited?.Invoke(this, EventArgs.Empty);
             }
             else
             {
                 this.OnSubsequentInstance(args);
             }
         }
+
+        /// <summary>Application execution on the subsequent remote processes.</summary>
+        /// <param name="args">The arguments which are going to be sent to the first instance.</param>
+        /// <returns>Returns true if the remote process handled the execution and the default implementation should not be invoked. Otherwise, false.</returns>
+        public virtual bool OnRemoteProcessRun(string[] args) => false;
 
         /// <summary>Raises the <seealso cref="Initialized"/> event.</summary>
         protected virtual void OnInitialized()

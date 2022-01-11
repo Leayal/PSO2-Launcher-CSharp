@@ -19,6 +19,7 @@ using Leayal.Shared;
 using System.Runtime;
 using Leayal.Shared.Windows;
 using System.Windows.Threading;
+using System.Runtime.Loader;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -245,6 +246,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 selfchecker.Start();
             }
 
+            base.OnFirstShown(e);
+
             if (!this.config_main.LauncherLoadWebsiteAtStartup)
             {
                 if (this.LauncherWebView.Child is Button btn)
@@ -387,39 +390,39 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             try
             {
-                var obj = AppDomain.CurrentDomain.CreateInstanceFromAndUnwrap(
-                    Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory),
-                    "Leayal.WebViewCompat.WebViewCompatControl",
-                    false,
-                    BindingFlags.CreateInstance,
-                    null,
-                    new object[] { "PSO2Launcher", this.config_main.UseWebView2IfAvailable },
-                    null,
-                    null);
-                if (obj is IWebViewCompatControl webview)
+                var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
+                if (AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly())?.FromFileWithNative(filepath) is Assembly asm)
                 {
-                    webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
-                    this.LauncherWebView.Child = (UIElement)obj;
-                    this.isWebBrowserLoaded = true;
-                    if (webview.IsUsingWebView2)
+                    var obj = asm.CreateInstance("Leayal.WebViewCompat.WebViewCompatControl", false, BindingFlags.CreateInstance, null, new object[] { "PSO2Launcher", this.config_main.UseWebView2IfAvailable }, null, null);
+                    if (obj is IWebViewCompatControl webview)
                     {
-                        this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                        webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
+                        this.LauncherWebView.Child = (UIElement)obj;
+                        this.isWebBrowserLoaded = true;
+                        if (webview.IsUsingWebView2)
+                        {
+                            this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                        }
+                        else
+                        {
+                            this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                        }
                     }
                     else
                     {
-                        this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                        if (obj is IAsyncDisposable asyncdisposable)
+                        {
+                            await asyncdisposable.DisposeAsync();
+                        }
+                        else if (obj is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                        Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else
                 {
-                    if (obj is IAsyncDisposable asyncdisposable)
-                    {
-                        await asyncdisposable.DisposeAsync();
-                    }
-                    else if (obj is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
                     Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }

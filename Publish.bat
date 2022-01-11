@@ -8,9 +8,11 @@ if not exist %PublishRootDir% (
 )
 
 dotnet build -c Release -o "Build\LauncherCore-natives" "LauncherCore\LauncherCore.csproj"
-dotnet publish -c Publish --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCore" "LauncherCore\LauncherCore.csproj"
-del /Q /F "Build\LauncherCore\e_sqlcipher.dll"
-copy /B /L /Y "Build\LauncherCore\*.dll" "%PublishRootDir%\files\"
+dotnet publish -c Publish --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCoreNew" "LauncherCoreNew\LauncherCoreNew.csproj"
+del /Q /F "Build\LauncherCoreNew\e_sqlcipher.dll"
+del /Q /F "Build\LauncherCoreNew\WebView2Loader.dll"
+del /F /Q "Build\LauncherCoreNew\Microsoft.Web.WebView2.WPF.dll"
+copy /B /L /Y "Build\LauncherCoreNew\*.dll" "%PublishRootDir%\files\"
 
 if not exist %PublishRootDir%\files\native-x64 (
  mkdir "%PublishRootDir%\files\native-x64"
@@ -35,8 +37,8 @@ dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x
 copy /B /L /Y "Build\PSUBlogRSSFeed\PSUBlogRSSFeed.dll" "%PublishRootDir%\files\plugins\rss\"
 
 REM Remove unncessary files
-del /F /Q "%PublishRootDir%\files\Microsoft.Web.WebView2.WPF.dll"
-del /F /Q "%PublishRootDir%\files\WebView2Loader.dll"
+REM del /F /Q "%PublishRootDir%\files\Microsoft.Web.WebView2.WPF.dll"
+REM del /F /Q "%PublishRootDir%\files\WebView2Loader.dll"
 del /F /Q "%PublishRootDir%\files\PSO2LeaLauncher.dll"
 
 Tools\SHA1Maker.exe "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"

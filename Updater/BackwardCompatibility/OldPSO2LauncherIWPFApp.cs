@@ -5,7 +5,7 @@ using Leayal.SharedInterfaces.Communication;
 
 namespace Leayal.PSO2Launcher.Classes.BackwardCompatibility
 {
-    class OldPSO2LauncherIWPFApp : LauncherProgram
+    public class OldPSO2LauncherIWPFApp : LauncherProgram
     {
         private readonly IWPFApp app;
 

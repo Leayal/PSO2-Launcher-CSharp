@@ -34,11 +34,13 @@ namespace Leayal.PSO2Launcher.Core
         public bool IsLightMode => this.isLightMode;
 
         private readonly Classes.ConfigurationFile config_main;
+        private readonly System.Windows.Forms.Form? dummyForm;
 
-        public App() : this(1) { }
+        public App() : this(1, null) { }
 
-        public App(int bootstrapversion) : base()
+        public App(int bootstrapversion, System.Windows.Forms.Form? dummyForm) : base()
         {
+            this.dummyForm = dummyForm;
             this.BootstrapVersion = bootstrapversion;
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             this.JSTClock = new JSTClockTimer();
@@ -199,6 +201,12 @@ namespace Leayal.PSO2Launcher.Core
 
             if (starttotray)
             {
+                if (this.dummyForm is System.Windows.Forms.Form form)
+                {
+                    form.Hide();
+                    form.ShowInTaskbar = false;
+                    form.Dispose();
+                }
                 mainmenuwindow.ShowActivated = false;
                 mainmenuwindow.ShowInTaskbar = false;
                 mainmenuwindow.Visibility = Visibility.Hidden;
@@ -210,6 +218,22 @@ namespace Leayal.PSO2Launcher.Core
             else
             {
                 mainmenuwindow.Show();
+                mainmenuwindow.FirstShown += this.Mainmenuwindow_FirstShown;
+            }
+        }
+
+        private void Mainmenuwindow_FirstShown(object sender, EventArgs e)
+        {
+            if (sender is Windows.MainMenuWindow window)
+            {
+                window.FirstShown -= this.Mainmenuwindow_FirstShown;
+                window.Activate();
+                if (this.dummyForm is System.Windows.Forms.Form form)
+                {
+                    form.Hide();
+                    form.ShowInTaskbar = false;
+                    form.Dispose();
+                }
             }
         }
 
@@ -302,6 +326,10 @@ namespace Leayal.PSO2Launcher.Core
                                 {
                                     args.Add("--no-self-update-prompt");
                                 }
+                                if (args.Contains("--no-self-update"))
+                                {
+                                    args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase));
+                                }
                                 if (isInTray)
                                 {
                                     if (!args.Contains("--tray"))
@@ -330,6 +358,10 @@ namespace Leayal.PSO2Launcher.Core
                             if (!args.Contains("--no-self-update-prompt"))
                             {
                                 args.Add("--no-self-update-prompt");
+                            }
+                            if (args.Contains("--no-self-update"))
+                            {
+                                args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase));
                             }
                             if (args.Contains("--tray"))
                             {

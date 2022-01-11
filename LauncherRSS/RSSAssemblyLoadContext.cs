@@ -11,19 +11,12 @@ namespace Leayal.PSO2Launcher.RSS
 {
     class RSSAssemblyLoadContext : AssemblyLoadContext
     {
-        private static readonly AssemblyLoadContext defaultone = AssemblyLoadContext.Default;
         private static readonly Assembly currentAsm = Assembly.GetExecutingAssembly();
+        private static readonly AssemblyLoadContext defaultone = AssemblyLoadContext.GetLoadContext(currentAsm);
         private readonly AssemblyDependencyResolver resolver;
         
         public RSSAssemblyLoadContext() : base(null, true)
         {
-            /*
-            string path = currentAsm.Location;
-            if (string.IsNullOrEmpty(path))
-            {
-                path = RuntimeValues.RootDirectory;
-            }
-            */
             this.resolver = new AssemblyDependencyResolver(currentAsm.Location);
         }
 

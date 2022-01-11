@@ -29,25 +29,11 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            SHA1 sha1;
-            byte[] bytes;
-            try
+            using (var sha1 = SHA1.Create())
             {
-                sha1 = new SHA1Managed();
+                var bytes = await sha1.ComputeHashAsync(stream, cancellationToken);
+                return Convert.ToHexString(bytes);
             }
-            catch (InvalidOperationException)
-            {
-                sha1 = SHA1.Create();
-            }
-            try
-            {
-                bytes = await sha1.ComputeHashAsync(stream, cancellationToken);
-            }
-            finally
-            {
-                sha1.Dispose();
-            }
-            return Convert.ToHexString(bytes);
         }
 
         public static string ComputeHashFromFile(string filename)
@@ -65,25 +51,11 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            SHA1 sha1;
-            byte[] bytes;
-            try
+            using (var sha1 = SHA1.Create())
             {
-                sha1 = new SHA1Managed();
+                var bytes = sha1.ComputeHash(stream);
+                return Convert.ToHexString(bytes);
             }
-            catch (InvalidOperationException)
-            {
-                sha1 = SHA1.Create();
-            }
-            try
-            {
-                bytes = sha1.ComputeHash(stream);
-            }
-            finally
-            {
-                sha1.Dispose();
-            }
-            return Convert.ToHexString(bytes);
         }
     }
 }

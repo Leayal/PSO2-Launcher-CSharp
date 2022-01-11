@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Interfaces
 {
     /// <summary>Represent a main program.</summary>
     public interface ILauncherProgram
     {
+        /// <summary>Gets the launcher's model version.</summary>
+        /// <remarks>Primary to determine which features and codeflow to implement.</remarks>
+        static int PSO2LauncherModelVersion { get; } = LauncherController.PSO2LauncherModelVersion;
+
         /// <summary>Gets a value determines whether the program has WPF components.</summary>
         bool HasWPF { get; }
 
@@ -28,5 +29,8 @@ namespace Leayal.PSO2Launcher.Interfaces
         /// <summary>Exit the program and return the exit code.</summary>
         /// <returns>An internet which is exit code.</returns>
         int Exit();
+
+        /// <summary>Occurs after the program exits and unloads.</summary>
+        event EventHandler Exited;
     }
 }

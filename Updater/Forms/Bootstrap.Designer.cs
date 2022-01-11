@@ -1,5 +1,5 @@
 ﻿
-namespace Leayal.PSO2Launcher.Forms
+namespace Leayal.PSO2Launcher.Updater.Forms
 {
     partial class Bootstrap
     {

@@ -1,61 +1,54 @@
 ﻿using System;
 using System.Windows.Forms;
 using Leayal.PSO2Launcher.Interfaces;
-using Leayal.PSO2Launcher.Forms;
+using Leayal.PSO2Launcher.Helper;
+using Leayal.PSO2Launcher.Classes;
+using System.IO;
+using System.Reflection;
 
 namespace Leayal.PSO2Launcher
 {
     class LauncherEntryProgram : LauncherProgram
     {
-        private const int WM_SYSCOMMAND = 0x0112, SC_RESTORE = 0xF120;
+        private ExAssemblyLoadContext? assemblycontext;
+        private LauncherProgram? realprogram;
 
-        private Bootstrap? mainForm;
+        public LauncherProgram? UnderlyingProgram => this.realprogram;
+
         public LauncherEntryProgram() : base(true, false)
         {
-            this.mainForm = null;
+            this.assemblycontext = null;
         }
 
-        protected override int OnExit()
-        {
-            if (this.mainForm != null)
-            {
-                this.mainForm.Close();
-                this.mainForm = null;
-            }
-            return 0;
-        }
+        protected override int OnExit() => this.realprogram?.Exit() ?? 0;
 
         protected override void OnFirstInstance(string[] args)
         {
-            if (this.mainForm == null || this.mainForm is null || this.mainForm.IsDisposed)
+            if (this.assemblycontext == null)
             {
-                this.mainForm = new Bootstrap();
+                try
+                {
+                    var assemblyPath = Path.Combine(Program.RootDirectory, "bin", "BootstrapUpdater.dll");
+                    this.assemblycontext = new ExAssemblyLoadContext(assemblyPath, true, true);
+                    this.assemblycontext.SetProfileOptimizationRoot(Path.Combine(Program.RootDirectory, "data", "optimization"));
+                    this.assemblycontext.StartProfileOptimization(null);
+                    var assembly = this.assemblycontext.FromFileWithNative(assemblyPath);
+                    if (assembly.CreateInstance("Leayal.PSO2Launcher.Updater.LauncherUpdaterProgram") is LauncherProgram realstuff)
+                    {
+                        this.realprogram = realstuff;
+                        realstuff.Run(args);
+                    }
+                }
+                finally
+                {
+                    this.assemblycontext?.Unload();
+                }
             }
-            this.OnInitialized();
-            Application.Run(this.mainForm);
         }
 
         protected override void OnSubsequentInstance(string[] args)
         {
-            if (this.mainForm is Bootstrap mainform && !mainform.IsDisposed)
-            {
-                if (mainform.WindowState == FormWindowState.Minimized)
-                {
-                    var a = Message.Create(mainform.Handle, WM_SYSCOMMAND, new IntPtr(SC_RESTORE), IntPtr.Zero);
-                    mainform.SendNativeMessage(ref a);
-                    // mainform.Show();
-                }
-                mainform.Activate();
-            }
-        }
-
-        private static void MainWindow_FormClosed(object? sender, System.Windows.Forms.FormClosedEventArgs e)
-        {
-            if (sender is Bootstrap form)
-            {
-                form.FormClosed -= MainWindow_FormClosed;
-                form.Dispose();
-            }
+            this.realprogram?.Run(args);
         }
     }
 }

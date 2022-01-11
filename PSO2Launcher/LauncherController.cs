@@ -9,9 +9,15 @@ using Leayal.PSO2Launcher.Classes;
 
 namespace Leayal.PSO2Launcher
 {
-    public class LauncherController : ApplicationController
+    public sealed class LauncherController : ApplicationController
     {
+        public static readonly int PSO2LauncherModelVersion = 5;
         internal const string UniqueName = "pso2lealauncher-v4";
+
+        /// <summary>Gets the path for the executable file that started the application, not including the executable name.</summary>
+        public static string RootDirectory => Program.RootDirectory;
+
+        /// <summary>Get the instance of this class.</summary>
         public readonly static LauncherController Current = new LauncherController(new LauncherEntryProgram());
 
         public static void Initialize(string[] args)
@@ -26,19 +32,38 @@ namespace Leayal.PSO2Launcher
             }
         }
 
-        private ILauncherProgram? currentProgram;
+        private ILauncherProgram currentProgram;
+        private ILauncherProgram? nextProgram;
         private string[]? applicationArgs;
-        private readonly ILauncherProgram entryProgram;
 
         private bool initVistaCtl;
 
-        public LauncherController(ILauncherProgram entryProgram) : base(UniqueName)
+        public readonly ILauncherProgram EntryProgram;
+
+        /// <summary>Gets the current executing program of the launcher.</summary>
+        public ILauncherProgram CurrentProgram
+        {
+            get
+            {
+                if (this.currentProgram is LauncherEntryProgram entryProg)
+                {
+                    return entryProg.UnderlyingProgram ?? entryProg;
+                }
+                else
+                {
+                    return this.currentProgram;
+                }
+            }
+        }
+
+        internal LauncherController(ILauncherProgram entryProgram) : base(UniqueName)
         {
             if (entryProgram is null) throw new ArgumentNullException(nameof(entryProgram));
 
             this.applicationArgs = null;
+            this.nextProgram = entryProgram;
             this.currentProgram = entryProgram;
-            this.entryProgram = entryProgram;
+            this.EntryProgram = entryProgram;
             this.initVistaCtl = false;
         }
 
@@ -47,13 +72,14 @@ namespace Leayal.PSO2Launcher
             this.applicationArgs = args;
             while (true)
             {
-                var current = Interlocked.Exchange(ref this.currentProgram, null);
-                if (current is null)
+                var current = Interlocked.Exchange(ref this.nextProgram, null);
+                if (current == null)
                 {
                     break;
                 }
                 else
                 {
+                    this.currentProgram = current;
                     bool isWindowsProgram = current.HasWinForm || current.HasWPF;
                     if (isWindowsProgram)
                     {
@@ -73,17 +99,12 @@ namespace Leayal.PSO2Launcher
         protected override void OnStartupNextInstance(int processId, string[] args)
         {
             this.applicationArgs = args;
-            this.currentProgram?.Run(this.applicationArgs);
+            this.currentProgram.Run(this.applicationArgs);
         }
 
         protected override void OnRemoteProcessRun(int processId, string[] args)
         {
-            if (args.Length > 1 && string.Equals(args[0], "--elevate-process", StringComparison.OrdinalIgnoreCase) && AdminProcessShim.IsSupport)
-            {
-                AdminProcessShim.Execute(args);
-                return;
-            }
-            else
+            if (this.currentProgram is not LauncherProgram prog || !prog.OnRemoteProcessRun(args))
             {
                 base.OnRemoteProcessRun(processId, args);
             }
@@ -92,7 +113,7 @@ namespace Leayal.PSO2Launcher
         /// <summary>Exit the current running internal program without terminating current process.</summary>
         public void ExitProgram()
         {
-            this.currentProgram?.Exit();
+            this.currentProgram.Exit();
         }
 
         /// <summary>Exit the current running internal program and then close current process.</summary>
@@ -105,7 +126,7 @@ namespace Leayal.PSO2Launcher
         /// <summary>Switch the main application.</summary>
         public void SwitchProgram(ILauncherProgram programBase)
         {
-            this.currentProgram = programBase;
+            this.nextProgram = programBase;
             this.ExitProgram();
         }
 
@@ -113,7 +134,7 @@ namespace Leayal.PSO2Launcher
         /// <returns>A boolean whether the application initialized the reload sequence successfully or not.</returns>
         public void RestartApplication()
         {
-            this.SwitchProgram(this.entryProgram);
+            this.SwitchProgram(this.EntryProgram);
         }
 
         /// <summary>Restart the process. However, applying new arguments for the new process.</summary>

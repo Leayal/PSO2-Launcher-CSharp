@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
+    <ProjectReference Include="..\Updater\Updater.csproj" />
     <ProjectReference Include="..\WordpressRSSFeed\WordpressRSSFeed.csproj" />
   </ItemGroup>
 

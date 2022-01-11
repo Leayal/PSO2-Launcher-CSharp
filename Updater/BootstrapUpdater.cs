@@ -187,7 +187,7 @@ namespace Leayal.PSO2Launcher.Updater
                         }
                         else if (response_ver == 3)
                         {
-                            var ver = typeof(Bootstrap).Assembly.GetName().Version;
+                            var ver = Assembly.GetEntryAssembly()?.GetName()?.Version ?? new Version(3, 0);
                             if (ver.Major < 3)
                             {
                                 if (this.bootstrapversion < 2)
