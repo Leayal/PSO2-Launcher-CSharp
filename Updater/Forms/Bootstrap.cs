@@ -78,6 +78,10 @@ namespace Leayal.PSO2Launcher.Updater.Forms
                             shouldInitLauncherCore = true;
                         }
                     }
+                    else
+                    {
+                        shouldInitLauncherCore = true;
+                    }
                 }
                 else
                 {
