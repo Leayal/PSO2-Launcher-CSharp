@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
     <ProjectReference Include="..\Leayal.Shared\Leayal.Shared.csproj" />
   </ItemGroup>
 

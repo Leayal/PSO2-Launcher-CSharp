@@ -6,7 +6,7 @@ namespace Leayal.PSO2Launcher
 {
     static class Program
     {
-        internal static readonly string RootDirectory = System.Windows.Forms.Application.StartupPath;
+        internal static readonly string RootDirectory = Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) ?? string.Empty;
 
         [STAThread]
         static void Main(string[] args)
@@ -15,6 +15,10 @@ namespace Leayal.PSO2Launcher
             try
             {
                 LauncherController.Initialize(args);
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText(Path.Combine(RootDirectory, "debug_01.txt"), ex.ToString());
             }
             finally
             {

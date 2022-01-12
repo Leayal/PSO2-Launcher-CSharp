@@ -15,7 +15,7 @@ namespace Leayal.PSO2Launcher
 
         public LauncherProgram? UnderlyingProgram => this.realprogram;
 
-        public LauncherEntryProgram() : base(true, false)
+        public LauncherEntryProgram() : base()
         {
             this.assemblycontext = null;
         }
@@ -31,8 +31,11 @@ namespace Leayal.PSO2Launcher
                     var assemblyPath = Path.Combine(Program.RootDirectory, "bin", "BootstrapUpdater.dll");
                     this.assemblycontext = new ExAssemblyLoadContext(assemblyPath, true, true);
                     this.assemblycontext.SetProfileOptimizationRoot(Path.Combine(Program.RootDirectory, "data", "optimization"));
-                    this.assemblycontext.StartProfileOptimization(null);
-                    var assembly = this.assemblycontext.FromFileWithNative(assemblyPath);
+                    this.assemblycontext.StartProfileOptimization("entry");
+                    var b = File.ReadAllBytes(assemblyPath);
+                    var m = new MemoryStream(b, false);
+                    m.Position = 0;
+                    var assembly = this.assemblycontext.LoadFromStream(m);
                     if (assembly.CreateInstance("Leayal.PSO2Launcher.Updater.LauncherUpdaterProgram") is LauncherProgram realstuff)
                     {
                         this.realprogram = realstuff;

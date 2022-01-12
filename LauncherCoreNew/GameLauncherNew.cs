@@ -17,7 +17,9 @@ namespace Leayal.PSO2Launcher.Core
         
         private readonly int _bootstrapversion;
 
-        public GameLauncherNew(int bootstrapversion) : base(true, true)
+        public GameLauncherNew() : this(ILauncherProgram.PSO2LauncherModelVersion) { }
+
+        public GameLauncherNew(int bootstrapversion) : base()
         {
             this._bootstrapversion = bootstrapversion;
 

@@ -5,7 +5,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-// using System.Net.Http;
 using System.Text.Json;
 using System.Windows.Forms;
 using Leayal.SharedInterfaces.Communication;
@@ -21,13 +20,15 @@ namespace Leayal.PSO2Launcher.Updater
 {
     public partial class BootstrapUpdater : IBootstrapUpdater, IBootstrapUpdater_v2
     {
+#nullable disable
+        private readonly HttpClient wc;
         private readonly Assembly ThisAssembly;
         private readonly string AssemblyFilenameOfMySelf;
-        private readonly string[] ReferencedAssemblyFilenameOfMySelf;
-        private readonly AssemblyLoadContext _loadedAssemblies;
+        private readonly IReadOnlyList<string> ReferencedAssemblyFilenameOfMySelf;
+#nullable restore
+        private readonly AssemblyLoadContext? _loadedAssemblies;
         private readonly Architecture _osArch;
 
-        private readonly HttpClient wc;
         private bool recommendBootstrapUpdate, isRuntimeObsoleted; // requireBootstrapUpdate
         
         private readonly int bootstrapversion;
@@ -35,7 +36,6 @@ namespace Leayal.PSO2Launcher.Updater
 
         public BootstrapUpdater() : this(0, null) { }
 
-#nullable enable
         private readonly Form? bootstrapForm;
 
         public BootstrapUpdater(int bootstrapversion, AssemblyLoadContext? loadedAssemblies) : this(bootstrapversion, loadedAssemblies, null) { }
@@ -85,26 +85,43 @@ namespace Leayal.PSO2Launcher.Updater
                     : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (informResult != DialogResult.Yes)
                 {
-                    Application.Exit();
-                    // mainwindow.Close();
+                    if (mainWindow != null)
+                    {
+                        mainWindow.Close();
+                    }
+                    else
+                    {
+                        Application.Exit();
+                    }
                     return;
                 }
             }
 
             this.ThisAssembly = Assembly.GetExecutingAssembly();
-            this.AssemblyFilenameOfMySelf = $"{this.ThisAssembly.GetName().Name}.dll";
+            this.AssemblyFilenameOfMySelf = this.ThisAssembly.GetName().Name + ".dll";
             var referenced = this.ThisAssembly.GetReferencedAssemblies();
-            this.ReferencedAssemblyFilenameOfMySelf = new string[referenced.Length];
-            for (int i = 0; i < referenced.Length; i++)
+            if (referenced != null)
             {
-                this.ReferencedAssemblyFilenameOfMySelf[i] = referenced[i].Name;
+                var l_referenced = new List<string>(referenced.Length);
+                for (int i = 0; i < referenced.Length; i++)
+                {
+                    if (referenced[i] != null && referenced[i].Name is string v && !string.IsNullOrEmpty(v))
+                    {
+                        l_referenced.Add(v + ".dll");
+                    }
+                }
+                this.ReferencedAssemblyFilenameOfMySelf = l_referenced;
+            }
+            else
+            {
+                this.ReferencedAssemblyFilenameOfMySelf = Array.Empty<string>();
             }
 
             this.failToCheck = false;
             this.bootstrapversion = bootstrapversion;
             // this.requireBootstrapUpdate = false;
             this.recommendBootstrapUpdate = false;
-            this._loadedAssemblies = loadedAssemblies;
+            this._loadedAssemblies = loadedAssemblies ?? AssemblyLoadContext.GetLoadContext(this.ThisAssembly);
             this.wc = new HttpClient(new SocketsHttpHandler()
             {
                 Proxy = null,
@@ -120,12 +137,11 @@ namespace Leayal.PSO2Launcher.Updater
             });
             this.wc.DefaultRequestHeaders.Add("User-Agent", "PSO2LeaLauncher");
         }
-#nullable restore
 
-        public event EventHandler<FileDownloadedEventArgs> FileDownloaded;
-        public event Action<long> ProgressBarValueChanged;
-        public event EventHandler<StringEventArgs> StepChanged;
-        public event Action<long> ProgressBarMaximumChanged;
+        public event EventHandler<FileDownloadedEventArgs>? FileDownloaded;
+        public event Action<long>? ProgressBarValueChanged;
+        public event EventHandler<StringEventArgs>? StepChanged;
+        public event Action<long>? ProgressBarMaximumChanged;
 
         public Task<BootstrapUpdater_CheckForUpdates> CheckForUpdatesAsync(string rootDirectory, string entryExecutableName)
         {
@@ -334,7 +350,10 @@ namespace Leayal.PSO2Launcher.Updater
                                     response.EnsureSuccessStatusCode();
                                     using (var remoteStream = response.Content.ReadAsStream())
                                     {
-                                        Directory.CreateDirectory(Path.GetDirectoryName(tmpFilename));
+                                        if (Path.GetDirectoryName(tmpFilename) is string dirPath && !string.IsNullOrEmpty(dirPath))
+                                        {
+                                            Directory.CreateDirectory(dirPath);
+                                        }
                                         using (var localStream = File.Create(tmpFilename))
                                         {
                                             long totalbyte = itemv2.FileSize;
@@ -382,8 +401,7 @@ namespace Leayal.PSO2Launcher.Updater
                                 shouldRestart = true;
                                 if (itemv2.IsEntry)
                                 {
-                                    var entryAsm = Assembly.GetEntryAssembly();
-                                    var location = entryAsm.Location;
+                                    var location = Assembly.GetEntryAssembly()?.Location ?? string.Empty;
                                     if (!string.IsNullOrEmpty(location))
                                     {
                                         location = Path.GetFullPath(location);

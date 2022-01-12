@@ -112,7 +112,7 @@ namespace Leayal.PSO2Launcher.Updater
                                 shouldReload = true;
                             }
                         }
-                        for (int i = 0; i < this.ReferencedAssemblyFilenameOfMySelf.Length; i++)
+                        for (int i = 0; i < this.ReferencedAssemblyFilenameOfMySelf.Count; i++)
                         {
                             var asm_name = this.ReferencedAssemblyFilenameOfMySelf[i];
                             if (!string.IsNullOrEmpty(asm_name) && prop_files.TryGetProperty(asm_name, out var prop_depend) && prop_depend.ValueKind == JsonValueKind.Object)

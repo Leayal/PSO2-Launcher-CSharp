@@ -17,7 +17,7 @@ namespace Leayal.PSO2Launcher.Updater
 
         private readonly ApplicationContext bootstrapContext;
 
-        public LauncherUpdaterProgram() : base(true, false)
+        public LauncherUpdaterProgram() : base()
         {
             this.bootstrapContext = new ApplicationContext(new Bootstrap());
         }

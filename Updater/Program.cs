@@ -4,10 +4,9 @@ using Leayal.PSO2Launcher.Interfaces;
 using Leayal.SharedInterfaces.Communication;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -22,6 +21,8 @@ namespace Leayal.PSO2Launcher.Updater
         public static object? TryLoadLauncherAssembly(string asmPath)
         {
             var newContext = new ExAssemblyLoadContext(asmPath, true);
+            newContext.SetProfileOptimizationRoot(Path.Combine(LauncherController.RootDirectory, "data", "optimization"));
+            newContext.StartProfileOptimization("launchercore");
             try
             {
                 var asm_launcher = newContext.FromFileWithNative(asmPath);

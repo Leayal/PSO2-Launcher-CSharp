@@ -3,7 +3,6 @@
     "PSO2Launcher": {
       "commandName": "Executable",
       "executablePath": "$(SolutionDir)Test\\PSO2LeaLauncher.exe",
-      "commandLineArgs": "--no-self-update",
       "workingDirectory": "$(SolutionDir)Test"
     }
   }

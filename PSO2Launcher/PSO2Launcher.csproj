@@ -17,6 +17,7 @@
     <Authors>Dramiel Leayal</Authors>
     <Description>PSO2 Launcher for PSO2: NGS JP</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <BaseOutputPath></BaseOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

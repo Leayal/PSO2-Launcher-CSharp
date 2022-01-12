@@ -50,8 +50,7 @@ namespace Leayal.PSO2Launcher.Updater.Forms
 
         private async void Bootstrap_Shown(object sender, EventArgs e)
         {
-            string exename, rootDirectory = LauncherController.RootDirectory, fullFilename = Application.ExecutablePath;
-            exename = Path.GetFileName(fullFilename);
+            string rootDirectory = LauncherController.RootDirectory, fullFilename = Application.ExecutablePath, exename = Path.GetFileName(fullFilename);
 
             bool shouldInitLauncherCore = false;
 

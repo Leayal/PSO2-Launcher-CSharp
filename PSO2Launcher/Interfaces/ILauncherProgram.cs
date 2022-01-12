@@ -10,12 +10,6 @@ namespace Leayal.PSO2Launcher.Interfaces
         /// <remarks>Primary to determine which features and codeflow to implement.</remarks>
         static int PSO2LauncherModelVersion { get; } = LauncherController.PSO2LauncherModelVersion;
 
-        /// <summary>Gets a value determines whether the program has WPF components.</summary>
-        bool HasWPF { get; }
-
-        /// <summary>Gets a value determines whether the program has Windows Forms components.</summary>
-        bool HasWinForm { get; }
-
         /// <summary>Occurs when the program is loaded but it hasn't run yet.</summary>
         event EventHandler Initialized;
 

@@ -9,7 +9,7 @@ namespace Leayal.PSO2Launcher.Classes.BackwardCompatibility
     {
         private readonly IWPFApp app;
 
-        public OldPSO2LauncherIWPFApp(IWPFApp app) : base(true, true) 
+        public OldPSO2LauncherIWPFApp(IWPFApp app) : base()
         {
             this.app = app;
         }

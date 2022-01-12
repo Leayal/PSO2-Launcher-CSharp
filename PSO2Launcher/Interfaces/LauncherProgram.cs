@@ -10,19 +10,12 @@ namespace Leayal.PSO2Launcher.Interfaces
     /// <summary>A base implementation which can be extended to form a single-instance main program.</summary>
     public abstract class LauncherProgram : ILauncherProgram
     {
-        private readonly bool haswpf, haswinform;
         private int hasRunFirstTime;
-
-        public bool HasWPF => this.haswpf;
-
-        public bool HasWinForm => this.haswinform;
 
         public event EventHandler? Initialized, Exited;
 
-        protected LauncherProgram(bool hasWinform, bool hasWPF)
+        protected LauncherProgram()
         {
-            this.haswinform = hasWinform;
-            this.haswpf = hasWPF;
             this.hasRunFirstTime = 0;
         }
 
