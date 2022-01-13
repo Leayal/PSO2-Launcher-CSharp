@@ -214,14 +214,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 i_am_lea = "Dramiel Leayal",
                 FollowingLline = ". The source code can be found on ",
                 i_am_here = "Github";
-            var str = StartingLine + i_am_lea + FollowingLline + i_am_here + '.';
-            var placements = new Dictionary<RelativeLogPlacement, Uri>(2)
+            // StartingLine + i_am_lea + FollowingLline + i_am_here + '.';
+            this.CreateNewParagraphFormatHyperlinksInLog(string.Create<object>(StartingLine.Length + i_am_lea.Length + FollowingLline.Length + i_am_here.Length + 1, null, (c, _) =>
+            {
+                var s = c;
+                StartingLine.CopyTo(s);
+                s = s.Slice(StartingLine.Length);
+                i_am_lea.CopyTo(s);
+                s = s.Slice(i_am_lea.Length);
+                FollowingLline.CopyTo(s);
+                s = s.Slice(FollowingLline.Length);
+                i_am_here.CopyTo(s);
+                s = s.Slice(i_am_here.Length);
+                // c[c.Length - 1] = '.';
+                s[0] = '.';
+            }), new Dictionary<RelativeLogPlacement, Uri>(2)
             {
                 { new RelativeLogPlacement(StartingLine.Length, i_am_lea.Length), StaticResources.Url_ShowAuthor },
                 { new RelativeLogPlacement(StartingLine.Length + i_am_lea.Length + FollowingLline.Length, i_am_here.Length), StaticResources.Url_ShowSourceCodeGithub }
-            };
-            this.CreateNewParagraphFormatHyperlinksInLog(str, placements, false);
-            // this.CreateNewParagraphInLog("[Lea] Welcome to PSO2 Launcher, which was made by Dramiel Leayal", false);
+            }, false);
+
+            if (App.Current.BootstrapVersion < 4)
+            {
+                const string BootstrapVersionReminder = "[Launcher Updater] You are using an older version of the Launcher's bootstrap. It is recommended to update it.",
+                    DowlodEtNow = "(Download it here)";
+                this.CreateNewParagraphFormatHyperlinksInLog(string.Create<object>(BootstrapVersionReminder.Length + DowlodEtNow.Length + 1, null, (c, _) =>
+                {
+                    var s = c;
+                    BootstrapVersionReminder.CopyTo(s);
+                    s = s.Slice(BootstrapVersionReminder.Length);
+                    s[0] = ' ';
+                    s = s.Slice(1);
+                    DowlodEtNow.CopyTo(s);
+                }), new Dictionary<RelativeLogPlacement, Uri>(1)
+                {
+                    { new RelativeLogPlacement(BootstrapVersionReminder.Length + 1, DowlodEtNow.Length), StaticResources.Url_ShowLatestGithubRelease },
+                });
+            }
 
             this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
         }

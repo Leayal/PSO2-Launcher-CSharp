@@ -448,6 +448,17 @@ namespace Leayal.PSO2Launcher.Core
                         Core.Windows.Prompt_Generic.ShowError(this.MainWindow, ex);
                     }
                 }
+                else if (string.Equals(urlstr, StaticResources.Url_ShowLatestGithubRelease.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp/releases/latest");
+                        }
+                        catch { }
+                    });
+                }
                 else if (urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     var dialogguide = Guid.Parse(urlstr.AsSpan(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri.Length));
