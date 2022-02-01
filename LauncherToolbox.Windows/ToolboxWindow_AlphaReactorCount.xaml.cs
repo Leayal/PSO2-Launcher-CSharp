@@ -294,23 +294,36 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         this.RefreshDate();
                     }
+                    if (!long.TryParse(datas[3].Span, out var playeridNumber))
+                    {
+                        playeridNumber = long.Parse(datas[datas.Count - 3].Span);
+                    }
                     if (dateonly_logtime_jst == dateonly_currenttime_jst)
                     {
-                        this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
+                        this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
                     }
                     else
                     {
-                        this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
+                        this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
                     }
                 }
                 else
                 {
-                    this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
+                    if (!long.TryParse(datas[3].Span, out var playeridNumber))
+                    {
+                        playeridNumber = long.Parse(datas[datas.Count - 3].Span);
+                    }
+                    this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
                 }
             }
-            else
+            else if (MemoryExtensions.Equals(datas[2].Span, "[DisplayToShop-SetValue]", StringComparison.OrdinalIgnoreCase))
             {
-                this.AddOrModifyCharacterData(long.Parse(datas[3].Span), new string(datas[4].Span));
+                // return;
+                // This has no character/account information in the line. So skip it.
+            }
+            else if (long.TryParse(datas[datas.Count - 3].Span, out var playerIdNumber))
+            {
+                this.AddOrModifyCharacterData(playerIdNumber, new string(datas[4].Span));
             }
         }
 
@@ -364,8 +377,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        /// <summary>Load log file.</summary>
-        /// <remarks>Don't use it directly.</remarks>
         private void LoadLog(string filepath)
         {
             this.logreader = new PSO2LogAsyncListener(filepath);
