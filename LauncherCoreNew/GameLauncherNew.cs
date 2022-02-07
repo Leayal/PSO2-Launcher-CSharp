@@ -98,7 +98,11 @@ namespace Leayal.PSO2Launcher.Core
             {
                 if (context.IsCollectible)
                 {
-                    context.Unload();
+                    try
+                    {
+                        context.Unload();
+                    }
+                    catch { }
                 }
             }
         }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using Leayal.Shared.Windows;
+using System.Collections.ObjectModel;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -12,11 +13,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class GameClientUpdateResultLogDialog : MetroWindowEx
     {
-        private const string Text_NoSuccess = "(No successfully downloaded files in the list)",
-            Text_NoFailures = "(No download failures in the list)",
-            Text_NoCancelled = "(No download cancellation in the list)",
-            Text_StatusCancelled = "Operation cancelled",
-            Text_StatusCompleted = "Operation completed";
+        private const string Text_StatusCancelled = "Operation cancelled", Text_StatusCompleted = "Operation completed";
 
         public Guid ResultGuid { get; }
 
@@ -26,77 +23,52 @@ namespace Leayal.PSO2Launcher.Core.Windows
             InitializeComponent();
             this.WindowCloseIsDefaultedCancel = true;
 
-            RowDefinitionCollection row_success = this.ListOfSuccessItems.RowDefinitions,
-                row_failure = this.ListOfFailureItems.RowDefinitions,
-                row_cancel = this.ListOfCancelledItems.RowDefinitions;
-            UIElementCollection items_success = this.ListOfSuccessItems.Children,
-                items_failure = this.ListOfFailureItems.Children,
-                items_cancel = this.ListOfCancelledItems.Children;
+            Collection<PatchListItemLogData> obCollection_success = new(), obCollection_failure = new(), obCollection_cancelled = new();
+
             int index_success = 0, index_failure = 0, index_cancelled = 0;
 
             foreach (var data in datalist)
             {
-                var item = data.Key;
-                if (data.Value.HasValue)
+                var val = data.Value;
+                if (val.HasValue)
                 {
-                    if (data.Value.Value)
+                    if (val.Value)
                     {
-                        row_success.Add(new RowDefinition() { Height = GridLength.Auto });
-                        var tbox = new TextBox() { BorderThickness = new Thickness(0), BorderBrush = null, Text = item.Name, IsReadOnly = true, IsReadOnlyCaretVisible = true, IsUndoEnabled = false, IsInactiveSelectionHighlightEnabled = false, TextAlignment = TextAlignment.Left, HorizontalAlignment = HorizontalAlignment.Left };
-                        Grid.SetRow(tbox, index_success);
-                        items_success.Add(tbox);
-                        var tblock = new TextBlock() { Text = Shared.NumericHelper.ToHumanReadableFileSize(in item.Size), TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-                        Grid.SetRow(tblock, index_success);
-                        Grid.SetColumn(tblock, 1);
-                        items_success.Add(tblock);
-                        index_success++;
+                        obCollection_success.Add(data.Key);
                     }
                     else
                     {
-                        row_failure.Add(new RowDefinition() { Height = GridLength.Auto });
-                        var tbox = new TextBox() { BorderThickness = new Thickness(0), BorderBrush = null, Text = item.Name, IsReadOnly = true, IsReadOnlyCaretVisible = true, IsUndoEnabled = false, IsInactiveSelectionHighlightEnabled = false, TextAlignment = TextAlignment.Left, HorizontalAlignment = HorizontalAlignment.Left };
-                        Grid.SetRow(tbox, index_failure);
-                        items_failure.Add(tbox);
-                        var tblock = new TextBlock() { Text = Shared.NumericHelper.ToHumanReadableFileSize(in item.Size), TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-                        Grid.SetRow(tblock, index_failure);
-                        Grid.SetColumn(tblock, 1);
-                        items_failure.Add(tblock);
-                        index_failure++;
+                        obCollection_failure.Add(data.Key);
                     }
                 }
                 else
                 {
-                    row_cancel.Add(new RowDefinition() { Height = GridLength.Auto });
-                    var tbox = new TextBox() { BorderThickness = new Thickness(0), BorderBrush = null, Text = item.Name, IsReadOnly = true, IsReadOnlyCaretVisible = true, IsUndoEnabled = false, IsInactiveSelectionHighlightEnabled = false, TextAlignment = TextAlignment.Left, HorizontalAlignment = HorizontalAlignment.Left };
-                    Grid.SetRow(tbox, index_cancelled);
-                    items_cancel.Add(tbox);
-                    var tblock = new TextBlock() { Text = Shared.NumericHelper.ToHumanReadableFileSize(in item.Size), TextAlignment = TextAlignment.Right, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-                    Grid.SetRow(tblock, index_cancelled);
-                    Grid.SetColumn(tblock, 1);
-                    items_cancel.Add(tblock);
-                    index_cancelled++;
+                    obCollection_cancelled.Add(data.Key);
                 }
             }
-            if (index_success == 0)
+            if (obCollection_success.Count == 0)
             {
-                row_success.Add(new RowDefinition());
-                var tblock = new TextBlock() { Text = Text_NoSuccess, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumnSpan(tblock, 2);
-                items_success.Add(tblock);
+                this.ListOfSuccessItems.ItemsSource = null;
             }
-            if (index_failure == 0)
+            else
             {
-                row_failure.Add(new RowDefinition());
-                var tblock = new TextBlock() { Text = Text_NoFailures, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumnSpan(tblock, 2);
-                items_failure.Add(tblock);
+                this.ListOfSuccessItems.ItemsSource = obCollection_success;
             }
-            if (index_cancelled == 0)
+            if (obCollection_failure.Count == 0)
             {
-                row_cancel.Add(new RowDefinition());
-                var tblock = new TextBlock() { Text = Text_NoCancelled, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumnSpan(tblock, 2);
-                items_cancel.Add(tblock);
+                this.ListOfFailureItems.ItemsSource = null;
+            }
+            else
+            {
+                this.ListOfFailureItems.ItemsSource = obCollection_failure;
+            }
+            if (obCollection_cancelled.Count == 0)
+            {
+                this.ListOfCancelledItems.ItemsSource = null;
+            }
+            else
+            {
+                this.ListOfCancelledItems.ItemsSource = obCollection_cancelled;
             }
 
             this.OverviewPanel.DataContext = new Eyy()
@@ -132,14 +104,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        public readonly struct PatchListItemLogData
+        public class PatchListItemLogData
         {
-            public readonly long Size;
-            public readonly string Name;
+            public string Size { get; }
+            public string Name { get; }
 
             public PatchListItemLogData(string name, long size)
             {
-                this.Size = size;
+                this.Size = Leayal.Shared.NumericHelper.ToHumanReadableFileSize(in size);
                 this.Name = name;
             }
         }

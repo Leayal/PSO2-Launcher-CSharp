@@ -76,22 +76,36 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Filename" />
-                    <TextBlock Grid.Column="1" Text="Filesize" />
-                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
-                        <Grid x:Name="ListOfSuccessItems">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                        </Grid>
-                    </ScrollViewer>
+                    <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              x:Name="ListOfSuccessItems">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding Name,Mode=OneTime}" />
+                                    <Run Text="(" />
+                                    <Run Text="{Binding Size,Mode=OneTime}" />
+                                    <Run Text=")" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="(No successfully downloaded files in the list)" VerticalAlignment="Center" TextAlignment="Center" x:Name="ListOfSuccessItemsLabel">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=ListOfSuccessItems, Path=ItemsSource, Mode=OneWay}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </mah:MetroTabItem>
             <mah:MetroTabItem>
@@ -103,22 +117,36 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Filename" />
-                    <TextBlock Grid.Column="1" Text="Filesize" />
-                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
-                        <Grid x:Name="ListOfFailureItems">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                        </Grid>
-                    </ScrollViewer>
+                    <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              x:Name="ListOfFailureItems">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding Name,Mode=OneTime}" />
+                                    <Run Text="(" />
+                                    <Run Text="{Binding Size,Mode=OneTime}" />
+                                    <Run Text=")" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="(No download failures in the list)" VerticalAlignment="Center" TextAlignment="Center" x:Name="ListOfFailureItemsLabel">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=ListOfFailureItems, Path=ItemsSource, Mode=OneWay}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </mah:MetroTabItem>
             <mah:MetroTabItem>
@@ -130,22 +158,36 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Filename" />
-                    <TextBlock Grid.Column="1" Text="Filesize" />
-                    <ScrollViewer CanContentScroll="True" Margin="0,1,0,0" Grid.Row="1" Grid.ColumnSpan="2" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Pixel">
-                        <Grid x:Name="ListOfCancelledItems">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                        </Grid>
-                    </ScrollViewer>
+                    <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              x:Name="ListOfCancelledItems">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding Name,Mode=OneTime}" />
+                                    <Run Text="(" />
+                                    <Run Text="{Binding Size,Mode=OneTime}" />
+                                    <Run Text=")" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="(No download cancellation in the list)" VerticalAlignment="Center" TextAlignment="Center" x:Name="ListOfCancelledItemsLabel">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ElementName=ListOfCancelledItems, Path=ItemsSource, Mode=OneWay}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroAnimatedTabControl>

@@ -433,7 +433,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         //private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList)
-        private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_results_list)
+        private async void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_results_list)
         {
             long totalsizedownloaded = 0L;
             
@@ -460,9 +460,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var totalsizedownloadedtext = Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
 
             Guid dialogguid;
+            Uri crafted;
             if (requiredCount == 0)
             {
                 dialogguid = Guid.Empty;
+                crafted = null;
             }
             else
             {
@@ -471,27 +473,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     dictionary.Add(new GameClientUpdateResultLogDialog.PatchListItemLogData(itemrecord.GetFilenameWithoutAffix(), itemrecord.FileSize), value);
                 }
-                dialogguid = (Guid)this.Dispatcher.Invoke(new Func<bool, int, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>, Guid>((_cancelled, patchlist_count, _scannedinfo) =>
+                dialogguid = Guid.NewGuid();
+                if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out crafted))
                 {
-                    var factory = new GameClientUpdateResultLogDialogFactory(in _cancelled, in patchlist_count, _scannedinfo);
-                    var result = factory.Id;
-                    this.dialogReferenceByUUID.Add(result, factory);
-                    return result;
-                }), new object[] { isCancelled, patchlist.Count, (IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>)dictionary });
-            }
-
-            Uri crafted;
-            if (dialogguid != Guid.Empty)
-            {
-                if (!Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out crafted))
+                    var factory = new GameClientUpdateResultLogDialogFactory(in dialogguid, in isCancelled, patchlist.Count, (IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>)dictionary);
+                    this.dialogReferenceByUUID.Add(dialogguid, factory);
+                }
+                else
                 {
-                    this.Dispatcher.BeginInvoke(new Action<Guid>(id => this.dialogReferenceByUUID.Remove(id)), new object[] { dialogguid });
+                    dialogguid = Guid.Empty;
                     crafted = null;
                 }
-            }
-            else
-            {
-                crafted = null;
             }
 
             string logtext;
@@ -554,7 +546,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                tab.Dispatcher.InvokeAsync(tab.ResetAllSubDownloadState);
+                await tab.Dispatcher.InvokeAsync(tab.ResetAllSubDownloadState);
             }
         }
 
@@ -565,12 +557,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             private readonly bool _cancel;
             private readonly int list_count;
 
-            public GameClientUpdateResultLogDialogFactory(in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
+            public GameClientUpdateResultLogDialogFactory(in Guid id, in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
             {
                 this._cancel = iscancelled;
                 this.list_count = patchlist_count;
                 this.items = data;
-                this.Id = Guid.NewGuid();
+                this.Id = id;
             }
 
             public Window CreateNew() => new GameClientUpdateResultLogDialog(in this.Id, in this._cancel, in this.list_count, items);
