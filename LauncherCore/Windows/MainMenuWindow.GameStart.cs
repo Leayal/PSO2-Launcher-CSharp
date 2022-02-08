@@ -391,7 +391,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 var checkUpdateBeforeLaunch = this.config_main.CheckForPSO2GameUpdateBeforeLaunchingGame;
 
-                                void completed(object sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results)
+                                void completed(object sender, string dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results)
                                 {
                                     this.pso2Updater.OperationCompleted -= completed;
                                     this.Dispatcher.TryInvoke(delegate

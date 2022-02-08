@@ -147,7 +147,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             finally
             {
-                this.OperationCompleted?.Invoke(this, cancellationToken.IsCancellationRequested, patchlist, results);
+                this.OperationCompleted?.Invoke(this, dir_pso2bin, cancellationToken.IsCancellationRequested, patchlist, results);
             }
         }
 
@@ -186,7 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void DownloadQueueAddedHandler(GameClientUpdater sender);
         public delegate void FileCheckReportHandler(GameClientUpdater sender, in int current);
         // public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList);
-        public delegate void OperationCompletedHandler(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list);
+        public delegate void OperationCompletedHandler(GameClientUpdater sender, string pso2dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list);
         public delegate void OperationBeginHandler(GameClientUpdater sender, int concurrentlevel);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 

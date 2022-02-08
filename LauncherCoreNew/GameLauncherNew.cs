@@ -93,18 +93,6 @@ namespace Leayal.PSO2Launcher.Core
                     }
                 }
             }
-
-            if (AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()) is AssemblyLoadContext context)
-            {
-                if (context.IsCollectible)
-                {
-                    try
-                    {
-                        context.Unload();
-                    }
-                    catch { }
-                }
-            }
         }
 
         protected override void OnSubsequentInstance(string[] args)

@@ -81,7 +81,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
-                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}" SelectionMode="Extended"
                               x:Name="ListOfSuccessItems">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -122,7 +122,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
-                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}"  SelectionMode="Extended"
                               x:Name="ListOfFailureItems">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
@@ -163,7 +163,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <ListBox Margin="0,1,0,0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
-                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}"
+                              mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}"  SelectionMode="Extended"
                               x:Name="ListOfCancelledItems">
                         <ListBox.ItemTemplate>
                             <DataTemplate>

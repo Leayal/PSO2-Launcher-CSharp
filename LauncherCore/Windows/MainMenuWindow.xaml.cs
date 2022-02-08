@@ -28,10 +28,28 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
-#nullable enable
-        private static readonly Lazy<BitmapSource?> lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
-            lazybg_light = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
-#nullable restore
+        private static readonly Lazy<BitmapSource> lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
+            lazybg_light = new Lazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
+        private static readonly Lazy<Assembly> asm_WebViewCompat = new Lazy<Assembly>(() =>
+        {
+            var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
+            if (File.Exists(filepath))
+            {
+                var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+                if (context == null)
+                {
+                    return Assembly.LoadFrom(filepath);
+                }
+                else
+                {
+                    return context.LoadFromNativeImagePath(filepath, filepath);
+                }
+            }
+            else
+            {
+                return null;
+            }
+        });
 
         // UseClock
         public static readonly DependencyProperty UseClockProperty = DependencyProperty.Register("UseClock", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
@@ -416,46 +434,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 e.Handled = true;
             }
             // this.RemoveLogicalChild(btn);
-
+            if (this.Dispatcher.HasShutdownStarted || this.Dispatcher.HasShutdownFinished) return;
             try
             {
-                var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
-                var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-                Assembly asm;
-                if (context == null)
+                var asm = asm_WebViewCompat.Value;
+                if (asm == null)
                 {
-                    asm = Assembly.LoadFrom(filepath);
+                    Prompt_Generic.Show(this, "Missing file 'WebViewCompat.dll' in 'bin' directory.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 else
                 {
-                    asm = context.LoadFromNativeImagePath(filepath, filepath);
-                }
-                var obj = asm.CreateInstance("Leayal.WebViewCompat.WebViewCompatControl", false, BindingFlags.CreateInstance, null, new object[] { "PSO2Launcher", this.config_main.UseWebView2IfAvailable }, null, null);
-                if (obj is IWebViewCompatControl webview)
-                {
-                    webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
-                    this.LauncherWebView.Child = (UIElement)obj;
-                    this.isWebBrowserLoaded = true;
-                    if (webview.IsUsingWebView2)
+                    var obj = asm.CreateInstance("Leayal.WebViewCompat.WebViewCompatControl", false, BindingFlags.CreateInstance, null, new object[] { "PSO2Launcher", this.config_main.UseWebView2IfAvailable }, null, null);
+                    if (obj is IWebViewCompatControl webview)
                     {
-                        this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                        webview.BrowserInitialized += this.WebViewCompatControl_Initialized;
+                        this.LauncherWebView.Child = (UIElement)obj;
+                        this.isWebBrowserLoaded = true;
+                        if (webview.IsUsingWebView2)
+                        {
+                            this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                        }
+                        else
+                        {
+                            this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                        }
                     }
                     else
                     {
-                        this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                        if (obj is IAsyncDisposable asyncdisposable)
+                        {
+                            await asyncdisposable.DisposeAsync();
+                        }
+                        else if (obj is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                        Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                }
-                else
-                {
-                    if (obj is IAsyncDisposable asyncdisposable)
-                    {
-                        await asyncdisposable.DisposeAsync();
-                    }
-                    else if (obj is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
-                    Prompt_Generic.Show(this, "Unknown error occurred when trying to load Web View.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (TypeLoadException ex)

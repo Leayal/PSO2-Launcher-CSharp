@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using Leayal.Shared.Windows;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -14,17 +16,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
     public partial class GameClientUpdateResultLogDialog : MetroWindowEx
     {
         private const string Text_StatusCancelled = "Operation cancelled", Text_StatusCompleted = "Operation completed";
+        private readonly string _pso2dir;
 
         public Guid ResultGuid { get; }
 
-        public GameClientUpdateResultLogDialog(in Guid id, in bool cancel, in int patchlist_count, IReadOnlyDictionary<PatchListItemLogData, bool?> datalist) : base()
+        public GameClientUpdateResultLogDialog(string pso2dir, in Guid id, in bool cancel, in int patchlist_count, IReadOnlyDictionary<PatchListItemLogData, bool?> datalist) : base()
         {
+            this._pso2dir = pso2dir;
             this.ResultGuid = id;
             InitializeComponent();
             this.WindowCloseIsDefaultedCancel = true;
 
             Collection<PatchListItemLogData> obCollection_success = new(), obCollection_failure = new(), obCollection_cancelled = new();
-
             int index_success = 0, index_failure = 0, index_cancelled = 0;
 
             foreach (var data in datalist)
@@ -53,6 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 this.ListOfSuccessItems.ItemsSource = obCollection_success;
+                this.CreateCM(this.ListOfSuccessItems);
             }
             if (obCollection_failure.Count == 0)
             {
@@ -61,6 +65,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 this.ListOfFailureItems.ItemsSource = obCollection_failure;
+                this.CreateCM(this.ListOfFailureItems);
             }
             if (obCollection_cancelled.Count == 0)
             {
@@ -69,6 +74,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 this.ListOfCancelledItems.ItemsSource = obCollection_cancelled;
+                this.CreateCM(this.ListOfCancelledItems);
             }
 
             this.OverviewPanel.DataContext = new Eyy()
@@ -80,6 +86,273 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 CountFailure = index_failure,
                 CountCancelled = index_cancelled
             };
+        }
+
+        private void CreateCM(ListBox ctrl)
+        {
+            ctrl.ContextMenuOpening += Ctrl_ContextMenuOpening;
+            var result = new ContextMenu();
+
+            var item = new MenuItem() { Header = new TextBlock() { Text = "Copy relative path" }, Tag = ctrl };
+            item.Click += this.ItemCopyRelativePath_Click;
+            result.Items.Add(item);
+
+            item = new MenuItem() { Header = new TextBlock() { Text = "Copy full path" }, Tag = ctrl };
+            item.Click += this.ItemCopyFullPath_Click;
+            result.Items.Add(item);
+
+            result.Items.Add(new Separator());
+
+            item = new MenuItem() { Header = new TextBlock() { Text = "Copy file" }, Tag = ctrl };
+            item.Click += this.ItemFileCopy_Click;
+            result.Items.Add(item);
+
+            item = new MenuItem() { Header = new TextBlock() { Text = "Cut file" }, Tag = ctrl };
+            item.Click += this.ItemFileCut_Click;
+            result.Items.Add(item);
+
+            result.Items.Add(new Separator());
+
+            item = new MenuItem() { Header = new TextBlock() { Text = "Show file in file explorer" }, Tag = ctrl };
+            item.Click += this.ItemShowItem_Click;
+            result.Items.Add(item);
+
+            ctrl.ContextMenu = result;
+        }
+
+        private void ItemCopyRelativePath_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is ListBox listbox)
+            {
+                var items = listbox.SelectedItems;
+                switch (items.Count)
+                {
+                    case 0:
+                        return;
+                    case 1:
+                        if (items[0] is PatchListItemLogData item)
+                        {
+                            Clipboard.Clear();
+                            Clipboard.SetText(item.Name, TextDataFormat.UnicodeText);
+                            Clipboard.Flush();
+                        }
+                        return;
+                    default:
+                        var sb = new StringBuilder();
+                        bool first = true;
+                        foreach (var _item in items)
+                        {
+                            if (_item is PatchListItemLogData __item)
+                            {
+                                if (first)
+                                {
+                                    first = false;
+                                }
+                                else
+                                {
+                                    sb.AppendLine();
+                                }
+                                sb.Append(__item.Name);
+                            }
+                        }
+                        Clipboard.Clear();
+                        Clipboard.SetText(sb.ToString(), TextDataFormat.UnicodeText);
+                        Clipboard.Flush();
+                        return;
+                }
+            }
+        }
+
+        private void ItemCopyFullPath_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is ListBox listbox)
+            {
+                var items = listbox.SelectedItems;
+                switch (items.Count)
+                {
+                    case 0:
+                        return;
+                    case 1:
+                        if (items[0] is PatchListItemLogData item)
+                        {
+                            Clipboard.Clear();
+                            Clipboard.SetText(Path.GetFullPath(item.Name, this._pso2dir), TextDataFormat.UnicodeText);
+                            Clipboard.Flush();
+                        }
+                        return;
+                    default:
+                        var sb = new StringBuilder();
+                        bool first = true;
+                        foreach (var _item in items)
+                        {
+                            if (_item is PatchListItemLogData __item)
+                            {
+                                if (first)
+                                {
+                                    first = false;
+                                }
+                                else
+                                {
+                                    sb.AppendLine();
+                                }
+                                sb.Append(Path.GetFullPath(__item.Name, this._pso2dir));
+                            }
+                        }
+                        Clipboard.Clear();
+                        Clipboard.SetText(sb.ToString(), TextDataFormat.UnicodeText);
+                        Clipboard.Flush();
+                        return;
+                }
+            }
+        }
+
+        private void ItemShowItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is ListBox listbox)
+            {
+                var items = listbox.SelectedItems;
+                switch (items.Count)
+                {
+                    case 0:
+                        return;
+                    default:
+                        if (items[0] is PatchListItemLogData item)
+                        {
+                            Leayal.Shared.WindowsExplorerHelper.SelectPathInExplorer(Path.GetFullPath(item.Name, this._pso2dir));
+                        }
+                        return;
+                }
+            }
+        }
+
+        private void ItemFileCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is ListBox listbox)
+            {
+                var items = listbox.SelectedItems;
+                var count = items.Count;
+                switch (count)
+                {
+                    case 0:
+                        return;
+                    case 1:
+                        if (items[0] is PatchListItemLogData item)
+                        {
+                            var path = Path.GetFullPath(item.Name, this._pso2dir);
+                            if (File.Exists(path))
+                            {
+                                Clipboard.Clear();
+                                ClipboardHelper.PutFilesToClipboard(new System.Collections.Specialized.StringCollection()
+                                {
+                                    path
+                                }, false);
+                            }
+                            else
+                            {
+                                Prompt_Generic.Show(this, "The file is no longer existed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        }
+                        return;
+                    default:
+                        var list = new System.Collections.Specialized.StringCollection();
+                        bool warnMissingFiles = false;
+                        foreach (var _item in items)
+                        {
+                            if (_item is PatchListItemLogData __item)
+                            {
+                                list.Add(Path.GetFullPath(__item.Name, this._pso2dir));
+                            }
+                            else if (!warnMissingFiles)
+                            {
+                                warnMissingFiles = true;
+                            }
+                        }
+                        Clipboard.Clear();
+                        ClipboardHelper.PutFilesToClipboard(list, false);
+
+                        if (warnMissingFiles)
+                        {
+                            Prompt_Generic.Show(this, "There are some file which are no longer existed. Ignored cutting those missing files.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                        return;
+                }
+            }
+        }
+
+        private void ItemFileCut_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menu && menu.Tag is ListBox listbox)
+            {
+                var items = listbox.SelectedItems;
+                var count = items.Count;
+                switch (count)
+                {
+                    case 0:
+                        return;
+                    case 1:
+                        if (items[0] is PatchListItemLogData item)
+                        {
+                            var path = Path.GetFullPath(item.Name, this._pso2dir);
+                            if (File.Exists(path))
+                            {
+                                Clipboard.Clear();
+                                ClipboardHelper.PutFilesToClipboard(new System.Collections.Specialized.StringCollection()
+                                {
+                                    path
+                                }, true);
+                            }
+                            else
+                            {
+                                Prompt_Generic.Show(this, "The file is no longer existed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        }
+                        return;
+                    default:
+                        var list = new System.Collections.Specialized.StringCollection();
+                        bool warnMissingFiles = false;
+                        foreach (var _item in items)
+                        {
+                            if (_item is PatchListItemLogData __item)
+                            {
+                                var path = Path.GetFullPath(__item.Name, this._pso2dir);
+                                if (File.Exists(path))
+                                {
+                                    list.Add(path);
+                                }
+                                else if (!warnMissingFiles)
+                                {
+                                    warnMissingFiles = true;
+                                }
+                            }
+                        }
+                        Clipboard.Clear();
+                        ClipboardHelper.PutFilesToClipboard(list, true);
+
+                        if (warnMissingFiles)
+                        {
+                            Prompt_Generic.Show(this, "There are some file which are no longer existed. Ignored cutting those missing files.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+
+                        return;
+                }
+            }
+        }
+
+        private static void Ctrl_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is ListBox listbox)
+            {
+                var menu = listbox.ContextMenu;
+                if (menu == null) return;
+                if (listbox.SelectedItem is PatchListItemLogData item)
+                {
+                    menu.Tag = item;
+                }
+                else
+                {
+                    e.Handled = true;
+                }
+            }
         }
 
         class Eyy

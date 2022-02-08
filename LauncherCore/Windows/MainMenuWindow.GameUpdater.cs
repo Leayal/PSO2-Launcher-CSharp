@@ -185,7 +185,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             GameClientUpdater.OperationCompletedHandler completed = null;
-            completed = (sender, cancelled, patchlist, downloadResults) =>
+            completed = (sender, gamedir, cancelled, patchlist, downloadResults) =>
             {
                 this.pso2Updater.OperationCompleted -= completed;
                 this.Dispatcher.TryInvoke(delegate
@@ -433,7 +433,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         //private void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> download_required_list, IReadOnlyCollection<PatchListItem> successList, IReadOnlyCollection<PatchListItem> failureList)
-        private async void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_results_list)
+        private async void GameUpdaterComponent_OperationCompleted(GameClientUpdater sender, string pso2dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_results_list)
         {
             long totalsizedownloaded = 0L;
             
@@ -476,7 +476,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 dialogguid = Guid.NewGuid();
                 if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out crafted))
                 {
-                    var factory = new GameClientUpdateResultLogDialogFactory(in dialogguid, in isCancelled, patchlist.Count, (IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>)dictionary);
+                    var factory = new GameClientUpdateResultLogDialogFactory(pso2dir, in dialogguid, in isCancelled, patchlist.Count, (IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?>)dictionary);
                     this.dialogReferenceByUUID.Add(dialogguid, factory);
                 }
                 else
@@ -556,16 +556,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public readonly Guid Id;
             private readonly bool _cancel;
             private readonly int list_count;
+            private readonly string pso2dir;
 
-            public GameClientUpdateResultLogDialogFactory(in Guid id, in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
+            public GameClientUpdateResultLogDialogFactory(string _pso2dir, in Guid id, in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
             {
+                this.pso2dir = _pso2dir;
                 this._cancel = iscancelled;
                 this.list_count = patchlist_count;
                 this.items = data;
                 this.Id = id;
             }
 
-            public Window CreateNew() => new GameClientUpdateResultLogDialog(in this.Id, in this._cancel, in this.list_count, items);
+            public Window CreateNew() => new GameClientUpdateResultLogDialog(this.pso2dir, in this.Id, in this._cancel, in this.list_count, items);
         }
 
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)
