@@ -119,25 +119,37 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     {
                         try
                         {
+                            var attrFlags = FileAttributes.Normal;
                             if (File.Exists(localFilePath))
                             {
-                                var attrFlags = File.GetAttributes(localFilePath);
+                                attrFlags = File.GetAttributes(localFilePath);
                                 if (attrFlags.HasFlag(FileAttributes.ReadOnly))
                                 {
                                     // Remove readonly flags from the old file
                                     // This should avoid error caused by ReadOnly file. Especially on file overwriting.
                                     File.SetAttributes(localFilePath, attrFlags & ~FileAttributes.ReadOnly);
                                 }
-
-                                // Copy all attributes from the old file to the updated one if it's not the usual attributes.
-                                if (attrFlags != FileAttributes.Normal)
+                            }
+                            else if (Directory.Exists(localFilePath))
+                            {
+                                var directoryAttrFlags = File.GetAttributes(localFilePath);
+                                if (directoryAttrFlags.HasFlag(FileAttributes.ReadOnly))
                                 {
-                                    File.SetAttributes(tmpFilePath, attrFlags);
+                                    // Remove readonly flags from the old file
+                                    // This should avoid error caused by ReadOnly file. Especially on file overwriting.
+                                    File.SetAttributes(localFilePath, directoryAttrFlags & ~FileAttributes.ReadOnly);
                                 }
+                                Directory.Delete(localFilePath, true);
                             }
                             File.Move(tmpFilePath, localFilePath, true);
                             var lastWrittenTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                             duhB.SetPatchItem(downloadItem.PatchInfo, lastWrittenTimeUtc);
+                            
+                            // Copy all attributes from the old file to the updated one if it's not the usual attributes.
+                            if (attrFlags != FileAttributes.Normal)
+                            {
+                                File.SetAttributes(tmpFilePath, attrFlags);
+                            }
                         }
                         catch
                         {

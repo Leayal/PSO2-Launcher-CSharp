@@ -81,7 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             if (e_onBackup != null && e_onBackup.Handled == false)
             {
-                string dest;
+                string? dest = null;
                 byte[]? buffer = null;
                 try
                 {
@@ -102,52 +102,109 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             var linkTarget = SymbolicLink.FollowTarget(dest);
                             if (linkTarget != null)
                             {
-                                dest = linkTarget;
-                                if (string.Equals(Path.GetPathRoot(dest), Path.GetPathRoot(item.BackupFileSourcePath), StringComparison.OrdinalIgnoreCase))
+                                dest = Path.GetFullPath(linkTarget);
+                                if (!string.Equals(dest, item.BackupFileSourcePath, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    File.Move(item.BackupFileSourcePath, dest, true);
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        using (var fs_dest = File.Create(dest))
-                                        using (var fs_src = File.OpenRead(item.BackupFileSourcePath))
-                                        {
-                                            if (fs_src.Length != 0)
-                                            {
-                                                int byteread = fs_src.Read(buffer, 0, buffer.Length);
-                                                while (byteread > 0)
-                                                {
-                                                    if (cancellationToken.IsCancellationRequested)
-                                                    {
-                                                        break;
-                                                    }
-                                                    fs_dest.Write(buffer, 0, byteread);
-                                                    byteread = fs_src.Read(buffer, 0, buffer.Length);
-                                                }
-                                            }
-                                        }
-                                        File.Delete(item.BackupFileSourcePath);
-                                    }
-                                    catch
+                                    if (string.Equals(Path.GetPathRoot(dest), Path.GetPathRoot(item.BackupFileSourcePath), StringComparison.OrdinalIgnoreCase))
                                     {
                                         if (File.Exists(item.BackupFileSourcePath))
                                         {
+                                            var attr = File.GetAttributes(dest);
+                                            File.SetAttributes(dest, attr & ~FileAttributes.ReadOnly);
                                             File.Move(item.BackupFileSourcePath, dest, true);
+                                            if (attr != FileAttributes.Normal)
+                                            {
+                                                File.SetAttributes(dest, attr & ~FileAttributes.Directory);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            var attr = File.GetAttributes(dest);
+                                            File.SetAttributes(dest, attr & ~FileAttributes.ReadOnly);
+                                            using (var fs_dest = File.Create(dest))
+                                            using (var fs_src = File.OpenRead(item.BackupFileSourcePath))
+                                            {
+                                                if (fs_src.Length != 0)
+                                                {
+                                                    int byteread = fs_src.Read(buffer, 0, buffer.Length);
+                                                    while (byteread > 0)
+                                                    {
+                                                        if (cancellationToken.IsCancellationRequested)
+                                                        {
+                                                            break;
+                                                        }
+                                                        fs_dest.Write(buffer, 0, byteread);
+                                                        byteread = fs_src.Read(buffer, 0, buffer.Length);
+                                                    }
+                                                }
+                                            }
+                                            File.Delete(item.BackupFileSourcePath);
+                                            File.SetAttributes(dest, attr);
+                                        }
+                                        catch
+                                        {
+                                            if (File.Exists(item.BackupFileSourcePath))
+                                            {
+                                                var attr = File.GetAttributes(dest);
+                                                File.SetAttributes(dest, attr & ~FileAttributes.ReadOnly);
+                                                File.Move(item.BackupFileSourcePath, dest, true);
+                                                if (attr != FileAttributes.Normal)
+                                                {
+                                                    File.SetAttributes(dest, attr & ~FileAttributes.Directory);
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
                             else
                             {
-                                File.Move(item.BackupFileSourcePath, dest, true);
+                                if (File.Exists(item.BackupFileSourcePath))
+                                {
+                                    var attr = File.GetAttributes(dest);
+                                    File.SetAttributes(dest, attr & ~FileAttributes.ReadOnly);
+                                    File.Move(item.BackupFileSourcePath, dest, true);
+                                    if (attr != FileAttributes.Normal)
+                                    {
+                                        File.SetAttributes(dest, attr & ~FileAttributes.Directory);
+                                    }
+                                }
                             }
                         }
                         else
                         {
-                            File.Move(item.BackupFileSourcePath, dest, true);
+                            if (File.Exists(item.BackupFileSourcePath))
+                            {
+                                var attr = FileAttributes.Normal;
+                                if (Directory.Exists(dest))
+                                {
+                                    if ((e_onBackup.HasRebootBackup && string.Equals(Path.GetFullPath(Path.Combine("data", "win32reboot", "backup"), e_onBackup.Root), dest, StringComparison.OrdinalIgnoreCase))
+                                        || e_onBackup.HasClassicBackup && string.Equals(Path.GetFullPath(Path.Combine("data", "win32", "backup"), e_onBackup.Root), dest, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        File.Delete(item.BackupFileSourcePath);
+                                        continue;
+                                    }
+                                    attr = File.GetAttributes(dest);
+                                    File.SetAttributes(dest, attr & ~FileAttributes.ReadOnly);
+                                    Directory.Delete(dest, true);
+                                }
+                                File.Move(item.BackupFileSourcePath, dest, true);
+                            }
                         }
+                    }
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    if (string.IsNullOrWhiteSpace(dest))
+                    {
+                        throw;
+                    }
+                    else
+                    {
+                        throw new UnauthorizedAccessException(ex.Message + Environment.NewLine + "The path is: " + dest, ex);
                     }
                 }
                 finally
