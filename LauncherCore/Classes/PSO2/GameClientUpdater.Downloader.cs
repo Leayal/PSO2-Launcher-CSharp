@@ -148,7 +148,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             // Copy all attributes from the old file to the updated one if it's not the usual attributes.
                             if (attrFlags != FileAttributes.Normal)
                             {
-                                File.SetAttributes(tmpFilePath, attrFlags);
+                                File.SetAttributes(localFilePath, attrFlags);
                             }
                         }
                         catch
