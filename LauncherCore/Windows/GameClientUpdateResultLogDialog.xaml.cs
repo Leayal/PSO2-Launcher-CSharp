@@ -28,8 +28,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.WindowCloseIsDefaultedCancel = true;
 
             Collection<PatchListItemLogData> obCollection_success = new(), obCollection_failure = new(), obCollection_cancelled = new();
-            int index_success = 0, index_failure = 0, index_cancelled = 0;
-
             foreach (var data in datalist)
             {
                 var val = data.Value;
@@ -49,7 +47,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     obCollection_cancelled.Add(data.Key);
                 }
             }
-            if (obCollection_success.Count == 0)
+            int count_success = obCollection_success.Count, count_failure = obCollection_failure.Count, count_cancelled = obCollection_cancelled.Count;
+            if (count_success == 0)
             {
                 this.ListOfSuccessItems.ItemsSource = null;
             }
@@ -58,7 +57,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.ListOfSuccessItems.ItemsSource = obCollection_success;
                 this.CreateCM(this.ListOfSuccessItems);
             }
-            if (obCollection_failure.Count == 0)
+            if (count_failure == 0)
             {
                 this.ListOfFailureItems.ItemsSource = null;
             }
@@ -67,7 +66,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.ListOfFailureItems.ItemsSource = obCollection_failure;
                 this.CreateCM(this.ListOfFailureItems);
             }
-            if (obCollection_cancelled.Count == 0)
+            if (count_cancelled == 0)
             {
                 this.ListOfCancelledItems.ItemsSource = null;
             }
@@ -82,9 +81,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 Status = cancel ? Text_StatusCancelled : Text_StatusCompleted,
                 FileCount = patchlist_count,
                 CountScanned = datalist.Count,
-                CountSuccess = index_success,
-                CountFailure = index_failure,
-                CountCancelled = index_cancelled
+                CountSuccess = count_success,
+                CountFailure = count_failure,
+                CountCancelled = count_cancelled
             };
         }
 

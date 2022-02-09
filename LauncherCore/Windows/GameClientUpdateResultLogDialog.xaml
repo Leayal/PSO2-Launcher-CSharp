@@ -52,7 +52,7 @@
                         <TextBlock Grid.Row="2" Text="File count from remote patchlist:" TextAlignment="Right" FontSize="15" />
                         <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding FileCount,Mode=OneWay}" FontSize="15" />
 
-                        <TextBlock Grid.Row="3" Text="File checked:" TextAlignment="Right" FontSize="15" />
+                        <TextBlock Grid.Row="3" Text="File operation count:" TextAlignment="Right" FontSize="15" />
                         <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding CountScanned,Mode=OneWay}" FontSize="15" />
 
                         <TextBlock Grid.Row="4" Text="Success count:" TextAlignment="Right" FontSize="15" />
