@@ -20,6 +20,7 @@ using System.Runtime;
 using Leayal.Shared.Windows;
 using System.Windows.Threading;
 using System.Runtime.Loader;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -231,6 +232,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 { new RelativeLogPlacement(StartingLine.Length, i_am_lea.Length), StaticResources.Url_ShowAuthor },
                 { new RelativeLogPlacement(StartingLine.Length + i_am_lea.Length + FollowingLline.Length, i_am_here.Length), StaticResources.Url_ShowSourceCodeGithub }
             }, false);
+
+            if (MemoryExtensions.Equals(Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory().AsSpan()), Path.GetFullPath("dotnet", RuntimeValues.RootDirectory).AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                this.CreateNewParagraphInLog($"[System] Launcher is running in standalone environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
+            }
+            else
+            {
+                this.CreateNewParagraphInLog($"[System] Launcher is running in shared runtime environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
+            }
 
             if (App.Current.BootstrapVersion < 4)
             {
