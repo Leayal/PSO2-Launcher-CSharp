@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 using System.Windows;
@@ -68,7 +69,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         public static MessageBoxResult? Show(Window parent, string? text, string? title)
             => Show(parent, text, title, MessageBoxButton.OK, MessageBoxImage.Information);
 
-        public static MessageBoxResult? ShowError(Window parent, Inline[] text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
+        public static MessageBoxResult? ShowError(Window parent, ICollection<Inline> text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
         {
             var dialog = new Prompt_Generic(in buttons, in image)
             {
@@ -77,7 +78,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             Exception ex = exception.InnerException ?? exception;
 
-            if (text == null || text.Length == 0)
+            if (text == null || text.Count == 0)
             {
                 if (string.IsNullOrWhiteSpace(ex.Message))
                 {

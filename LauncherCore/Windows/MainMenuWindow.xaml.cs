@@ -30,26 +30,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private static readonly Lazy<BitmapSource> lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
             lazybg_light = new Lazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
-        private static readonly Lazy<Assembly> asm_WebViewCompat = new Lazy<Assembly>(() =>
-        {
-            var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
-            if (File.Exists(filepath))
-            {
-                var context = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-                if (context == null)
-                {
-                    return Assembly.LoadFrom(filepath);
-                }
-                else
-                {
-                    return context.LoadFromNativeImagePath(filepath, filepath);
-                }
-            }
-            else
-            {
-                return null;
-            }
-        });
 
         // UseClock
         public static readonly DependencyProperty UseClockProperty = DependencyProperty.Register("UseClock", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
@@ -437,7 +417,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.Dispatcher.HasShutdownStarted || this.Dispatcher.HasShutdownFinished) return;
             try
             {
-                var asm = asm_WebViewCompat.Value;
+                var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
+                Assembly asm;
+                if (File.Exists(filepath))
+                {
+                    var context = AssemblyLoadContext.GetLoadContext(Assembly.GetAssembly(this.GetType()));
+                    if (context == null)
+                    {
+                        asm = Assembly.LoadFrom(filepath);
+                    }
+                    else
+                    {
+                        asm = context.LoadFromNativeImagePath(filepath, filepath);
+                    }
+                }
+                else
+                {
+                    asm = null;
+                }
                 if (asm == null)
                 {
                     Prompt_Generic.Show(this, "Missing file 'WebViewCompat.dll' in 'bin' directory.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -452,7 +449,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.isWebBrowserLoaded = true;
                         if (webview.IsUsingWebView2)
                         {
-                            this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebDriver from WebView2 Evergreen Runtime (version: {webview.WebView2Version}).");
+                            this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebView2 (Version: {webview.WebView2Version}).");
                         }
                         else
                         {
@@ -481,7 +478,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 Prompt_Generic.ShowError(this, new System.Windows.Documents.Inline[]
                 {
-                    new System.Windows.Documents.Run("An error has occurred while loading the web engine."),
+                    new System.Windows.Documents.Run("An error has occurred while loading the necessary libraries for the web engine."),
                     new System.Windows.Documents.LineBreak(),
                     new System.Windows.Documents.Run("Please restart the launcher."),
                     new System.Windows.Documents.LineBreak(),
@@ -489,6 +486,51 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     new CommandHyperlink(new System.Windows.Documents.Run("create an issue report")) { NavigateUri = StaticResources.Url_ShowIssuesGithub },
                     new System.Windows.Documents.Run(" on Github."),
                 }, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (System.Runtime.InteropServices.COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
+            {
+                if (btn != null)
+                {
+                    btn.Click += this.LoadLauncherWebView_Click;
+                }
+                var lines = new List<System.Windows.Documents.Inline>();
+                lines.Add(new System.Windows.Documents.Run("An error has occurred while initializing the Internet Explorer web engine."));
+                lines.Add(new System.Windows.Documents.LineBreak());
+                lines.Add(new System.Windows.Documents.Run("It seems like your operating system doesn't have both Internet Explorer's COM component and WebView2 runtime."));
+                lines.Add(new System.Windows.Documents.LineBreak());
+                lines.Add(new System.Windows.Documents.LineBreak());
+
+                static void AAAAAAA(List<System.Windows.Documents.Inline> inlines)
+                {
+                    inlines.Add(new System.Windows.Documents.LineBreak());
+                    inlines.Add(new System.Windows.Documents.Run("If the file can't be found or you want to get anew, you can "));
+                    inlines.Add(new CommandHyperlink(new System.Windows.Documents.Run("go to the Microsoft's download page")) { NavigateUri = StaticResources.Url_OpenWebView2InstallerDownloadPage });
+                    inlines.Add(new System.Windows.Documents.Run(" to download the installer and run it. "));
+                    inlines.Add(new CommandHyperlink(new System.Windows.Documents.Run("(Or click here to download it directly)")) { NavigateUri = StaticResources.Url_DownloadWebView2BootstrapInstaller });
+                }
+
+                var pso2_bin = this.config_main.PSO2_BIN;
+                if (!string.IsNullOrWhiteSpace(pso2_bin))
+                {
+                    var path_installerFromSEGA = Path.Combine(pso2_bin, "microsoftedgewebview2setup.exe");
+                    if (File.Exists(path_installerFromSEGA))
+                    {
+                        lines.Add(new System.Windows.Documents.Run("Please run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use. "));
+                        lines.Add(new ShowLocalFileHyperlink(new System.Windows.Documents.Run("(Click here to show it in File Explorer)")) { NavigateUri = new Uri(path_installerFromSEGA) });
+                        AAAAAAA(lines);
+                    }
+                    else
+                    {
+                        lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
+                        AAAAAAA(lines);
+                    }
+                }
+                else
+                {
+                    lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
+                    AAAAAAA(lines);
+                }
+                Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {

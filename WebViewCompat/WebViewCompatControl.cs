@@ -20,8 +20,7 @@ namespace Leayal.WebViewCompat
         private WebView2 _webView2;
         private readonly string _userAgent;
         private readonly IntPtr loadedWebView2Core;
-        private readonly string webview2runtime_directory;
-        private readonly string webview2evergreenversion;
+        private readonly string webview2version;
 
         private bool isInit;
         private EventHandler _browserInitialized;
@@ -47,7 +46,7 @@ namespace Leayal.WebViewCompat
 
         public bool IsUsingWebView2 => (this._webView2 != null && !this._webView2.IsDisposed);
 
-        public string WebView2Version => this.webview2evergreenversion;
+        public string WebView2Version => this.webview2version;
 
         public WebViewCompatControl() : this(DefaultUserAgent) { }
 
@@ -59,42 +58,60 @@ namespace Leayal.WebViewCompat
             this.loadedWebView2Core = IntPtr.Zero;
             this.isInit = false;
 
-            if (useWebView2IfPossible && WebViewCompat.TryGetWebview2Runtime(out var webview2runtimedir, out var _webview2evergreenversion) && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
+            if (useWebView2IfPossible && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
             {
-                this.webview2evergreenversion = _webview2evergreenversion;
-                var host = new WindowsFormsHostEx2();
-                this.Child = host;
-                this.webview2runtime_directory = webview2runtimedir;
-                try
+                if (WebViewCompat.TryGetWebview2Runtime(out var _webview2version))
                 {
-                    this.loadedWebView2Core = loaded;
-                    //*
-                    this._webView2 = new WebView2Ex()
+                    this.webview2version = _webview2version;
+                    var host = new WindowsFormsHostEx2();
+                    this.Child = host;
+                    try
                     {
-                        Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Left,
-                        Location = System.Drawing.Point.Empty
-                    };
-                    this._webView2.HandleCreated += this.OnWebView2WPFControlLoaded;
-                    host.Child = this._webView2;
-                    if (!this._webView2.Created)
-                    {
-                        this._webView2.CreateControl();
+                        this.loadedWebView2Core = loaded;
+                        //*
+                        this._webView2 = new WebView2Ex()
+                        {
+                            Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Bottom,
+                            Location = System.Drawing.Point.Empty,
+                            Width = _Width,
+                            Height = _Height
+                        };
+                        this._webView2.NavigationStarting += this.Wv_NavigationStarting;
+                        this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
+                        // this._webView2.HandleCreated += this.OnWebView2WPFControlLoaded;
+                        host.Child = this._webView2;
+                        this.OnWebView2CoreInit();
+                        // if (!this._webView2.Created) this._webView2.CreateControl();
+                        //*/
                     }
-                    //*/
+                    catch
+                    {
+                        host.Child = null;
+                        if (this._webView2 != null)
+                        {
+                            this._webView2.Dispose();
+                            this._webView2 = null;
+                        }
+                        this.loadedWebView2Core = IntPtr.Zero;
+                        NativeLibrary.Free(loaded);
+                        SetIECompatVersion();
+                        this._fallbackControl = this.CreateIE();
+                        host.Child = this._fallbackControl;
+                        if (!this._fallbackControl.Created)
+                        {
+                            this._fallbackControl.CreateControl();
+                        }
+                    }
                 }
-                catch
+                else
                 {
-                    host.Child = null;
-                    if (this._webView2 != null)
-                    {
-                        this._webView2.Dispose();
-                        this._webView2 = null;
-                    }
                     this.loadedWebView2Core = IntPtr.Zero;
                     NativeLibrary.Free(loaded);
+                    this.webview2version = string.Empty;
                     SetIECompatVersion();
                     this._fallbackControl = this.CreateIE();
-                    host.Child = this._fallbackControl;
+                    var host = new WindowsFormsHostEx2() { Child = this._fallbackControl };
+                    this.Child = host;
                     if (!this._fallbackControl.Created)
                     {
                         this._fallbackControl.CreateControl();
@@ -103,8 +120,7 @@ namespace Leayal.WebViewCompat
             }
             else
             {
-                this.webview2runtime_directory = string.Empty;
-                this.webview2evergreenversion = string.Empty;
+                this.webview2version = string.Empty;
                 SetIECompatVersion();
                 this._fallbackControl = this.CreateIE();
                 var host = new WindowsFormsHostEx2() { Child = this._fallbackControl };
@@ -120,7 +136,7 @@ namespace Leayal.WebViewCompat
         {
             var wb = new WinForm.WebBrowser()
             {
-                Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Left,
+                Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Bottom,
                 Location = System.Drawing.Point.Empty
             };
             wb.HandleCreated += this.FallbackControl_Initialized;
@@ -206,29 +222,20 @@ namespace Leayal.WebViewCompat
             this._fallbackControl.Width = _Width;
             this._fallbackControl.Height = _Height;
             this._fallbackControl.ScrollBarsEnabled = false;
-            this._fallbackControl.Dock = WinForm.DockStyle.Top;
+            // this._fallbackControl.Dock = WinForm.DockStyle.Top;
             // this.OnInitialized(EventArgs.Empty);
             this._browserInitialized?.Invoke(this, EventArgs.Empty);
             this.isInit = true;
         }
 
-        private void OnWebView2WPFControlLoaded(object sender, EventArgs e)
-        {
-            this._webView2.Width = _Width;
-            this._webView2.Height = _Height;
-            this._webView2.NavigationStarting += this.Wv_NavigationStarting;
-            this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
-            this.OnWebView2CoreInit(this.webview2runtime_directory, Path.GetFullPath(Path.Combine("data", "webview2"), RuntimeValues.RootDirectory));
-        }
-        
         //*
-        private async void OnWebView2CoreInit(string browserExecutablePath, string userDataFolder)
+        private async void OnWebView2CoreInit()
         {
             // Seems like "--disable-breakpad" does nothing??
             // I can still see crashpad process running.
             try
             {
-                var env = await CoreWebView2Environment.CreateAsync(browserExecutablePath, userDataFolder, new CoreWebView2EnvironmentOptions("--disable-breakpad"));
+                var env = await CoreWebView2Environment.CreateAsync(null, Path.GetFullPath(Path.Combine("data", "webview2"), RuntimeValues.RootDirectory), new CoreWebView2EnvironmentOptions("--disable-breakpad", null, this.webview2version, true));
                 await this._webView2.EnsureCoreWebView2Async(env);
                 var core = this._webView2.CoreWebView2;
                 var coresetting = core.Settings;
@@ -237,13 +244,13 @@ namespace Leayal.WebViewCompat
                 coresetting.AreHostObjectsAllowed = false;
                 coresetting.IsGeneralAutofillEnabled = false;
                 coresetting.IsPasswordAutosaveEnabled = false;
-                coresetting.AreDefaultContextMenusEnabled = false;
+                coresetting.AreDefaultContextMenusEnabled = true;
                 coresetting.AreBrowserAcceleratorKeysEnabled = false;
                 // coresetting.AreDefaultScriptDialogsEnabled = false;
-                coresetting.IsBuiltInErrorPageEnabled = false;
+                coresetting.IsBuiltInErrorPageEnabled = true;
                 coresetting.IsPinchZoomEnabled = false;
                 coresetting.IsStatusBarEnabled = false;
-                coresetting.IsSwipeNavigationEnabled = true;
+                coresetting.IsSwipeNavigationEnabled = false;
 
                 this._browserInitialized?.Invoke(this, EventArgs.Empty);
                 this.isInit = true;
@@ -263,6 +270,7 @@ namespace Leayal.WebViewCompat
                             NativeLibrary.Free(this.loadedWebView2Core);
                         }
                     }
+                    SetIECompatVersion();
                     this._fallbackControl = this.CreateIE();
                     host.Child = this._fallbackControl;
                     if (!this._fallbackControl.Created)
@@ -279,23 +287,6 @@ namespace Leayal.WebViewCompat
             // this._fallbackControl.Document.AttachEventHandler();
         }
         //*/
-
-        private static System.Drawing.Size GetDocumentBodySize(WinForm.WebBrowser webBrowser)
-        {
-            int CurrentWidth, CurrentHeight, CurrentMinWidth = webBrowser.Width, CurrentMaxWidth = 0
-                , CurrentMinHeight = webBrowser.Height, CurrentMaxHeight = 0;
-
-            foreach (WinForm.HtmlElement webBrowserElement in webBrowser.Document.Body.All)
-            {
-                if ((CurrentWidth = Math.Max(webBrowserElement.ClientRectangle.Width, webBrowserElement.ScrollRectangle.Width)) > CurrentMaxWidth)
-                    CurrentMaxWidth = CurrentWidth;
-
-                if ((CurrentHeight = Math.Max(webBrowserElement.ClientRectangle.Height, webBrowserElement.ScrollRectangle.Height)) > CurrentMaxHeight)
-                    CurrentMaxHeight = CurrentHeight;
-            }
-
-            return new System.Drawing.Size(CurrentMaxWidth > CurrentMinWidth ? CurrentMaxWidth : CurrentMinWidth, CurrentMaxHeight > CurrentMinHeight ? CurrentMaxHeight : CurrentMinHeight);
-        }
 
         public void NavigateTo(Uri url)
         {

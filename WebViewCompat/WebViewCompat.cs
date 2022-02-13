@@ -1,15 +1,17 @@
 ﻿using System;
 using System.IO;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 
 namespace Leayal.WebViewCompat
 {
     public static class WebViewCompat
     {
-        public static bool TryGetWebview2Runtime(out string runtimeDirectory, out string version)
+        public static bool TryGetWebview2Runtime(out string version)
         {
             // Temporarily not using WebView2, until it's matured or stable enough.
             // HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}
+            /*
             using (var hive = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
             {
                 if (hive != null)
@@ -23,6 +25,16 @@ namespace Leayal.WebViewCompat
                             {
                                 version = pv;
                                 runtimeDirectory = result;
+                                channel = "Evergreen";
+                                if (key.GetValue("name") is string name)
+                                {
+                                    runtimeName = name;
+                                }
+                                else
+                                {
+                                    // Assumed
+                                    runtimeName = "Microsoft Edge WebView2 Runtime";
+                                }
                                 return true;
                             }
                         }
@@ -30,8 +42,16 @@ namespace Leayal.WebViewCompat
                 }
             }
             //*/
+            try
+            {
+                version = CoreWebView2Environment.GetAvailableBrowserVersionString();
+                return true;
+            }
+            catch (WebView2RuntimeNotFoundException)
+            {
 
-            version = runtimeDirectory = string.Empty;
+            }
+            version = string.Empty;
             return false;
         }
     }

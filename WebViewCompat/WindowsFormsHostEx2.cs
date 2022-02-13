@@ -59,10 +59,14 @@ namespace Leayal.WebViewCompat
             }
         }
 
-        sealed class DoubleBufferedPanel : System.Windows.Forms.Panel
+        sealed class DoubleBufferedPanel : System.Windows.Forms.TableLayoutPanel
         {
             public DoubleBufferedPanel() : base()
             {
+                this.RowCount = 1;
+                this.ColumnCount = 1;
+                this.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+                this.RowStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
                 this.DoubleBuffered = true;
             }
         }

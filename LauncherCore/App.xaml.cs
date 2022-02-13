@@ -406,6 +406,28 @@ namespace Leayal.PSO2Launcher.Core
                         catch { }
                     });
                 }
+                else if (string.Equals(urlstr, StaticResources.Url_OpenWebView2InstallerDownloadPage.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section");
+                        }
+                        catch { }
+                    });
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_DownloadWebView2BootstrapInstaller.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://go.microsoft.com/fwlink/p/?LinkId=2124703");
+                        }
+                        catch { }
+                    });
+                }
                 else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     this.Dispatcher.InvokeAsync(delegate

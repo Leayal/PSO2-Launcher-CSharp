@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj" />
   </ItemGroup>
@@ -29,7 +33,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="setlocal EnableDelayedExpansion&#xD;&#xA;&#xD;&#xA;SET &quot;localvar_buildconfigname=$(ConfigurationName)&quot;&#xD;&#xA;SET &quot;localvar_targetfilename=$(TargetFileName)&quot;&#xD;&#xA;SET &quot;localvar_solutiondir=$(SolutionDir)&quot;&#xD;&#xA;SET &quot;localvar_targetpath=$(TargetPath)&quot;&#xD;&#xA;&#xD;&#xA;if &quot;%25localvar_buildconfigname:~0,5%25&quot;==&quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_targetpath!&quot; &quot;!localvar_solutiondir!Test\bin\!localvar_targetfilename!&quot;&#xD;&#xA;)&#xD;&#xA;endlocal" />
+    <Exec Command="setlocal EnableDelayedExpansion&#xD;&#xA;&#xD;&#xA;SET &quot;localvar_buildconfigname=$(ConfigurationName)&quot;&#xD;&#xA;SET &quot;localvar_targetfilename=$(TargetFileName)&quot;&#xD;&#xA;SET &quot;localvar_solutiondir=$(SolutionDir)&quot;&#xD;&#xA;SET &quot;localvar_targetpath=$(TargetPath)&quot;&#xD;&#xA;&#xD;&#xA;if &quot;%25localvar_buildconfigname:~0,5%25&quot;==&quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_targetpath!&quot; &quot;!localvar_solutiondir!Test\bin\!localvar_targetfilename!&quot;&#xD;&#xA;copy /B /L /Y &quot;$(OutDir)System.Reflection.MetadataLoadContext.dll&quot; &quot;!localvar_solutiondir!Test\bin\System.Reflection.MetadataLoadContext.dll&quot;&#xD;&#xA;)&#xD;&#xA;endlocal" />
   </Target>
 
 </Project>

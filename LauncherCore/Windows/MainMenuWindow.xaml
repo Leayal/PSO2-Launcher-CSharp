@@ -10,15 +10,15 @@
                          xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="thisWindow"
-                         MinHeight="600" MinWidth="874"
+                         MinHeight="600" MinWidth="880"
                          Loaded="ThisWindow_Loaded"
                          Closing="ThisWindow_Closing"
-                         Title="PSO2 JP Launcher" Height="600" Width="874" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
+                         Title="PSO2 JP Launcher" Height="600" Width="880" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="25" />
             <RowDefinition />
-            <RowDefinition MaxHeight="300" />
+            <RowDefinition />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
