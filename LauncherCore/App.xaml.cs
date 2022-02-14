@@ -64,13 +64,13 @@ namespace Leayal.PSO2Launcher.Core
             var thememgr = ThemeManager.Current;
             if (this.config_main.SyncThemeWithOS)
             {
-                thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;
-                thememgr.SyncTheme();
+                // thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;
+                thememgr.SyncTheme(ThemeSyncMode.SyncWithAppMode);
             }
             else
             {
-                thememgr.ThemeSyncMode = ThemeSyncMode.DoNotSync;
-                thememgr.SyncTheme();
+                // thememgr.ThemeSyncMode = ThemeSyncMode.DoNotSync;
+                thememgr.SyncTheme(ThemeSyncMode.DoNotSync);
                 this.ChangeThemeMode(this.config_main.ManualSelectedThemeIndex != 0);
             }
         }
@@ -156,26 +156,24 @@ namespace Leayal.PSO2Launcher.Core
 
         private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
         {
-            if (sender is ThemeManager thememgr)
+            var thememgr = (sender as ThemeManager) ?? ThemeManager.Current;
+            var mode = string.Equals(e.NewTheme.BaseColorScheme, ThemeManager.BaseColorLight, StringComparison.OrdinalIgnoreCase);
+            if (this.isLightMode != mode)
             {
-                var mode = string.Equals(e.NewTheme.BaseColorScheme, ThemeManager.BaseColorLight, StringComparison.OrdinalIgnoreCase);
-                if (this.isLightMode != mode)
+                this.isLightMode = mode;
+                if (mode)
                 {
-                    this.isLightMode = mode;
-                    if (mode)
+                    thememgr.ChangeThemeColorScheme(this, "Blue");
+                }
+                else
+                {
+                    thememgr.ChangeThemeColorScheme(this, "Red");
+                }
+                foreach (var window in this.Windows)
+                {
+                    if (window is MetroWindowEx windowex)
                     {
-                        thememgr.ChangeThemeColorScheme(this, "Blue");
-                    }
-                    else
-                    {
-                        thememgr.ChangeThemeColorScheme(this, "Red");
-                    }
-                    foreach (var window in this.Windows)
-                    {
-                        if (window is MetroWindowEx windowex)
-                        {
-                            windowex.RefreshTheme();
-                        }
+                        windowex.RefreshTheme();
                     }
                 }
             }
