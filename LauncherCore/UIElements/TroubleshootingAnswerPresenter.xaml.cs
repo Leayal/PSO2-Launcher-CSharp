@@ -107,11 +107,13 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public TroubleshootingAnswerPresenter()
         {
             this.answersstack = new Stack<PSO2TroubleshootingAnswer>();
-            this.OnSelectAnswer = new Action<PSO2TroubleshootingAnswer>(selectedanswer =>
-            {
-                this.SelectedItem = selectedanswer;
-            });
+            this.OnSelectAnswer = this.___OnSelectAnswer;
             InitializeComponent();
+        }
+
+        private void ___OnSelectAnswer(PSO2TroubleshootingAnswer selectedanswer)
+        {
+            this.SelectedItem = selectedanswer;
         }
 
         public void RestartQuestioning()
@@ -137,27 +139,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        private void OnAnswerItemSelected(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton radiobtn)
+            if (this.SelectedItem is PSO2TroubleshootingAnswer answer)
             {
-                var datacontext = radiobtn.DataContext;
-
-                if (datacontext is PSO2TroubleshootingAnswer answer)
-                {
-                    answer.Select();
-                }
-
-                foreach (var item in this.Items)
-                {
-                    if (item is RadioButton otherradiobtn)
-                    {
-                        if (otherradiobtn != radiobtn)
-                        {
-                            otherradiobtn.IsChecked = false;
-                        }
-                    }
-                }
+                answer.Select();
             }
         }
     }
