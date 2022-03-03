@@ -11,9 +11,24 @@ namespace Leayal.PSO2Launcher.Core.Classes
     class CustomLibraryModMetadata
     {
         const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
-        
+
         const string Text_Advice_RemoveIfNotKnown = "If you don't know what {library-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this custom library file.";
-        private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {library-mod-name} and if {library-mod-name} isn't at latest version, please update {library-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod." + Environment.NewLine + "- " + Text_Advice_RemoveIfNotKnown;
+        private static StringBuilder GetText_Advice_RemoveIfNotKnown(StringBuilder sb)
+            => (sb == null ? new StringBuilder(Text_Advice_RemoveIfNotKnown) : sb.Append(Text_Advice_RemoveIfNotKnown));
+
+        private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {library-mod-name} and if {library-mod-name} isn't at latest version, please update {library-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod.";
+        private static StringBuilder GetText_Advice_UpdateToLatestPossible(StringBuilder sb)
+        {
+            if (sb == null)
+            {
+                sb = new StringBuilder(Text_Advice_UpdateToLatestPossible);
+            }
+            else
+            {
+                sb.Append(Text_Advice_UpdateToLatestPossible);
+            }
+            return GetText_Advice_RemoveIfNotKnown(sb.AppendLine());
+        }
 
         private static readonly string Text_Advice_RemoveTranslationPatchIfNotUsing = "- If you are using a plugin from PSO2 Tweaker's of Arks-Layer, please launch PSO2 Tweaker to update the plugin loader and other plugins to latest version (if it isn't latest yet) to avoid crashes or bugs caused by the plugin(s)."
             + Environment.NewLine + "- If you don't use any plugins coming from PSO2 Tweaker of Arks-Layer, please disable the Plugin Loader in Tweaker's 'Plugin Settings' or remove the file by clicking 'Remove'."
@@ -29,7 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public string FileVersion { get; }
         public string ProductVersion { get; }
 
-        public string FileNameOnly => Path.GetFileName(Filepath);
+        public string FileNameOnly => Path.GetFileName(this.Filepath);
 
         public string Advice { get; }
 
@@ -116,7 +131,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
                     if (string.Equals(this.ProductName, "gshade", StringComparison.OrdinalIgnoreCase) || string.Equals(this.ProductName, "reshade", StringComparison.OrdinalIgnoreCase))
                     {
-                        this.Advice = Text_Advice_UpdateToLatestPossible.Replace("{library-mod-name}", this.ProductName);
+                        this.Advice = GetText_Advice_UpdateToLatestPossible(null).Replace("{library-mod-name}", this.ProductName).ToString();
                     }
                     else if (string.Equals(this.ProductName, "Microsoft® Visual Studio®", StringComparison.OrdinalIgnoreCase)
                         && this.Summary.StartsWith("Microsoft®", StringComparison.OrdinalIgnoreCase)
@@ -133,7 +148,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     }
                     else
                     {
-                        this.Advice = Text_Advice_RemoveIfNotKnown.Replace("{library-mod-name}", "this");
+                        this.Advice = GetText_Advice_RemoveIfNotKnown(null).Replace("{library-mod-name}", "this").ToString();
                     }
                 }
             }

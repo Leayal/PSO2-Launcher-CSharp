@@ -356,10 +356,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                 this.TabMainMenu.ForgetLoginInfoEnabled = true;
                                             });
                                         }
-                                        if (token.RequireOTP)
-                                        {
-                                            // Maybe I should stop here???
-                                        }
                                     }
                                 }
                             }
@@ -369,7 +365,51 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 {
                                     this.TabGameClientUpdateProgressBar.IsSelected = true;
                                 });
-                                token = await this.pso2HttpClient.LoginPSO2Async(this.ss_id, this.ss_pw, cancelToken);
+                                var loginToken = await this.pso2HttpClient.LoginPSO2Async(this.ss_id, this.ss_pw, cancelToken);
+                                if (loginToken.RequireOTP)
+                                {
+                                    for (int i = 1; i <= PSO2LoginDialog.OTP_RetryTimes_Safe; i++)
+                                    {
+                                        var otpDialog = new PSO2LoginOtpDialog() { Owner = this };
+                                        if (i == 1)
+                                        {
+                                            otpDialog.DialogMessage = $"Your account has OTP-protection enabled.{Environment.NewLine}Please input OTP to login (Attempt 1/{PSO2LoginDialog.OTP_RetryTimes_Safe})";
+                                        }
+                                        else if (i == PSO2LoginDialog.OTP_RetryTimes_Safe)
+                                        {
+                                            otpDialog.DialogMessage = $"THIS IS THE LAST ATTEMPT, WRONG OTP FOR {PSO2LoginDialog.OTP_RetryTimes_Safe + 1} TIMES WILL TEMPORARILY LOCK YOUR ACCOUNT.{Environment.NewLine}Please input OTP to login (Attempt {PSO2LoginDialog.OTP_RetryTimes_Safe}/{PSO2LoginDialog.OTP_RetryTimes_Safe})";
+                                        }
+                                        else
+                                        {
+                                            otpDialog.DialogMessage = $"Please input OTP to login (Attempt {i}/{PSO2LoginDialog.OTP_RetryTimes_Safe})";
+                                        }
+                                        if (otpDialog.ShowCustomDialog(this) == true)
+                                        {
+                                            // var stuff = NormalizeOTP(_otp);
+                                            if (await this.pso2HttpClient.AuthOTPAsync(loginToken, otpDialog.Otp, cancelToken).ConfigureAwait(true))
+                                            {
+                                                token = loginToken;
+
+                                                otpDialog.ClearPassword();
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                Prompt_Generic.Show(this, $"- Please check your OTP device's date and time.{Environment.NewLine}- Verify if the OTP system is in sync with the the system.", "Wrong OTP", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            loginToken.Dispose();
+                                            break;
+                                        }
+                                        otpDialog.ClearPassword();
+                                    }
+                                }
+                                else
+                                {
+                                    token = loginToken;
+                                }
                             }
                         }
 

@@ -18,11 +18,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class PSO2LoginDialog : MetroWindowEx, IDisposable
     {
+        public const int OTP_RetryTimes_Safe = 5;
+        // private readonly static MetroDialogSettings _otpDialogSetting = new MetroDialogSettings() { AnimateHide = false, AnimateShow = false, OwnerCanCloseWithDialog = true };
+        private static readonly LoginDialogSettings _otpDialogSetting = new LoginDialogSettings() { RememberCheckBoxVisibility = Visibility.Collapsed, ShouldHideUsername = true, EnablePasswordPreview = true };
         public readonly static DependencyProperty IsInLoadingProperty = DependencyProperty.Register("IsInLoading", typeof(bool), typeof(PSO2LoginDialog), new PropertyMetadata(false));
         public bool IsInLoading
         {
             get => (bool)this.GetValue(IsInLoadingProperty);
             set => this.SetValue(IsInLoadingProperty, value);
+        }
+
+        public readonly static DependencyProperty ShowOtpFieldProperty = DependencyProperty.Register("ShowOtpField", typeof(bool), typeof(PSO2LoginDialog), new PropertyMetadata(false));
+        public bool ShowOtpField
+        {
+            get => (bool)this.GetValue(ShowOtpFieldProperty);
+            set => this.SetValue(ShowOtpFieldProperty, value);
         }
 
         private readonly PSO2HttpClient webclient;
@@ -106,11 +116,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)
         {
             var anothertoken = this.cancelsrc.Token;
-            anothertoken.Register(() =>
-            {
-                this.CustomDialogResult = false;
-                this.Close();
-            });
+            anothertoken.Register(this.CancelLoginInput);
             try
             {
                 if (!this.cancelsrc.IsCancellationRequested)
@@ -122,6 +128,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 // Shouldn't be here
             }
+        }
+
+        private void CancelLoginInput()
+        {
+            this.CustomDialogResult = false;
+            this.Close();
         }
 
         private async void ButtonLogin_Click(object sender, RoutedEventArgs e)
@@ -156,10 +168,56 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.Close();
                                 return;
                             }
-                            this._loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken).ConfigureAwait(true);
+                            var loginToken = await this.webclient.LoginPSO2Async(id, pw, canceltoken).ConfigureAwait(true);
 
-                            this.CustomDialogResult = true;
-                            this.Close();
+                            if (loginToken.RequireOTP)
+                            {
+                                for (int i = 1; i <= OTP_RetryTimes_Safe; i++)
+                                {
+                                    var otpDialog = new PSO2LoginOtpDialog() { Owner = this };
+                                    if (i == 1)
+                                    {
+                                        otpDialog.DialogMessage = $"Your account has OTP-protection enabled.{Environment.NewLine}Please input OTP to login (Attempt 1/{OTP_RetryTimes_Safe})";
+                                    }
+                                    else if (i == OTP_RetryTimes_Safe)
+                                    {
+                                        otpDialog.DialogMessage = $"THIS IS THE LAST ATTEMPT, WRONG OTP FOR {OTP_RetryTimes_Safe + 1} TIMES WILL TEMPORARILY LOCK YOUR ACCOUNT.{Environment.NewLine}Please input OTP to login (Attempt {OTP_RetryTimes_Safe}/{OTP_RetryTimes_Safe})";
+                                    }
+                                    else
+                                    {
+                                        otpDialog.DialogMessage = $"Please input OTP to login (Attempt {i}/{OTP_RetryTimes_Safe})";
+                                    }
+                                    if (otpDialog.ShowCustomDialog(this) == true)
+                                    {
+                                        // var stuff = NormalizeOTP(_otp);
+                                        if (await this.webclient.AuthOTPAsync(loginToken, otpDialog.Otp, canceltoken).ConfigureAwait(true))
+                                        {
+                                            this._loginToken = loginToken;
+
+                                            otpDialog.ClearPassword();
+                                            this.CustomDialogResult = true;
+                                            this.Close();
+                                            return;
+                                        }
+                                        else
+                                        {
+                                            Prompt_Generic.Show(this, $"- Please check your OTP device's date and time.{Environment.NewLine}- Verify if the OTP system is in sync with the the system.", "Wrong OTP", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        loginToken.Dispose();
+                                        break;
+                                    }
+                                    otpDialog.ClearPassword();
+                                }
+                            }
+                            else
+                            {
+                                this._loginToken = loginToken;
+                                this.CustomDialogResult = true;
+                                this.Close();
+                            }
                         }
                     }
                 }
@@ -182,6 +240,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
+
+        private static string NormalizeOTP(string otpRaw) => otpRaw.Replace(' ', string.Empty[0]);
 
         private PSO2LoginToken _loginToken;
         public PSO2LoginToken LoginToken => this._loginToken;

@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj" />
   </ItemGroup>
 

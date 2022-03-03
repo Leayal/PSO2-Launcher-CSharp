@@ -497,7 +497,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     new System.Windows.Documents.Run(" on Github."),
                 }, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            catch (System.Runtime.InteropServices.COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
+            catch (COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
             {
                 if (btn != null)
                 {
@@ -552,13 +552,87 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private readonly static Uri SEGALauncherNewsUrl = new("https://launcher.pso2.jp/ngs/01/");
+        
         private void WebViewCompatControl_Initialized(object sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
-                webview.Navigated += this.Webview_Navigated;
-                webview.NavigateTo(SEGALauncherNewsUrl);
+                if (webview.IsUsingWebView2)
+                {
+                    webview.Navigated += this.Webview_Navigated;
+                    webview.NavigateTo(StaticResources.SEGALauncherNewsUrl);
+                }
+                else
+                {
+                    // Using IE which has known inconsistent COM issue when interop with the native component on user's machine.
+                    // It may throw some kind of "wrong method signature" COM exception.
+                    try
+                    {
+                        webview.Navigated += this.Webview_Navigated;
+                        webview.NavigateTo(StaticResources.SEGALauncherNewsUrl);
+                    }
+                    catch (COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
+                    {
+                        var btn = new WeirdButton() { Content = "Click to load launcher web view" };
+                        btn.Click += this.LoadLauncherWebView_Click;
+                        this.LauncherWebView.Child = btn;
+                        
+                        var lines = new List<System.Windows.Documents.Inline>();
+                        lines.Add(new System.Windows.Documents.Run("An error has occurred while initializing the Internet Explorer web engine."));
+                        lines.Add(new System.Windows.Documents.LineBreak());
+                        lines.Add(new System.Windows.Documents.Run("It seems like the Internet Explorer component on your operating system is not compatible with this launcher."));
+                        lines.Add(new System.Windows.Documents.LineBreak());
+                        lines.Add(new System.Windows.Documents.Run("If you still want to load the news page, please try the alternative by installing WebView2 Evergreen Runtime."));
+                        lines.Add(new System.Windows.Documents.LineBreak());
+                        lines.Add(new System.Windows.Documents.LineBreak());
+
+                        static void AAAAAAA(List<System.Windows.Documents.Inline> inlines)
+                        {
+                            inlines.Add(new System.Windows.Documents.LineBreak());
+                            inlines.Add(new System.Windows.Documents.Run("If the file can't be found or you want to get anew, you can "));
+                            inlines.Add(new CommandHyperlink(new System.Windows.Documents.Run("go to the Microsoft's download page")) { NavigateUri = StaticResources.Url_OpenWebView2InstallerDownloadPage });
+                            inlines.Add(new System.Windows.Documents.Run(" to download the installer and run it. "));
+                            inlines.Add(new CommandHyperlink(new System.Windows.Documents.Run("(Or click here to download it directly)")) { NavigateUri = StaticResources.Url_DownloadWebView2BootstrapInstaller });
+                        }
+
+                        var pso2_bin = this.config_main.PSO2_BIN;
+                        if (!string.IsNullOrWhiteSpace(pso2_bin))
+                        {
+                            var path_installerFromSEGA = Path.Combine(pso2_bin, "microsoftedgewebview2setup.exe");
+                            if (File.Exists(path_installerFromSEGA))
+                            {
+                                lines.Add(new System.Windows.Documents.Run("Please run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use. "));
+                                lines.Add(new ShowLocalFileHyperlink(new System.Windows.Documents.Run("(Click here to show it in File Explorer)")) { NavigateUri = new Uri(path_installerFromSEGA) });
+                                AAAAAAA(lines);
+                            }
+                            else
+                            {
+                                lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
+                                AAAAAAA(lines);
+                            }
+                        }
+                        else
+                        {
+                            lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
+                            AAAAAAA(lines);
+                        }
+                        Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
+
+                        webview.Dispose();
+                    }
+                }
+            }
+        }
+
+        // Combine with WebViewCompatControl_Initialized:
+        // The first navigated will be allow. Any subsequent navigations will open with default browser.
+        // This is to allow the first navigation which goes to the launcher page.
+        private void Webview_Navigated(object sender, NavigationEventArgs e)
+        {
+            if (sender is IWebViewCompatControl webview)
+            {
+                webview.Navigated -= this.Webview_Navigated;
+                webview.Navigating += this.Webview_Navigating;
             }
         }
 
@@ -567,15 +641,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.config_main.LauncherCheckForPSO2GameUpdateAtStartup)
             {
                 await StartGameClientUpdate(false, this.config_main.LauncherCheckForPSO2GameUpdateAtStartupPrompt);
-            }
-        }
-
-        private void Webview_Navigated(object sender, NavigationEventArgs e)
-        {
-            if (sender is IWebViewCompatControl webview)
-            {
-                webview.Navigated -= this.Webview_Navigated;
-                webview.Navigating += this.Webview_Navigating;
             }
         }
 
@@ -589,12 +654,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     if (e.Uri.IsAbsoluteUri)
                     {
-                        if (string.Equals(e.Uri.AbsoluteUri, SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
+                        if (string.Equals(e.Uri.AbsoluteUri, StaticResources.SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
                         WindowsExplorerHelper.OpenUrlWithDefaultBrowser(e.Uri.AbsoluteUri);
                     }
                     else if (Uri.TryCreate(wvc.CurrentUrl, e.Uri.ToString(), out var absUri))
                     {
-                        if (string.Equals(absUri.AbsoluteUri, SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
+                        if (string.Equals(absUri.AbsoluteUri, StaticResources.SEGALauncherNewsUrl.AbsoluteUri, StringComparison.OrdinalIgnoreCase)) return;
                         WindowsExplorerHelper.OpenUrlWithDefaultBrowser(absUri);
                     }
                 }

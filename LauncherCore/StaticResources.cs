@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core
 {
@@ -24,5 +20,7 @@ namespace Leayal.PSO2Launcher.Core
         public static readonly Uri Url_ShowPathInExplorer_SpecialFolder_JP_PSO2Config = new Uri("pso2lealauncher://showpathinexplorer/specialfolder/jp/pso2config");
 
         public static readonly Uri Url_Toolbox_AlphaReactorCounter = new Uri("pso2lealauncher://toolbox/alphareactorcounter");
+
+        public static readonly Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");
     }
 }

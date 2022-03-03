@@ -1,56 +1,41 @@
 ﻿using System;
 using System.IO;
+using System.IO.Pipes;
 using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Leayal.PSO2Launcher.AdminProcess
 {
-    public static class AdminProcess
+    public static partial class AdminProcess
     {
-        private const string UniqueName = "pso2lealauncher-v4-elevate";
         public static readonly bool IsCurrentProcessAdmin;
+        private static AnonymousPipeServerStream? _inStream;
+        private static AnonymousPipeClientStream? _outStream;
+
+        /// <summary>Gets a boolean determines whether the current process is the host of elevated process.</summary>
+        /// <returns>A boolean. True if the current process is the host. Otherwise False.</returns>
+        public static bool IsHost => AdminEntryProgram.isHost;
 
         static AdminProcess()
         {
-            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            using (var identity = WindowsIdentity.GetCurrent())
             {
                 var principal = new WindowsPrincipal(identity);
                 // If is administrator, the variable updates from False to True
                 IsCurrentProcessAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
+                principal = null;
             }
         }
 
-        public static bool InitializeProcess(string[] args)
-        {
-            using (var mutex = new Mutex(true, Path.Combine("Local", UniqueName), out var isNew))
-            {
-                if (isNew)
-                {
-                    try
-                    {
-                        if (args.Length == 2 && string.Equals(args[0], "--elevate-process", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(args[1]))
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    finally
-                    {
-                        mutex.ReleaseMutex();
-                    }
-                }
-            }
-            return false;
-        }
-
+        /// <summary>Gets a boolean determines whether the elevated process is running.</summary>
+        /// <returns>A boolean. True if the process is running. Otherwise False.</returns>
         public static bool IsRunning
         {
             get
             {
-                if (Mutex.TryOpenExisting(UniqueName, out var mutex))
+                if (Mutex.TryOpenExisting(AdminEntryProgram.UniqueName, out var mutex))
                 {
                     mutex.Dispose();
                     return true;

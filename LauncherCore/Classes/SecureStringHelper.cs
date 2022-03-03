@@ -41,6 +41,33 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
+        /// <summary>Invoke the <see cref="SecretRevealedText"/> delegate with the revealed password in form of an unmanaged array of <seealso cref="char"/>.</summary>
+        /// <param name="myself">The <seealso cref="SecureString"/> to reveal.</param>
+        /// <param name="revealed">The delegate to invoke.</param>
+        /// <remarks>The unmanaged array will be safelty cleared and deallocated after when the delegate exits for whatever reasons. (Unhandled exceptions or returned void).</remarks>
+        /// <exception cref="ObjectDisposedException">The <seealso cref="SecureString"/> has already been disposed.</exception>
+        public static void Reveal<TArg>(this SecureString myself, SecretRevealedTextWithParam<TArg> revealed, TArg arg)
+        {
+            IntPtr pointer = IntPtr.Zero;
+            try
+            {
+                pointer = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                ReadOnlySpan<char> span;
+                unsafe
+                {
+                    span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
+                }
+                revealed.Invoke(span, arg);
+            }
+            finally
+            {
+                if (pointer != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer);
+                }
+            }
+        }
+
         public static void Import(this SecureString myself, byte[] data) => Import(myself, data, null);
 
         public static void Import(this SecureString myself, byte[] data, byte[] entropy)
@@ -164,26 +191,34 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 throw new ArgumentException(nameof(stream));
             }
 
-            int byteWritten = 0;
-            Reveal(myself, (in ReadOnlySpan<char> span) =>
+            IntPtr pointer = IntPtr.Zero;
+            byte[]? buffer = null;
+            try
             {
-                byteWritten = encoding.GetByteCount(span);
-                byte[] buffer = null;
-                try
+                pointer = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                ReadOnlySpan<char> span;
+                unsafe
                 {
-                    buffer = new byte[byteWritten];
-                    encoding.GetBytes(span, buffer);
-                    stream.Write(buffer, 0, byteWritten);
+                    span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
                 }
-                finally
+
+                writtenBytes = encoding.GetByteCount(span);
+                buffer = new byte[writtenBytes];
+                encoding.GetBytes(span, buffer);
+                stream.Write(buffer, 0, writtenBytes);
+            }
+            finally
+            {
+                if (buffer != null)
                 {
-                    if (buffer != null)
-                    {
-                        Array.Fill<byte>(buffer, 0);
-                    }
+                    Array.Fill<byte>(buffer, 0);
                 }
-            });
-            writtenBytes = byteWritten;
+
+                if (pointer != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer);
+                }
+            }
         }
 
         public static int GetByteCount(this SecureString myself, Encoding encoding)
@@ -193,14 +228,27 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 throw new ArgumentNullException(nameof(myself));
             }
 
-            int byteWritten = 0;
-            Reveal(myself, (in ReadOnlySpan<char> span) =>
+            IntPtr pointer = IntPtr.Zero;
+            try
             {
-                byteWritten = encoding.GetByteCount(span);
-            });
-            return byteWritten;
+                pointer = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                ReadOnlySpan<char> span;
+                unsafe
+                {
+                    span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
+                }
+                return encoding.GetByteCount(span);
+            }
+            finally
+            {
+                if (pointer != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer);
+                }
+            }
         }
 
         public delegate void SecretRevealedText(in ReadOnlySpan<char> characters);
+        public delegate void SecretRevealedTextWithParam<TArg>(in ReadOnlySpan<char> characters, TArg arg);
     }
 }

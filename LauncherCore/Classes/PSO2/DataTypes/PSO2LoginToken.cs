@@ -65,19 +65,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             {
                 unsafe
                 {
-                    fixed (char* c = this.UserId)
+                    if (this.UserId != null && this.UserId.Length != 0)
                     {
-                        for (int i = 0; i < this.UserId.Length; i++)
+                        fixed (char* c = this.UserId)
                         {
-                            c[i] = '\0';
+                            for (int i = 0; i < this.UserId.Length; i++)
+                            {
+                                c[i] = '\0';
+                            }
                         }
                     }
 
-                    fixed (char* c = this.Token)
+                    if (this.Token != null && this.Token.Length != 0)
                     {
-                        for (int i = 0; i < this.Token.Length; i++)
+                        fixed (char* c = this.Token)
                         {
-                            c[i] = '\0';
+                            for (int i = 0; i < this.Token.Length; i++)
+                            {
+                                c[i] = '\0';
+                            }
                         }
                     }
                 }

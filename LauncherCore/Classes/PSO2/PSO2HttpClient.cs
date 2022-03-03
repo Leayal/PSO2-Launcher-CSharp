@@ -67,6 +67,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         #region | Simple public APIs |
 
+#nullable enable
         public async Task<PSO2LoginToken> LoginPSO2Async(SecureString username, SecureString password, CancellationToken cancellationToken)
         {
             if (username == null)
@@ -126,6 +127,63 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
         }
+
+        public async Task<bool> AuthOTPAsync(PSO2LoginToken loginToken, SecureString otp, CancellationToken cancellationToken)
+        {
+            if (loginToken == null)
+            {
+                throw new ArgumentNullException(nameof(loginToken));
+            }
+            if (otp == null)
+            {
+                throw new ArgumentNullException(nameof(otp));
+            }
+            else if (otp.Length == 0)
+            {
+                throw new ArgumentException(null, nameof(otp));
+            }
+            var url = new Uri("https://auth.pso2.jp/auth/v1/otpAuth");
+            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            {
+                SetUA_PSO2_Launcher(request);
+                request.Headers.Host = url.Host;
+                request.Headers.ConnectionClose = true;
+                using (var content = new PSO2OtpAuthContent(loginToken, otp))
+                {
+                    request.Content = content;
+
+                    // Don't retry sending request. It may be considered as brute-force attack.
+                    // Instead, let it throw naturally and then user can attempt another login by themselves (retry by themselves).
+
+                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        using (var stream = response.Content.ReadAsStream(cancellationToken))
+                        using (var doc = JsonDocument.Parse(stream))
+                        {
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("result", out var result) && result.ValueKind == JsonValueKind.Number)
+                            {
+                                var code = result.GetInt32();
+                                if (code == 0)
+                                {
+                                    return true;
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                throw new UnexpectedDataFormatException();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#nullable restore
 
         public async Task<PatchRootInfo> GetPatchRootInfoAsync(CancellationToken cancellationToken)
         {
