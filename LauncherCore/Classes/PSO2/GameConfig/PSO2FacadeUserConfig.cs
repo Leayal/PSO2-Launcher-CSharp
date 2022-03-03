@@ -25,11 +25,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-
-                var obj = this.conf["Windows"] as ConfigToken;
-                if (obj["DisplayNo"] is long l)
+                if (this.conf["Windows"] is ConfigToken obj && obj["DisplayNo"] is long l)
                 {
-                    // Key not found
                     return new MonitorCountWrapper((int)Math.Clamp(l, 0L, int.MaxValue));
                 }
                 else
@@ -48,27 +45,27 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var obj = this.conf["Windows"] as ConfigToken;
-                if (obj == null)
+                if (this.conf["Windows"] is ConfigToken obj)
                 {
-                    return ScreenMode.Windowed;
-                    // Key not found
+                    if (!(obj["VirtualFullScreen"] is bool b_vfs))
+                    {
+                        b_vfs = false;
+                    }
+                    if (!(obj["FullScreen"] is bool b_fs))
+                    {
+                        b_fs = false;
+                    }
+                    if (b_vfs)
+                        return ScreenMode.BorderlessFullscreen;
+                    else if (b_fs)
+                        return ScreenMode.ExclusiveFullsreen;
+                    else
+                        return ScreenMode.Windowed;
                 }
-
-                if (!(obj["VirtualFullScreen"] is bool b_vfs))
-                {
-                    b_vfs = false;
-                }
-                if (!(obj["FullScreen"] is bool b_fs))
-                {
-                    b_fs = false;
-                }
-                if (b_vfs)
-                    return ScreenMode.BorderlessFullscreen;
-                else if (b_fs)
-                    return ScreenMode.ExclusiveFullsreen;
                 else
+                {
                     return ScreenMode.Windowed;
+                }
             }
             set
             {
@@ -96,8 +93,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var obj = this.conf["Windows"] as ConfigToken;
-                if (obj != null)
+                if (this.conf["Windows"] is ConfigToken obj)
                 {
                     if (obj["Width"] is long l_w && obj["Height"] is long l_h)
                     {
@@ -126,8 +122,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_104"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_104"] is long l)
                 {
                     return (l != 0);
                 }
@@ -163,8 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Bgm"] is long l)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Bgm"] is long l)
                 {
                     return Math.Clamp((int)l, 0, 100);
                 }
@@ -181,8 +175,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Se"] is long l)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Se"] is long l)
                 {
                     return Math.Clamp((int)l, 0, 100);
                 }
@@ -199,8 +192,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Movie"] is long l)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Movie"] is long l)
                 {
                     return Math.Clamp((int)l, 0, 100);
                 }
@@ -217,8 +209,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Voice"] is long l)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Volume"] is ConfigToken token_volumn && token_volumn["Voice"] is long l)
                 {
                     return Math.Clamp((int)l, 0, 100);
                 }
@@ -235,8 +226,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Play"] is ConfigToken token_player && token_player["GlobalFocus"] is bool b)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Play"] is ConfigToken token_player && token_player["GlobalFocus"] is bool b)
                 {
                     return b;
                 }
@@ -253,8 +243,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["Play"] is ConfigToken token_player && token_player["Surround"] is bool b)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["Play"] is ConfigToken token_player && token_player["Surround"] is bool b)
                 {
                     return b;
                 }
@@ -272,12 +261,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Communication"] is ConfigToken token_comm && token_comm["UseVoiceChatEnable"] is bool b)
+                if (this.conf["Config"] is ConfigToken token && token["Communication"] is ConfigToken token_comm && token_comm["UseVoiceChatEnable"] is bool b)
                 {
                     return b;
                 }
-                return false;
+                return true;
             }
             set
             {
@@ -291,12 +279,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_129"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_129"] is long l)
                 {
                     return (l != 0);
                 }
-                return false;
+                return true;
             }
             set
             {
@@ -309,8 +296,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["Config"] as ConfigToken;
-                if (token != null && token["Sound"] is ConfigToken token_sound && token_sound["VoiceChatVolume"] is long l)
+                if (this.conf["Config"] is ConfigToken token && token["Sound"] is ConfigToken token_sound && token_sound["VoiceChatVolume"] is long l)
                 {
                     return Math.Clamp((int)l, 0, 100);
                 }
@@ -330,8 +316,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_102"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_102"] is long l)
                 {
                     if (Leayal.Shared.EnumHelper.Clamp<FrameRate_Reboot>(l, out var value))
                     {
@@ -352,8 +337,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_097"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_097"] is long l)
                 {
                     return (l != 0);
                 }
@@ -371,8 +355,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_101"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_101"] is long l)
                 {
                     if (Leayal.Shared.EnumHelper.Clamp<TextureResolution>(l, out var value))
                     {
@@ -393,8 +376,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_100"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_100"] is long l)
                 {
                     if (Leayal.Shared.EnumHelper.Clamp<TextureFiltering>(l, out var value))
                     {
@@ -415,8 +397,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_078"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_078"] is long l)
                 {
                     return (l != 0);
                 }
@@ -434,8 +415,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_113"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_113"] is long l)
                 {
                     if (Leayal.Shared.EnumHelper.Clamp<RenderResolution>(l, out var value))
                     {
@@ -456,8 +436,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_071"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_071"] is long l)
                 {
                     if (Leayal.Shared.EnumHelper.Clamp<AntiAliasing>(l, out var value))
                     {
@@ -478,8 +457,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_082"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_082"] is long l)
                 {
                     return Math.Clamp(Convert.ToInt32(l), 0, 100);
                 }
@@ -497,8 +475,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_079"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_079"] is long l)
                 {
                     return Math.Clamp((int)l, 5, 32);
                 }
@@ -516,8 +493,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_024"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_024"] is long l)
                 {
                     return Math.Clamp((int)l, 8, 32);
                 }
@@ -535,8 +511,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         {
             get
             {
-                var token = this.conf["ConfigR"] as ConfigToken;
-                if (token != null && token["ConfigId_103"] is long l)
+                if (this.conf["ConfigR"] is ConfigToken token && token["ConfigId_103"] is long l)
                 {
                     return Math.Clamp((int)l, 1, 5);
                 }
