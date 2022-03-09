@@ -319,20 +319,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             var tasksOfLists = new List<Task<PatchListMemory>>(4);
-
-            if (headacheMatterAgain is PatchListMemory patchListMemory)
-            {
-                this.OnFileCheckBegin(patchListMemory.Count);
-            }
-            else
-            {
-                this.OnFileCheckBegin(-1);
-            }
-
             // Begin file check
-
-            // Maybe Enum.HasFlag() is better than this mess????
-
             bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
                 flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
                 flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),

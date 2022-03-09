@@ -597,6 +597,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
+                catch (EmptyPatchListException ex)
+                {
+                    this.CreateNewParagraphInLog("[GameUpdater] " + ex.Message);
+                    Prompt_Generic.ShowError(this, ex);
+                }
                 catch (System.Net.Http.HttpRequestException ex)
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");

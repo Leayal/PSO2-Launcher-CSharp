@@ -190,17 +190,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // Why the official launcher request twice over the same thing within the same time frame..
             // Don't use 443, server doesn't listen that port.
             var url = new Uri("http://patch01.pso2gs.net/patch_prod/patches/management_beta.txt");
-            using (var response = await this.SendAsyncWithRetries(() =>
+
+            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Host = url.Host;
                 SetUA_pso2launcher(request);
-                return request;
-            }, HttpCompletionOption.ResponseContentRead, cancellationToken))
-            {
-                var repContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-                return new PatchRootInfo(in repContent);
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
+                {
+                    response.EnsureSuccessStatusCode();
+                    var repContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    return new PatchRootInfo(in repContent);
+                }
             }
         }
 
@@ -329,19 +329,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 throw new ArgumentException(null, nameof(filename));
             }
-            ;
 
             HttpResponseMessage response = null;
             try
             {
-                response = await this.SendAsyncWithRetries(() =>
+                using (var request = new HttpRequestMessage(HttpMethod.Get, filename))
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, filename);
                     SetUA_AQUA_HTTP(request);
                     request.Headers.Host = filename.Host;
-                    return request;
-                }, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                return response;
+                    response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+                    return response;
+                }
             }
             catch
             {
@@ -355,72 +354,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         #endregion
 
         #region | Private or inner methods |
-
-        private async Task<HttpResponseMessage> SendAsyncWithRetries(Func<HttpRequestMessage> requestFactory, HttpCompletionOption httpCompletionOption, CancellationToken cancellationToken)
-        {
-            int retrytimes = 0;
-            while (Interlocked.Increment(ref retrytimes) < WebFailure_RetryTimes)
-            {
-                try
-                {
-                    using (var request = requestFactory.Invoke())
-                    {
-                        var response = await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            return response;
-                        }
-                        else
-                        {
-                            using (response)
-                            {
-                                return response.EnsureSuccessStatusCode();
-                            }
-                        }
-                    }
-                }
-                catch (HttpRequestException ex)
-                {
-                    // Throw immediately if it's 4xx codes.
-                    var errorcode = (int)ex.StatusCode;
-                    if (errorcode >= 400 && errorcode < 500)
-                    {
-                        throw;
-                    }
-
-                    // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
-                    // Beside, another attempt right away after a failure usually doesn't success.
-                    await Task.Delay(WebFailure_RetryDelayMiliseconds, cancellationToken);
-                }
-                catch (WebException ex)
-                {
-                    if (ex.Response is HttpWebResponse response)
-                    {
-                        // Throw immediately if it's 4xx codes.
-                        var errorcode = (int)response.StatusCode;
-                        if (errorcode >= 400 && errorcode < 500)
-                        {
-                            throw;
-                        }
-                    }
-
-                    // Delay one second before another retry to avoid choking the server in case it's a time out failure due to server overload.
-                    // Beside, another attempt right away after a failure usually doesn't success.
-                    await Task.Delay(WebFailure_RetryDelayMiliseconds, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-            }
-
-            // Last retry outside in order to trigger exception throw.
-            using (var request = requestFactory.Invoke())
-            {
-                var lasttry_response = await this.client.SendAsync(request, httpCompletionOption, cancellationToken);
-                return lasttry_response.EnsureSuccessStatusCode();
-            }
-        }
 
 #nullable enable
         private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
@@ -473,19 +406,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var baseUri = new Uri(patchBaseUrl);
             var filelistUrl = new Uri(baseUri, filelistFilename);
 
-            using (var response = await this.SendAsyncWithRetries(() =>
+            using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl);
                 request.Headers.Host = baseUri.Host;
                 SetUA_AQUA_HTTP(request);
-                return request;
-            }, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
-            {
-                using (var stream = response.Content.ReadAsStream(cancellationToken))
-                using (var tr = new StreamReader(stream))
-                using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    return parser.ToMemory();
+                    response.EnsureSuccessStatusCode();
+                    using (var stream = response.Content.ReadAsStream(cancellationToken))
+                    using (var tr = new StreamReader(stream))
+                    using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                    {
+                        return parser.ToMemory();
+                    }
                 }
             }
         }
@@ -496,28 +429,28 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var baseUri = new Uri(patchUrl);
             var requestUri = new Uri(baseUri, "version.ver");
 
-            // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
-            using (var response = await this.SendAsyncWithRetries(() =>
+            using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
                 request.Headers.Host = baseUri.Host;
                 SetUA_AQUA_HTTP(request);
-                return request;
-            }, HttpCompletionOption.ResponseContentRead, cancellationToken))
-            {
-                var raw = await response.Content.ReadAsStringAsync(cancellationToken);
-                if (string.IsNullOrWhiteSpace(raw))
+                // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
                 {
-                    throw new UnexpectedDataFormatException();
-                }
+                    response.EnsureSuccessStatusCode();
+                    var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+                    if (string.IsNullOrWhiteSpace(raw))
+                    {
+                        throw new UnexpectedDataFormatException();
+                    }
 
-                if (PSO2Version.TrySafeParse(in raw, out var result))
-                {
-                    return result;
-                }
-                else
-                {
-                    throw new UnexpectedDataFormatException();
+                    if (PSO2Version.TrySafeParse(in raw, out var result))
+                    {
+                        return result;
+                    }
+                    else
+                    {
+                        throw new UnexpectedDataFormatException();
+                    }
                 }
             }
         }

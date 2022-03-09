@@ -294,6 +294,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            catch (EmptyPatchListException ex)
+            {
+                this.CreateNewParagraphInLog("[GameUpdater] " + ex.Message);
+                Prompt_Generic.ShowError(this, ex);
+            }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
                 this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);

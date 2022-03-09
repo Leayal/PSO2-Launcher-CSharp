@@ -22,8 +22,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Progressive file hash cache. Which should reduce the risk of progress loss when application crash or computer shutdown due to any reasons (black out, BSOD).
         // Which also means the cancellation should follow along.
 
-        // ...  Welp
-
         private const string Name_PatchRootInfo = "management_beta.txt";
 
         // private readonly string dir_pso2bin;
@@ -185,6 +183,23 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             var tweakerCachePath = Path.Combine(pso2tweaker_dirpath, "client.json");
                             tweakerhashcacheDump = new PSO2TweakerHashCache(tweakerCachePath);
                             tweakerhashcacheDump.Load();
+                        }
+
+                        if (patchlist.CanCount)
+                        {
+                            var itemCount = patchlist.Count;
+                            if (itemCount == 0)
+                            {
+                                throw new EmptyPatchListException();
+                            }
+                            else
+                            {
+                                this.OnFileCheckBegin(itemCount);
+                            }
+                        }
+                        else
+                        {
+                            this.OnFileCheckBegin(-1);
                         }
 
                         var t_check = Task.Factory.StartNew(async () =>
