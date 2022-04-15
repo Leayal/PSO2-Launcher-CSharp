@@ -106,15 +106,15 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <localui:EnumComboBox ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.FilterTypes},Mode=OneTime,IsAsync=True}" />
-                    <TextBox Grid.Column="1" x:Name="FilterByString" />
-                    <DataGrid Grid.Row="1" Grid.ColumnSpan="2"
+                    <localui:EnumComboBox ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.FilterTypes},Mode=OneTime,IsAsync=True}" SelectedIndex="0" SelectionChanged="FilterType_SelectionChanged" />
+                    <localui:TextBoxDelayedTextChange Grid.Column="1" x:Name="FilterByString" TextChanged="FilterByString_TextChanged" />
+                    <DataGrid Grid.Row="1" Grid.ColumnSpan="2" x:Name="PresetCustomization"
                         IsReadOnly="False" Background="Transparent" BorderThickness="0" BorderBrush="{x:Null}"
                         ScrollViewer.CanContentScroll="true" ScrollViewer.PanningMode="Both" AlternationCount="2"
                         HeadersVisibility="Column" ColumnWidth="50" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" CanUserReorderColumns="False" AutoGenerateColumns="False"
                         EnableRowVirtualization="True" EnableColumnVirtualization = "true"
                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.IsContainerVirtualizable="True"
-                        VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                        VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizingWhenGrouping="False"
                         ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}">
                         <DataGrid.Columns>
                             <DataGridCheckBoxColumn Width="50" />

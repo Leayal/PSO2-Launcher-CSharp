@@ -10,6 +10,8 @@ using Leayal.SharedInterfaces;
 using System.Windows.Controls;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.UIElements;
+using System.Windows.Data;
+using System.ComponentModel;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -18,19 +20,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class DataOrganizerWindow : MetroWindowEx
     {
-        public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(IEnumerable), typeof(DataOrganizerWindow));
+        public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
 
         public static readonly DataAction[] DataActions = { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.MoveAndSymlink };
 
         public static readonly EnumComboBox.ValueDOM<FilterType>[] FilterTypes = System.Linq.Enumerable.ToArray(EnumComboBox.EnumToDictionary<FilterType>().Values);
 
-        public IEnumerable CustomizationFileList
+        public ICollectionView CustomizationFileList
         {
-            get => (IEnumerable)this.GetValue(CustomizationFileListProperty);
+            get => (ICollectionView)this.GetValue(CustomizationFileListProperty);
             set => this.SetValue(CustomizationFileListProperty, value);
         }
 
         private readonly Classes.ConfigurationFile _config;
+        private FilterType _currentFilterType;
+        private string _currentFilterString;
 
         public DataOrganizerWindow(Classes.ConfigurationFile conf)
         {
@@ -50,7 +54,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     list.Add(new CustomizationFileListItem() { RemoteFilename = item.GetFilenameWithoutAffix() });
                 }
-                this.CustomizationFileList = list;
+                this.CustomizationFileList = CollectionViewSource.GetDefaultView(list);
             }
 #endif
         }
@@ -126,6 +130,56 @@ namespace Leayal.PSO2Launcher.Core.Windows
             Delete,
             Move,
             MoveAndSymlink
+        }
+
+        private void FilterByString_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox tb)
+            {
+                this._currentFilterString = tb.Text;
+                this.ReFiltering();
+            }
+        }
+
+        private void FilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems != null && e.AddedItems.Count != 0 && e.AddedItems[0] is EnumComboBox.ValueDOM<FilterType> val)
+            {
+                this._currentFilterType = val.Value;
+                this.ReFiltering();
+            }
+        }
+
+        private void ReFiltering()
+        {
+            if (this.CustomizationFileList != null)
+            {
+                switch (this._currentFilterType)
+                {
+                    case FilterType.Name:
+                        this.CustomizationFileList.Filter = this.Filtering_ByName;
+                        break;
+                    default:
+                        this.CustomizationFileList.Filter = null;
+                        break;
+                }
+            }
+        }
+
+        private bool Filtering_ByName(object obj)
+        {
+            if (obj is CustomizationFileListItem item)
+            {
+                if (string.IsNullOrEmpty(this._currentFilterString))
+                {
+                    return true;
+                }
+                else
+                {
+                    return item.RemoteFilename.Contains(this._currentFilterString);
+                }
+            }
+            return false;
         }
     }
 }
