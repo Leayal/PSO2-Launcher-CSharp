@@ -393,16 +393,29 @@ namespace Leayal.PSO2Launcher.Core
                         catch { }
                     });
                 }
-                else if (string.Equals(urlstr, StaticResources.Url_ShowIssuesGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(urlstr, StaticResources.Url_ShowSourceCodeGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     Task.Run(() =>
                     {
                         try
                         {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp/issues");
+                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
                         }
                         catch { }
                     });
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_Toolbox_PSO2DataOrganizer.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var window = new Windows.DataOrganizerWindow(this.config_main);
+                        window.Owner = this.MainWindow;
+                        window.ShowDialog();
+                    }
+                    catch (Exception ex)
+                    {
+                        Core.Windows.Prompt_Generic.ShowError(this.MainWindow, ex);
+                    }
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_OpenWebView2InstallerDownloadPage.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {

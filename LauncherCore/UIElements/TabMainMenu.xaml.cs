@@ -36,6 +36,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonPSO2TroubleshootingClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2TroubleshootingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageLauncherThemingClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageLauncherThemingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameLauncherCompatibilityClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherCompatibilityClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent ButtonPSO2DataOrganizerClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2DataOrganizerClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
 
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(true, (obj, e) =>
         {
@@ -235,8 +236,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public event RoutedEventHandler ButtonCheckForPSO2UpdateClicked
         {
-            add { this.AddHandler(ButtonCheckForPSO2UpdateClickedEvent, value); }
-            remove { this.RemoveHandler(ButtonCheckForPSO2UpdateClickedEvent, value); }
+            add => this.AddHandler(ButtonCheckForPSO2UpdateClickedEvent, value);
+            remove => this.RemoveHandler(ButtonCheckForPSO2UpdateClickedEvent, value);
         }
         private void ButtonCheckForPSO2Update_Click(object sender, RoutedEventArgs e) => this.TriggerButtonCheckForPSO2Update();
         public void TriggerButtonCheckForPSO2Update() => this.RaiseEvent(new RoutedEventArgs(ButtonCheckForPSO2UpdateClickedEvent));
@@ -244,22 +245,20 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public event RoutedEventHandler ButtonManageGameDataClicked
         {
-            add { this.AddHandler(ButtonManageGameDataClickedEvent, value); }
-            remove { this.RemoveHandler(ButtonManageGameDataClickedEvent, value); }
+            add => this.AddHandler(ButtonManageGameDataClickedEvent, value);
+            remove => this.RemoveHandler(ButtonManageGameDataClickedEvent, value);
         }
 
         private void ButtonManageGameData_Click(object sender, RoutedEventArgs e)
-        {
-            this.RaiseEvent(new RoutedEventArgs(ButtonManageGameDataClickedEvent));
-        }
+            => this.RaiseEvent(new RoutedEventArgs(ButtonManageGameDataClickedEvent));
 
         private void ButtonGameStart_Click(object sender, RoutedEventArgs e) => this.TriggerButtonGameStart();
         public void TriggerButtonGameStart() => this.RequestGameStart(this.DefaultGameStartStyle);
 
         public event GameStartRequestEventHandler GameStartRequested
         {
-            add { this.AddHandler(GameStartRequestedEvent, value); }
-            remove { this.RemoveHandler(GameStartRequestedEvent, value); }
+            add => this.AddHandler(GameStartRequestedEvent, value);
+            remove => this.RemoveHandler(GameStartRequestedEvent, value);
         }
         private void MenuItemSpecificGameStartRequest_Click(object sender, RoutedEventArgs e)
         {
@@ -272,8 +271,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public event RoutedEventHandler ForgetLoginInfoClicked
         {
-            add { this.AddHandler(ForgetLoginInfoClickedEvent, value); }
-            remove { this.RemoveHandler(ForgetLoginInfoClickedEvent, value); }
+            add => this.AddHandler(ForgetLoginInfoClickedEvent, value);
+            remove => this.RemoveHandler(ForgetLoginInfoClickedEvent, value);
         }
         private void MenuItemForgetSavedLogin_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ForgetLoginInfoClickedEvent));
@@ -294,8 +293,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public event ButtonScanFixGameDataClickRoutedEventHander ButtonScanFixGameDataClicked
         {
-            add { this.AddHandler(ButtonScanFixGameDataClickedEvent, value); }
-            remove { this.RemoveHandler(ButtonScanFixGameDataClickedEvent, value); }
+            add => this.AddHandler(ButtonScanFixGameDataClickedEvent, value);
+            remove => this.RemoveHandler(ButtonScanFixGameDataClickedEvent, value);
         }
         private void ButtonScanFixGameData_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new ButtonScanFixGameDataClickRoutedEventArgs(Classes.PSO2.GameClientSelection.Auto, ButtonScanFixGameDataClickedEvent));
@@ -306,8 +305,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public event RoutedEventHandler ButtonPSO2GameOptionClicked
         {
-            add { this.AddHandler(ButtonPSO2GameOptionClickedEvent, value); }
-            remove { this.RemoveHandler(ButtonPSO2GameOptionClickedEvent, value); }
+            add => this.AddHandler(ButtonPSO2GameOptionClickedEvent, value);
+            remove => this.RemoveHandler(ButtonPSO2GameOptionClickedEvent, value);
         }
         private void WeirdButtonPSO2GameOption_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ButtonPSO2GameOptionClickedEvent));
@@ -367,6 +366,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private void ButtonManageGameLauncherTheming_Click(object sender, RoutedEventArgs e)
             => this.RaiseEvent(new RoutedEventArgs(ButtonManageLauncherThemingClickedEvent));
 
+        private void MenuItemToolBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is Uri url && url.IsAbsoluteUri)
+            {
+                App.Current.ExecuteCommandUrl(url);
+            }
+        }
+
         private void MenuItem_AlphaReactorCounter_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem item)
@@ -379,11 +386,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        private void MenuItemToolBox_Click(object sender, RoutedEventArgs e)
+        private void MenuItem_PSO2DataOrganizer_Loaded(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem item && item.Tag is Uri url && url.IsAbsoluteUri)
+            if (sender is MenuItem item)
             {
-                App.Current.ExecuteCommandUrl(url);
+                item.Tag = StaticResources.Url_Toolbox_PSO2DataOrganizer;
             }
         }
     }

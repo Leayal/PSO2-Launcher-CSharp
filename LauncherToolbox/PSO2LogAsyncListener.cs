@@ -98,26 +98,24 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             using (var sr = new StreamReader(this.fs))
             {
-                int count = 0;
                 var token = this.cancelSrc.Token;
                 try
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        var line = sr.ReadLine();
+                        var line = await sr.ReadLineAsync();
                         if (string.IsNullOrEmpty(line))
                         {
                             await Task.Delay(5, token);
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine(++count);
                             var data = new PSO2LogData(line);
                             this.DataReceived?.Invoke(this, in data);
                         }
                     }
                 }
-                catch (Exception ex) when (ex is ObjectDisposedException || ex is ObjectDisposedException)
+                catch (Exception ex) when (ex is ObjectDisposedException || ex is TaskCanceledException)
                 {
                 }
             }

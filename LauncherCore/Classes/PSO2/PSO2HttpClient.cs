@@ -199,7 +199,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     response.EnsureSuccessStatusCode();
                     var repContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                    return new PatchRootInfo(in repContent);
+                    return new PatchRootInfo(repContent);
                 }
             }
         }

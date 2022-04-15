@@ -294,26 +294,24 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         this.RefreshDate();
                     }
-                    if (!long.TryParse(datas[3].Span, out var playeridNumber))
+                    if (long.TryParse(datas[3].Span, out var playeridNumber) || long.TryParse(datas[datas.Count - 3].Span, out playeridNumber))
                     {
-                        playeridNumber = long.Parse(datas[datas.Count - 3].Span);
-                    }
-                    if (dateonly_logtime_jst == dateonly_currenttime_jst)
-                    {
-                        this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
-                    }
-                    else
-                    {
-                        this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
+                        if (dateonly_logtime_jst == dateonly_currenttime_jst)
+                        {
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
+                        }
+                        else
+                        {
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
+                        }
                     }
                 }
                 else
                 {
-                    if (!long.TryParse(datas[3].Span, out var playeridNumber))
+                    if (long.TryParse(datas[3].Span, out var playeridNumber) || long.TryParse(datas[datas.Count - 3].Span, out playeridNumber))
                     {
-                        playeridNumber = long.Parse(datas[datas.Count - 3].Span);
+                        this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
                     }
-                    this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span));
                 }
             }
             else if (MemoryExtensions.Equals(datas[2].Span, "[DisplayToShop-SetValue]", StringComparison.OrdinalIgnoreCase))

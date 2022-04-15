@@ -78,6 +78,9 @@
     <Compile Update="Windows\LauncherCompatibilityWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Windows\DataOrganizerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Windows\PSO2UserConfigurationWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -88,6 +91,10 @@
 
   <ItemGroup>
     <Page Update="Windows\LauncherCompatibilityWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Windows\DataOrganizerWindow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>
     </Page>

@@ -12,7 +12,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     {
         private readonly Dictionary<string, PatchRootInfoValue> content;
 
-        public PatchRootInfo(in string data)
+        public PatchRootInfo(string data)
         {
             this.content = new Dictionary<string, PatchRootInfoValue>();
 
