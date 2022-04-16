@@ -11,7 +11,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private bool _isDelayTextChangeEvent;
         private readonly DispatcherTimer _delayTextChanged;
         private TextChangedEventArgs _e;
+        private string _textBeforeFiringEvent;
 
+        public string TextBeforeDelay => this._textBeforeFiringEvent;
         public TimeSpan DelayTimeTextChanged
         {
             get => this._delayTextChanged.Interval;
@@ -40,6 +42,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public TextBoxDelayedTextChange() : base()
         {
             this._e = null;
+            this._textBeforeFiringEvent = string.Empty;
             this._delayTextChanged = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, this.DelayTextChanged_Tick, this.Dispatcher);
             this._delayTextChanged.Stop();
             this.IsDelayTextChangeEvent = true;
@@ -64,7 +67,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (this.IsDelayTextChangeEvent)
             {
                 this._delayTextChanged.Stop();
-                Interlocked.Exchange(ref this._e, e);
+                if (Interlocked.Exchange(ref this._e, e) == null)
+                {
+                    this._textBeforeFiringEvent = this.Text;
+                }
                 this._delayTextChanged.Start();
             }
             else

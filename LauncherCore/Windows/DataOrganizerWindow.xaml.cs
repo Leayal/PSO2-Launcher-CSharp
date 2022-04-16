@@ -22,7 +22,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
 
-        public static readonly DataAction[] DataActions = { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.MoveAndSymlink };
+        public static readonly DataAction[] DataActions = (StaticResources.IsCurrentProcessAdmin ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.MoveAndSymlink }
+                                                                                                                                        : new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move });
 
         public static readonly EnumComboBox.ValueDOM<FilterType>[] FilterTypes = System.Linq.Enumerable.ToArray(EnumComboBox.EnumToDictionary<FilterType>().Values);
 
@@ -137,7 +138,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is TextBox tb)
             {
                 this._currentFilterString = tb.Text;
-                this.ReFiltering();
+                this.CustomizationFileList?.Refresh();
             }
         }
 
@@ -145,23 +146,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (e.AddedItems != null && e.AddedItems.Count != 0 && e.AddedItems[0] is EnumComboBox.ValueDOM<FilterType> val)
             {
-                this._currentFilterType = val.Value;
-                this.ReFiltering();
-            }
-        }
-
-        private void ReFiltering()
-        {
-            if (this.CustomizationFileList != null)
-            {
-                switch (this._currentFilterType)
+                var target = this.CustomizationFileList;
+                if (target != null && target.CanFilter)
                 {
-                    case FilterType.Name:
-                        this.CustomizationFileList.Filter = this.Filtering_ByName;
-                        break;
-                    default:
-                        this.CustomizationFileList.Filter = null;
-                        break;
+                    switch (val.Value)
+                    {
+                        case FilterType.Name:
+                            this.CustomizationFileList.Filter = this.Filtering_ByName;
+                            break;
+                        default:
+                            this.CustomizationFileList.Filter = null;
+                            break;
+                    }
                 }
             }
         }
