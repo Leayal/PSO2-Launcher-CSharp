@@ -14,10 +14,17 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private string _textBeforeFiringEvent;
 
         public string TextBeforeDelay => this._textBeforeFiringEvent;
-        public TimeSpan DelayTimeTextChanged
+        public int DelayTimeTextChanged
         {
-            get => this._delayTextChanged.Interval;
-            set => this._delayTextChanged.Interval = value;
+            get => Convert.ToInt32(this._delayTextChanged.Interval.TotalMilliseconds);
+            set
+            {
+                if (value < 1)
+                {
+                    value = 1;
+                }
+                this._delayTextChanged.Interval = TimeSpan.FromMilliseconds(value);
+            }
         }
         public bool IsDelayTextChangeEvent
         {

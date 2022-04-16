@@ -107,7 +107,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter" VerticalAlignment="Center" />
-                    <localui:MultiSelectionComboBox Grid.Column="1" />
+                    <localui:DataOrganizeFilteringBox Grid.Column="1" Loaded="DataOrganizeFilteringBox_Loaded" ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}" />
                     <DataGrid Grid.Row="1" Grid.ColumnSpan="2" x:Name="PresetCustomization"
                         IsReadOnly="False" Background="Transparent" BorderThickness="0" BorderBrush="{x:Null}"
                         ScrollViewer.CanContentScroll="true" ScrollViewer.PanningMode="Both" AlternationCount="2"
@@ -118,7 +118,7 @@
                         ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}">
                         <DataGrid.Columns>
                             <DataGridCheckBoxColumn Width="50" />
-                            <DataGridTextColumn Header="Filename" MinWidth="200" Width="350" IsReadOnly="True" Binding="{Binding Path=RemoteFilename,Mode=OneTime}" />
+                            <DataGridTextColumn Header="Filename" MinWidth="200" Width="350" IsReadOnly="True" Binding="{Binding Path=RelativeFilename,Mode=OneTime}" />
                             <DataGridTemplateColumn Header="Action Setting" MinWidth="250">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
