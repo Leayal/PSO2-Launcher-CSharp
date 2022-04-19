@@ -7,11 +7,14 @@ using Leayal.Shared.Windows;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.SharedInterfaces;
+using System.Windows.Documents;
 using System.Windows.Controls;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.UIElements;
 using System.Windows.Data;
 using System.ComponentModel;
+using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
+using Microsoft.Win32;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -20,6 +23,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class DataOrganizerWindow : MetroWindowEx
     {
+        private static readonly DependencyPropertyKey HasBulkActionSettingsPropertyKey = DependencyProperty.RegisterReadOnly("HasBulkActionSettings", typeof(bool), typeof(DataOrganizerWindow), new PropertyMetadata(false));
+        public static readonly DependencyProperty HasBulkActionSettingsProperty = HasBulkActionSettingsPropertyKey.DependencyProperty;
+        public static readonly DependencyProperty BulkDataActionProperty = DependencyProperty.Register("BulkDataAction", typeof(DataAction), typeof(DataOrganizerWindow), new PropertyMetadata(DataAction.DoNothing, (obj, e) =>
+        {
+            if (obj is DataOrganizerWindow window)
+            {
+                switch ((DataAction)e.NewValue)
+                {
+                    case DataAction.MoveAndSymlink:
+                    case DataAction.Move:
+                        window.SetValue(HasBulkActionSettingsPropertyKey, true);
+                        break;
+                    default:
+                        window.SetValue(HasBulkActionSettingsPropertyKey, false);
+                        break;
+                }
+            }
+        }));
         public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
         
         public static readonly DataAction[] DataActions = (StaticResources.IsCurrentProcessAdmin ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.MoveAndSymlink }
@@ -31,11 +52,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(CustomizationFileListProperty, value);
         }
 
+        public bool HasBulkActionSettings => (bool)this.GetValue(HasBulkActionSettingsProperty);
+
+        public DataAction BulkDataAction
+        {
+            get => (DataAction)this.GetValue(BulkDataActionProperty);
+            set => this.SetValue(BulkDataActionProperty, value);
+        }
+
+        private readonly Lazy<SaveFileDialog> _folderBrowserDialog;
         private readonly Classes.ConfigurationFile _config;
 
-        public DataOrganizerWindow(Classes.ConfigurationFile conf)
+        public DataOrganizerWindow(Classes.ConfigurationFile conf) : base()
         {
             this._config = conf;
+            this._folderBrowserDialog = new Lazy<SaveFileDialog>();
             InitializeComponent();
         }
 
@@ -67,6 +98,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)
         {
+
         }
 
         private void ButtonSelectDeletePSO2ClassicPreset_Click(object sender, RoutedEventArgs e)
@@ -74,57 +106,104 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.tabCustomizePreset.IsSelected = true;
         }
 
-        private void Item_ActionSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ButtonBulkBrowse_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ComboBox cbox && cbox.DataContext is CustomizationFileListItem item)
+            using (var fbd = new FolderBrowserDialog())
             {
-                item.SelectedAction = (DataAction)cbox.SelectedValue;
+                fbd.Description = "Select folder that will contains all the selected files";
+                fbd.ShowNewFolderButton = true;
+                fbd.UseDescriptionForTitle = true;
+                if (fbd.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
+                {
+                    this.BulkTextBox.Text = fbd.SelectedPath;
+                }
             }
         }
 
-        public class CustomizationFileListItem : DependencyObject
+        private void ButtonBulkApply_Click(object sender, RoutedEventArgs e)
         {
-            public static readonly DependencyPropertyKey HasActionSettingsPropertyKey = DependencyProperty.RegisterReadOnly("HasActionSettings", typeof(bool), typeof(CustomizationFileListItem), new PropertyMetadata(false));
-            public static readonly DependencyProperty HasActionSettingsProperty = HasActionSettingsPropertyKey.DependencyProperty;
-            public static readonly DependencyProperty DataActionProperty = DependencyProperty.Register("DataAction", typeof(DataAction), typeof(CustomizationFileListItem), new PropertyMetadata(DataAction.DoNothing, (obj, e) =>
+
+            bool hasActionSetting = this.HasBulkActionSettings;
+            string tbText = hasActionSetting ? this.BulkTextBox.Text : string.Empty;
+            if (hasActionSetting && string.IsNullOrEmpty(tbText))
             {
-                if (obj is CustomizationFileListItem item)
+                return;
+            }
+            var action = this.BulkDataAction;
+            var inlines = new List<Inline>(hasActionSetting ? 6 : 4)
+            {
+                new Run("Are you sure to change the actions of all selected files to this settings?"),
+                new LineBreak(),
+                new Run("New action settings:"),
+                new Run(action.ToString()),
+            };
+            if (hasActionSetting)
+            {
+                inlines.Add(new Run("->"));
+                inlines.Add(new Run(tbText));
+            }
+            
+            if (Prompt_Generic.Show(this, inlines, "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                foreach (var item in this.CustomizationFileList.SourceCollection)
                 {
-                    switch (item.SelectedAction)
+                    if (item is CustomizationFileListItem listitem && listitem.IsChecked)
                     {
-                        case DataAction.MoveAndSymlink:
-                        case DataAction.Move:
-                            item.SetValue(HasActionSettingsPropertyKey, true);
-                            break;
-                        default:
-                            item.SetValue(HasActionSettingsPropertyKey, false);
-                            break;
+                        listitem.SelectedAction = action;
+                        if (hasActionSetting)
+                        {
+                            listitem.TextBoxValue = tbText;
+                        }
                     }
                 }
-            }));
-
-            public string RelativeFilename { get; init; }
-            public long FileSize { get; init; }
-            public DataOrganizeFilteringBox.ClientType ClientType  { get; init; }
-
-            public DataAction SelectedAction
-            {
-                get => (DataAction)this.GetValue(DataActionProperty);
-                set => this.SetValue(DataActionProperty, value);
             }
-
-            public bool HasActionSettings => (bool)this.GetValue(HasActionSettingsProperty);
         }
 
-        public enum DataAction
+        private void ItemSelectionBox_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            DoNothing,
-            Delete,
-            Move,
-            MoveAndSymlink
+            if (sender is DataGridCell cell)
+            {
+                cell.IsEditing = true;
+                // if (cell.Content is CheckBox cb) { }
+            }
         }
 
-        private void DataOrganizeFilteringBox_Loaded(object sender, RoutedEventArgs e)
+        private void ItemSelectionBox_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (sender is DataGridCell cell)
+            {
+                cell.IsEditing = false;
+            }
+        }
+
+        private void ItemSelectionBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is DataGridCell cell)
+            {
+                cell.IsEditing = false;
+            }
+        }
+
+        private void PresetCustomization_PreviewKeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Space)
+            {
+                var itemList = this.PresetCustomization.SelectedItems;
+                if (itemList.Count != 0)
+                {
+                    e.Handled = true;
+                    for (int i = 0; i < itemList.Count; i++)
+                    {
+                        if (itemList[i] is CustomizationFileListItem item)
+                        {
+                            item.IsChecked = !item.IsChecked;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void MenuItemBulkSelectInView_Click(object sender, RoutedEventArgs e)
         {
 
         }

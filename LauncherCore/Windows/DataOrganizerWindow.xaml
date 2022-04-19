@@ -105,21 +105,31 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter" VerticalAlignment="Center" />
-                    <localui:DataOrganizeFilteringBox Grid.Column="1" Loaded="DataOrganizeFilteringBox_Loaded" ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}" />
+                    <localui:DataOrganizeFilteringBox Grid.Column="1" ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}" />
                     <DataGrid Grid.Row="1" Grid.ColumnSpan="2" x:Name="PresetCustomization"
-                        IsReadOnly="False" Background="Transparent" BorderThickness="0" BorderBrush="{x:Null}"
-                        ScrollViewer.CanContentScroll="true" ScrollViewer.PanningMode="Both" AlternationCount="2"
-                        HeadersVisibility="Column" ColumnWidth="50" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" CanUserReorderColumns="False" AutoGenerateColumns="False"
-                        EnableRowVirtualization="True" EnableColumnVirtualization = "true"
-                        VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.IsContainerVirtualizable="True"
-                        VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizingWhenGrouping="False"
-                        ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}">
+                              IsReadOnly="False" Background="Transparent" BorderThickness="0" BorderBrush="{x:Null}"
+                              ScrollViewer.CanContentScroll="true" ScrollViewer.PanningMode="Both" AlternationCount="2"
+                              HeadersVisibility="Column" ColumnWidth="50" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" CanUserReorderColumns="False" AutoGenerateColumns="False"
+                              EnableRowVirtualization="True" EnableColumnVirtualization = "true"
+                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.IsContainerVirtualizable="True"
+                              VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.IsVirtualizingWhenGrouping="False"
+                              ItemsSource="{Binding ElementName=thisSelf,Path=CustomizationFileList,Mode=OneWay,IsAsync=True}"
+                              PreviewKeyUp="PresetCustomization_PreviewKeyUp">
                         <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Width="50" />
-                            <DataGridTextColumn Header="Filename" MinWidth="200" Width="350" IsReadOnly="True" Binding="{Binding Path=RelativeFilename,Mode=OneTime}" />
-                            <DataGridTemplateColumn Header="Action Setting" MinWidth="250">
+                            <DataGridCheckBoxColumn Width="50" Binding="{Binding IsChecked,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,NotifyOnTargetUpdated=True}" CanUserResize="False" CanUserReorder="False" IsThreeState="False">
+                                <DataGridCheckBoxColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource MahApps.Styles.DataGridCell}">
+                                        <EventSetter Event="MouseEnter" Handler="ItemSelectionBox_MouseEnter" />
+                                        <EventSetter Event="MouseLeave" Handler="ItemSelectionBox_MouseLeave" />
+                                        <EventSetter Event="LostFocus" Handler="ItemSelectionBox_LostFocus" />
+                                    </Style>
+                                </DataGridCheckBoxColumn.CellStyle>
+                            </DataGridCheckBoxColumn>
+                            <DataGridTextColumn Header="Filename" MinWidth="250" Width="400" IsReadOnly="True" Binding="{Binding Path=RelativeFilename,Mode=OneTime}" />
+                            <DataGridTemplateColumn Header="Action Setting" MinWidth="250" Width="300" CanUserSort="False">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -128,8 +138,8 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <ComboBox ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.DataActions},Mode=OneTime,IsAsync=True}" SelectedItem="{Binding SelectedAction,Mode=OneTime}" SelectionChanged="Item_ActionSelectionChanged" />
-                                            <TextBox Grid.Column="1" Text="[Placeholder for testing]" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}" />
+                                            <ComboBox ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.DataActions},Mode=OneTime,IsAsync=True}" SelectedItem="{Binding SelectedAction,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,NotifyOnTargetUpdated=True}" />
+                                            <TextBox Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}" Text="{Binding TextBoxValue,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,NotifyOnTargetUpdated=True}" />
                                             <Button Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}">
                                                 <TextBlock Text="..." />
                                             </Button>
@@ -139,6 +149,63 @@
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
+                    <Grid Grid.Row="2" Grid.ColumnSpan="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Button>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Click="MenuItemBulkSelectInView_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Select All (currently in view)" />
+                                        </MenuItem.Header>
+                                        <MenuItem.ToolTip>
+                                            <TextBlock Text="Select all items which are visible in the list above" />
+                                        </MenuItem.ToolTip>
+                                    </MenuItem>
+                                    <MenuItem Click="">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Deselect All (currently in view)" />
+                                        </MenuItem.Header>
+                                        <MenuItem.ToolTip>
+                                            <TextBlock Text="Deselect all items which are visible in the list above" />
+                                        </MenuItem.ToolTip>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Click="">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Select All" />
+                                        </MenuItem.Header>
+                                        <MenuItem.ToolTip>
+                                            <TextBlock Text="Select all items including invisible ones" />
+                                        </MenuItem.ToolTip>
+                                    </MenuItem>
+                                    <MenuItem Click="">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Deselect All" />
+                                        </MenuItem.Header>
+                                        <MenuItem.ToolTip>
+                                            <TextBlock Text="Deselect all items including invisible ones" />
+                                        </MenuItem.ToolTip>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                            <TextBlock Text="Bulk select" />
+                        </Button>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.DataActions},Mode=OneTime,IsAsync=True}" SelectedItem="{Binding ElementName=thisSelf,Path=BulkDataAction,Mode=TwoWay}" />
+                        <TextBox Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" x:Name="BulkTextBox" />
+                        <Button Grid.Column="3" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" Click="ButtonBulkBrowse_Click">
+                            <TextBlock Text="..." />
+                        </Button>
+                        <Button Grid.Column="4" Click="ButtonBulkApply_Click">
+                            <TextBlock Text="Apply to selected files" />
+                        </Button>
+                    </Grid>
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>

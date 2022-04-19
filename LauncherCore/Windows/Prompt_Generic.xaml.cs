@@ -43,10 +43,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
 #nullable enable
-        public static MessageBoxResult? Show(Window parent, Inline[] text, string? title, MessageBoxButton buttons, MessageBoxImage image)
+        public static MessageBoxResult? Show(Window parent, ICollection<Inline> text, string? title, MessageBoxButton buttons, MessageBoxImage image)
         {
             var tb = new TextBlock() { TextWrapping = TextWrapping.WrapWithOverflow };
-            if (text == null || text.Length == 0)
+            if (text == null || text.Count == 0)
             {
                 tb.Text = string.Empty;
             }
