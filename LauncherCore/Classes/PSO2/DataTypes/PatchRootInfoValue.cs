@@ -1,6 +1,6 @@
 ﻿namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
-    public readonly struct PatchRootInfoValue
+    public class PatchRootInfoValue
     {
         public readonly string RawValue;
         public readonly bool IsNumber;

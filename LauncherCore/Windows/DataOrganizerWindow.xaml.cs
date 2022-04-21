@@ -23,6 +23,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class DataOrganizerWindow : MetroWindowEx
     {
+        private static readonly char[] trimEndPath = { '*', Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
         private static readonly DependencyPropertyKey HasBulkActionSettingsPropertyKey = DependencyProperty.RegisterReadOnly("HasBulkActionSettings", typeof(bool), typeof(DataOrganizerWindow), new PropertyMetadata(false));
         public static readonly DependencyProperty HasBulkActionSettingsProperty = HasBulkActionSettingsPropertyKey.DependencyProperty;
         public static readonly DependencyProperty BulkDataActionProperty = DependencyProperty.Register("BulkDataAction", typeof(DataAction), typeof(DataOrganizerWindow), new PropertyMetadata(DataAction.DoNothing, (obj, e) =>
@@ -60,13 +61,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(BulkDataActionProperty, value);
         }
 
-        private readonly Lazy<SaveFileDialog> _folderBrowserDialog;
+        private readonly Lazy<SaveFileDialog> _SaveFileDialog;
         private readonly Classes.ConfigurationFile _config;
 
         public DataOrganizerWindow(Classes.ConfigurationFile conf) : base()
         {
             this._config = conf;
-            this._folderBrowserDialog = new Lazy<SaveFileDialog>();
+            this._SaveFileDialog = new Lazy<SaveFileDialog>(delegate
+            {
+                return new SaveFileDialog()
+                {
+                    CheckFileExists = false,
+                    AddExtension = false,
+                    CheckPathExists = true,
+                    CreatePrompt = false,
+                    OverwritePrompt = true,
+                    ValidateNames = true
+                };
+            });
             InitializeComponent();
         }
 
@@ -82,7 +94,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     list.Add(new CustomizationFileListItem()
                     {
-                        RelativeFilename = item.GetFilenameWithoutAffix(),
+                        RelativeFilename = item.GetFilenameWithoutAffix().Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
                         FileSize = item.FileSize,
                         ClientType = DataOrganizeFilteringBox.ClientType.Both
                     });
@@ -129,20 +141,68 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 return;
             }
+            var spantbText = tbText.AsSpan();
+            bool keptDirectoryStructure;
+            string pathDst;
+            if (spantbText.Length > 2 && spantbText.EndsWith("**", StringComparison.OrdinalIgnoreCase) && (spantbText[spantbText.Length - 3] == Path.DirectorySeparatorChar || spantbText[spantbText.Length - 3] == Path.AltDirectorySeparatorChar))
+            {
+                keptDirectoryStructure = true;
+                pathDst = Path.GetFullPath(Path.TrimEndingDirectorySeparator(tbText.Substring(0, tbText.Length - 3)));
+            }
+            else if (spantbText.Length > 1 && spantbText[spantbText.Length - 1] == '*' && (spantbText[spantbText.Length - 2] == Path.DirectorySeparatorChar || spantbText[spantbText.Length - 2] == Path.AltDirectorySeparatorChar))
+            {
+                keptDirectoryStructure = false;
+                pathDst = Path.GetFullPath(Path.TrimEndingDirectorySeparator(tbText.Substring(0, tbText.Length - 2)));
+            }
+            else
+            {
+                keptDirectoryStructure = true;
+                pathDst = Path.GetFullPath(tbText.TrimEnd(trimEndPath));
+            }
             var action = this.BulkDataAction;
-            var inlines = new List<Inline>(hasActionSetting ? 6 : 4)
+            var inlines = new List<Inline>(hasActionSetting ? 14 : 4)
             {
                 new Run("Are you sure to change the actions of all selected files to this settings?"),
                 new LineBreak(),
-                new Run("New action settings:"),
+                new Run("New action settings: "),
                 new Run(action.ToString()),
             };
             if (hasActionSetting)
             {
-                inlines.Add(new Run("->"));
-                inlines.Add(new Run(tbText));
+                if (keptDirectoryStructure)
+                {
+                    inlines.Add(new Run(" -> " + tbText + " (Maintain directory structures)"));
+                }
+                else
+                {
+                    inlines.Add(new Run(" -> " + tbText));
+                }
+                inlines.Add(new LineBreak());
+                inlines.Add(new Run("Explanation: "));
+                if (keptDirectoryStructure)
+                {
+                    inlines.Add(new Run($"'Maintain directory structures' means all relative paths, which includes directory/folder, will be maintained when moving to '{pathDst}'."));
+
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run("For example:"));
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run("- File without folder/directory: 'pso2.exe' -> 'pso2.exe'"));
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run($"- Filename with folder(s): 'data/win32/000a686a27ade4d971ac5e27a664a5a3' -> '{pathDst}\\data\\win32\\000a686a27ade4d971ac5e27a664a5a3'"));
+                }
+                else
+                {
+                    inlines.Add(new Run($"All files' path will be flattened and moved, which may result in confliction(s) of files with same name in different folders, to '{pathDst}'."));
+
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run("For example:"));
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run("- File without folder/directory: 'pso2.exe' -> 'pso2.exe'"));
+                    inlines.Add(new LineBreak());
+                    inlines.Add(new Run($"- Filename with folder(s): 'data/win32/000a686a27ade4d971ac5e27a664a5a3' -> '{pathDst}\\000a686a27ade4d971ac5e27a664a5a3'"));
+                }
             }
-            
+
             if (Prompt_Generic.Show(this, inlines, "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 foreach (var item in this.CustomizationFileList.SourceCollection)
@@ -152,7 +212,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         listitem.SelectedAction = action;
                         if (hasActionSetting)
                         {
-                            listitem.TextBoxValue = tbText;
+                            listitem.TextBoxValue = Path.GetFullPath(keptDirectoryStructure ? listitem.RelativeFilename : Path.GetFileName(listitem.RelativeFilename), pathDst);
                         }
                     }
                 }
@@ -203,9 +263,72 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void MenuItemBulkSelectInView_Click(object sender, RoutedEventArgs e)
+        private void BuilkSelectAll(IEnumerable list)
         {
+            if (list != null)
+            {
+                foreach (var obj in list)
+                {
+                    if (obj is CustomizationFileListItem item)
+                    {
+                        item.IsChecked = true;
+                    }
+                }
+            }
+        }
 
+        private void BuilkDeselectAll(IEnumerable list)
+        {
+            if (list != null)
+            {
+                foreach (var obj in list)
+                {
+                    if (obj is CustomizationFileListItem item)
+                    {
+                        item.IsChecked = false;
+                    }
+                }
+            }
+        }
+
+        private void MenuItemBulkSelectInView_Click(object sender, RoutedEventArgs e)
+            => this.BuilkSelectAll(this.CustomizationFileList);
+
+        private void MenuItemBulkDeselectInView_Click(object sender, RoutedEventArgs e)
+            => this.BuilkDeselectAll(this.CustomizationFileList);
+
+        private void MenuItemBulkSelectAll_Click(object sender, RoutedEventArgs e)
+        => this.BuilkSelectAll(this.CustomizationFileList?.SourceCollection);
+
+        private void MenuItemBulkDeselectAll_Click(object sender, RoutedEventArgs e)
+            => this.BuilkDeselectAll(this.CustomizationFileList?.SourceCollection);
+
+        private void ButtonBulkSelect_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                var ctm = btn.ContextMenu;
+                if (ctm != null)
+                {
+                    ctm.PlacementTarget = btn;
+                    ctm.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    ctm.IsOpen = true;
+                }
+            }
+        }
+
+        private void ButtonItemBrowseLocation_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is CustomizationFileListItem item)
+            {
+                var fsd = this._SaveFileDialog.Value;
+                fsd.Title = $"Specify location to put file '{item.RelativeFilename}' to";
+                fsd.FileName = Path.GetFileName(item.RelativeFilename);
+                if (fsd.ShowDialog(this) == true)
+                {
+                    item.TextBoxValue = fsd.FileName;
+                }
+            }
         }
     }
 }

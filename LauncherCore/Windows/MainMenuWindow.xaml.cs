@@ -120,7 +120,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.RSSFeedPresenter.SelectedFeedChanged += this.RSSFeedPresenter_SelectedFeedChanged;
-            this.pso2HttpClient = new PSO2HttpClient(this.webclient);
+            this.pso2HttpClient = new PSO2HttpClient(this.webclient, Path.GetFullPath(Path.Combine("data", "cache", "leapso2client"), RuntimeValues.RootDirectory));
             this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
             {
                 var binDir = Path.GetFullPath("bin", RuntimeValues.RootDirectory);

@@ -135,12 +135,12 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <ComboBox ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.DataActions},Mode=OneTime,IsAsync=True}" SelectedItem="{Binding SelectedAction,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,NotifyOnTargetUpdated=True}" />
                                             <TextBox Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}" Text="{Binding TextBoxValue,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,NotifyOnTargetUpdated=True}" />
-                                            <Button Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}">
+                                            <Button Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding HasActionSettings,Mode=OneWay,IsAsync=True}" Click="ButtonItemBrowseLocation_Click">
                                                 <TextBlock Text="..." />
                                             </Button>
                                         </Grid>
@@ -157,40 +157,40 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
-                        <Button>
+                        <Button Click="ButtonBulkSelect_Click">
                             <Button.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Click="MenuItemBulkSelectInView_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="Select All (currently in view)" />
+                                            <TextBlock Text="Check All (currently in view)" />
                                         </MenuItem.Header>
                                         <MenuItem.ToolTip>
-                                            <TextBlock Text="Select all items which are visible in the list above" />
+                                            <TextBlock Text="Check only items which are visible in the list above" />
                                         </MenuItem.ToolTip>
                                     </MenuItem>
-                                    <MenuItem Click="">
+                                    <MenuItem Click="MenuItemBulkDeselectInView_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="Deselect All (currently in view)" />
+                                            <TextBlock Text="Uncheck All (currently in view)" />
                                         </MenuItem.Header>
                                         <MenuItem.ToolTip>
-                                            <TextBlock Text="Deselect all items which are visible in the list above" />
+                                            <TextBlock Text="Uncheck only items which are visible in the list above" />
                                         </MenuItem.ToolTip>
                                     </MenuItem>
                                     <Separator />
-                                    <MenuItem Click="">
+                                    <MenuItem Click="MenuItemBulkSelectAll_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="Select All" />
+                                            <TextBlock Text="Check All" />
                                         </MenuItem.Header>
                                         <MenuItem.ToolTip>
-                                            <TextBlock Text="Select all items including invisible ones" />
+                                            <TextBlock Text="Check all items including invisible ones" />
                                         </MenuItem.ToolTip>
                                     </MenuItem>
-                                    <MenuItem Click="">
+                                    <MenuItem Click="MenuItemBulkDeselectAll_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="Deselect All" />
+                                            <TextBlock Text="Uncheck All" />
                                         </MenuItem.Header>
                                         <MenuItem.ToolTip>
-                                            <TextBlock Text="Deselect all items including invisible ones" />
+                                            <TextBlock Text="Uncheck all items including invisible ones" />
                                         </MenuItem.ToolTip>
                                     </MenuItem>
                                 </ContextMenu>
@@ -203,7 +203,7 @@
                             <TextBlock Text="..." />
                         </Button>
                         <Button Grid.Column="4" Click="ButtonBulkApply_Click">
-                            <TextBlock Text="Apply to selected files" />
+                            <TextBlock Text="Apply to checked files" />
                         </Button>
                     </Grid>
                 </Grid>

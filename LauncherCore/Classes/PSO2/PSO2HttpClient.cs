@@ -21,6 +21,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // private const string UA_PSO2Launcher = "PSO2Launcher";
         private const string UA_PSO2_Launcher = "PSO2 Launcher";
         private const string UA_pso2launcher = "pso2launcher";
+        private readonly PersistentCacheManager? dataCache;
 
         private const int WebFailure_RetryTimes = 5;
         private const int WebFailure_RetryDelayMiliseconds = 1000;
@@ -28,10 +29,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Need to add snail mode (for when internet is extremely unreliable).
         // Do it later.
 
+        public PSO2HttpClient(HttpClient client) : this(client, string.Empty) { }
 
-        public PSO2HttpClient(HttpClient client)
+        public PSO2HttpClient(HttpClient client, string? cacheDirectory)
         {
             this.client = client;
+            this.dataCache = (string.IsNullOrEmpty(cacheDirectory) ? null : PersistentCacheManager.Create(cacheDirectory));
         }
 
         #region | Convenient private methods |
@@ -99,7 +102,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     // Don't retry sending request. It may be considered as brute-force attack.
                     // Instead, let it throw naturally and then user can attempt another login by themselves (retry by themselves).
 
-                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                     {
                         response.EnsureSuccessStatusCode();
                         using (var stream = response.Content.ReadAsStream(cancellationToken))
@@ -155,7 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     // Don't retry sending request. It may be considered as brute-force attack.
                     // Instead, let it throw naturally and then user can attempt another login by themselves (retry by themselves).
 
-                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                     {
                         response.EnsureSuccessStatusCode();
                         using (var stream = response.Content.ReadAsStream(cancellationToken))
@@ -195,7 +198,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 request.Headers.Host = url.Host;
                 SetUA_pso2launcher(request);
-                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
                     var repContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -215,7 +218,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             PatchRootInfo patchRootInfo;
             if (rootInfo == null)
             {
-                patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken);
+                patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -226,7 +229,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 try
                 {
-                    return await InnerGetPatchVersionAsync(str_PatchURL, cancellationToken);
+                    return await InnerGetPatchVersionAsync(str_PatchURL, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -239,7 +242,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     try
                     {
-                        return await InnerGetPatchVersionAsync(str_PatchURL, cancellationToken);
+                        return await InnerGetPatchVersionAsync(str_PatchURL, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -275,11 +278,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
-            var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
-            var t_ngs = GetPatchListNGSFullAsync(rootInfo, cancellationToken);
+            // var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
+            var t_classic = this.GetPatchListClassicAsync(rootInfo, cancellationToken);
+            var t_ngs = this.GetPatchListNGSFullAsync(rootInfo, cancellationToken);
 
             var ngs = await t_ngs;
-            var therest = await t_all;
+            var therest = await t_classic;
             var dictionary = new Dictionary<string, PatchListItem>(therest.Count, StringComparer.OrdinalIgnoreCase);
             foreach (var item in ngs) dictionary.Add(item.GetFilenameWithoutAffix(), item);
 
@@ -337,7 +341,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     SetUA_AQUA_HTTP(request);
                     request.Headers.Host = filename.Host;
-                    response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
                     return response;
                 }
@@ -401,59 +405,231 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new UnexpectedDataFormatException();
         }
 
+        private static async Task<bool> InnerGetPatchListAsyncVerification(string entryName, JsonDocument header, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
+        {
+            if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
+                && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString(), out var localVer))
+            {
+                var src = prop_src.GetString();
+                if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.Item3.AbsoluteUri, StringComparison.Ordinal) && arg.Item4.Equals(localVer))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> InnerGetPatchListAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, Stream entryStream, CancellationToken cancellationToken)
+        {
+            using (var request = new HttpRequestMessage(HttpMethod.Get, arg.Item3))
+            {
+                request.Headers.Host = arg.Item3.Host;
+                SetUA_AQUA_HTTP(request);
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                {
+                    response.EnsureSuccessStatusCode();
+                    using (var stream = response.Content.ReadAsStream(cancellationToken))
+                    {
+                        await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
+                        entryStream.Flush();
+                        if (entryStream.Length == 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                headerWriter.WriteString("source", arg.Item3.AbsoluteUri);
+                headerWriter.WriteString("version", arg.Item4.ToString());
+            }
+            return true;
+        }
+
         private async Task<PatchListMemory> InnerGetPatchListAsync2(PatchRootInfo rootInfo, string patchBaseUrl, bool? isReboot, string filelistFilename, CancellationToken cancellationToken)
         {
             var baseUri = new Uri(patchBaseUrl);
             var filelistUrl = new Uri(baseUri, filelistFilename);
 
-            using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
+            if (this.dataCache != null)
             {
-                request.Headers.Host = baseUri.Host;
-                SetUA_AQUA_HTTP(request);
-                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                var versionRoot = await this.GetPatchVersionAsync(rootInfo, cancellationToken).ConfigureAwait(false);
+                using (var stream = await this.dataCache.Fetch(filelistFilename, this.InnerGetPatchListAsyncFetchCreation, InnerGetPatchListAsyncVerification, new ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version>(rootInfo, isReboot, filelistUrl, versionRoot), cancellationToken).ConfigureAwait(false))
                 {
-                    response.EnsureSuccessStatusCode();
-                    using (var stream = response.Content.ReadAsStream(cancellationToken))
-                    using (var tr = new StreamReader(stream))
-                    using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                    if (stream == null)
                     {
-                        return parser.ToMemory();
+                        using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
+                        {
+                            request.Headers.Host = baseUri.Host;
+                            SetUA_AQUA_HTTP(request);
+                            using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                            {
+                                response.EnsureSuccessStatusCode();
+                                using (var contentstream = response.Content.ReadAsStream(cancellationToken))
+                                using (var tr = new StreamReader(contentstream))
+                                using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                                {
+                                    return parser.ToMemory();
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var tr = new StreamReader(stream))
+                        using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                        {
+                            return parser.ToMemory();
+                        }
+                    }
+                }
+                
+            }
+            else
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
+                {
+                    request.Headers.Host = baseUri.Host;
+                    SetUA_AQUA_HTTP(request);
+                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        using (var stream = response.Content.ReadAsStream(cancellationToken))
+                        using (var tr = new StreamReader(stream))
+                        using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                        {
+                            return parser.ToMemory();
+                        }
                     }
                 }
             }
         }
-#nullable restore
+
+        private static async Task<bool> InnerGetPatchVersionAsyncVerification(string entryName, JsonDocument header, Uri arg, CancellationToken cancellationToken)
+        {
+            if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
+                && header.RootElement.TryGetProperty("timestamp", out var prop_timestamp) && prop_timestamp.ValueKind == JsonValueKind.Number)
+            {
+                var src = prop_src.GetString();
+                var offset = DateTimeOffset.FromUnixTimeSeconds(prop_timestamp.GetInt64());
+                if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.AbsoluteUri, StringComparison.Ordinal) && ((DateTimeOffset.UtcNow - offset) < TimeSpan.FromMinutes(5)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> InnerGetPatchVersionAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, Uri arg, Stream entryStream, CancellationToken cancellationToken)
+        {
+            using (var request = new HttpRequestMessage(HttpMethod.Get, arg))
+            {
+                request.Headers.Host = arg.Host;
+                SetUA_AQUA_HTTP(request);
+                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                {
+                    response.EnsureSuccessStatusCode();
+                    using (var stream = response.Content.ReadAsStream(cancellationToken))
+                    {
+                        await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
+                        entryStream.Flush();
+                        if (entryStream.Length == 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                headerWriter.WriteString("source", arg.AbsoluteUri);
+                headerWriter.WriteNumber("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            }
+            return true;
+        }
 
         private async Task<PSO2Version> InnerGetPatchVersionAsync(string patchUrl, CancellationToken cancellationToken)
         {
             var baseUri = new Uri(patchUrl);
             var requestUri = new Uri(baseUri, "version.ver");
 
-            using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
+            if (this.dataCache != null)
             {
-                request.Headers.Host = baseUri.Host;
-                SetUA_AQUA_HTTP(request);
-                // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
-                using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken))
+                using (var stream = await this.dataCache.Fetch("version.ver", this.InnerGetPatchVersionAsyncFetchCreation, InnerGetPatchVersionAsyncVerification, requestUri, cancellationToken).ConfigureAwait(false))
                 {
-                    response.EnsureSuccessStatusCode();
-                    var raw = await response.Content.ReadAsStringAsync(cancellationToken);
-                    if (string.IsNullOrWhiteSpace(raw))
+                    if (stream == null)
                     {
-                        throw new UnexpectedDataFormatException();
-                    }
+                        using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
+                        {
+                            request.Headers.Host = baseUri.Host;
+                            SetUA_AQUA_HTTP(request);
+                            // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
+                            using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
+                            {
+                                response.EnsureSuccessStatusCode();
+                                var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+                                if (string.IsNullOrWhiteSpace(raw))
+                                {
+                                    throw new UnexpectedDataFormatException();
+                                }
 
-                    if (PSO2Version.TrySafeParse(in raw, out var result))
-                    {
-                        return result;
+                                if (PSO2Version.TrySafeParse(in raw, out var result))
+                                {
+                                    return result;
+                                }
+                                else
+                                {
+                                    throw new UnexpectedDataFormatException();
+                                }
+                            }
+                        }
                     }
                     else
                     {
-                        throw new UnexpectedDataFormatException();
+                        using (var tr = new StreamReader(stream))
+                        {
+                            var raw = tr.ReadLine();
+                            if (string.IsNullOrWhiteSpace(raw))
+                            {
+                                throw new UnexpectedDataFormatException();
+                            }
+
+                            if (PSO2Version.TrySafeParse(in raw, out var result))
+                            {
+                                return result;
+                            }
+                            else
+                            {
+                                throw new UnexpectedDataFormatException();
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
+                {
+                    request.Headers.Host = baseUri.Host;
+                    SetUA_AQUA_HTTP(request);
+                    // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
+                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+                        if (string.IsNullOrWhiteSpace(raw))
+                        {
+                            throw new UnexpectedDataFormatException();
+                        }
+
+                        if (PSO2Version.TrySafeParse(in raw, out var result))
+                        {
+                            return result;
+                        }
+                        else
+                        {
+                            throw new UnexpectedDataFormatException();
+                        }
                     }
                 }
             }
         }
+#nullable restore
 
         #endregion
 
@@ -461,6 +637,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public void Dispose()
         {
             this.client.Dispose();
+            this.dataCache?.Dispose();
             GC.SuppressFinalize(this);
         }
     }
