@@ -16,7 +16,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public PersistentCacheManagerX86(string rootDirectory) : base(rootDirectory, false)
         {
             this.conn = new SQLiteConnection(new SQLiteConnectionString(Path.Combine(rootDirectory, dbName), SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapersistcachedir"));
-
+            this.conn.EnableWriteAheadLogging();
             this.InitHeadersDatabase();
         }
 
@@ -47,6 +47,24 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 try
                 {
                     this.conn.InsertOrReplace(new CacheHeaderEntry() { EntryName = entryName, Data = entryHeaderData.ToArray() });
+                    this.conn.Release(savepoint);
+                }
+                catch
+                {
+                    this.conn.RollbackTo(savepoint);
+                    throw;
+                }
+            }
+        }
+
+        protected override async Task DeleteCacheHeader(string entryName, CancellationToken cancellationToken)
+        {
+            using (var lockObj = await this.EnterDatabaseLock(cancellationToken))
+            {
+                var savepoint = this.conn.SaveTransactionPoint();
+                try
+                {
+                    this.conn.Delete<CacheHeaderEntry>(entryName);
                     this.conn.Release(savepoint);
                 }
                 catch

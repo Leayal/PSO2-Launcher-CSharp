@@ -11,6 +11,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using System.Security;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -405,15 +406,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new UnexpectedDataFormatException();
         }
 
-        private static async Task<bool> InnerGetPatchListAsyncVerification(string entryName, JsonDocument header, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
+        private static async Task<bool> InnerGetPatchListAsyncVerification(string entryName, JsonDocument header, Stream cacheContent, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
         {
             if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
-                && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString(), out var localVer))
+                && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString(), out var localVer)
+                && header.RootElement.TryGetProperty("sha1", out var prop_sha1) && prop_sha1.ValueKind == JsonValueKind.String)
             {
                 var src = prop_src.GetString();
+                var sha1 = prop_sha1.GetString();
                 if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.Item3.AbsoluteUri, StringComparison.Ordinal) && arg.Item4.Equals(localVer))
                 {
-                    return true;
+                    var contentSha1 = await Helper.SHA1Hash.ComputeHashFromFileAsync(cacheContent, cancellationToken).ConfigureAwait(false);
+                    if (string.Equals(contentSha1, sha1, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -421,6 +428,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private async Task<bool> InnerGetPatchListAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, Stream entryStream, CancellationToken cancellationToken)
         {
+            bool result;
             using (var request = new HttpRequestMessage(HttpMethod.Get, arg.Item3))
             {
                 request.Headers.Host = arg.Item3.Host;
@@ -432,16 +440,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     {
                         await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
                         entryStream.Flush();
-                        if (entryStream.Length == 0)
-                        {
-                            return false;
-                        }
+                        result = (entryStream.Length != 0);
                     }
                 }
-                headerWriter.WriteString("source", arg.Item3.AbsoluteUri);
-                headerWriter.WriteString("version", arg.Item4.ToString());
             }
-            return true;
+            using (var shaEngi = SHA1.Create())
+            {
+                if (result)
+                {
+                    headerWriter.WriteString("source", arg.Item3.AbsoluteUri);
+                    headerWriter.WriteString("version", arg.Item4.ToString());
+                    entryStream.Position = 0;
+                    headerWriter.WriteString("sha1", Convert.ToHexString(await shaEngi.ComputeHashAsync(entryStream, cancellationToken)));
+                }
+            }
+            return result;
         }
 
         private async Task<PatchListMemory> InnerGetPatchListAsync2(PatchRootInfo rootInfo, string patchBaseUrl, bool? isReboot, string filelistFilename, CancellationToken cancellationToken)
@@ -503,16 +516,22 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        private static async Task<bool> InnerGetPatchVersionAsyncVerification(string entryName, JsonDocument header, Uri arg, CancellationToken cancellationToken)
+        private static async Task<bool> InnerGetPatchVersionAsyncVerification(string entryName, JsonDocument header, Stream cacheContent, Uri arg, CancellationToken cancellationToken)
         {
             if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
-                && header.RootElement.TryGetProperty("timestamp", out var prop_timestamp) && prop_timestamp.ValueKind == JsonValueKind.Number)
+                && header.RootElement.TryGetProperty("timestamp", out var prop_timestamp) && prop_timestamp.ValueKind == JsonValueKind.Number
+                && header.RootElement.TryGetProperty("sha1", out var prop_sha1) && prop_sha1.ValueKind == JsonValueKind.String)
             {
                 var src = prop_src.GetString();
+                var sha1 = prop_sha1.GetString();
                 var offset = DateTimeOffset.FromUnixTimeSeconds(prop_timestamp.GetInt64());
                 if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.AbsoluteUri, StringComparison.Ordinal) && ((DateTimeOffset.UtcNow - offset) < TimeSpan.FromMinutes(5)))
                 {
-                    return true;
+                    var contentSha1 = await Helper.SHA1Hash.ComputeHashFromFileAsync(cacheContent, cancellationToken).ConfigureAwait(false);
+                    if (string.Equals(contentSha1, sha1, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -520,6 +539,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private async Task<bool> InnerGetPatchVersionAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, Uri arg, Stream entryStream, CancellationToken cancellationToken)
         {
+            bool result;
             using (var request = new HttpRequestMessage(HttpMethod.Get, arg))
             {
                 request.Headers.Host = arg.Host;
@@ -531,16 +551,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     {
                         await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
                         entryStream.Flush();
-                        if (entryStream.Length == 0)
-                        {
-                            return false;
-                        }
+                        result = (entryStream.Length != 0);
                     }
                 }
-                headerWriter.WriteString("source", arg.AbsoluteUri);
-                headerWriter.WriteNumber("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             }
-            return true;
+            using (var shaEngi = SHA1.Create())
+            {
+                if (result)
+                {
+                    headerWriter.WriteString("source", arg.AbsoluteUri);
+                    headerWriter.WriteNumber("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+                    entryStream.Position = 0;
+                    headerWriter.WriteString("sha1", Convert.ToHexString(await shaEngi.ComputeHashAsync(entryStream, cancellationToken)));
+                }
+            }
+            return result;
         }
 
         private async Task<PSO2Version> InnerGetPatchVersionAsync(string patchUrl, CancellationToken cancellationToken)
@@ -562,7 +587,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
                             {
                                 response.EnsureSuccessStatusCode();
-                                var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+                                var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                                 if (string.IsNullOrWhiteSpace(raw))
                                 {
                                     throw new UnexpectedDataFormatException();
@@ -611,7 +636,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
                     {
                         response.EnsureSuccessStatusCode();
-                        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                         if (string.IsNullOrWhiteSpace(raw))
                         {
                             throw new UnexpectedDataFormatException();

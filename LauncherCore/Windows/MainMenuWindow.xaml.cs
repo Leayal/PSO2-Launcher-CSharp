@@ -381,7 +381,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.cancelAllOperation?.Dispose();
             this.cancelSrc_gameupdater?.Dispose();
-            this.webclient.Dispose();
+            this.pso2HttpClient.Dispose();
+
+            // this.pso2HttpClient.Dispose() already call Dispose() on its referenced HttpClient.
+            // this.webclient.Dispose();
 
             if (this.trayIcon.IsValueCreated)
             {
