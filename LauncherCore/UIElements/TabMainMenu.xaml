@@ -39,9 +39,9 @@
                             <Image Stretch="UniformToFill" StretchDirection="DownOnly" MaxHeight="32" MaxWidth="32" MinHeight="16" MinWidth="16" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Click="MenuItemToolBox_Click"  Loaded="MenuItem_PSO2DataOrganizer_Loaded" Visibility="Collapsed">
+                    <MenuItem Click="MenuItemToolBox_Click"  Loaded="MenuItem_PSO2DataOrganizer_Loaded">
                         <MenuItem.Header>
-                            <TextBlock Text="PSO2 Data Organizer" VerticalAlignment="Center" />
+                            <TextBlock Text="PSO2 Data Organizer (BETA)" VerticalAlignment="Center" />
                         </MenuItem.Header>
                         <MenuItem.Icon>
                             <iconPacks:PackIconFontAwesome Kind="BufferBrands" />

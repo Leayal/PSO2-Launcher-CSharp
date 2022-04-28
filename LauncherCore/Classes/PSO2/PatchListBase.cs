@@ -9,6 +9,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     public abstract class PatchListBase : IEnumerable<PatchListItem>, IEnumerable, IReadOnlyCollection<PatchListItem>, IDisposable
     {
         public readonly PatchRootInfo RootInfo;
+
+        /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsReboot;
 
         protected PatchListBase(PatchRootInfo rootInfo, bool? isReboot)

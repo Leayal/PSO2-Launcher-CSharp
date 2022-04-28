@@ -99,7 +99,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var currentLine = this.tr.ReadLine();
                 if (currentLine != null)
                 {
-                    this.currentItem = PatchListItem.Parse(this.parent, in currentLine);
+                    this.currentItem = PatchListItem.Parse(this.parent, currentLine);
                     return true;
                 }
                 return false;

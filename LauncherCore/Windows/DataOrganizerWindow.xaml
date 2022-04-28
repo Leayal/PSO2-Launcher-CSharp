@@ -11,7 +11,7 @@
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d"
                          WindowStartupLocation="CenterOwner" x:Name="thisSelf" ShowTitleBar="False" WindowButtonCommandsOverlayBehavior="Never"
-                         ResizeMode="CanResize" Title="PSO2 Data Organizer" Height="600" Width="800"
+                         ResizeMode="CanResize" Title="PSO2 Data Organizer (BETA)" Height="600" Width="800"
                          Loaded="ThisSelf_Loaded">
     <Grid Margin="5,0,5,5">
         <Grid.ColumnDefinitions>
@@ -22,6 +22,7 @@
             <!--For titlebar-->
             <RowDefinition MinHeight="{Binding ElementName=thisSelf,Path=WindowCommandButtonsHeight,Mode=OneWay}" Height="Auto" />
             <RowDefinition />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -42,13 +43,13 @@
                     <Button Grid.Row="1" Click="ButtonSelectDeletePSO2ClassicPreset_Click">
                         <TextBlock Text="I want to delete PSO2 Classic data files" />
                     </Button>
-                    <Button Grid.Row="2">
+                    <Button Grid.Row="2" Visibility="Collapsed">
                         <Button.ToolTip>
                             <TextBlock Text="This may delete mods or backup files within the game client's directory" />
                         </Button.ToolTip>
                         <TextBlock Text="I want to delete files which are not a part of the game client" />
                     </Button>
-                    <Button Grid.Row="3">
+                    <Button Grid.Row="3" Click="ButtonSelectMoveClassicCreateSymlinkPreset_Click">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Content">
@@ -80,23 +81,28 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Grid.Row="4">
-                        <Button.ToolTip>
-                            <TextBlock Text="This feature is currently not available. It's still in working..." />
-                        </Button.ToolTip>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <iconPacks:PackIconFontAwesome Kind="ExclamationTriangleSolid" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="Let me sort an action out for myself (WIP)" />
-                        </Grid>
+                    <Button Grid.Row="4" Click="ButtonSelectNoPreset_Click">
+                        <TextBlock Grid.Column="1" Text="Let me sort actions out for myself" />
                     </Button>
                 </Grid>
             </mah:MetroTabItem>
 
             <mah:MetroTabItem x:Name="tabCustomizePreset">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid x:Name="tabCustomizePresetContent" />
+
+                    <Button Grid.Row="2" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Click="ButtonNext_Click">
+                        <TextBlock Text="Proceed" />
+                    </Button>
+                </Grid>
+            </mah:MetroTabItem>
+
+            <mah:MetroTabItem x:Name="tabCustomizeAction">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -105,6 +111,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter" VerticalAlignment="Center" />
@@ -206,11 +213,37 @@
                             <TextBlock Text="Apply to checked files" />
                         </Button>
                     </Grid>
+
+                    <Button Grid.Row="3" Grid.ColumnSpan="2" Click="ButtonStartActions_Click">
+                        <TextBlock Text="Start actions" />
+                    </Button>
+                </Grid>
+            </mah:MetroTabItem>
+
+            <mah:MetroTabItem x:Name="tabProgressRing">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="Loading" />
+                    <mah:ProgressRing Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Grid>
+            </mah:MetroTabItem>
+
+            <mah:MetroTabItem x:Name="tabActionProgress">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="Applying customized actions" />
+                    <localui:ExtendedProgressBar Grid.Row="1" VerticalAlignment="Center" x:Name="ActionProgress_Value" ShowDetailedProgressPercentage="True" ShowProgressText="True" />
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>
 
-        <Button Grid.Row="2" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Click="ButtonClose_Click" IsCancel="True">
+        <Button Grid.Row="3" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Click="ButtonClose_Click" IsCancel="True">
             <TextBlock Text="Cancel and close" />
         </Button>
     </Grid>

@@ -24,9 +24,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private const string UA_pso2launcher = "pso2launcher";
         private readonly PersistentCacheManager? dataCache;
 
-        private const int WebFailure_RetryTimes = 5;
-        private const int WebFailure_RetryDelayMiliseconds = 1000;
-
         // Need to add snail mode (for when internet is extremely unreliable).
         // Do it later.
 

@@ -408,9 +408,14 @@ namespace Leayal.PSO2Launcher.Core
                 {
                     try
                     {
-                        var window = new Windows.DataOrganizerWindow(this.config_main);
-                        window.Owner = this.MainWindow;
-                        window.ShowDialog();
+                        if (this.Dispatcher.CheckAccess())
+                        {
+                            this.TryOpenDataOrganizerWindow();
+                        }
+                        else
+                        {
+                            this.Dispatcher.InvokeAsync(this.TryOpenDataOrganizerWindow);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -506,6 +511,14 @@ namespace Leayal.PSO2Launcher.Core
                         }), new object[] { dialogguide });
                     }
                 }
+            }
+        }
+
+        private void TryOpenDataOrganizerWindow()
+        {
+            if (this.MainWindow is Windows.MainMenuWindow mainmenu)
+            {
+                mainmenu.OpenDataOrganizerWindow();
             }
         }
 

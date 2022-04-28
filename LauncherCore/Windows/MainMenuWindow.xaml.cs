@@ -121,40 +121,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.RSSFeedPresenter.SelectedFeedChanged += this.RSSFeedPresenter_SelectedFeedChanged;
             this.pso2HttpClient = new PSO2HttpClient(this.webclient, Path.GetFullPath(Path.Combine("data", "cache", "leapso2client"), RuntimeValues.RootDirectory));
-            this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(() => Task.Run(() =>
-            {
-                var binDir = Path.GetFullPath("bin", RuntimeValues.RootDirectory);
-                var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                var removelen = binDir.Length + 1;
-
-                static void AddToDictionary(Dictionary<string, string> d, string p, int o)
-                {
-                    if (Directory.Exists(p))
-                    {
-                        foreach (var filename in Directory.EnumerateFiles(p, "*.dll", SearchOption.TopDirectoryOnly))
-                        {
-                            var sha1 = SHA1Hash.ComputeHashFromFile(filename);
-                            d.Add(filename.Remove(0, o), sha1);
-                        }
-                    }
-                }
-
-                AddToDictionary(dictionary, binDir, removelen);
-                AddToDictionary(dictionary, Path.Combine(binDir, "plugins", "rss"), removelen);
-                if (Environment.Is64BitProcess)
-                {
-                    AddToDictionary(dictionary, Path.Combine(binDir, "native-x64"), removelen);
-                }
-                else
-                {
-                    AddToDictionary(dictionary, Path.Combine(binDir, "native-x86"), removelen);
-                }
-
-                dictionary.TrimExcess();
-                var selfupdatecheck = new BackgroundSelfUpdateChecker(this.webclient, dictionary);
-                selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
-                return selfupdatecheck;
-            }));
+            this.backgroundselfupdatechecker = new Lazy<Task<BackgroundSelfUpdateChecker>>(this.SetupBackgroundSelfUpdateChecker);
             this.pso2Updater = CreateGameClientUpdater(this.pso2HttpClient);
             /*
             this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
@@ -242,6 +209,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.CreateNewParagraphInLog($"[System] Launcher is running in shared runtime environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
             }
 
+            if (StaticResources.IsCurrentProcessAdmin)
+            {
+                this.CreateNewParagraphInLog($"[System] Launcher is elevated as Administrator. Unless you want to use launcher's functions which requires Administrator, it is not recommended for the launcher to be elevated as Admin.");
+            }
+
             if (App.Current.BootstrapVersion < 4)
             {
                 const string BootstrapVersionReminder = "[Launcher Updater] You are using an older version of the Launcher's bootstrap. It is recommended to update it.",
@@ -261,6 +233,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
+        }
+
+        private Task<BackgroundSelfUpdateChecker> SetupBackgroundSelfUpdateChecker() => Task.Run(this.SetupBackgroundSelfUpdateChecker2);
+
+        private BackgroundSelfUpdateChecker SetupBackgroundSelfUpdateChecker2()
+        {
+            var binDir = Path.GetFullPath("bin", RuntimeValues.RootDirectory);
+            var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var removelen = binDir.Length + 1;
+
+            static void AddToDictionary(Dictionary<string, string> d, string p, int o)
+            {
+                if (Directory.Exists(p))
+                {
+                    foreach (var filename in Directory.EnumerateFiles(p, "*.dll", SearchOption.TopDirectoryOnly))
+                    {
+                        var sha1 = SHA1Hash.ComputeHashFromFile(filename);
+                        d.Add(filename.Remove(0, o), sha1);
+                    }
+                }
+            }
+
+            AddToDictionary(dictionary, binDir, removelen);
+            AddToDictionary(dictionary, Path.Combine(binDir, "plugins", "rss"), removelen);
+            if (Environment.Is64BitProcess)
+            {
+                AddToDictionary(dictionary, Path.Combine(binDir, "native-x64"), removelen);
+            }
+            else
+            {
+                AddToDictionary(dictionary, Path.Combine(binDir, "native-x86"), removelen);
+            }
+
+            dictionary.TrimExcess();
+            var selfupdatecheck = new BackgroundSelfUpdateChecker(this.cancelAllOperation.Token, this.webclient, dictionary);
+            selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
+            return selfupdatecheck;
         }
 
         private void ThisWindow_Loaded(object sender, RoutedEventArgs e)
@@ -684,9 +693,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.UseClock = this.config_main.LauncherUseClock;
                         if (this.config_main.LauncherCheckForSelfUpdates)
                         {
-                            var isnewselfchecker = this.backgroundselfupdatechecker.IsValueCreated;
+                            var isExistedSelfChecker = this.backgroundselfupdatechecker.IsValueCreated;
                             var selfchecker = await this.backgroundselfupdatechecker.Value;
-                            if (!isnewselfchecker)
+                            if (isExistedSelfChecker)
                             {
                                 selfchecker.Stop();
                             }
@@ -913,6 +922,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             }
+        }
+
+        public void OpenDataOrganizerWindow()
+        {
+            var window = new DataOrganizerWindow(this.config_main, this.pso2HttpClient, cancelAllOperation.Token);
+            window.Owner = this;
+            window.ShowDialog();
         }
 
         #region | WindowsCommandButtons |

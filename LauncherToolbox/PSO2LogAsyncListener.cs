@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System.Collections;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Leayal.PSO2Launcher.Toolbox
 {
@@ -54,15 +56,16 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             await using (var reader = new PSO2LogAsyncReader(fs, keepOpen, onLogDataFound, cancellationToken))
             {
-                await reader.StartOperation();
+                await reader.StartOperation().ConfigureAwait(false);
             }
         }
 
+        private readonly PeriodicTimer delay;
         private readonly CancellationTokenSource cancelSrc;
         private readonly FileStream fs;
-        private Task? t_readFile;
         private readonly bool _leaveOpen;
         private bool _disposed;
+        private int _state;
 
         /// <summary>Gets the full path to the log file.</summary>
         public string Fullpath => this.fs.Name;
@@ -81,41 +84,51 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <param name="keepOpen">The boolean to determine whether the <paramref name="fs"/> stream should be closed when this instance is disposed.</param>
         public PSO2LogAsyncListener(FileStream fs, bool keepOpen)
         {
+            this.delay = new PeriodicTimer(TimeSpan.FromMilliseconds(10));
             this.cancelSrc = new CancellationTokenSource();
             this._leaveOpen = keepOpen;
             this.fs = fs;
+            this._state = 0;
         }
 
         /// <summary>Begin the async operation.</summary>
         /// <remarks>When log data is available, the <seealso cref="DataReceived"/> event will be invoked with the given data.</remarks>
         public void StartReceiving()
         {
-            if (this.t_readFile is not null) return;
-            this.t_readFile = Task.Factory.StartNew(this.ReadFileAsync, TaskCreationOptions.LongRunning).Unwrap();
+            if (Interlocked.CompareExchange(ref this._state, 1, 0) == 0)
+            {
+                Task.Factory.StartNew(this.ReadFileAsync, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously);
+            }
         }
 
         private async Task ReadFileAsync()
         {
-            using (var sr = new StreamReader(this.fs))
+            using (var sr = new StreamReader(this.fs, leaveOpen: true))
             {
                 var token = this.cancelSrc.Token;
                 try
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        var line = await sr.ReadLineAsync();
-                        if (string.IsNullOrEmpty(line))
+                        var line = await sr.ReadLineAsync().ConfigureAwait(false);
+                        if (!token.IsCancellationRequested)
                         {
-                            await Task.Delay(5, token);
-                        }
-                        else
-                        {
-                            var data = new PSO2LogData(line);
-                            this.DataReceived?.Invoke(this, in data);
+                            if (string.IsNullOrEmpty(line))
+                            {
+                                if (!await this.delay.WaitForNextTickAsync(token).ConfigureAwait(false))
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                var data = new PSO2LogData(line);
+                                this.DataReceived?.Invoke(this, in data);
+                            }
                         }
                     }
                 }
-                catch (Exception ex) when (ex is ObjectDisposedException || ex is TaskCanceledException)
+                catch (ObjectDisposedException)
                 {
                 }
             }
@@ -135,6 +148,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             this.DataReceived = null;
             this.cancelSrc.Cancel();
+            this.delay.Dispose();
             // Trigger ObjectDisposedException on the Task.
             if (!this._leaveOpen)
             {

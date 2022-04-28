@@ -23,9 +23,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = p. False = m. Null = Not given.</summary>
         public readonly bool? PatchOrBase;
 
+        /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsRebootData;
-
-        public bool IsDataFile => (DetermineIfReboot(in this.RemoteFilename).HasValue);
 
         public PatchListItem(PatchListBase origin, string filename, in long size, string md5) : this(origin, filename, md5, in size, null) { }
 
@@ -37,23 +36,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.MD5 = md5;
             this.FileSize = size;
             this.PatchOrBase = m_or_p;
-            if (origin != null && DetermineIfReboot(in this.RemoteFilename).HasValue)
-            {
-                this.IsRebootData = origin.IsReboot;
-            }
-            else
-            {
-                this.IsRebootData = null;
-            }
+            this.IsRebootData = origin?.IsReboot;
         }
 
-        public string GetFilenameWithoutAffix() => GetFilenameWithoutAffix(in this.RemoteFilename);
+        public string GetFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename);
 
         public ReadOnlySpan<char> GetSpanFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.AsSpan());
 
         public ReadOnlyMemory<char> GetMemoryFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.AsMemory());
 
-        public static string GetFilenameWithoutAffix(in string filename)
+        public static string GetFilenameWithoutAffix(string filename)
         {
             if (filename.EndsWith(AffixFilename, StringComparison.OrdinalIgnoreCase))
             {
@@ -155,52 +147,76 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         internal const char char_tab = '\t';
         internal const char char_p = 'p';
 
-        public static PatchListItem Parse(PatchListBase origin, in string data)
+        public static PatchListItem Parse(PatchListBase origin, string data)
         {
-            var splitted = data.Split(char_tab, StringSplitOptions.TrimEntries);
+            var splitted = SplitData(data);
             long filesize;
 
             switch (splitted.Length)
             {
                 case 3:
-                    if (!long.TryParse(splitted[1], out filesize))
+                    if (!long.TryParse(splitted[1].Span, out filesize))
                     {
                         throw new UnexpectedDataFormatException();
                     }
                     // amd_ags_x64.dll.pat  42496	00D9C1F1485C9C965C53F1AA5448412B
-                    return new PatchListItem(origin, splitted[0], filesize, splitted[2]);
+                    return new PatchListItem(origin, new string(splitted[0].Span), filesize, new string(splitted[2].Span));
                 case 4:
-                    if (!long.TryParse(splitted[2], out filesize))
+                    if (!long.TryParse(splitted[2].Span, out filesize))
                     {
                         throw new UnexpectedDataFormatException();
                     }
                     // amd_ags_x64.dll.pat	00D9C1F1485C9C965C53F1AA5448412B	42496	p
-                    return new PatchListItem(origin, splitted[0], splitted[1], filesize, splitted[3][0] == char_p);
+                    return new PatchListItem(origin, new string(splitted[0].Span), new string(splitted[1].Span), filesize, splitted[3].Span[0] == char_p);
                 default:
                     throw new UnexpectedDataFormatException();
             }
         }
 
-        private static string _prefix_data_classic = Path.Combine("data", "win32");
-        private static string _prefix_data_reboot = Path.Combine("data", "win32reboot");
-
-        /// <returns>Full path to a directory.</returns>
-        public static bool? DetermineIfReboot(in string relativePath)
+        private static ReadOnlyMemory<char>[] SplitData(string data)
         {
-            var normalized = PathStringComparer.Default.NormalizePath(relativePath);
-
-            if (normalized.StartsWith(_prefix_data_classic, StringComparison.OrdinalIgnoreCase))
+            var span = data.AsSpan();
+            if (!span.IsEmpty)
             {
-                return false;
-            }
-            else if (normalized.StartsWith(_prefix_data_reboot, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
+                int len = 1;
+                int i = 0;
+                for (; i < span.Length; i++)
+                {
+                    if (span[i] == char_tab)
+                    {
+                        len++;
+                    }
+                }
+                var arr =  new ReadOnlyMemory<char>[len];
+                i = 0;
+                foreach (var c in EnumerateSplitData(data))
+                {
+                    arr[i++] = c;
+                }
+                return arr;
             }
             else
             {
-                return null;
+                return Array.Empty<ReadOnlyMemory<char>>();
             }
+        }
+
+        private static IEnumerable<ReadOnlyMemory<char>> EnumerateSplitData(string data)
+        {
+            // var result = new List<ReadOnlyMemory<char>>(8);
+            var mem = data.AsMemory();
+            var i = mem.Span.IndexOf(char_tab);
+            while (i != -1)
+            {
+                var acquired = mem.Slice(0, i);
+                // result.Add(acquired);
+                yield return acquired;
+                mem = mem.Slice(i + 1);
+                i = mem.Span.IndexOf(char_tab);
+            }
+            // result.Add(mem);
+            // return result;
+            yield return mem;
         }
     }
 }

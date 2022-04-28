@@ -14,12 +14,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
 {
     class BackgroundSelfUpdateChecker : IDisposable
     {
-        private static readonly SendOrPostCallback Post_OnUpdateFound = new SendOrPostCallback(OnUpdateFound);
         private CancellationTokenSource cancelSrc_BackgroundSelfUpdateChecker;
-        private readonly SynchronizationContext syncContext;
         private DateTime lastchecktime;
         private readonly HttpClient webclient;
         private readonly static Architecture __arch = RuntimeInformation.ProcessArchitecture;
+        private int _state;
+        private readonly CancellationToken appExit;
 
         private TimeSpan _ticktime;
         public TimeSpan TickTime
@@ -30,9 +30,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 var tensec = TimeSpan.FromSeconds(10);
                 if (value < tensec)
                 {
-                    this._ticktime = tensec;
+                    value = tensec;
                 }
-                else
+                if (value != this._ticktime)
                 {
                     this._ticktime = value;
                 }
@@ -41,77 +41,61 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         private readonly IReadOnlyDictionary<string, string> files;
 
-        public BackgroundSelfUpdateChecker(HttpClient client, Dictionary<string, string> filelist)
+        public BackgroundSelfUpdateChecker(in CancellationToken cancellationToken, HttpClient client, Dictionary<string, string> filelist)
         {
-            this._ticktime = TimeSpan.FromSeconds(1);
+            this.appExit = cancellationToken;
             this.files = filelist;
-            this.syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
             this.lastchecktime = DateTime.Now;
-
             this.webclient = client;
+
+            this._ticktime = TimeSpan.FromSeconds(1);
         }
 
-        public void Start()
+        public async void Start()
         {
-            this.syncContext.Post(async (obj) =>
+            if (Interlocked.CompareExchange(ref this._state, 1, 0) == 0)
             {
-                var myself = (BackgroundSelfUpdateChecker)obj;
-                if (myself.cancelSrc_BackgroundSelfUpdateChecker == null)
+                var newCancel = CancellationTokenSource.CreateLinkedTokenSource(this.appExit);
+                Interlocked.Exchange(ref this.cancelSrc_BackgroundSelfUpdateChecker, newCancel)?.Dispose();
+                var cancelToken = newCancel.Token;
+
+                if ((DateTime.Now - this.lastchecktime) >= this._ticktime)
                 {
-                    var cancelsrc = new CancellationTokenSource();
-                    myself.cancelSrc_BackgroundSelfUpdateChecker = cancelsrc;
-                    try
+                    await this.TimerTicked().ConfigureAwait(false);
+                }
+
+                if (!cancelToken.IsCancellationRequested)
+                {
+                    using (var timer = new PeriodicTimer(this._ticktime))
                     {
-                        var canceltoken = cancelsrc.Token;
-                        canceltoken.Register(cancelsrc.Dispose);
-                        try
+                        while (!cancelToken.IsCancellationRequested)
                         {
-                            myself.lastchecktime = await Task.Factory.StartNew<Task<DateTime>>(new Func<object, Task<DateTime>>(async (obj) =>
+                            if (await timer.WaitForNextTickAsync(cancelToken).ConfigureAwait(false))
                             {
-                                var copied = canceltoken;
-                                DateTime datetime;
-                                if (obj is DateTime lastcheck)
-                                {
-                                    datetime = lastcheck;
-                                }
-                                else
-                                {
-                                    datetime = DateTime.Now;
-                                }
-                                while (!copied.IsCancellationRequested)
-                                {
-                                    await Task.Delay(myself._ticktime, copied);
-                                    datetime = DateTime.Now;
-
-                                    var remotelist = await myself.GetFileList();
-                                    var theonewhoneedupdate = myself.CheckUpdate(remotelist);
-
-                                    if (theonewhoneedupdate != null && theonewhoneedupdate.Count != 0)
-                                    {
-                                        var taskCompletionSource = new TaskCompletionSource();
-                                        myself.syncContext.Post(Post_OnUpdateFound, new UpdateFoundData(myself, taskCompletionSource, theonewhoneedupdate));
-                                        await taskCompletionSource.Task;
-                                    }
-                                }
-                                return datetime;
-                            }), myself.lastchecktime, canceltoken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                                await this.TimerTicked().ConfigureAwait(false);
+                            }
                         }
-                        catch (TaskCanceledException)
-                        {
-                        }
-                    }
-                    finally
-                    {
-                        myself.cancelSrc_BackgroundSelfUpdateChecker = null;
-                        cancelsrc.Dispose();
                     }
                 }
-            }, this);
+            }
+        }
+
+        private async ValueTask TimerTicked()
+        {
+            this.lastchecktime = DateTime.Now;
+
+            var remotelist = await this.GetFileList().ConfigureAwait(false);
+            var theonewhoneedupdate = this.CheckUpdate(remotelist);
+
+            if (theonewhoneedupdate != null && theonewhoneedupdate.Count != 0)
+            {
+                this.UpdateFound?.Invoke(this, theonewhoneedupdate);
+            }
         }
 
         private async Task<IReadOnlyDictionary<string, string>> GetFileList()
         {
-            var data = await this.webclient.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json");
+            var data = await this.webclient.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json").ConfigureAwait(false);
             var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             using (var document = JsonDocument.Parse(data))
@@ -231,45 +215,14 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return result;
         }
 
-        private static void OnUpdateFound(object obj)
-        {
-            if (obj is UpdateFoundData data)
-            {
-                var sender = data.Sender;
-                var tasksrc = data.TaskSource;
-                try
-                {
-                    sender.UpdateFound?.Invoke(sender, data.NeedUpdated);
-                    tasksrc.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tasksrc.SetException(ex);
-                }
-            }
-        }
-
         public event Action<BackgroundSelfUpdateChecker, IReadOnlyList<string>> UpdateFound;
 
-        class UpdateFoundData
+        public void Stop()
         {
-            public readonly BackgroundSelfUpdateChecker Sender;
-            public readonly TaskCompletionSource TaskSource;
-            public readonly List<string> NeedUpdated;
-
-            public UpdateFoundData(BackgroundSelfUpdateChecker sender, TaskCompletionSource tasksrc, List<string> _needupdated)
+            if (Interlocked.CompareExchange(ref this._state, 0, 1) == 1)
             {
-                this.Sender = sender;
-                this.TaskSource = tasksrc;
-                this.NeedUpdated = _needupdated;
-            }
-        }
-
-        public void Stop() => this.syncContext.Post(this.InnerStop, null);
-
-        private void InnerStop(object sender)
-        {
-            this.cancelSrc_BackgroundSelfUpdateChecker?.Cancel();
+                this.cancelSrc_BackgroundSelfUpdateChecker?.Cancel();
+            }  
         }
 
         public void Dispose()

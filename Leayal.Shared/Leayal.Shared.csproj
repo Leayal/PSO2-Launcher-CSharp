@@ -5,6 +5,7 @@
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>
