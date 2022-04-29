@@ -498,30 +498,40 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             var a = new ActionProgressReport(value, (action == DataAction.MoveAndSymlink) ? $"Move & Symlink '{item.RelativeFilename}'" : $"Moving '{item.RelativeFilename}'", this.ActionProgress_Value);
                             debouncer.ThrottleEx(30, a.Invoke);
-                            string srcMove = Path.GetFullPath(item.RelativeFilename, pso2dir),
-                                    dstMove = Path.GetFullPath(item.TextBoxValue);
-                            Directory.CreateDirectory(Path.GetDirectoryName(dstMove));
-                            var symlinkInfo = File.ResolveLinkTarget(srcMove, true);
-                            if (symlinkInfo == null)
+                            var srcMove = Path.GetFullPath(item.RelativeFilename, pso2dir);
+
+                            if (File.Exists(srcMove))
                             {
-                                File.Move(srcMove, dstMove, true);
-                                if (action == DataAction.MoveAndSymlink)
+                                var dstMove = Path.GetFullPath(item.TextBoxValue);
+                                Directory.CreateDirectory(Path.GetDirectoryName(dstMove));
+                                var symlinkInfo = File.ResolveLinkTarget(srcMove, true);
+                                if (symlinkInfo == null)
                                 {
-                                    File.CreateSymbolicLink(srcMove, dstMove);
-                                }
-                            }
-                            else
-                            {
-                                var realsrcMove = symlinkInfo.FullName;
-                                if (!string.Equals(realsrcMove, dstMove, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    File.Move(realsrcMove, dstMove, true);
+                                    File.Move(srcMove, dstMove, true);
                                     if (action == DataAction.MoveAndSymlink)
                                     {
-                                        File.Delete(srcMove);
                                         File.CreateSymbolicLink(srcMove, dstMove);
                                     }
                                 }
+                                else
+                                {
+                                    var realsrcMove = symlinkInfo.FullName;
+                                    if (!string.Equals(realsrcMove, dstMove, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        File.Move(realsrcMove, dstMove, true);
+                                        if (action == DataAction.MoveAndSymlink)
+                                        {
+                                            File.Delete(srcMove);
+                                            File.CreateSymbolicLink(srcMove, dstMove);
+                                        }
+                                    }
+                                }
+                            }
+                            else if (action == DataAction.MoveAndSymlink)
+                            {
+                                var dstMove = Path.GetFullPath(item.TextBoxValue);
+                                Directory.CreateDirectory(Path.GetDirectoryName(dstMove));
+                                File.CreateSymbolicLink(srcMove, dstMove);
                             }
                         }
                     }

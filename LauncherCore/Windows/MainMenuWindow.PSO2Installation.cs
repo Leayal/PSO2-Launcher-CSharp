@@ -25,6 +25,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.config_main.PSO2_BIN = dialog.PSO2BinDirectory;
                         this.config_main.DownloadSelection = dialog.GameClientDownloadSelection;
                         this.config_main.DownloaderProfile = dialog.DownloaderProfileSelection;
+                        this.config_main.DownloaderProfileClassic = dialog.DownloaderProfileClassicSelection;
                         this.config_main.Save();
                         this.RefreshGameUpdaterOptions();
                         if (installation_result.Value)

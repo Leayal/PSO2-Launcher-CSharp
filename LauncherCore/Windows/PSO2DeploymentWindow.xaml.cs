@@ -108,9 +108,36 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(DownloaderProfileSelectionProperty, value);
         }
 
+        public static readonly DependencyProperty DownloaderProfileClassicSelectionProperty = DependencyProperty.Register("DownloaderProfileClassicSelection", typeof(FileScanFlags), typeof(PSO2DeploymentWindow), new PropertyMetadata(FileScanFlags.None, (obj, e) =>
+        {
+            if (obj is PSO2DeploymentWindow window)
+            {
+                if (e.NewValue is FileScanFlags newselection && window.profileClassicFlags_list.TryGetValue(newselection, out var newdom))
+                {
+                    window.ComboBox_downloaderprofileclassic.SelectedItem = newdom;
+                }
+                else if (e.OldValue is FileScanFlags oldselection && window.profileClassicFlags_list.TryGetValue(oldselection, out var olddom))
+                {
+                    window.ComboBox_downloaderprofileclassic.SelectedItem = olddom;
+                }
+                else
+                {
+                    window.ComboBox_downloaderprofileclassic.SelectedItem = window.profileClassicFlags_list[FileScanFlags.None];
+                }
+            }
+        }));
+        private static readonly DependencyPropertyKey DownloaderProfileClassicSelectionTextPropertyKey = DependencyProperty.RegisterReadOnly("DownloaderProfileClassicSelectionText", typeof(string), typeof(PSO2DeploymentWindow), new PropertyMetadata(string.Empty));
+        public static readonly DependencyProperty DownloaderProfileClassicSelectionTextProperty = DownloaderProfileClassicSelectionTextPropertyKey.DependencyProperty;
+        public string DownloaderProfileClassicSelectionText => (string)this.GetValue(DownloaderProfileClassicSelectionTextProperty);
+        public FileScanFlags DownloaderProfileClassicSelection
+        {
+            get => (FileScanFlags)this.GetValue(DownloaderProfileClassicSelectionProperty);
+            set => this.SetValue(DownloaderProfileClassicSelectionProperty, value);
+        }
+
         private readonly PSO2HttpClient httpclient;
         private readonly Dictionary<GameClientSelection, EnumComboBox.ValueDOM<GameClientSelection>> gameSelection_list;
-        private readonly Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>> profileFlags_list;
+        private readonly Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>> profileFlags_list, profileClassicFlags_list;
         private CancellationTokenSource cancelSrc;
         private bool closeformaftercancel;
         private readonly string directory_pso2conf, path_pso2conf;
@@ -121,6 +148,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.httpclient = webclient;
             this.gameSelection_list = EnumComboBox.EnumToDictionary<GameClientSelection>();
             this.profileFlags_list = EnumComboBox.EnumToDictionary(new FileScanFlags[] { FileScanFlags.Balanced, FileScanFlags.FastCheck, FileScanFlags.HighAccuracy, FileScanFlags.CacheOnly });
+
+            this.profileClassicFlags_list = new Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>>(this.profileFlags_list.Count + 1);
+            this.profileClassicFlags_list.Add(FileScanFlags.None, new EnumComboBox.ValueDOM<FileScanFlags>(FileScanFlags.None, "Same as NGS's downloader profile"));
+            foreach (var item in this.profileFlags_list)
+            {
+                this.profileClassicFlags_list.Add(item.Key, item.Value);
+            }
+
             this.directory_pso2conf = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
             this.path_pso2conf = Path.Combine(this.directory_pso2conf, "user.pso2");
 
@@ -129,9 +164,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             InitializeComponent();
 
             this.ComboBox_downloaderprofile.ItemsSource = this.profileFlags_list.Values;
+            this.ComboBox_downloaderprofileclassic.ItemsSource = this.profileClassicFlags_list.Values;
             this.ComboBox_downloadselection.ItemsSource = this.gameSelection_list.Values;
             this.GameClientDownloadSelection = GameClientSelection.NGS_Only;
             this.DownloaderProfileSelection = FileScanFlags.Balanced;
+            this.ComboBox_downloaderprofileclassic.SelectedItem = this.profileClassicFlags_list[FileScanFlags.None];
 
             // this.GameClientDownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
         }
@@ -211,10 +248,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             this.ProgressBar_DeployProgressSecondary.ProgressBar.IsIndeterminate = true;
                             await ResetProgress(this.ProgressBar_DeployProgressSecondary, 100d);
 
-                            var deploymentsuccess = await Task.Run(async delegate
-                            {
-                                return await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, canceltoken);
-                            }, canceltoken);
+                            var deploymentsuccess = await Task.Run(async () => await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, canceltoken), canceltoken);
 
                             // Useless if but it's safe
                             if (Directory.Exists(dir_pso2_bin))
@@ -432,6 +466,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (isSuccess)
                     {
                         paragraphs = PSO2TroubleshootingWindow.GetRtfOfRequirements(hasDx11, hasVC14_x64, hasVC14_x86, true, true);
+                        var p1 = new Paragraph();
+                        p1.Inlines.Add(new Run("If you want to re-organize your data files before downloading them."));
+                        p1.Inlines.Add(new LineBreak());
+                        p1.Inlines.Add(new Run("For example: You want to place the data files of PSO2 Classic in a different drive (or another disk), separated from NGS files."));
+                        p1.Inlines.Add(new LineBreak());
+                        p1.Inlines.Add(new Run("You can close this dialog instead of proceeding download. Then open \"PSO2 Data Orgranizer\" in the Launcher's Toolbox. After you finished organizing, you can press \"Check for game updates\" button in the main menu to download the game."));
+                        paragraphs.Add(p1);
+
                         paragraphs.Add(new Paragraph(new Run("Please click the buttons below to close this dialog or to proceed download game's data files.")));
 
                         // Yup, insert at the beginning twice => reverse order
@@ -622,14 +664,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        private void ComboBox_downloaderprofileclassic_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems != null && e.AddedItems.Count != 0)
+            {
+                if (e.AddedItems[0] is EnumComboBox.ValueDOM<FileScanFlags> dom)
+                {
+                    this.DownloaderProfileClassicSelection = dom.Value;
+                    this.SetValue(DownloaderProfileClassicSelectionTextPropertyKey, dom.Name);
+                }
+            }
+        }
+
         private void ComboBox_downloadselection_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems != null && e.AddedItems.Count != 0)
             {
                 if (e.AddedItems[0] is EnumComboBox.ValueDOM<GameClientSelection> dom)
                 {
-                    this.GameClientDownloadSelection = dom.Value;
+                    var val = dom.Value;
+                    this.GameClientDownloadSelection = val;
                     this.SetValue(GameClientDownloadSelectionTextPropertyKey, dom.Name);
+                    switch (val)
+                    {
+                        case GameClientSelection.Classic_Only:
+                        case GameClientSelection.NGS_AND_CLASSIC:
+                            this.ComboBox_downloaderprofileclassic.Visibility = Visibility.Visible;
+                            break;
+                        default:
+                            this.ComboBox_downloaderprofileclassic.Visibility = Visibility.Collapsed;
+                            break;
+                    }
                 }
             }
         }

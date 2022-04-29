@@ -84,12 +84,16 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="PSO2 Download Type: " TextAlignment="Right" VerticalAlignment="Center" />
                     <localui:EnumComboBox Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloadselection" SelectionChanged="ComboBox_downloadselection_SelectionChanged" />
 
-                    <TextBlock Grid.Row="1" Text="PSO2 Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Row="1" Text="PSO2 NGS Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" />
                     <localui:EnumComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofile" SelectionChanged="ComboBox_downloaderprofile_SelectionChanged" />
+
+                    <TextBlock Grid.Row="2" Text="PSO2 Classic Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=ComboBox_downloaderprofileclassic,Path=Visibility,Mode=OneWay}" />
+                    <localui:EnumComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofileclassic" SelectionChanged="ComboBox_downloaderprofileclassic_SelectionChanged" />
                 </Grid>
             </mah:MetroTabItem>
             <mah:MetroTabItem x:Name="TabOverviewsBeforeDeploy" Selector.Selected="TabOverviewsBeforeDeploy_Selected">
@@ -106,6 +110,7 @@
                             <RowDefinition Height="10" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="Overview details" TextAlignment="Center" FontSize="16" />
                         
@@ -118,8 +123,11 @@
                         <TextBlock Grid.Row="4" Text="PSO2 game client's download type: " TextAlignment="Right" />
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=GameClientDownloadSelectionText}" />
 
-                        <TextBlock Grid.Row="5" Text="PSO2 game client's downloader profile: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="5" Text="PSO2 game client's NGS downloader profile: " TextAlignment="Right" />
                         <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=DownloaderProfileSelectionText}" />
+
+                        <TextBlock Grid.Row="6" Text="PSO2 game client's Classic downloader profile: " TextAlignment="Right" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=DownloaderProfileClassicSelectionText}" />
                     </Grid>
                 </ScrollViewer>
             </mah:MetroTabItem>
@@ -162,7 +170,7 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <RichTextBox x:Name="RichTextBox_FinishingWords"
-                                 IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" IsUndoEnabled="False" >
+                                 IsReadOnly="True" IsReadOnlyCaretVisible="True" IsDocumentEnabled="True" IsUndoEnabled="False">
                             <FlowDocument />
                         </RichTextBox>
                         <Grid Grid.Row="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithLibraryModWarning}">
