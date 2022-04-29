@@ -11,6 +11,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     public enum FileScanFlags
     {
         /// <summary>Full scan?</summary>
+        /// <remarks>When used for PSO2Classic's profile. This value means using the same value from PSO2 Reboot.</remarks>
         None = 0,
 
         /// <summary>Only missing files are deemed to be in need of download.</summary>

@@ -42,36 +42,45 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="PSO2 Game Directory (pso2_bin):" Margin="1" TextAlignment="Right" />
+            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="PSO2 Game Directory (pso2_bin):" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
             <TextBox Grid.Row="0" Grid.Column="2" x:Name="textbox_pso2_bin" Margin="1" />
-            <Button Grid.Row="0" Grid.Column="3" Content="Browse" Click="ButtonBrowsePSO2Bin_Click" Margin="1" />
-
+            <Button Grid.Row="0" Grid.Column="3" Click="ButtonBrowsePSO2Bin_Click" Margin="1">
+                <TextBlock Text="Browse" />
+            </Button>
 
             <CheckBox Grid.Row="1" Grid.Column="0" x:Name="checkbox_pso2_classic" Margin="1" Visibility="Collapsed" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="PSO2 Classic Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
             <TextBox Grid.Row="1" Grid.Column="2" x:Name="textbox_pso2_classic" Margin="1" Visibility="Collapsed" />
-            <Button Grid.Row="1" Grid.Column="3" Content="Browse" Margin="1" Visibility="Collapsed" />
+            <Button Grid.Row="1" Grid.Column="3" Margin="1" Visibility="Collapsed">
+                <TextBlock Text="Browse" />
+            </Button>
 
             <CheckBox Grid.Row="2" Grid.Column="0" x:Name="checkbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
             <TextBlock Grid.Row="2" Grid.Column="1" Text="PSO2 NGS Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
             <TextBox Grid.Row="2" Grid.Column="2" x:Name="textbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
-            <Button Grid.Row="2" Grid.Column="3" Content="Browse" Margin="1" Visibility="Collapsed" />
+            <Button Grid.Row="2" Grid.Column="3" Margin="1" Visibility="Collapsed">
+                <TextBlock Text="Browse" />
+            </Button>
 
-            <TextBlock Grid.Row="3" Grid.Column="1" Text="PSO2 Download Type:" Margin="1" TextAlignment="Right" />
-            <localui:EnumComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadselection" Margin="1" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="PSO2 Download Type:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadselection" Margin="1" SelectionChanged="Combobox_downloadselection_SelectionChanged" />
 
-            <TextBlock Grid.Row="4" Grid.Column="1" Text="PSO2 Downloader Profile:" Margin="1" TextAlignment="Right" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="PSO2 NGS Downloader Profile:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
             <localui:EnumComboBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadpreset" Margin="1" />
 
-            <TextBlock Grid.Row="5" Grid.Column="1" Text="PSO2 Downloader Concurrent Thread Count:" Margin="1" TextAlignment="Right" />
-            <localui:EnumComboBox Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_thradcount" Margin="1" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="PSO2 Classic Downloader Profile:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=combobox_downloadpresetclassic,Path=Visibility,Mode=OneWay}" />
+            <localui:EnumComboBox Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadpresetclassic" Margin="1" />
 
-            <TextBlock Grid.Row="6" Grid.Column="1" Text="Throttle File Check (per-second):" Margin="1" TextAlignment="Right" />
-            <mah:NumericUpDown Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_throttledownload" Margin="1,1,1,0" Maximum="1000" Minimum="0" PreviewTextInput="Numberbox_throttledownload_PreviewTextInput" />
-            <Label Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="2" Margin="1,0,1,1">
+            <TextBlock Grid.Row="6" Grid.Column="1" Text="PSO2 Downloader Concurrent Thread Count:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_thradcount" Margin="1" />
+
+            <TextBlock Grid.Row="7" Grid.Column="1" Text="Throttle File Check (per-second):" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
+            <mah:NumericUpDown Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_throttledownload" Margin="1,1,1,0" Maximum="1000" Minimum="0" PreviewTextInput="Numberbox_throttledownload_PreviewTextInput" />
+            <Label Grid.Row="8" Grid.Column="2" Grid.ColumnSpan="2" Margin="1,0,1,1">
                 <Label.Style>
                     <Style TargetType="Label" BasedOn="{StaticResource MahApps.Styles.Label}">
                         <Setter Property="Content">

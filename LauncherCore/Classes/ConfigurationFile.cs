@@ -31,6 +31,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("pso2_bin", value ?? string.Empty);
         }
 
+        /*
         public string PSO2Directory_Reboot
         {
             get
@@ -43,6 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
             set => this.Set("pso2_data_reboot", value ?? string.Empty);
         }
+        */
 
         public bool PSO2Enabled_Reboot
         {
@@ -126,6 +128,27 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 return PSO2.FileScanFlags.Balanced;
             }
             set => this.Set("pso2_downloaderprofile", (int)value);
+        }
+
+        public PSO2.FileScanFlags DownloaderProfileClassic
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2classic_downloaderprofile", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    var num = (int)val.Value;
+                    var vals = Enum.GetValues<PSO2.FileScanFlags>();
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        if (((int)vals[i]) == num)
+                        {
+                            return vals[i];
+                        }
+                    }
+                }
+                return PSO2.FileScanFlags.None;
+            }
+            set => this.Set("pso2classic_downloaderprofile", (int)value);
         }
 
         /// <summary>

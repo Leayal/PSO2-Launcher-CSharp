@@ -33,16 +33,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
             public T Value { get; }
 
-            public ValueDOM(T value)
+            public ValueDOM(T value) : this(value, EnumDisplayNameAttribute.TryGetDisplayName(value, out var name) ? name : value.ToString()) { }
+
+            public ValueDOM(T value, string displayName)
             {
-                if (EnumDisplayNameAttribute.TryGetDisplayName(value, out var name))
-                {
-                    this.Name = name;
-                }
-                else
-                {
-                    this.Name = value.ToString();
-                }
+                this.Name = displayName;
                 this.Value = value;
             }
         }

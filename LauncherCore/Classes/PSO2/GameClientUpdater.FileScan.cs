@@ -300,8 +300,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return e_onBackup;
         }
 
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags flags, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
+            if (fScanClassic == FileScanFlags.None)
+            {
+                fScanClassic = fScanReboot;
+            }
             var factorSetting = this.ThrottleFileCheckFactor;
             int fileCheckThrottleFactor;
             if (factorSetting > 0)
@@ -320,12 +324,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
             var tasksOfLists = new List<Task<PatchListMemory>>(4);
             // Begin file check
-            bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
-                flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
-                flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),
-                flag_missingOnly = flags.HasFlag(FileScanFlags.MissingFilesOnly),
-                flag_useMd5 = flags.HasFlag(FileScanFlags.MD5HashMismatch);
-
+            
             /*
             static long GetFileSize(ref FileStream fs, string filename)
             {
@@ -354,180 +353,208 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             */
 
             int processedFiles = 0;
-            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data, string? dir_reboot_data)
+            static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data)
             {
-                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
+                var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, out var isLink);
                 var item = new DownloadItem(patchItem, localFilePath, isLink ? linkTo : null);
                 queue.Add(item, CancellationToken.None);
                 callback.Invoke(in item);
             }
 
+            using (var throttleWaiter = (fileCheckThrottleFactor == 0 ? null : new PeriodicTimer(TimeSpan.FromMilliseconds(fileCheckThrottleFactor))))
             using (var md5engi = MD5.Create())
             {
-                if (flags == FileScanFlags.MissingFilesOnly)
+                foreach (var patchItem in headacheMatterAgain)
                 {
-                    foreach (var patchItem in headacheMatterAgain)
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
+                        break;
+                    }
+
+                    var flags = (patchItem.IsRebootData == false) ? fScanClassic : fScanReboot;
+
+                    if (flags == FileScanFlags.MissingFilesOnly)
+                    {
                         var localFilename = patchItem.GetFilenameWithoutAffix();
                         string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
                         if (!File.Exists(localFilePath))
                         {
-                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                         }
                     }
-                }
-                else if (flag_forceRefresh)
-                {
-                    foreach (var patchItem in headacheMatterAgain)
+                    else
                     {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
+                        bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
+                            flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
+                            flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),
+                            flag_missingOnly = flags.HasFlag(FileScanFlags.MissingFilesOnly),
+                            flag_useMd5 = flags.HasFlag(FileScanFlags.MD5HashMismatch);
 
-                        var localFilename = patchItem.GetFilenameWithoutAffix();
-                        string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                        // localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
-                        if (!File.Exists(localFilePath))
+                        if (flag_forceRefresh)
                         {
-                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                        }
-                        else
-                        {
-                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-
-                            using (var fs = File.OpenRead(localFilePath))
+                            var localFilename = patchItem.GetFilenameWithoutAffix();
+                            string localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                            // localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data, out var isLink);
+                            if (!File.Exists(localFilePath))
                             {
-                                var localFileLen = fs.Length;
-                                if (localFileLen == patchItem.FileSize)
-                                {
-                                    if (flag_useMd5)
-                                    {
-                                        var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
-
-                                        var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
-                                        duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, in localFileLen, localMd5), localLastModifiedTimeUtc);
-
-                                        if (bool_compareMD5)
-                                        {
-                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
-                                        }
-                                        else
-                                        {
-                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                                }
-                            }
-                        }
-                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
-                        if (fileCheckThrottleFactor != 0)
-                        {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                        }
-                    }
-                }
-                else if (flag_cacheOnly)
-                {
-                    foreach (var patchItem in headacheMatterAgain)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        var localFilename = patchItem.GetFilenameWithoutAffix();
-                        // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                        var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                        var isNotInCache = !duhB.TryGetPatchItem(localFilename, out var cachedHash);
-                        // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-
-                        if (File.Exists(localFilePath))
-                        {
-                            if (isNotInCache)
-                            {
-                                var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                                using (var fs = File.OpenRead(localFilePath))
-                                {
-                                    var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
-                                    var newCacheItem = new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5);
-                                    cachedHash = duhB.SetPatchItem(newCacheItem, localLastModifiedTimeUtc);
-                                    tweakerHashCache?.WriteString(newCacheItem.GetSpanFilenameWithoutAffix(), localMd5);
-                                }
-                            }
-
-                            if (isNotInCache)
-                            {
-                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                             }
                             else
                             {
-                                if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+
+                                using (var fs = File.OpenRead(localFilePath))
                                 {
-                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                    var localFileLen = fs.Length;
+                                    if (localFileLen == patchItem.FileSize)
+                                    {
+                                        if (flag_useMd5)
+                                        {
+                                            var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                            var bool_compareMD5 = string.Equals(localMd5, patchItem.MD5, StringComparison.OrdinalIgnoreCase);
+                                            duhB.SetPatchItem(new PatchListItem(null, patchItem.RemoteFilename, in localFileLen, localMd5), localLastModifiedTimeUtc);
+
+                                            if (bool_compareMD5)
+                                            {
+                                                tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
+                                            }
+                                            else
+                                            {
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                    }
+                                }
+                            }
+                            this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+
+                            if (throttleWaiter != null)
+                            {
+                                await throttleWaiter.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        else if (flag_cacheOnly)
+                        {
+                            var localFilename = patchItem.GetFilenameWithoutAffix();
+                            // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data);
+                            var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                            var isNotInCache = !duhB.TryGetPatchItem(localFilename, out var cachedHash);
+                            // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+
+                            if (File.Exists(localFilePath))
+                            {
+                                if (isNotInCache)
+                                {
+                                    var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                    using (var fs = File.OpenRead(localFilePath))
+                                    {
+                                        var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                        var newCacheItem = new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5);
+                                        cachedHash = duhB.SetPatchItem(newCacheItem, localLastModifiedTimeUtc);
+                                        tweakerHashCache?.WriteString(newCacheItem.GetSpanFilenameWithoutAffix(), localMd5);
+                                    }
+                                }
+
+                                if (isNotInCache)
+                                {
+                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                                 }
                                 else
                                 {
-                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
+                                    if (!string.Equals(cachedHash.MD5, patchItem.MD5, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                    }
+                                    else
+                                    {
+                                        tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
+                                    }
                                 }
                             }
-                        }
-                        else
-                        {
-                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                        }
-
-                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
-                        if (fileCheckThrottleFactor != 0)
-                        {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (var patchItem in headacheMatterAgain)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        var localFilename = patchItem.GetFilenameWithoutAffix();
-                        var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                        // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                        if (!File.Exists(localFilePath))
-                        {
-                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                        }
-                        else
-                        {
-                            var isInCache = duhB.TryGetPatchItem(localFilename, out var cachedHash);
-                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
-                            if (isInCache && localLastModifiedTimeUtc != cachedHash.LastModifiedTimeUTC)
+                            else
                             {
+                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                             }
-                            FileStream? fs = null;
-                            try
+
+                            this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+
+                            if (throttleWaiter != null)
                             {
-                                if (flag_useFileSize)
+                                await throttleWaiter.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        else
+                        {
+                            var localFilename = patchItem.GetFilenameWithoutAffix();
+                            var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
+                            // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data);
+                            if (!File.Exists(localFilePath))
+                            {
+                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                            }
+                            else
+                            {
+                                var isInCache = duhB.TryGetPatchItem(localFilename, out var cachedHash);
+                                var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
+                                if (isInCache && localLastModifiedTimeUtc != cachedHash.LastModifiedTimeUTC)
                                 {
-                                    fs = File.OpenRead(localFilePath);
-                                    if (flag_useMd5)
+                                }
+                                FileStream? fs = null;
+                                try
+                                {
+                                    if (flag_useFileSize)
                                     {
-                                        if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC && fs.Length == cachedHash.FileSize)
+                                        fs = File.OpenRead(localFilePath);
+                                        if (flag_useMd5)
+                                        {
+                                            if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC && fs.Length == cachedHash.FileSize)
+                                            {
+                                                if (!string.Equals(patchItem.MD5, cachedHash.MD5, StringComparison.InvariantCultureIgnoreCase))
+                                                {
+                                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                                }
+                                                else
+                                                {
+                                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
+                                                if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
+                                                {
+                                                    duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
+                                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
+                                                }
+                                                else
+                                                {
+                                                    AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (fs.Length != patchItem.FileSize)
+                                            {
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
+                                            }
+                                            else
+                                            {
+                                                tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                            }
+                                        }
+                                    }
+                                    else if (flag_useMd5)
+                                    {
+                                        if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
                                         {
                                             if (!string.Equals(patchItem.MD5, cachedHash.MD5, StringComparison.InvariantCultureIgnoreCase))
                                             {
-                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                                             }
                                             else
                                             {
@@ -536,6 +563,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         }
                                         else
                                         {
+                                            fs = File.OpenRead(localFilePath);
                                             var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
                                             if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
                                             {
@@ -544,64 +572,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             }
                                             else
                                             {
-                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
+                                                AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data);
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        if (fs.Length != patchItem.FileSize)
-                                        {
-                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                                        }
-                                        else
-                                        {
-                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
-                                        }
-                                    }
                                 }
-                                else if (flag_useMd5)
+                                finally
                                 {
-                                    if (isInCache && localLastModifiedTimeUtc == cachedHash.LastModifiedTimeUTC)
-                                    {
-                                        if (!string.Equals(patchItem.MD5, cachedHash.MD5, StringComparison.InvariantCultureIgnoreCase))
-                                        {
-                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                                        }
-                                        else
-                                        {
-                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        fs = File.OpenRead(localFilePath);
-                                        var localMd5 = Convert.ToHexString(md5engi.ComputeHash(fs));
-                                        if (string.Equals(patchItem.MD5, localMd5, StringComparison.InvariantCultureIgnoreCase))
-                                        {
-                                            duhB.SetPatchItem(patchItem, in localLastModifiedTimeUtc);
-                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), localMd5);
-                                        }
-                                        else
-                                        {
-                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, dir_reboot_data);
-                                        }
-                                    }
+                                    fs?.Dispose();
                                 }
                             }
-                            finally
+                            this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+
+                            if (throttleWaiter != null)
                             {
-                                fs?.Dispose();
+                                await throttleWaiter.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false);
                             }
-                        }
-                        this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
-                        if (fileCheckThrottleFactor != 0)
-                        {
-                            await Task.Delay(fileCheckThrottleFactor, cancellationToken);
                         }
                     }
                 }
-                md5engi.Clear();
             }
         }
     }

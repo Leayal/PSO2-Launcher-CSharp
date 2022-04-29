@@ -34,7 +34,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         break;
                     }
 
-                    var localFilePath = SymbolicLink.FollowTarget(downloadItem.Destination) ?? downloadItem.Destination;
+                    // var localFilePath = SymbolicLink.FollowTarget(downloadItem.Destination) ?? downloadItem.Destination;
+                    string localFilePath = File.ResolveLinkTarget(downloadItem.Destination, true)?.FullName ?? downloadItem.Destination;
                     // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
                     // var tmpFilename = localFilename + ".dtmp";
                     var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);

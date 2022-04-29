@@ -48,6 +48,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.combobox_downloadpreset.SelectedItem = downloaderPreset_list[FileScanFlags.Balanced];
             }
 
+            var downloaderPresetClassic_list = new System.Collections.Generic.Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>>(downloaderPreset_list.Count + 1);
+            downloaderPresetClassic_list.Add(FileScanFlags.None, new EnumComboBox.ValueDOM<FileScanFlags>(FileScanFlags.None, "Same as NGS's downloader profile"));
+            foreach (var item in downloaderPreset_list)
+            {
+                downloaderPresetClassic_list.Add(item.Key, item.Value);
+            }
+            this.combobox_downloadpresetclassic.ItemsSource = downloaderPresetClassic_list.Values;
+            var selectedPresetClassic = this._config.DownloaderProfileClassic;
+            if (downloaderPresetClassic_list.TryGetValue(selectedPresetClassic, out var item_selectedPresetClassic))
+            {
+                this.combobox_downloadpresetclassic.SelectedItem = item_selectedPresetClassic;
+            }
+            else
+            {
+                this.combobox_downloadpresetclassic.SelectedItem = downloaderPresetClassic_list[FileScanFlags.None];
+            }
+
             var logicalCount = Environment.ProcessorCount;
             var ints = new EnumComboBox.ValueDOMNumber[logicalCount + 1];
             ints[0] = new EnumComboBox.ValueDOMNumber("Auto", 0);
@@ -74,11 +91,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.textbox_pso2_bin.Text = str_pso2bin;
             }
 
+            /*
             var str_pso2data_reboot = this._config.PSO2Directory_Reboot;
             if (!string.IsNullOrEmpty(str_pso2data_reboot))
             {
                 this.textbox_pso2_data_ngs.Text = str_pso2data_reboot;
             }
+            */
 
             var str_pso2data_classic = this._config.PSO2Directory_Classic;
             if (!string.IsNullOrEmpty(str_pso2data_classic))
@@ -115,9 +134,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.PSO2_BIN = pso2bin;
             this._config.DownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
             this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
+            this._config.DownloaderProfileClassic = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpresetclassic.SelectedItem).Value;
             this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
 
-            this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
+            // this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
             this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
             this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
             this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
@@ -188,6 +208,23 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     e.Handled = true;
                     return;
+                }
+            }
+        }
+
+        private void Combobox_downloadselection_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems != null && e.AddedItems.Count != 0 && e.AddedItems[0] is EnumComboBox.ValueDOM<GameClientSelection> item)
+            {
+                switch (item.Value)
+                {
+                    case GameClientSelection.Classic_Only: // This is totally unecessary, but let's go!
+                    case GameClientSelection.NGS_AND_CLASSIC:
+                        this.combobox_downloadpresetclassic.Visibility = Visibility.Visible;
+                        break;
+                    default:
+                        this.combobox_downloadpresetclassic.Visibility = Visibility.Collapsed;
+                        break;
                 }
             }
         }

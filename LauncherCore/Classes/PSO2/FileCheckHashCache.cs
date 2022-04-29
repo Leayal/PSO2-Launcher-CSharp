@@ -14,12 +14,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         void Load();
         bool TryGetPatchItem(string filename, out PatchRecordItemValue item);
 
-        PatchRecordItemValue SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC);
+        PatchRecordItemValue SetPatchItem(PatchListItem item, in DateTime lastModifiedTimeUTC);
     }
 
     public class DatabaseErrorException : Exception { }
-
-    
 
     public class PatchRecordItemValue : IEquatable<PatchRecordItemValue>
     {
@@ -70,13 +68,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         protected ConcurrentDictionary<string, PatchRecordItemValue> buffering;
         private readonly BlockingCollection<PatchRecordItemValue> writebuffer;
 
-        public IEnumerable<string> Keys => ((IReadOnlyDictionary<string, PatchRecordItemValue>)buffering).Keys;
+        public IEnumerable<string> Keys => this.buffering.Keys;
 
-        public IEnumerable<PatchRecordItemValue> Values => ((IReadOnlyDictionary<string, PatchRecordItemValue>)buffering).Values;
+        public IEnumerable<PatchRecordItemValue> Values => this.buffering.Values;
 
-        public int Count => ((IReadOnlyCollection<KeyValuePair<string, PatchRecordItemValue>>)buffering).Count;
+        public int Count => this.buffering.Count;
 
-        public PatchRecordItemValue this[string key] => ((IReadOnlyDictionary<string, PatchRecordItemValue>)buffering)[key];
+        public PatchRecordItemValue this[string key] => this.buffering[key];
 
         protected FileCheckHashCache(in int concurrentLevel)
         {
@@ -115,7 +113,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public PatchRecordItemValue SetPatchItem(in PatchListItem item, in DateTime lastModifiedTimeUTC)
+        public PatchRecordItemValue SetPatchItem(PatchListItem item, in DateTime lastModifiedTimeUTC)
         {
             switch (Interlocked.CompareExchange(ref this.state, -1, -1))
             {
@@ -170,25 +168,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public bool ContainsKey(string key)
-        {
-            return ((IReadOnlyDictionary<string, PatchRecordItemValue>)buffering).ContainsKey(key);
-        }
+        public bool ContainsKey(string key) => this.buffering.ContainsKey(key);
 
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out PatchRecordItemValue value)
-        {
-            return ((IReadOnlyDictionary<string, PatchRecordItemValue>)buffering).TryGetValue(key, out value);
-        }
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out PatchRecordItemValue value) => this.buffering.TryGetValue(key, out value);
 
-        public IEnumerator<KeyValuePair<string, PatchRecordItemValue>> GetEnumerator()
-        {
-            return ((IEnumerable<KeyValuePair<string, PatchRecordItemValue>>)buffering).GetEnumerator();
-        }
+        public IEnumerator<KeyValuePair<string, PatchRecordItemValue>> GetEnumerator() => this.buffering.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return buffering.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => this.buffering.GetEnumerator();
 
         protected abstract Task PollingWrite(BlockingCollection<PatchRecordItemValue> writebuffer);
 

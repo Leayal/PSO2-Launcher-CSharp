@@ -117,13 +117,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                dir_reboot_data = this.config_main.PSO2Enabled_Reboot ? this.config_main.PSO2Directory_Reboot : null,
                 dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
             dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
-            dir_reboot_data = string.IsNullOrWhiteSpace(dir_reboot_data) ? null : Path.GetFullPath(dir_reboot_data, dir_pso2bin);
             dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
 
             var downloaderProfile = this.config_main.DownloaderProfile;
+            var downloaderProfileClassic = this.config_main.DownloaderProfileClassic;
             var conf_DownloadType = this.config_main.DownloadSelection;
             GameClientSelection downloadType;
             switch (selection)
@@ -172,10 +171,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     sb.Append("(Your setting has been set to ignore Classic files. However, you have selected scanning including Classic files. If you continue, your game client may become full NGS and Classic game)");
                 }
 
-                if (downloaderProfile == FileScanFlags.CacheOnly)
+                if (downloaderProfile == FileScanFlags.CacheOnly || downloaderProfileClassic == FileScanFlags.CacheOnly)
                 {
                     sb.AppendLine();
-                    sb.Append("(If the download profile is 'Cache Only', it will use 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
+                    sb.Append("(If the download profile is 'Cache Only', it will be treated as 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
                 }
 
                 if (Prompt_Generic.Show(this, sb.ToString(), "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -246,20 +245,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     // this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
 
-                    if (fixMode && downloaderProfile == FileScanFlags.CacheOnly)
-                    {
-                        // To ensure the accuracy of the fix. Don't use Cache Only.
-                        downloaderProfile = FileScanFlags.Balanced;
-                    }
                     if (fixMode)
                     {
+                        // To ensure the accuracy of the fix. Don't use Cache Only.
+                        if (downloaderProfile == FileScanFlags.CacheOnly)
+                        {
+                            downloaderProfile = FileScanFlags.Balanced;
+                        }
+                        if (downloaderProfileClassic == FileScanFlags.CacheOnly)
+                        {
+                            downloaderProfileClassic = FileScanFlags.Balanced;
+                        }
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's files scanning and downloading...");
                     }
                     else
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_reboot_data, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, cancelToken);
                 }
                 else
                 {

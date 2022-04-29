@@ -127,18 +127,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return false;
         }
 
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, GameClientSelection selection, FileScanFlags flags, CancellationToken cancellationToken)
-            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, null, selection, flags, cancellationToken);
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
+            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, selection, fScanReboot, fScanClassic, cancellationToken);
 
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? pso2tweaker_binpath, GameClientSelection selection, FileScanFlags flags, CancellationToken cancellationToken)
-            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, pso2tweaker_binpath, selection, flags, cancellationToken);
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? pso2tweaker_binpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
+            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, pso2tweaker_binpath, selection, fScanReboot, fScanClassic, cancellationToken);
 
 #nullable enable
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? dir_reboot_data, string? dir_classic_data, string? pso2tweaker_dirpath, GameClientSelection selection, FileScanFlags flags, CancellationToken cancellationToken)
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? dir_classic_data, string? pso2tweaker_dirpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
         {
-            if (flags == FileScanFlags.None)
+            if (fScanReboot == FileScanFlags.None)
             {
-                throw new ArgumentOutOfRangeException(nameof(flags));
+                throw new ArgumentOutOfRangeException(nameof(fScanReboot));
             }
 
             if (Interlocked.CompareExchange(ref this.flag_operationStarted, 1, 0) == 0)
@@ -206,7 +206,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             try
                             { 
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_reboot_data, dir_classic_data, tweakerhashcacheDump, selection, flags, duhB, patchlist, (in DownloadItem item) =>
+                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_classic_data, tweakerhashcacheDump, selection, fScanReboot, fScanClassic, duhB, patchlist, (in DownloadItem item) =>
                                 {
                                     // bag_needtodownload.Add(item.PatchInfo);
                                     resultsOfDownloads.TryAdd(item.PatchInfo, null);
@@ -227,15 +227,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             tasks[i] = Task.Factory.StartNew(wrapped.Start, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                         }
 
-                        var t_download = Task.WhenAll(tasks);
-
-                        await Task.WhenAll(t_check, t_download);
+                        await Task.WhenAll(t_check, Task.WhenAll(tasks));
 
                         isOperationSuccess = true;
                     }
                     catch
                     {
-                        resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(1, 0);
+                        if (resultsOfDownloads == null)
+                        {
+                            resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(1, 0);
+                        }
                         isOperationSuccess = false;
                         throw;
                     }
@@ -340,11 +341,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
 #nullable enable
         /// <returns>Full path to a directory.</returns>
-        private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, in string? rebootData, out bool isLink)
+        private static string DetermineWhere(PatchListItem item, in string pso2bin, in string? classicData, out bool isLink)
         {
-            isLink = false;
-            var filename = item.GetFilenameWithoutAffix();
-            return Path.GetFullPath(filename, pso2bin);
+            if (!string.IsNullOrEmpty(classicData) && item.IsRebootData == false)
+            {
+                isLink = true;
+                var filename = item.GetFilenameWithoutAffix();
+                return Path.GetFullPath(filename, classicData);
+            }
+            else
+            {
+                isLink = false;
+                var filename = item.GetFilenameWithoutAffix();
+                return Path.GetFullPath(filename, pso2bin);
+            }
             
             /*
             var normalized = PathStringComparer.Default.NormalizePath(in filename);
