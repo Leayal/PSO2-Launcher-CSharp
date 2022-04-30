@@ -357,6 +357,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_checkselfupdates", value);
         }
 
+        public bool LauncherCheckForSelfUpdatesNotifyIfInTray
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_checkselfupdates_traynotify", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_checkselfupdates_traynotify", value);
+        }
+
         public bool LauncherUseClock
         {
             get

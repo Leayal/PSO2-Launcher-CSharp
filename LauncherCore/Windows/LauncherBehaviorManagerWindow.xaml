@@ -63,9 +63,11 @@
                 <mah:NumericUpDown IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Mode=OneWay,Path=IsChecked}" Minimum="1" x:Name="numbericbox_backgroundselfupdatechecker_intervalhour" PreviewTextInput="Numbericbox_backgroundselfupdatechecker_intervalhour_PreviewTextInput" />
                 <TextBlock Margin="1,0,0,0" Grid.Column="1" Text="hour(s) interval" VerticalAlignment="Center" TextAlignment="Left" />
             </Grid>
+            <CheckBox Grid.Row="5" Grid.Column="1" Content="Allow desktop notification if launcher is minimized to tray" Margin="1" x:Name="checkbox_backgroundselfupdatechecker_traynotify" ToolTip="Allow launcher to show desktop notification if launcher found an self-update while being minimized to tray."
+                      IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Path=IsChecked,Mode=OneWay}" />
 
-            <CheckBox Grid.Row="5" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
-            <CheckBox Grid.Row="6" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
+            <CheckBox Grid.Row="6" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
+            <CheckBox Grid.Row="7" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
                 <CheckBox.Content>
                     <TextBlock>
                         <Run Text="Allow using" />

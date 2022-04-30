@@ -35,9 +35,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.checkbox_backgroundselfupdatechecker.IsChecked = this._config.LauncherCheckForSelfUpdates;
             this.numbericbox_backgroundselfupdatechecker_intervalhour.Value = this._config.LauncherCheckForSelfUpdates_IntervalHour;
+            this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked = this._config.LauncherCheckForSelfUpdatesNotifyIfInTray;
 
             this.checkbox_useusewebview2.IsChecked = this._config.UseWebView2IfAvailable;
-
 
             this.checkbox_lauchlauncherasadmin.IsChecked = this._config.LaunchLauncherAsAdmin;
             this.checkbox_lauchlauncherasadmin.Checked += this.Checkbox_lauchlauncherasadmin_Checked;
@@ -122,6 +122,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
             this._config.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
+            this._config.LauncherCheckForSelfUpdatesNotifyIfInTray = (this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked == true);
+
             this._config.UseWebView2IfAvailable = (this.checkbox_useusewebview2.IsChecked == true);
 
             if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
