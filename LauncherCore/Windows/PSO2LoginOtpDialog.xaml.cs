@@ -41,7 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         protected override void OnBeforeShown()
         {
-            this.OtpBox.Clear();
+            // this.OtpBox.Clear();
             this.OtpBox.Focus();
             base.OnBeforeShown();
         }
@@ -50,9 +50,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonOK_Click(object sender, RoutedEventArgs e)
         {
-            this.CustomDialogResult = true;
-            this.DialogResult = true;
-            this.Close();
+            int len;
+            using (var pw = this.Otp)
+            {
+                len = pw.Length;
+            }
+            if (len == 0)
+            {
+                Prompt_Generic.Show(this, "OTP field cannot be empty.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            else
+            {
+                this.CustomDialogResult = true;
+                this.DialogResult = true;
+                this.Close();
+            }
         }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)
