@@ -361,7 +361,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 callback.Invoke(in item);
             }
 
-            using (var throttleWaiter = (fileCheckThrottleFactor == 0 ? null : new PeriodicTimer(TimeSpan.FromMilliseconds(fileCheckThrottleFactor))))
+            using (var throttleWaiter = (fileCheckThrottleFactor == 0 ? null : new PeriodicTimerWithoutException(TimeSpan.FromMilliseconds(fileCheckThrottleFactor))))
             using (var md5engi = MD5.Create())
             {
                 foreach (var patchItem in headacheMatterAgain)

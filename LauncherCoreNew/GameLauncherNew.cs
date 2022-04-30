@@ -136,9 +136,10 @@ namespace Leayal.PSO2Launcher.Core
                 //*
                 this.Icon = BootstrapResources.ExecutableIcon;
                 this.Text = "PSO2 Launcher by Dramiel Leayal";
-                this.DoubleBuffered = false;
+                this.DoubleBuffered = true;
                 this.MinimizeBox = false;
                 this.MaximizeBox = false;
+                this.ControlBox = false;
                 var panel = new TableLayoutPanel()
                 {
                     Dock = DockStyle.Fill,

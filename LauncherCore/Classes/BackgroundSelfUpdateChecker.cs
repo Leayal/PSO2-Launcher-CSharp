@@ -66,14 +66,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
                 if (!cancelToken.IsCancellationRequested)
                 {
-                    using (var timer = new PeriodicTimer(this._ticktime))
+                    using (var timer = new PeriodicTimerWithoutException(this._ticktime))
                     {
-                        while (!cancelToken.IsCancellationRequested)
+                        while (!cancelToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancelToken).ConfigureAwait(false))
                         {
-                            if (await timer.WaitForNextTickAsync(cancelToken).ConfigureAwait(false))
-                            {
-                                await this.TimerTicked().ConfigureAwait(false);
-                            }
+                            await this.TimerTicked().ConfigureAwait(false);
                         }
                     }
                 }
