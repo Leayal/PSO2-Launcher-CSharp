@@ -16,6 +16,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         public void WriteString(ReadOnlySpan<char> key, string value) => this.Set(new string(key), value);
+        public void WriteString(ReadOnlySpan<char> key, ReadOnlyMemory<char> value) => this.Set(new string(key), value);
 
         public void Load()
         {

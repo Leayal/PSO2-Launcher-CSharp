@@ -14,6 +14,8 @@ using Leayal.PSO2Launcher.Helper;
 using Leayal.PSO2.Installer;
 using System.Windows.Documents;
 using Leayal.Shared.Windows;
+using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -331,6 +333,41 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        sealed class HelpA_00ahilgawg
+        {
+            public string Text;
+            private readonly ExtendedProgressBar progressbar;
+
+            public HelpA_00ahilgawg(ExtendedProgressBar progressbar)
+            {
+                this.progressbar = progressbar;
+            }
+
+            public void Invoke()
+            {
+                this.progressbar.Text = this.Text;
+            }
+        }
+
+        sealed class HelpB_00ahilgawg
+        {
+            private long value;
+            private readonly ProgressBar progressbar;
+
+            public HelpB_00ahilgawg(ExtendedProgressBar progressbar)
+            {
+                this.value = 0;
+                this.progressbar = progressbar.ProgressBar;
+            }
+
+            public long IncreaseValue(long value) => Interlocked.Add(ref this.value, value);
+
+            public void Invoke()
+            {
+                this.progressbar.Value = Interlocked.Read(ref this.value);
+            }
+        }
+
         private async Task<bool> BeginDeployProgress(string deployment_destination, string pso2_bin_destination, GameClientSelection gameClientSelection, CancellationToken cancellationToken)
         {
             // Ensure that all operation happen here are revertable.
@@ -371,10 +408,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     totalbytes += item.FileSize;
                 }
 
-                var buffer = new byte[1024 * 16]; // 16KB buffer.
-                long totalbytedownloaded = 0L;
-                int currentcount = 0;
-
                 // Double await, evil~
                 await await dispatcher.InvokeAsync(async delegate
                 {
@@ -384,66 +417,121 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     await ResetProgress(progressbar_second, totalbytes);
                     progressbar_second.ProgressBar.IsIndeterminate = false;
                 });
-                int okaycount = 0;
-
-                foreach (var item in launcherlist)
+                int okaycount = await Task.Factory.StartNew<Task<int>>(async delegate
                 {
-                    var filename = Path.Combine(pso2_bin, item.GetFilenameWithoutAffix());
-                    if (File.Exists(filename) && string.Equals(MD5Hash.ComputeHashFromFile(filename), item.MD5, StringComparison.OrdinalIgnoreCase))
+                    int okaycount = 0, currentcount = 0;
+                    using (var md5engi = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
                     {
-                        Interlocked.Increment(ref okaycount);
-                        Interlocked.Increment(ref currentcount);
-                        Interlocked.Add(ref totalbytedownloaded, item.FileSize);
+                        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 32); // 64KB buffer
+                        var maxRead = Math.Min(1024 * 64, buffer.Length);
+                        var progressbar_secondText = new HelpA_00ahilgawg(progressbar_second);
+                        var progressbar_secondValue = new HelpB_00ahilgawg(progressbar_second);
                         try
                         {
-                            File.Delete(filename + affix_download_tmp);
-                        }
-                        catch { }
-                    }
-                    else
-                    {
-                        await dispatcher.InvokeAsync(delegate
-                        {
-                            progressbar_second.Text = $"{item.GetFilenameWithoutAffix()} ({Interlocked.Increment(ref currentcount)}/{totalfiles})";
-                        });
-                        using (var response = await webclient.OpenForDownloadAsync(in item, cancellationToken))
-                        {
-                            if (!response.IsSuccessStatusCode)
+                            foreach (var item in launcherlist)
                             {
-                                throw new DeploymentFailureException("internet", $"Fail to request download file '{item.GetFilenameWithoutAffix()}'");
-                            }
-
-                            var filename_tmp = filename + affix_download_tmp;
-                            Directory.CreateDirectory(Path.GetDirectoryName(filename));
-                            using (var localfs = File.Create(filename_tmp))
-                            using (var stream = response.Content.ReadAsStream())
-                            {
-                                var read = stream.Read(buffer, 0, buffer.Length);
-                                while (read > 0)
+                                if (cancellationToken.IsCancellationRequested)
                                 {
-                                    localfs.Write(buffer, 0, read);
-                                    var currentnew = Interlocked.Add(ref totalbytedownloaded, read);
-                                    throttleSecond.ThrottleEx(30, delegate
+                                    break;
+                                }
+                                var filename = Path.Combine(pso2_bin, item.GetFilenameWithoutAffix());
+                                if (File.Exists(filename) && MemoryExtensions.Equals(MD5Hash.ComputeHashFromFile(filename), item.MD5.Span, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    Interlocked.Increment(ref okaycount);
+                                    Interlocked.Increment(ref currentcount);
+                                    progressbar_secondValue.IncreaseValue(item.FileSize);
+                                    try
                                     {
-                                        progressbar_second.ProgressBar.Value = currentnew;
-                                    });
-                                    read = stream.Read(buffer, 0, buffer.Length);
+                                        File.Delete(filename + affix_download_tmp);
+                                    }
+                                    catch { }
                                 }
-
-                                throttleSecond.Stop();
-                                localfs.Flush();
-                                localfs.Position = 0;
-                                if (!string.Equals(MD5Hash.ComputeHashFromFile(localfs), item.MD5, StringComparison.OrdinalIgnoreCase))
+                                else
                                 {
-                                    throw new DeploymentFailureException("internet", $"The downloaded file '{item.GetFilenameWithoutAffix()}' has mismatch hash.");
+                                    progressbar_secondText.Text = $"{item.GetFilenameWithoutAffix()} ({Interlocked.Increment(ref currentcount)}/{totalfiles})";
+                                    await dispatcher.InvokeAsync(progressbar_secondText.Invoke);
+                                    using (var response = await webclient.OpenForDownloadAsync(item, cancellationToken))
+                                    {
+                                        if (!response.IsSuccessStatusCode)
+                                        {
+                                            throw new DeploymentFailureException("internet", $"Fail to request download file '{item.GetFilenameWithoutAffix()}'");
+                                        }
+
+                                        var filename_tmp = filename + affix_download_tmp;
+                                        Directory.CreateDirectory(Path.GetDirectoryName(filename));
+
+                                        var len = response.Content.Headers.ContentLength;
+                                        long leng = len.HasValue ? len.Value : 0;
+
+                                        using (var handle = File.OpenHandle(filename_tmp, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, leng))
+                                        using (var localfs = new FileStream(handle, FileAccess.Write, 4096 * 2, true))
+                                        using (var stream = response.Content.ReadAsStream())
+                                        {
+                                            long totalfilelen = 0;
+                                            var read = await stream.ReadAsync(buffer, 0, maxRead, cancellationToken);
+                                            while (read > 0)
+                                            {
+                                                var t_write = localfs.WriteAsync(buffer, 0, read, cancellationToken);
+                                                md5engi.AppendData(buffer, 0, read);
+                                                totalfilelen += read;
+                                                await t_write;
+
+                                                progressbar_secondValue.IncreaseValue(read);
+                                                throttleSecond.ThrottleEx(30, progressbar_secondValue.Invoke);
+                                                read = await stream.ReadAsync(buffer, 0, maxRead, cancellationToken);
+                                            }
+
+                                            throttleSecond.Stop();
+                                            await localfs.FlushAsync();
+
+                                            if (localfs.Length != totalfilelen)
+                                            {
+                                                localfs.SetLength(totalfilelen);
+                                            }
+
+                                            ReadOnlyMemory<byte> rawhash;
+                                            Memory<byte> therest;
+                                            if (md5engi.TryGetHashAndReset(buffer, out var hashSize))
+                                            {
+                                                rawhash = new ReadOnlyMemory<byte>(buffer, 0, hashSize);
+                                                therest = new Memory<byte>(buffer, hashSize, buffer.Length - hashSize);
+
+                                            }
+                                            else
+                                            {
+                                                rawhash = md5engi.GetHashAndReset();
+                                                therest = new Memory<byte>(buffer);
+                                            }
+
+                                            if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(therest.Span), rawhash.Span, out var writtenBytes))
+                                            {
+                                                if (!MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(therest.Slice(0, writtenBytes).Span), item.MD5.Span, StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    throw new DeploymentFailureException("internet", $"The downloaded file '{item.GetFilenameWithoutAffix()}' has mismatch hash.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (!MemoryExtensions.Equals(item.MD5.Span, Convert.ToHexString(rawhash.Span), StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    throw new DeploymentFailureException("internet", $"The downloaded file '{item.GetFilenameWithoutAffix()}' has mismatch hash.");
+                                                }
+                                            }
+                                        }
+
+                                        File.Move(filename_tmp, filename, true);
+                                        Interlocked.Increment(ref okaycount);
+                                    }
                                 }
                             }
-
-                            File.Move(filename_tmp, filename, true);
-                            Interlocked.Increment(ref okaycount);
+                            return okaycount;
+                        }
+                        finally
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
                         }
                     }
-                }
+                }, cancellationToken).Unwrap();
 
                 await dispatcher.InvokeAsync(delegate
                 {

@@ -256,6 +256,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         {
                             downloaderProfileClassic = FileScanFlags.Balanced;
                         }
+
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's files scanning and downloading...");
                     }
                     else
@@ -277,6 +278,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
             catch (TaskCanceledException) { }
+            catch (OperationCanceledException) { }
             catch (AggregateException ex)
             {
                 foreach (var innerex in ex.InnerExceptions)

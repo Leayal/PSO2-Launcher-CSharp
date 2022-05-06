@@ -28,6 +28,14 @@ namespace Leayal.SharedInterfaces
             }
         }
 
+        protected void Set(string key, ReadOnlyMemory<char> value)
+        {
+            lock (this.keyValuePairs)
+            {
+                this.keyValuePairs[key] = new ValueWrap(value);
+            }
+        }
+
         protected void Set(string key, int value)
         {
             lock (this.keyValuePairs)
@@ -131,6 +139,12 @@ namespace Leayal.SharedInterfaces
                 this.ValueKind = JsonValueKind.String;
             }
 
+            public ValueWrap(ReadOnlyMemory<char> value)
+            {
+                this.Value = Value;
+                this.ValueKind = JsonValueKind.String;
+            }
+
             public ValueWrap(bool value)
             {
                 this.Value = value;
@@ -162,7 +176,15 @@ namespace Leayal.SharedInterfaces
                             writer.WriteNull(item.Key);
                             break;
                         case JsonValueKind.String:
-                            writer.WriteString(item.Key, (string)(item.Value.Value));
+                            var o_s = item.Value.Value;
+                            if (o_s is ReadOnlyMemory<char> mem_s)
+                            {
+                                writer.WriteString(item.Key, mem_s.Span);
+                            }
+                            else
+                            {
+                                writer.WriteString(item.Key, (string)o_s);
+                            }
                             break;
                         case JsonValueKind.Number:
                             writer.WriteNumber(item.Key, (int)(item.Value.Value));

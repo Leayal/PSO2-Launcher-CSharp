@@ -12,11 +12,30 @@ using System.Security;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Security.Cryptography;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     public class PSO2HttpClient : IDisposable
     {
+        private static readonly string[] _hardcodedWhichAreUsuallyDeletedOnes =
+        {
+            "data/win32/8608a2bc214fcffce7f3339ca6b290b4",
+            "data/win32/32db82383bc3234605882b35bb5bca4d",
+            "data/win32/c37b9bc003130afc0b0608a7191ee738",
+            "data/win32/b2448e2023a4ceca7881d3acfaae96cd",
+            "data/win32/74cdd2b68f9614e70dd0b67a80e4d723",
+            "data/win32/b2effb45fc1161ef980bb45ab6611d79",
+            "data/win32/d4455ebc2bef618f29106da7692ebc1a", // Likely to be the integrity table file to
+            "data/win32/ffbff2ac5b7a7948961212cefd4d402c", // Likely to be the chat censorship file
+            "data/win32/13b588fc47b0078d9d4623188a6ae440",
+            "data/win32/9dc4e510eddebae273570fa5f5265eec",
+            "data/win32/e7c15fb8c18091496b4ac8d5ee0511d6",
+            "data/win32/00e5c66ef3b171161094f2b729121590",
+            "data/win32/fd2c2ba34b4347d17585ed320858d775",
+            "data/win32/711d974e5677f99b7f42acca71c9c2bc"
+        };
+
         private readonly HttpClient client;
         private const string UA_AQUA_HTTP = "AQUA_HTTP";
         // private const string UA_PSO2Launcher = "PSO2Launcher";
@@ -223,7 +242,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 patchRootInfo = rootInfo;
             }
             Exception? netEx = null;
-            if (patchRootInfo.TryGetPatchURL(out var str_PatchURL))
+            string str_PatchURL;
+            if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
             {
                 try
                 {
@@ -277,14 +297,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
             // var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
-            var t_classic = this.GetPatchListClassicAsync(rootInfo, cancellationToken);
-            var t_ngs = this.GetPatchListNGSFullAsync(rootInfo, cancellationToken);
+            var t_classic = this.GetPatchListClassicAsync(rootInfo, cancellationToken).ConfigureAwait(false);
+            var t_ngs = this.GetPatchListNGSFullAsync(rootInfo, cancellationToken).ConfigureAwait(false);
 
             var ngs = await t_ngs;
             var therest = await t_classic;
-            var dictionary = new Dictionary<string, PatchListItem>(therest.Count, StringComparer.OrdinalIgnoreCase);
+            var dictionary = new Dictionary<string, PatchListItem>(ngs.Count + therest.Count, StringComparer.OrdinalIgnoreCase);
             foreach (var item in ngs) dictionary.Add(item.GetFilenameWithoutAffix(), item);
-
+            
             foreach (var item in therest) dictionary.TryAdd(item.GetFilenameWithoutAffix(), item);
 
             return new PatchListMemory(rootInfo, null, dictionary);
@@ -310,22 +330,64 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         #region | Advanced public APIs |
         // Need to be able to open stream (to download or handle resources from SEGA's server directly)
 
-        public Task<HttpResponseMessage> OpenForDownloadAsync(in PatchListItem file, CancellationToken cancellationToken)
+        private static bool IsTweakerDeletedFiles(PatchListItem item)
         {
-            if (string.IsNullOrEmpty(file.RemoteFilename))
+            var nameCode = string.GetHashCode(item.GetSpanFilenameWithoutAffix(), StringComparison.OrdinalIgnoreCase);
+            string comparer;
+            for (int i = 0; i < _hardcodedWhichAreUsuallyDeletedOnes.Length; i++)
+            {
+                comparer = _hardcodedWhichAreUsuallyDeletedOnes[i];
+                if (nameCode == string.GetHashCode(comparer, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
+        {
+            if (file == null)
             {
                 throw new ArgumentNullException(nameof(file));
+            }
+            else if (file.RemoteFilename.IsEmpty)
+            {
+                throw new ArgumentException(nameof(file));
             }
             else if (file.Origin == null)
             {
                 throw new InvalidOperationException(nameof(file));
             }
 
-            return this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken);
+            if (this.dataCache != null && IsTweakerDeletedFiles(file))
+            {
+                var versionRoot = await this.GetPatchVersionAsync(file.Origin.RootInfo, cancellationToken).ConfigureAwait(false);
+                var stream = await this.dataCache.Fetch(string.Create(file.GetSpanFilenameWithoutAffix().Length, file, (c, arg) =>
+                {
+                    arg.GetSpanFilenameWithoutAffix().CopyTo(c);
+                    for (int i = 0; i < c.Length; i++)
+                    {
+                        if (c[i] == Path.DirectorySeparatorChar || c[i] == Path.AltDirectorySeparatorChar)
+                        {
+                            c[i] = '_';
+                        }
+                    }
+                }), this.InnerGetDownload_Create, InnerGetDownload_Verify, new ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version>(file.Origin.RootInfo, file.IsRebootData, file.GetDownloadUrl(), versionRoot), cancellationToken).ConfigureAwait(false);
+                var rep = new HttpResponseMessage(HttpStatusCode.OK);
+                var kontent = new StreamContent(stream);
+                kontent.Headers.ContentLength = stream.Length;
+                rep.Content = kontent;
+                return rep;
+            }
+            else
+            {
+                return await this.OpenForDownloadAsync(file.GetDownloadUrl(false), cancellationToken).ConfigureAwait(false);
+            }
         }
 
         // Manual URL
-        public async Task<HttpResponseMessage> OpenForDownloadAsync(Uri filename, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> OpenForDownloadAsync(Uri filename, CancellationToken cancellationToken)
         {
             if (!filename.IsAbsoluteUri)
             {
@@ -363,18 +425,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             PatchRootInfo patchRootInfo;
             if (rootInfo == null)
             {
-                patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken);
+                patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 patchRootInfo = rootInfo;
             }
             Exception? netEx = null;
-            if (patchRootInfo.TryGetPatchURL(out var str_PatchURL))
+            string str_PatchURL;
+            if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
             {
                 try
                 {
-                    return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken);
+                    return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -387,7 +450,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     try
                     {
-                        return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken);
+                        return await InnerGetPatchListAsync2(patchRootInfo, str_PatchURL, isReboot, filelistFilename, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -403,7 +466,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new UnexpectedDataFormatException();
         }
 
-        private static async Task<bool> InnerGetPatchListAsyncVerification(string entryName, JsonDocument header, Stream cacheContent, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
+        private static async Task<bool> InnerGetDownload_Verify(string entryName, JsonDocument header, Stream cacheContent, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
         {
             if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
                 && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString(), out var localVer)
@@ -413,19 +476,57 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var sha1 = prop_sha1.GetString();
                 if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.Item3.AbsoluteUri, StringComparison.Ordinal) && arg.Item4.Equals(localVer))
                 {
-                    var contentSha1 = await Helper.SHA1Hash.ComputeHashFromFileAsync(cacheContent, cancellationToken).ConfigureAwait(false);
-                    if (string.Equals(contentSha1, sha1, StringComparison.OrdinalIgnoreCase))
+                    using (var shaEngi = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
                     {
-                        return true;
+                        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 32);
+                        try
+                        {
+                            var readcount = await cacheContent.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            while (!cancellationToken.IsCancellationRequested && readcount != 0)
+                            {
+                                shaEngi.AppendData(buffer, 0, readcount);
+                                readcount = await cacheContent.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            }
+
+                            ReadOnlyMemory<byte> hash;
+                            Memory<byte> therest;
+                            if (shaEngi.TryGetCurrentHash(buffer, out var hashsize))
+                            {
+                                hash = new ReadOnlyMemory<byte>(buffer, 0, hashsize);
+                                therest = new Memory<byte>(buffer, hashsize, buffer.Length - hashsize);
+                            }
+                            else
+                            {
+                                hash = shaEngi.GetCurrentHash();
+                                therest = new Memory<byte>(buffer);
+                            }
+                            if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(therest.Span), hash.Span, out var writtenBytes))
+                            {
+                                if (MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(therest.Slice(0, writtenBytes).Span), sha1, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return true;
+                                }
+                            }
+                            else if (string.Equals(Convert.ToHexString(hash.Span), sha1, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                        }
+                        finally
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
                 }
             }
             return false;
         }
 
-        private async Task<bool> InnerGetPatchListAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, Stream entryStream, CancellationToken cancellationToken)
+        // This include too many insanity within just to avoid allocations.
+        private async Task<bool> InnerGetDownload_Create(string entryName, Utf8JsonWriter headerWriter, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, Stream entryStream, CancellationToken cancellationToken)
         {
             bool result;
+            using (var shaEngi = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
             using (var request = new HttpRequestMessage(HttpMethod.Get, arg.Item3))
             {
                 request.Headers.Host = arg.Item3.Host;
@@ -435,20 +536,63 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     response.EnsureSuccessStatusCode();
                     using (var stream = response.Content.ReadAsStream(cancellationToken))
                     {
-                        await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
-                        entryStream.Flush();
-                        result = (entryStream.Length != 0);
+                        // Allocate once and use it for all ops
+                        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 32);
+                        try
+                        {
+                            int read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            result = (read != 0);
+                            if (result)
+                            {
+                                while (read != 0)
+                                {
+                                    var readBuffer = buffer.AsMemory(0, read);
+                                    
+                                    var t_write = entryStream.WriteAsync(readBuffer, cancellationToken).ConfigureAwait(false);
+                                    shaEngi.AppendData(readBuffer.Span);
+                                    await t_write;
+
+                                    read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                                }
+                                entryStream.Flush();
+
+                                headerWriter.WriteString("source", arg.Item3.AbsoluteUri);
+                                headerWriter.WriteString("version", arg.Item4.ToString());
+
+                                // Try fetch the hash into the existing buffer.
+                                if (shaEngi.TryGetCurrentHash(buffer, out var hashSize))
+                                {
+                                    // Should always success, tbh
+
+                                    // Slice and use the first slice to store raw hash (in bytes)
+                                    var span_hash = buffer.AsMemory(0, hashSize);
+
+                                    // Slice again and use the second slice to the hex characters of the hash
+                                    var span_hex = buffer.AsMemory(hashSize);
+
+                                    // Take the raw hash from the first slice and encode it into hex string and store it to the second slice.
+                                    if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(span_hex.Span), span_hash.Span, out var byteCount))
+                                    {
+                                        headerWriter.WriteString("sha1", MemoryMarshal.Cast<byte, char>(span_hex.Slice(0, byteCount).Span));
+                                    }
+                                    else
+                                    {
+                                        // If we can't reuse the buffer, fallback to allocation.
+                                        headerWriter.WriteString("sha1", Convert.ToHexString(shaEngi.GetCurrentHash()));
+                                    }
+                                }
+                                else
+                                {
+                                    // If we can't reuse the buffer, fallback to allocation.
+                                    headerWriter.WriteString("sha1", Convert.ToHexString(shaEngi.GetCurrentHash()));
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
-                }
-            }
-            using (var shaEngi = SHA1.Create())
-            {
-                if (result)
-                {
-                    headerWriter.WriteString("source", arg.Item3.AbsoluteUri);
-                    headerWriter.WriteString("version", arg.Item4.ToString());
-                    entryStream.Position = 0;
-                    headerWriter.WriteString("sha1", Convert.ToHexString(await shaEngi.ComputeHashAsync(entryStream, cancellationToken)));
                 }
             }
             return result;
@@ -462,7 +606,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             if (this.dataCache != null)
             {
                 var versionRoot = await this.GetPatchVersionAsync(rootInfo, cancellationToken).ConfigureAwait(false);
-                using (var stream = await this.dataCache.Fetch(filelistFilename, this.InnerGetPatchListAsyncFetchCreation, InnerGetPatchListAsyncVerification, new ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version>(rootInfo, isReboot, filelistUrl, versionRoot), cancellationToken).ConfigureAwait(false))
+                using (var stream = await this.dataCache.Fetch(filelistFilename, this.InnerGetDownload_Create, InnerGetDownload_Verify, new ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version>(rootInfo, isReboot, filelistUrl, versionRoot), cancellationToken).ConfigureAwait(false))
                 {
                     if (stream == null)
                     {
@@ -524,10 +668,46 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var offset = DateTimeOffset.FromUnixTimeSeconds(prop_timestamp.GetInt64());
                 if (!string.IsNullOrWhiteSpace(src) && string.Equals(src, arg.AbsoluteUri, StringComparison.Ordinal) && ((DateTimeOffset.UtcNow - offset) < TimeSpan.FromMinutes(5)))
                 {
-                    var contentSha1 = await Helper.SHA1Hash.ComputeHashFromFileAsync(cacheContent, cancellationToken).ConfigureAwait(false);
-                    if (string.Equals(contentSha1, sha1, StringComparison.OrdinalIgnoreCase))
+                    using (var shaEngi = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
                     {
-                        return true;
+                        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 16);
+                        try
+                        {
+                            var readcount = await cacheContent.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            while (!cancellationToken.IsCancellationRequested && readcount != 0)
+                            {
+                                shaEngi.AppendData(buffer, 0, readcount);
+                                readcount = await cacheContent.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            }
+
+                            ReadOnlyMemory<byte> hash;
+                            Memory<byte> therest;
+                            if (shaEngi.TryGetCurrentHash(buffer, out var hashsize))
+                            {
+                                hash = new ReadOnlyMemory<byte>(buffer, 0, hashsize);
+                                therest = new Memory<byte>(buffer, hashsize, buffer.Length - hashsize);
+                            }
+                            else
+                            {
+                                hash = shaEngi.GetCurrentHash();
+                                therest = new Memory<byte>(buffer);
+                            }
+                            if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(therest.Span), hash.Span, out var writtenBytes))
+                            {
+                                if (MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(therest.Slice(0, writtenBytes).Span), sha1, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return true;
+                                }
+                            }
+                            else if (string.Equals(Convert.ToHexString(hash.Span), sha1, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                        }
+                        finally
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
                 }
             }
@@ -537,6 +717,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private async Task<bool> InnerGetPatchVersionAsyncFetchCreation(string entryName, Utf8JsonWriter headerWriter, Uri arg, Stream entryStream, CancellationToken cancellationToken)
         {
             bool result;
+            using (var shaEngi = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
             using (var request = new HttpRequestMessage(HttpMethod.Get, arg))
             {
                 request.Headers.Host = arg.Host;
@@ -546,20 +727,63 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     response.EnsureSuccessStatusCode();
                     using (var stream = response.Content.ReadAsStream(cancellationToken))
                     {
-                        await stream.CopyToAsync(entryStream, 4096, cancellationToken).ConfigureAwait(false);
-                        entryStream.Flush();
-                        result = (entryStream.Length != 0);
+                        // Allocate once and use it for all ops
+                        var buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(1024 * 16);
+                        try
+                        {
+                            int read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            result = (read != 0);
+                            if (result)
+                            {
+                                while (read != 0)
+                                {
+                                    var readBuffer = buffer.AsMemory(0, read);
+
+                                    var t_write = entryStream.WriteAsync(readBuffer, cancellationToken).ConfigureAwait(false);
+                                    shaEngi.AppendData(readBuffer.Span);
+                                    await t_write;
+
+                                    read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                                }
+                                entryStream.Flush();
+
+                                headerWriter.WriteString("source", arg.AbsoluteUri);
+                                headerWriter.WriteNumber("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+                                // Try fetch the hash into the existing buffer.
+                                if (shaEngi.TryGetCurrentHash(buffer, out var hashSize))
+                                {
+                                    // Should always success, tbh
+
+                                    // Slice and use the first slice to store raw hash (in bytes)
+                                    var span_hash = buffer.AsMemory(0, hashSize);
+
+                                    // Slice again and use the second slice to the hex characters of the hash
+                                    var span_hex = buffer.AsMemory(hashSize);
+
+                                    // Take the raw hash from the first slice and encode it into hex string and store it to the second slice.
+                                    if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(span_hex.Span), span_hash.Span, out var byteCount))
+                                    {
+                                        headerWriter.WriteString("sha1", MemoryMarshal.Cast<byte, char>(span_hex.Slice(0, byteCount).Span));
+                                    }
+                                    else
+                                    {
+                                        // If we can't reuse the buffer, fallback to allocation.
+                                        headerWriter.WriteString("sha1", Convert.ToHexString(shaEngi.GetCurrentHash()));
+                                    }
+                                }
+                                else
+                                {
+                                    // If we can't reuse the buffer, fallback to allocation.
+                                    headerWriter.WriteString("sha1", Convert.ToHexString(shaEngi.GetCurrentHash()));
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            System.Buffers.ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
-                }
-            }
-            using (var shaEngi = SHA1.Create())
-            {
-                if (result)
-                {
-                    headerWriter.WriteString("source", arg.AbsoluteUri);
-                    headerWriter.WriteNumber("timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-                    entryStream.Position = 0;
-                    headerWriter.WriteString("sha1", Convert.ToHexString(await shaEngi.ComputeHashAsync(entryStream, cancellationToken)));
                 }
             }
             return result;
@@ -655,7 +879,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         #endregion
 
-        // Not sure we're gonna use this?
         public void Dispose()
         {
             this.client.Dispose();

@@ -120,15 +120,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < patchlists.Length; i++)
                 {
+                    var patchlist = patchlists[i];
                     if (comparand == null)
                     {
-                        comparand = patchlists[i].RootInfo;
+                        comparand = patchlist.RootInfo;
                     }
-                    else if (comparand != patchlists[i].RootInfo)
+                    else if (comparand != patchlist.RootInfo)
                     {
                         throw new InvalidOperationException();
                     }
-                    foreach (var item in patchlists[i])
+                    if (patchlist.CanCount)
+                    {
+                        items.EnsureCapacity(items.Count + patchlist.Count);
+                    }
+                    foreach (var item in patchlist)
                     {
                         var filenameWithoutAffix = item.GetFilenameWithoutAffix();
                         if (items.TryGetValue(filenameWithoutAffix, out var value))

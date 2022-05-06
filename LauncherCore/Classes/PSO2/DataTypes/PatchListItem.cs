@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
+    // Another madness's gonna be here.
     public class PatchListItem
     {
         internal const string AffixFilename = ".pat";
@@ -14,8 +15,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         internal readonly PatchListBase Origin;
 
         /// <remarks>File name contains affix ".pat"</remarks>
-        public readonly string RemoteFilename;
-        public readonly string MD5;
+        public readonly ReadOnlyMemory<char> RemoteFilename;
+        public readonly ReadOnlyMemory<char> MD5;
 
         /// <summary>(in bytes)</summary>
         public readonly long FileSize;
@@ -26,10 +27,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsRebootData;
 
-        public PatchListItem(PatchListBase origin, string filename, in long size, string md5) : this(origin, filename, md5, in size, null) { }
+        private string? cachedRemoteFilename, cachedFilenameWithoutAffix;
+
+        public PatchListItem(PatchListBase origin, ReadOnlyMemory<char> filename, in long size, ReadOnlyMemory<char> md5) : this(origin, filename, md5, in size, null) { }
 
         /// <param name="m_or_p">True = p. False = m. Null = Not given.</param>
-        public PatchListItem(PatchListBase origin, string filename, string md5, in long size, in bool? m_or_p)
+        public PatchListItem(PatchListBase origin, ReadOnlyMemory<char> filename, ReadOnlyMemory<char> md5, in long size, in bool? m_or_p)
         {
             this.Origin = origin;
             this.RemoteFilename = filename;
@@ -37,13 +40,32 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.FileSize = size;
             this.PatchOrBase = m_or_p;
             this.IsRebootData = origin?.IsReboot;
+            this.cachedRemoteFilename = null;
+            this.cachedFilenameWithoutAffix = null;
         }
 
-        public string GetFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename);
+        public string GetFilenameWithoutAffix()
+        {
+            if (this.cachedFilenameWithoutAffix == null)
+            {
+                this.cachedFilenameWithoutAffix = new string(GetSpanFilenameWithoutAffix());
+            }
+            return this.cachedFilenameWithoutAffix;
+            
+        }
 
-        public ReadOnlySpan<char> GetSpanFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.AsSpan());
+        public string GetFilename()
+        {
+            if (this.cachedRemoteFilename == null)
+            {
+                this.cachedRemoteFilename = new string(this.RemoteFilename.Span);
+            }
+            return this.cachedRemoteFilename;
+        }
 
-        public ReadOnlyMemory<char> GetMemoryFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.AsMemory());
+        public ReadOnlySpan<char> GetSpanFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.Span);
+
+        public ReadOnlyMemory<char> GetMemoryFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename);
 
         public static string GetFilenameWithoutAffix(string filename)
         {
@@ -81,6 +103,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             }
         }
 
+
+
         public Uri GetDownloadUrl(bool preferBackupServer = false)
         {
             if (this.Origin == null)
@@ -90,53 +114,69 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 
             if (!this.PatchOrBase.HasValue || this.PatchOrBase.Value)
             {
-                string patchRootPath;
+                PatchRootInfoValue patchRootPath;
                 if (preferBackupServer)
                 {
-                    if (this.Origin.RootInfo.TryGetBackupPatchURL(out patchRootPath))
+                    if (this.Origin.RootInfo.TryGetBackupPatchURL(out patchRootPath) || this.Origin.RootInfo.TryGetPatchURL(out patchRootPath))
                     {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
-                    }
-                    else if (this.Origin.RootInfo.TryGetPatchURL(out patchRootPath))
-                    {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
+                        return new Uri(string.Create(Path.TrimEndingDirectorySeparator(patchRootPath.RawValue.Span).Length + 1 + this.RemoteFilename.Length, (patchRootPath.RawValue, this.RemoteFilename), (c, arg) =>
+                        {
+                            var span = Path.TrimEndingDirectorySeparator(arg.Item1.Span);
+                            span.CopyTo(c);
+                            c = c.Slice(span.Length);
+                            c[0] = '/';
+                            c = c.Slice(1);
+                            arg.Item2.Span.CopyTo(c);
+                        }), UriKind.Absolute);
                     }
                 }
                 else
                 {
-                    if (this.Origin.RootInfo.TryGetPatchURL(out patchRootPath))
+                    if (this.Origin.RootInfo.TryGetPatchURL(out patchRootPath) || this.Origin.RootInfo.TryGetBackupPatchURL(out patchRootPath))
                     {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
-                    }
-                    else if (this.Origin.RootInfo.TryGetBackupPatchURL(out patchRootPath))
-                    {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
+                        return new Uri(string.Create(Path.TrimEndingDirectorySeparator(patchRootPath.RawValue.Span).Length + 1 + this.RemoteFilename.Length, (patchRootPath.RawValue, this.RemoteFilename), (c, arg) =>
+                        {
+                            var span = Path.TrimEndingDirectorySeparator(arg.Item1.Span);
+                            span.CopyTo(c);
+                            c = c.Slice(span.Length);
+                            c[0] = '/';
+                            c = c.Slice(1);
+                            arg.Item2.Span.CopyTo(c);
+                        }), UriKind.Absolute);
                     }
                 }
             }
             else
             {
-                string patchRootPath;
+                PatchRootInfoValue patchRootPath;
                 if (preferBackupServer)
                 {
-                    if (this.Origin.RootInfo.TryGetBackupMasterURL(out patchRootPath))
+                    if (this.Origin.RootInfo.TryGetBackupMasterURL(out patchRootPath) || this.Origin.RootInfo.TryGetMasterURL(out patchRootPath))
                     {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
-                    }
-                    else if (this.Origin.RootInfo.TryGetMasterURL(out patchRootPath))
-                    {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
+                        return new Uri(string.Create(Path.TrimEndingDirectorySeparator(patchRootPath.RawValue.Span).Length + 1 + this.RemoteFilename.Length, (patchRootPath.RawValue, this.RemoteFilename), (c, arg) =>
+                        {
+                            var span = Path.TrimEndingDirectorySeparator(arg.Item1.Span);
+                            span.CopyTo(c);
+                            c = c.Slice(span.Length);
+                            c[0] = '/';
+                            c = c.Slice(1);
+                            arg.Item2.Span.CopyTo(c);
+                        }), UriKind.Absolute);
                     }
                 }
                 else
                 {
-                    if (this.Origin.RootInfo.TryGetMasterURL(out patchRootPath))
+                    if (this.Origin.RootInfo.TryGetMasterURL(out patchRootPath) || this.Origin.RootInfo.TryGetBackupMasterURL(out patchRootPath))
                     {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
-                    }
-                    else if (this.Origin.RootInfo.TryGetBackupMasterURL(out patchRootPath))
-                    {
-                        return new Uri(new Uri(patchRootPath), this.RemoteFilename);
+                        return new Uri(string.Create(Path.TrimEndingDirectorySeparator(patchRootPath.RawValue.Span).Length + 1 + this.RemoteFilename.Length, (patchRootPath.RawValue, this.RemoteFilename), (c, arg) =>
+                        {
+                            var span = Path.TrimEndingDirectorySeparator(arg.Item1.Span);
+                            span.CopyTo(c);
+                            c = c.Slice(span.Length);
+                            c[0] = '/';
+                            c = c.Slice(1);
+                            arg.Item2.Span.CopyTo(c);
+                        }), UriKind.Absolute);
                     }
                 }
             }
@@ -160,14 +200,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
                         throw new UnexpectedDataFormatException();
                     }
                     // amd_ags_x64.dll.pat  42496	00D9C1F1485C9C965C53F1AA5448412B
-                    return new PatchListItem(origin, new string(splitted[0].Span), filesize, new string(splitted[2].Span));
+                    return new PatchListItem(origin, splitted[0], filesize, splitted[2]);
                 case 4:
                     if (!long.TryParse(splitted[2].Span, out filesize))
                     {
                         throw new UnexpectedDataFormatException();
                     }
                     // amd_ags_x64.dll.pat	00D9C1F1485C9C965C53F1AA5448412B	42496	p
-                    return new PatchListItem(origin, new string(splitted[0].Span), new string(splitted[1].Span), filesize, splitted[3].Span[0] == char_p);
+                    return new PatchListItem(origin, splitted[0], splitted[1], filesize, splitted[3].Span[0] == char_p);
                 default:
                     throw new UnexpectedDataFormatException();
             }

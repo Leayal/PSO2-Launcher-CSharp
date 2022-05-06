@@ -166,7 +166,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnOperationBegin(taskCount);
 
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
-                        duhB = Environment.Is64BitProcess ? new FileCheckHashCacheX64(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1) : new FileCheckHashCacheX86(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
+                        duhB = FileCheckHashCache.Create(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
 
                         var ev_backup = await SearchForBackup(dir_pso2bin, selection);

@@ -68,7 +68,7 @@ namespace Leayal.PSO2.UserConfig
 
         public static UserConfig FromFile(string filepath) => Parse(Leayal.Shared.FileHelper.ReadAllTexts(filepath));
 
-        private static UserConfig Parse(ReadOnlyMemory<char> jsonData)
+        private static UserConfig Parse(in ReadOnlyMemory<char> jsonData)
         {
             int pos1 = 0;
             var data = jsonData.Span;
@@ -83,9 +83,7 @@ namespace Leayal.PSO2.UserConfig
                 switch (c)
                 {
                     case '\0':
-                        break;
                     case '\n':
-                        break;
                     case '\r':
                         break;
                     case '=':

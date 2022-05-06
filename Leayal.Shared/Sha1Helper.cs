@@ -25,10 +25,7 @@ namespace Leayal.Shared
             }
             finally
             {
-                if (sha1 != null)
-                {
-                    sha1.Dispose();
-                }
+                sha1?.Dispose();
             }
         }
 

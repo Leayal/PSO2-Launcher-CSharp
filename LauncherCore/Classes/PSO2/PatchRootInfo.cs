@@ -19,7 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             using (var reader = new StringReader(data))
             {
                 var line = reader.ReadLine();
-                string key, value;
+                string key;
                 int indexOfEqual;
 
                 while (line != null)
@@ -30,9 +30,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         if (indexOfEqual != -1)
                         {
                             key = line.Substring(0, indexOfEqual);
-                            value = line.Substring(indexOfEqual + 1);
+                            // value = line.Substring(indexOfEqual + 1);
 
-                            this.content.Add(key, new PatchRootInfoValue(value));
+                            this.content.Add(key, new PatchRootInfoValue(line.AsMemory(indexOfEqual + 1)));
                         }
                     }
 
@@ -56,7 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return ((IEnumerable<KeyValuePair<string, PatchRootInfoValue>>)content).GetEnumerator();
         }
 
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out PatchRootInfoValue value) => this.content.TryGetValue(key, out value);
+        public bool TryGetValue(string key, out PatchRootInfoValue value) => this.content.TryGetValue(key, out value);
 
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -67,7 +67,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             if (this.content.TryGetValue(key, out var info))
             {
-                value = info.RawValue;
+                value = info.GetString();
                 return true;
             }
             value = null;
@@ -81,6 +81,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public bool TryGetBackupMasterURL(out string value) => this.TryGetStringValue("BackupMasterURL", out value);
 
         public bool TryGetBackupPatchURL(out string value) => this.TryGetStringValue("BackupPatchURL", out value);
+
+        public bool TryGetMasterURL(out PatchRootInfoValue value) => this.TryGetValue("MasterURL", out value);
+
+        public bool TryGetPatchURL(out PatchRootInfoValue value) => this.TryGetValue("PatchURL", out value);
+
+        public bool TryGetBackupMasterURL(out PatchRootInfoValue value) => this.TryGetValue("BackupMasterURL", out value);
+
+        public bool TryGetBackupPatchURL(out PatchRootInfoValue value) => this.TryGetValue("BackupPatchURL", out value);
 
         public void Dispose() => this.content.Clear();
     }

@@ -57,9 +57,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
     }
 
-    public abstract class FileCheckHashCache : IFileCheckHashCache, IReadOnlyDictionary<string, PatchRecordItemValue>
+
+    public abstract partial class FileCheckHashCache : IFileCheckHashCache, IReadOnlyDictionary<string, PatchRecordItemValue>
     {
         protected const int LatestVersion = 2;
+
+        public static FileCheckHashCache Create(string cacheFilePath, in int concurrentLevel) => Environment.Is64BitProcess ? new FileCheckHashCacheX64(cacheFilePath, in concurrentLevel) : new FileCheckHashCacheX86(cacheFilePath, in concurrentLevel);
 
         protected readonly int concurrentlevel;
         protected readonly Task t_write;
@@ -122,19 +125,19 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 case 1:
                     // this.buffering.AddOrUpdate(item.RemoteFilename, )
                     // var obj = new PatchRecordItem() { RemoteFilename = string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), FileSize = item.FileSize, MD5 = item.MD5, LastModifiedTimeUTC = lastModifiedTimeUTC };
-                    return this.buffering.AddOrUpdate(item.RemoteFilename, (key, args) =>
+                    return this.buffering.AddOrUpdate(item.GetFilename(), (key, args) =>
                     {
                         var _item = args.Item1;
-                        var result = new PatchRecordItemValue(string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), in _item.FileSize, _item.MD5, in args.Item2);
+                        var result = new PatchRecordItemValue(string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c)), in _item.FileSize, new string(_item.MD5.Span), in args.Item2);
                         args.Item3.Add(result);
                         return result;
                     }, (key, existing, args) =>
                     {
                         var _item = args.Item1;
                         var str = string.Create(_item.GetSpanFilenameWithoutAffix().Length, _item, (c, obj) => obj.GetSpanFilenameWithoutAffix().ToLowerInvariant(c));
-                        if (!PatchRecordItemValue.IsEquals(existing, str, _item.MD5, in _item.FileSize, in args.Item2))
+                        if (!PatchRecordItemValue.IsEquals(existing, str, new string(_item.MD5.Span), in _item.FileSize, in args.Item2))
                         {
-                            var result = new PatchRecordItemValue(str, in _item.FileSize, _item.MD5, in args.Item2);
+                            var result = new PatchRecordItemValue(str, in _item.FileSize, new string(_item.MD5.Span), in args.Item2);
                             args.Item3.Add(result);
                             return result;
                         }

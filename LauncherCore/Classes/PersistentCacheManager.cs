@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public abstract class PersistentCacheManager : IDisposable
+    public abstract partial class PersistentCacheManager : IDisposable
     {
         protected const string dbName = "__.db";
         public readonly string CacheRootDirectory;
@@ -41,50 +41,88 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <returns>A task which will complete when cache verification or creation is finished.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is null or empty string.</exception>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is equal to '__.db', which was used to store cache headers.</exception>
-        public async Task<Stream> Fetch<TArg>(string entryName, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>> factory, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>> verifyCache, TArg args, CancellationToken cancellationToken)
+        public Task<Stream> Fetch<TArg>(string entryName, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>> factory, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>> verifyCache, TArg args, CancellationToken cancellationToken)
         {
             if (this._disposed) throw new ObjectDisposedException("PersistentCacheManager");
 
             if (string.IsNullOrEmpty(entryName)) throw new ArgumentNullException(null, nameof(entryName));
             if (string.Equals(entryName, dbName, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException(null, nameof(entryName));
-
-            LazySemaphoreSlimEx safe_lockObj;
-            lock (this.lockObjs)
-            {
-                safe_lockObj = this.lockObjs.GetOrAdd(entryName, this.CreateNewSemaphore);
-            }
-
-            var lockObj = safe_lockObj.Value;
             
-            try
+            var safe_lockObj = this.lockObjs.GetOrAdd(entryName, this.CreateNewSemaphore);
+
+            return Task.Factory.StartNew(async obj =>
             {
-                await lockObj.WaitForIt(cancellationToken).ConfigureAwait(false);
-                bool isSuccess;
+                var (myself, lockObj, entryName, factory, verifyCache, args, cancellationToken) = (ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>)obj;
 
-                Stream result;
-
-                var cachePath = Path.Combine(this.CacheRootDirectory, entryName);
-                if (File.Exists(cachePath))
+                try
                 {
-                    result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    bool isCacheValid = false;
-                    using (var entryHeader = await this.FetchCacheHeader(entryName, cancellationToken).ConfigureAwait(false))
+                    await lockObj.WaitForIt(cancellationToken).ConfigureAwait(false);
+                    bool isSuccess;
+
+                    Stream result;
+
+                    var cachePath = Path.Combine(myself.CacheRootDirectory, entryName);
+                    if (File.Exists(cachePath))
                     {
-                        if (entryHeader != null)
+                        result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        bool isCacheValid = false;
+                        using (var entryHeader = await myself.FetchCacheHeader(entryName, cancellationToken).ConfigureAwait(false))
                         {
-                            isCacheValid = await verifyCache.Invoke(entryName, entryHeader, result, args, cancellationToken).ConfigureAwait(false);
+                            if (entryHeader != null)
+                            {
+                                isCacheValid = await verifyCache.Invoke(entryName, entryHeader, result, args, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        if (!isCacheValid)
+                        {
+                            result.Dispose();
+                            result = null;
+                            var buffer = new System.Buffers.ArrayBufferWriter<byte>(256);
+                            using (var headerWriter = new Utf8JsonWriter(buffer))
+                            {
+                                headerWriter.WriteStartObject();
+
+                                using (var fs = new FileStream(cachePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
+                                {
+                                    isSuccess = await factory.Invoke(entryName, headerWriter, args, fs, cancellationToken).ConfigureAwait(false);
+                                }
+
+                                headerWriter.WriteEndObject();
+                                headerWriter.Flush();
+                            }
+                            if (isSuccess)
+                            {
+                                await myself.WriteCacheHeader(entryName, buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                                result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            }
+                            else
+                            {
+                                File.Delete(cachePath);
+                                await myself.DeleteCacheHeader(entryName, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        else
+                        {
+                            isSuccess = true;
+                            try
+                            {
+                                result.Position = 0;
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                // In case user call Dispose() on the stream, can't re-use, only re-create.
+                                result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            }
                         }
                     }
-                    if (!isCacheValid)
+                    else
                     {
-                        result.Dispose();
-                        result = null;
                         var buffer = new System.Buffers.ArrayBufferWriter<byte>(256);
                         using (var headerWriter = new Utf8JsonWriter(buffer))
                         {
                             headerWriter.WriteStartObject();
 
-                            using (var fs = new FileStream(cachePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
+                            using (var fs = File.Create(cachePath))
                             {
                                 isSuccess = await factory.Invoke(entryName, headerWriter, args, fs, cancellationToken).ConfigureAwait(false);
                             }
@@ -94,69 +132,30 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         }
                         if (isSuccess)
                         {
-                            await this.WriteCacheHeader(entryName, buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                            await myself.WriteCacheHeader(entryName, buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
                             result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         }
                         else
                         {
+                            result = null;
                             File.Delete(cachePath);
-                            await this.DeleteCacheHeader(entryName, cancellationToken).ConfigureAwait(false);
+                            await myself.DeleteCacheHeader(entryName, cancellationToken).ConfigureAwait(false);
                         }
-                    }
-                    else
-                    {
-                        isSuccess = true;
-                        try
-                        {
-                            result.Position = 0;
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            // In case user call Dispose() on the stream, can't re-use, only re-create.
-                            result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        }
-                    }
-                }
-                else
-                {
-                    var buffer = new System.Buffers.ArrayBufferWriter<byte>(256);
-                    using (var headerWriter = new Utf8JsonWriter(buffer))
-                    {
-                        headerWriter.WriteStartObject();
-
-                        using (var fs = File.Create(cachePath))
-                        {
-                            isSuccess = await factory.Invoke(entryName, headerWriter, args, fs, cancellationToken).ConfigureAwait(false);
-                        }
-
-                        headerWriter.WriteEndObject();
-                        headerWriter.Flush();
                     }
                     if (isSuccess)
                     {
-                        await this.WriteCacheHeader(entryName, buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                        result = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        return result;
                     }
                     else
                     {
-                        result = null;
-                        File.Delete(cachePath);
-                        await this.DeleteCacheHeader(entryName, cancellationToken).ConfigureAwait(false);
+                        return null;
                     }
                 }
-                if (isSuccess)
+                finally
                 {
-                    return result;
+                    lockObj.Done();
                 }
-                else
-                {
-                    return null;
-                }
-            }
-            finally
-            {
-                lockObj.Done();
-            }
+            }, new ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>(this, safe_lockObj.Value, entryName, factory, verifyCache, args, cancellationToken), cancellationToken).Unwrap();
         }
 
         private LazySemaphoreSlimEx CreateNewSemaphore(string entryName) => new LazySemaphoreSlimEx(this.lockObjs, entryName);
@@ -218,7 +217,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             private readonly Lazy<SemaphoreSlimEx> _lazy;
             private readonly ConcurrentDictionary<string, LazySemaphoreSlimEx> lockObjs;
             private readonly string entryName;
-            public LazySemaphoreSlimEx(ConcurrentDictionary<string, LazySemaphoreSlimEx> lockObjs, string entryName) : base()
+            public LazySemaphoreSlimEx(ConcurrentDictionary<string, LazySemaphoreSlimEx> lockObjs, string entryName)
             {
                 this.lockObjs = lockObjs;
                 this.entryName = entryName;

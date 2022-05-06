@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Helper
 {
+    /// <remarks>This is not very efficient now.</remarks>
     public static class MD5Hash
     {
         public static Task<string> ComputeHashFromFileAsync(string filename) => ComputeHashFromFileAsync(filename, CancellationToken.None);
