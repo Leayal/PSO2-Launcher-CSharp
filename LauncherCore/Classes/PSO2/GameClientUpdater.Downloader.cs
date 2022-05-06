@@ -82,7 +82,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                                     using (var remoteStream = response.Content.ReadAsStream())
                                     using (var fileHandle = File.OpenHandle(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, remoteSizeInBytes > 0 ? remoteSizeInBytes : 0))
-                                    using (var localStream = new FileStream(fileHandle, FileAccess.Write, 4096 * 2))
+                                    using (var localStream = new FileStream(fileHandle, FileAccess.Write, 4096 * 2, true))
                                     {
                                         if (localStream.Position != 0)
                                         {
