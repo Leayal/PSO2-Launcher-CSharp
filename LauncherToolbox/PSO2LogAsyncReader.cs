@@ -33,13 +33,14 @@ namespace Leayal.PSO2Launcher.Toolbox
             while (!this.cancelToken.IsCancellationRequested)
             {
                 var line = this.sr.ReadLine();
+                var workspace = new List<ReadOnlyMemory<char>>(16);
                 if (line == null)
                 {
                     break;
                 }
                 else
                 {
-                    var data = new PSO2LogData(line);
+                    var data = new PSO2LogData(line, workspace);
                     this.callback.Invoke(in data);
                 }
             }

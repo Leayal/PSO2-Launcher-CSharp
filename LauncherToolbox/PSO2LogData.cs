@@ -1,41 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Leayal.PSO2Launcher.Toolbox
+﻿namespace Leayal.PSO2Launcher.Toolbox
 {
     /// <summary>Event data for <seealso cref="PSO2LogAsyncListener.DataReceived"/>.</summary>
     public readonly struct PSO2LogData
     {
         private const char DataSplitter = '\t';
 
+        private readonly List<ReadOnlyMemory<char>> workspace;
+
         /// <summary>The raw data (a log line) that is fetched from the file.</summary>
-        public readonly string Data;
+        public readonly ReadOnlyMemory<char> Data;
 
         /// <summary>Split the log line into parts by their space/tab.</summary>
         /// <returns>A list of text parts</returns>
         public IReadOnlyList<ReadOnlyMemory<char>> GetDataColumns()
-        {  
-            var span = this.Data.AsSpan();
-            if (!span.IsEmpty)
+        {
+            if (!this.Data.IsEmpty)
             {
-                int len = 1;
-                int i = 0;
-                for (; i < span.Length; i++)
-                {
-                    if (span[i] == DataSplitter)
-                    {
-                        len++;
-                    }
-                }
-                var arr = new ReadOnlyMemory<char>[len];
-                i = 0;
+                this.workspace.Clear();
                 foreach (var c in this.EnumerateDataColumns())
                 {
-                    arr[i++] = c;
+                    if (!c.IsEmpty)
+                    {
+                        this.workspace.Add(c);
+                    }
                 }
-                return arr;
+                return this.workspace;
             }
             else
             {
@@ -48,7 +37,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         public IEnumerable<ReadOnlyMemory<char>> EnumerateDataColumns()
         {
             // var result = new List<ReadOnlyMemory<char>>(8);
-            var mem = this.Data.AsMemory();
+            var mem = this.Data;
             var i = mem.Span.IndexOf(DataSplitter);
             while (i != -1)
             {
@@ -65,8 +54,15 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         /// <summary>Create a new event data from the raw log line.</summary>
         /// <param name="data">The log line which is read from the log file.</param>
-        public PSO2LogData(string data)
+        /// <param name="workspace"></param>
+        internal PSO2LogData(string data, List<ReadOnlyMemory<char>> workspace) : this(data.AsMemory(), workspace) { }
+
+        /// <summary>Create a new event data from the raw log line.</summary>
+        /// <param name="data">The log line which is read from the log file.</param>
+        /// <param name="workspace"></param>
+        internal PSO2LogData(ReadOnlyMemory<char> data, List<ReadOnlyMemory<char>> workspace)
         {
+            this.workspace = workspace;
             this.Data = data;
         }
     }

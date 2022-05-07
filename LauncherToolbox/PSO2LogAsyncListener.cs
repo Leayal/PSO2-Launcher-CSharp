@@ -60,10 +60,11 @@ namespace Leayal.PSO2Launcher.Toolbox
             }
         }
 
-        private readonly PeriodicTimer delay;
+        // private readonly PeriodicTimer delay;
         private readonly CancellationTokenSource cancelSrc;
         private readonly FileStream fs;
         private readonly bool _leaveOpen;
+        private readonly List<ReadOnlyMemory<char>> workspace;
         private bool _disposed;
         private int _state;
 
@@ -72,7 +73,7 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         /// <summary>Creates a new instance with the given file path.</summary>
         /// <param name="filepath">The path to the log file.</param>
-        public PSO2LogAsyncListener(string filepath) : this(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), false) { }
+        public PSO2LogAsyncListener(string filepath) : this(new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true), false) { }
 
         /// <summary>Creates a new instance with the given <seealso cref="FileStream"/> that will close the <paramref name="fs"/> stream when the instance is disposed.</summary>
         /// <param name="fs">The file stream to read the log.</param>
@@ -84,11 +85,12 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <param name="keepOpen">The boolean to determine whether the <paramref name="fs"/> stream should be closed when this instance is disposed.</param>
         public PSO2LogAsyncListener(FileStream fs, bool keepOpen)
         {
-            this.delay = new PeriodicTimer(TimeSpan.FromMilliseconds(10));
+            // this.delay = new PeriodicTimer(TimeSpan.FromMilliseconds(10));
             this.cancelSrc = new CancellationTokenSource();
             this._leaveOpen = keepOpen;
             this.fs = fs;
             this._state = 0;
+            this.workspace = new List<ReadOnlyMemory<char>>(16);
         }
 
         /// <summary>Begin the async operation.</summary>
@@ -103,11 +105,24 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         private async Task ReadFileAsync()
         {
-            using (var sr = new StreamReader(this.fs, leaveOpen: true))
+            using (var sr = new StrictNewLineStreamReader(this.fs, bufferSize: 512, leaveOpen: true))
             {
                 var token = this.cancelSrc.Token;
                 try
                 {
+                    var func = new Action<ReadOnlyMemory<char>, object?>(this.OnDataReceived);
+                    while (!token.IsCancellationRequested)
+                    {
+                        await sr.UseStrictLineReadAsync(func, null, token).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (ObjectDisposedException) { }
+
+                /*
+                try
+                {
+                    var func = new Action<ReadOnlyMemory<char>, object?>(this.OnDataReceived);
                     while (!token.IsCancellationRequested)
                     {
                         var line = await sr.ReadLineAsync().ConfigureAwait(false);
@@ -115,23 +130,26 @@ namespace Leayal.PSO2Launcher.Toolbox
                         {
                             if (string.IsNullOrEmpty(line))
                             {
-                                if (!await this.delay.WaitForNextTickAsync(token).ConfigureAwait(false))
-                                {
-                                    break;
-                                }
+                                await Task.Delay(30, token).ConfigureAwait(false);
                             }
                             else
                             {
-                                var data = new PSO2LogData(line);
+                                var data = new PSO2LogData(line, this.workspace);
                                 this.DataReceived?.Invoke(this, in data);
                             }
                         }
                     }
                 }
-                catch (ObjectDisposedException)
-                {
-                }
+                catch (OperationCanceledException) { }
+                catch (ObjectDisposedException) { }
+                */
             }
+        }
+
+        private void OnDataReceived(ReadOnlyMemory<char> line, object? obj)
+        {
+            var data = new PSO2LogData(line, this.workspace);
+            this.DataReceived?.Invoke(this, in data);
         }
 
         /// <summary>Close the reader and clean up resources used by this instance.</summary>
@@ -148,7 +166,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             this.DataReceived = null;
             this.cancelSrc.Cancel();
-            this.delay.Dispose();
+            // this.delay.Dispose();
             // Trigger ObjectDisposedException on the Task.
             if (!this._leaveOpen)
             {
