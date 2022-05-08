@@ -90,13 +90,13 @@
             <Run>
                 <Run.Style>
                     <Style TargetType="Run">
-                        <Setter Property="Text" Value="Stella Shards" />
+                        <Setter Property="Text" Value="Stellar Shards" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="0">
                                 <Setter Property="Text" Value="Stellar Shard" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="1">
-                                <Setter Property="Text" Value="Stella Shard" />
+                                <Setter Property="Text" Value="Stellar Shard" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
