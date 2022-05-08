@@ -1,6 +1,7 @@
 ﻿namespace Leayal.PSO2Launcher.Toolbox
 {
     /// <summary>Event data for <seealso cref="PSO2LogAsyncListener.DataReceived"/>.</summary>
+    /// <remarks>All the data within this structure will be invalid once the event occurance is finished. Thus, if you want the data's lifetime to be beyond the event occurance, allocation and copying is the only way.</remarks>
     public readonly struct PSO2LogData
     {
         private const char DataSplitter = '\t';
@@ -17,13 +18,7 @@
             if (!this.Data.IsEmpty)
             {
                 this.workspace.Clear();
-                foreach (var c in this.EnumerateDataColumns())
-                {
-                    if (!c.IsEmpty)
-                    {
-                        this.workspace.Add(c);
-                    }
-                }
+                this.workspace.AddRange(this.EnumerateDataColumns());
                 return this.workspace;
             }
             else
@@ -43,13 +38,19 @@
             {
                 var acquired = mem.Slice(0, i);
                 // result.Add(acquired);
-                yield return acquired;
+                if (!acquired.IsEmpty)
+                {
+                    yield return acquired;
+                }
                 mem = mem.Slice(i + 1);
                 i = mem.Span.IndexOf(DataSplitter);
             }
             // result.Add(mem);
             // return result;
-            yield return mem;
+            if (!mem.IsEmpty)
+            {
+                yield return mem;
+            }
         }
 
         /// <summary>Create a new event data from the raw log line.</summary>

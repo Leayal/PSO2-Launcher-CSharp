@@ -95,7 +95,17 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
-        public async Task<string?> StrictLineReadAsync(CancellationToken cancellationToken = default)
+        public Task<string?> StrictLineReadAsync(CancellationToken cancellationToken = default)
+            => this.StrictLineReadAsync(15, cancellationToken);
+
+        /// <summary>Reads a line of characters asynchronously from the current stream and returns the data as a string.</summary>
+        /// <param name="pollDelayMs">The amount of time (in miliseconds) to wait before attempting another I/O read call when reaching the end of file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <seealso cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the task parameter contains the next line from the stream, or is null if the operation is cancelled.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        public async Task<string?> StrictLineReadAsync(int pollDelayMs, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -106,12 +116,15 @@ namespace Leayal.PSO2Launcher.Toolbox
                 else
                 {
                     var readMem = this.bufferer.WrittenMemory;
-                    var takeOutLen = readMem.Span.IndexOf('\n');
-                    if (takeOutLen != -1)
+                    if (!readMem.IsEmpty)
                     {
-                        var result = new string(readMem.Slice(0, takeOutLen).Span.TrimEnd('\r'));
-                        this.bufferer.Clear(0, takeOutLen + 1);
-                        return result;
+                        var takeOutLen = readMem.Span.IndexOf('\n');
+                        if (takeOutLen != -1)
+                        {
+                            var result = new string(readMem.Slice(0, takeOutLen).Span.TrimEnd('\r'));
+                            this.bufferer.Clear(0, takeOutLen + 1);
+                            return result;
+                        }
                     }
                 }
                 while (!cancellationToken.IsCancellationRequested)
@@ -120,7 +133,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                     var readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                     while (!cancellationToken.IsCancellationRequested && readCount == 0)
                     {
-                        await Task.Delay(30, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(pollDelayMs, cancellationToken).ConfigureAwait(false);
                         readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                     }
                     this.bufferer.Advance(readCount);
@@ -154,30 +167,46 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
-        public async Task UseStrictLineReadAsync<TArgs>(Func<ReadOnlyMemory<char>, TArgs, Task> callbackOnNewLineFound, TArgs args, CancellationToken cancellationToken)
+        public Task UseStrictLineReadAsync<TArgs>(Func<ReadOnlyMemory<char>, TArgs, Task> callbackOnNewLineFound, TArgs args, CancellationToken cancellationToken)
+            => this.UseStrictLineReadAsync<TArgs>(callbackOnNewLineFound, args, 15, cancellationToken);
+
+        /// <summary>Reads a line of characters asynchronously from the current stream and returns the data as a string.</summary>
+        /// <param name="callbackOnNewLineFound">The callback method which will be invoked once a line of characters is found.</param>
+        /// <param name="args">The argument which will be passed onto the callback.</param>
+        /// <param name="pollDelayMs">The amount of time (in miliseconds) to wait before attempting another I/O read call when reaching the end of file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <seealso cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the task parameter contains the next line from the stream, or is null if the operation is cancelled.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        public async Task UseStrictLineReadAsync<TArgs>(Func<ReadOnlyMemory<char>, TArgs, Task> callbackOnNewLineFound, TArgs args, int pollDelayMs, CancellationToken cancellationToken)
         {
             if (callbackOnNewLineFound == null)
             {
                 throw new ArgumentNullException(nameof(callbackOnNewLineFound));
             }
-            if (cancellationToken.IsCancellationRequested)
+            if (pollDelayMs < 1)
             {
-                throw new OperationCanceledException();
+                throw new ArgumentException("Poll rate shouldn't be less or equal to zero for performance reason.", nameof(pollDelayMs));
             }
-            else
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var bufferedData = this.bufferer.WrittenMemory;
+            if (!bufferedData.IsEmpty)
             {
-                var readMem = this.bufferer.WrittenMemory;
-                var takeOutLen = readMem.Span.IndexOf('\n');
-                if (takeOutLen != -1)
+                var bufferedOutLen = bufferedData.Span.IndexOf('\n');
+                if (bufferedOutLen != -1)
                 {
-                    var callbackMem = readMem.Slice(0, takeOutLen);
+                    var callbackMem = bufferedData.Slice(0, bufferedOutLen);
                     var realLength = callbackMem.Span.TrimEnd('\r').Length;
                     if (callbackMem.Length != realLength)
                     {
                         callbackMem = callbackMem.Slice(0, realLength);
                     }
                     await callbackOnNewLineFound.Invoke(callbackMem, args);
-                    this.bufferer.Clear(0, takeOutLen + 1);
+                    this.bufferer.Clear(0, bufferedOutLen + 1);
+                    return;
                 }
             }
             while (!cancellationToken.IsCancellationRequested)
@@ -186,7 +215,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                 var readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                 while (!cancellationToken.IsCancellationRequested && readCount == 0)
                 {
-                    await Task.Delay(30, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(pollDelayMs, cancellationToken).ConfigureAwait(false);
                     readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                 }
                 this.bufferer.Advance(readCount);
@@ -206,6 +235,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                         }
                         await callbackOnNewLineFound.Invoke(callbackMem, args);
                         this.bufferer.Clear(0, takeOutLen + 1);
+                        return;
                     }
                 }
             }
@@ -219,30 +249,45 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
-        public async Task UseStrictLineReadAsync<TArgs>(Action<ReadOnlyMemory<char>, TArgs> callbackOnNewLineFound, TArgs args, CancellationToken cancellationToken)
+        public Task UseStrictLineReadAsync<TArgs>(Action<ReadOnlyMemory<char>, TArgs> callbackOnNewLineFound, TArgs args, CancellationToken cancellationToken)
+            => this.UseStrictLineReadAsync<TArgs>(callbackOnNewLineFound, args, 15, cancellationToken);
+
+        /// <summary>Reads a line of characters asynchronously from the current stream and returns the data as a string.</summary>
+        /// <param name="callbackOnNewLineFound">The callback method which will be invoked once a line of characters is found.</param>
+        /// <param name="args">The argument which will be passed onto the callback.</param>
+        /// <param name="pollDelayMs">The amount of time (in miliseconds) to wait before attempting another I/O read call when reaching the end of file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <seealso cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the task parameter contains the next line from the stream, or is null if the operation is cancelled.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <seealso cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        public async Task UseStrictLineReadAsync<TArgs>(Action<ReadOnlyMemory<char>, TArgs> callbackOnNewLineFound, TArgs args, int pollDelayMs, CancellationToken cancellationToken)
         {
             if (callbackOnNewLineFound == null)
             {
                 throw new ArgumentNullException(nameof(callbackOnNewLineFound));
             }
-            if (cancellationToken.IsCancellationRequested)
+            if (pollDelayMs < 1)
             {
-                throw new OperationCanceledException();
+                throw new ArgumentException("Poll rate shouldn't be less or equal to zero for performance reason.", nameof(pollDelayMs));
             }
-            else
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var bufferedData = this.bufferer.WrittenMemory;
+            if (!bufferedData.IsEmpty)
             {
-                var readMem = this.bufferer.WrittenMemory;
-                var takeOutLen = readMem.Span.IndexOf('\n');
-                if (takeOutLen != -1)
+                var bufferedOutLen = bufferedData.Span.IndexOf('\n');
+                if (bufferedOutLen != -1)
                 {
-                    var callbackMem = readMem.Slice(0, takeOutLen);
+                    var callbackMem = bufferedData.Slice(0, bufferedOutLen);
                     var realLength = callbackMem.Span.TrimEnd('\r').Length;
                     if (callbackMem.Length != realLength)
                     {
                         callbackMem = callbackMem.Slice(0, realLength);
                     }
                     callbackOnNewLineFound.Invoke(callbackMem, args);
-                    this.bufferer.Clear(0, takeOutLen + 1);
+                    this.bufferer.Clear(0, bufferedOutLen + 1);
+                    return;
                 }
             }
             while (!cancellationToken.IsCancellationRequested)
@@ -251,7 +296,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                 var readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                 while (!cancellationToken.IsCancellationRequested && readCount == 0)
                 {
-                    await Task.Delay(30, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(pollDelayMs, cancellationToken).ConfigureAwait(false);
                     readCount = await base.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
                 }
                 this.bufferer.Advance(readCount);
@@ -271,6 +316,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                         }
                         callbackOnNewLineFound.Invoke(callbackMem, args);
                         this.bufferer.Clear(0, takeOutLen + 1);
+                        return;
                     }
                 }
             }

@@ -86,6 +86,8 @@ namespace Leayal.PSO2Launcher.Toolbox
             {
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity), "Cannot be less than zero");
             }
+
+            this.disposed = false;
             this.pos = 0;
             this._pool = pool;
 
@@ -135,11 +137,14 @@ namespace Leayal.PSO2Launcher.Toolbox
         public void ClearAll(bool fillZero)
         {
             this.EnsureNotDisposed();
-            if (fillZero && this.arr != null && this.pos != 0 && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            if (this.pos != 0)
             {
-                Array.Clear(this.arr, 0, this.pos);
+                if (fillZero && this.arr != null && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    Array.Clear(this.arr, 0, this.pos);
+                }
+                this.pos = 0;
             }
-            this.pos = 0;
         }
 
         /// <summary>Removes the specific part of the underlying buffer.</summary>

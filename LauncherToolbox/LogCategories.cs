@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Collections.Concurrent;
 
 namespace Leayal.PSO2Launcher.Toolbox
 {
@@ -28,7 +29,7 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         private readonly string logDir;
         private readonly FileSystemWatcher watcher;
-        private readonly Dictionary<string, Indexing> cache;
+        private readonly ConcurrentDictionary<string, LazyIndexing> cache;
         private readonly Task t_refresh;
 
         /// <summary>Creates a new instance of this class.</summary>
@@ -36,7 +37,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         public LogCategories(string logDirectoryPath)
         {
             this.logDir = logDirectoryPath;
-            this.cache = new Dictionary<string, Indexing>(8, StringComparer.OrdinalIgnoreCase);
+            this.cache = new ConcurrentDictionary<string, LazyIndexing>(StringComparer.OrdinalIgnoreCase);
             var ts = TimeSpan.FromMilliseconds(50);
             this.watcher = new FileSystemWatcher();
             this.watcher.BeginInit();
@@ -63,6 +64,30 @@ namespace Leayal.PSO2Launcher.Toolbox
             else return string.Empty;
         }
 
+        sealed class LazyIndexing
+        {
+            private readonly string category;
+            private readonly LogCategories parent;
+            private readonly Lazy<Indexing> lazy;
+
+            public bool IsValueCreated => this.lazy.IsValueCreated;
+            public Indexing Value => this.lazy.Value;
+
+            public LazyIndexing(string logCategory, LogCategories parent)
+            {
+                this.category = logCategory;
+                this.parent = parent;
+                this.lazy = new Lazy<Indexing>(this.Create);
+            }
+
+            private Indexing Create() => new Indexing(this.category, this.parent);
+        }
+
+        private LazyIndexing Lazy_Indexing(string logCategory)
+        {
+            return new LazyIndexing(logCategory, this);
+        }
+
         private void Watcher_Renamed(object sender, RenamedEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.OldName))
@@ -72,22 +97,26 @@ namespace Leayal.PSO2Launcher.Toolbox
                 {
                     var span_type = match.Groups[1].ValueSpan;
                     string otherend = DetermineType(in span_type);
-                    Indexing? indexing;
-                    lock (this.cache)
+                    var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
+                    var needLock = !indexing.lockobj.IsWriteLockHeld;
+                    try
                     {
-                        if (!this.cache.TryGetValue(otherend, out indexing))
+                        if (needLock)
                         {
-                            indexing = new Indexing(otherend, this);
-                            this.cache.Add(otherend, indexing);
+                            indexing.lockobj.EnterWriteLock();
                         }
-                    }
-                    lock (indexing)
-                    {
                         var list = indexing.Items;
                         list.Remove(e.OldFullPath);
-                        list.Add(e.OldFullPath);
-                        list.Sort(FileDateComparer.Default);
+                        list.Add(e.FullPath, e.FullPath);
                     }
+                    finally
+                    {
+                        if (needLock)
+                        {
+                            indexing.lockobj.ExitWriteLock();
+                        }
+                    }
+
                     this.OnNewLogFound(indexing.Name);
                 }
             }
@@ -101,16 +130,16 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <summary>Register <paramref name="callback"/> handler from the event which would occurs when a new log file is found.</summary>
         /// <param name="callback">The handler to register</param>
         /// <remarks>When call this method for the first time, it will also initialize the <seealso cref="FileSystemWatcher"/> to watch for new log file.</remarks>
-        public async void StartWatching(NewFileFoundEventHandler callback)
+        public async Task StartWatching(NewFileFoundEventHandler callback)
         {
-            this.NewFileFound += callback;
             await this.t_refresh;
-            callback.Invoke(this, new NewFileFoundEventArgs(null));
             if (!this.watcher.EnableRaisingEvents)
             {
                 this.watcher.Path = Directory.CreateDirectory(this.logDir).FullName;
                 this.watcher.EnableRaisingEvents = true;
             }
+            callback.Invoke(this, new NewFileFoundEventArgs(null));
+            this.NewFileFound += callback;
         }
 
         /// <summary>Unregister <paramref name="callback"/> handler from the event which would occurs when a new log file is found.</summary>
@@ -128,8 +157,22 @@ namespace Leayal.PSO2Launcher.Toolbox
         public void Dispose()
         {
             this.NewFileFound = null;
-            // this.watcher.EnableRaisingEvents = false;
+            this.watcher.EnableRaisingEvents = false;
             this.watcher.Dispose();
+
+            var arr = this.cache.Values.ToArray();
+            this.cache.Clear();
+            if (arr != null && arr.Length != 0)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (arr[i].IsValueCreated)
+                    {
+                        arr[i].Value.Dispose();
+                    }
+                }
+                Array.Clear(arr);
+            }
         }
 
         private void Watcher_Deleted(object sender, FileSystemEventArgs e)
@@ -141,23 +184,23 @@ namespace Leayal.PSO2Launcher.Toolbox
                 {
                     var span_type = match.Groups[1].ValueSpan;
                     string otherend = DetermineType(in span_type);
-                    Indexing? indexing;
-                    lock (this.cache)
-                    {
-                        if (!this.cache.TryGetValue(otherend, out indexing))
-                        {
-                            indexing = new Indexing(otherend, this);
-                            this.cache.Add(otherend, indexing);
-                        }
-                    }
+
+                    var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
                     bool changed;
-                    lock (indexing)
+                    var needLock = !indexing.lockobj.IsWriteLockHeld;
+                    try
                     {
-                        var list = indexing.Items;
-                        changed = list.Remove(e.FullPath);
-                        if (changed)
+                        if (needLock)
                         {
-                            list.Sort(FileDateComparer.Default);
+                            indexing.lockobj.EnterWriteLock();
+                        }
+                        changed = indexing.Items.Remove(e.FullPath);
+                    }
+                    finally
+                    {
+                        if (needLock)
+                        {
+                            indexing.lockobj.ExitWriteLock();
                         }
                     }
                     if (changed)
@@ -179,28 +222,32 @@ namespace Leayal.PSO2Launcher.Toolbox
                 {
                     var span_type = match.Groups[1].ValueSpan;
                     string otherend = DetermineType(in span_type);
-                    Indexing? indexing;
-                    lock (this.cache)
-                    {
-                        if (!this.cache.TryGetValue(otherend, out indexing))
-                        {
-                            indexing = new Indexing(otherend, this);
-                            this.cache.Add(otherend, indexing);
-                        }
-                    }
+
+                    var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
                     bool changed;
-                    lock (indexing)
+                    var needLock = !indexing.lockobj.IsWriteLockHeld;
+                    try
                     {
-                        var list = indexing.Items;
-                        if (!list.Contains(e.FullPath))
+                        if (needLock)
                         {
-                            list.Add(e.FullPath);
-                            list.Sort(FileDateComparer.Default);
+                            indexing.lockobj.EnterWriteLock();
+                        }
+                        var list = indexing.Items;
+                        if (!list.ContainsValue(e.FullPath))
+                        {
+                            list.Add(e.FullPath, e.FullPath);
                             changed = true;
                         }
                         else
                         {
                             changed = false;
+                        }
+                    }
+                    finally
+                    {
+                        if (needLock)
+                        {
+                            indexing.lockobj.ExitWriteLock();
                         }
                     }
                     if (changed)
@@ -221,17 +268,22 @@ namespace Leayal.PSO2Launcher.Toolbox
             {
                 categoryName = string.Empty;
             }
-            Indexing? indexing;
-            lock (this.cache)
+            LazyIndexing? lazyindexing;
+            if (!this.cache.TryGetValue(categoryName, out lazyindexing) || !lazyindexing.IsValueCreated)
             {
-                if (!this.cache.TryGetValue(categoryName, out indexing))
-                {
-                    return null;
-                }
+                return null;
             }
+            var indexing = lazyindexing.Value;
             string filepath;
-            lock (indexing)
+
+            var lockobj = indexing.lockobj;
+            bool needlock = !lockobj.IsReadLockHeld && !lockobj.IsUpgradeableReadLockHeld && !lockobj.IsWriteLockHeld;
+            try
             {
+                if (needlock)
+                {
+                    indexing.lockobj.EnterReadLock();
+                }
                 var items = indexing.Items;
                 var count = items.Count;
                 if (index < 0)
@@ -244,7 +296,14 @@ namespace Leayal.PSO2Launcher.Toolbox
                 }
                 else
                 {
-                    filepath = indexing.Items[index];
+                    filepath = indexing.Items.Values[index];
+                }
+            }
+            finally
+            {
+                if (needlock)
+                {
+                    indexing.lockobj.ExitReadLock();
                 }
             }
             return filepath;
@@ -254,11 +313,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             if (Directory.Exists(this.logDir))
             {
-                lock (this.cache)
-                {
-                    this.cache.Clear();
-                }
-                var list = new HashSet<Indexing>(6);
+                this.cache.Clear();
                 foreach (var file in Directory.EnumerateFiles(this.logDir, "*.txt", SearchOption.TopDirectoryOnly))
                 {
                     var span = Path.GetFileName(file.AsSpan());
@@ -267,69 +322,93 @@ namespace Leayal.PSO2Launcher.Toolbox
                     {
                         var span_type = match.Groups[1].ValueSpan;
                         string otherend = DetermineType(in span_type);
-                        Indexing? indexing;
-                        lock (this.cache)
+                        var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
+
+                        var lockobj = indexing.lockobj;
+                        bool needlock = !lockobj.IsWriteLockHeld;
+                        try
                         {
-                            if (!this.cache.TryGetValue(otherend, out indexing))
+                            if (needlock)
                             {
-                                indexing = new Indexing(otherend, this);
-                                this.cache.Add(otherend, indexing);
+                                lockobj.EnterWriteLock();
                             }
-                            list.Add(indexing);
-                        }
-                        lock (indexing)
-                        {
                             var items = indexing.Items;
-                            if (!items.Contains(file))
+                            if (!items.ContainsValue(file))
                             {
-                                items.Add(file);
+                                items.Add(file, file);
+                            }
+                        }
+                        finally
+                        {
+                            if (needlock)
+                            {
+                                lockobj.ExitWriteLock();
                             }
                         }
                     }
                 }
-                lock (this.cache)
-                {
-                    this.cache.TrimExcess();
-                }
-                foreach (var indexing in list)
-                {
-                    lock (indexing)
-                    {
-                        var items = indexing.Items;
-                        if (items.Count != 0)
-                        {
-                            items.Sort(FileDateComparer.Default);
-                        }
-                    }
-                }
-                list.Clear();
             }
         }
 
-        sealed class Indexing
+        sealed class Indexing : IDisposable
         {
             public readonly LogCategories Parent;
-            public readonly List<string> Items;
+            public readonly SortedList<string, string> Items;
             public readonly string Name;
+            public readonly ReaderWriterLockSlim lockobj;
 
             public Indexing(string name, LogCategories parent)
             {
                 this.Name = name;
                 this.Parent = parent;
-                this.Items = new List<string>();
+                this.Items = new SortedList<string, string>(FileDateComparer.Default);
+                this.lockobj = new ReaderWriterLockSlim();
+            }
+
+            public void Dispose()
+            {
+                this.lockobj.Dispose();
             }
         }
 
-        sealed class FileDateComparer : IComparer<string>
+        sealed class FileDateComparer : IComparer<string>, IComparer<ReadOnlyMemory<char>>
         {
             public static readonly FileDateComparer Default = new FileDateComparer();
+
             public int Compare(string? x, string? y)
             {
                 bool isnull_x = x == null, isnull_y = y == null;
                 if (!isnull_x && !isnull_y)
                 {
-                    var span_x = Path.GetFileNameWithoutExtension(x.AsSpan());
-                    var span_y = Path.GetFileNameWithoutExtension(y.AsSpan());
+                    return this.Compare(x.AsSpan(), y.AsSpan());
+                }
+                else if (isnull_x && isnull_y)
+                {
+                    return 0;
+                }
+                else if (isnull_x)
+                {
+                    return -1;
+                }
+                else if (isnull_y)
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            public int Compare(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) => this.Compare(x.Span, y.Span);
+
+            public int Compare(ReadOnlySpan<char> x, ReadOnlySpan<char> y)
+            {
+                bool isnull_x = x.IsEmpty, isnull_y = y.IsEmpty;
+                if (!isnull_x && !isnull_y)
+                {
+                    var span_x = Path.GetFileNameWithoutExtension(x);
+                    var span_y = Path.GetFileNameWithoutExtension(y);
                     int i_x = span_x.IndexOf("Log", StringComparison.OrdinalIgnoreCase);
                     int i_y = span_y.IndexOf("Log", StringComparison.OrdinalIgnoreCase);
                     if (i_x == -1 && i_y == -1) return 0;

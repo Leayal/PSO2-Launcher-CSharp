@@ -159,11 +159,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             return Task.CompletedTask;
         }
 
-        private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
+        private async void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
             var logfiles = LogCategories.Default.Value;
-            logfiles.StartWatching(this.Logfiles_NewFileFound);
             this.IsClockVisible = this.clockInitiallyVisible;
+            await logfiles.StartWatching(this.Logfiles_NewFileFound);
         }
 
         private void Logfiles_OnNewFileFound(LogCategories sender, NewFileFoundEventArgs e)
@@ -270,6 +270,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
             var datas = arg2.GetDataColumns();
+            // All string creations below (aka the "new string()") will allocate a new char[] buffer and copies all the chars to the new buffer.
+            // Thus, all strings below can be used beyond the event's invocation.
             if (MemoryExtensions.Equals(datas[2].Span, "[Pickup]", StringComparison.OrdinalIgnoreCase))
             {
                 bool isAlphaReactor = (MemoryExtensions.Equals(datas[5].Span, "Alpha Reactor", StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(datas[5].Span, "アルファリアクター", StringComparison.OrdinalIgnoreCase));
