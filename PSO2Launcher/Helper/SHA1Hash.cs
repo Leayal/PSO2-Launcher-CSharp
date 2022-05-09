@@ -29,10 +29,24 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            using (var sha1 = SHA1.Create())
+            using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
+            using (var borrowedMemory = System.Buffers.MemoryPool<byte>.Shared.Rent(4096))
             {
-                var bytes = await sha1.ComputeHashAsync(stream, cancellationToken);
-                return Convert.ToHexString(bytes);
+                var buffer = borrowedMemory.Memory;
+                int read;
+                while ((read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    md5.AppendData(buffer.Slice(0, read).Span);
+                }
+                if (md5.TryGetCurrentHash(buffer.Span, out var writtenBytes))
+                {
+                    return Convert.ToHexString(buffer.Slice(0, writtenBytes).Span);
+                }
+                else
+                {
+                    return Convert.ToHexString(md5.GetCurrentHash());
+                }
             }
         }
 
@@ -51,10 +65,23 @@ namespace Leayal.PSO2Launcher.Helper
                 throw new ArgumentException("The stream must be readable.", nameof(stream));
             }
 
-            using (var sha1 = SHA1.Create())
+            using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
+            using (var borrowedMemory = System.Buffers.MemoryPool<byte>.Shared.Rent(4096))
             {
-                var bytes = sha1.ComputeHash(stream);
-                return Convert.ToHexString(bytes);
+                var buffer = borrowedMemory.Memory;
+                int read;
+                while ((read = stream.Read(buffer.Span)) != 0)
+                {
+                    md5.AppendData(buffer.Slice(0, read).Span);
+                }
+                if (md5.TryGetCurrentHash(buffer.Span, out var writtenBytes))
+                {
+                    return Convert.ToHexString(buffer.Slice(0, writtenBytes).Span);
+                }
+                else
+                {
+                    return Convert.ToHexString(md5.GetCurrentHash());
+                }
             }
         }
     }

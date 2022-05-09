@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher
 {
     public sealed class LauncherController : ApplicationController
     {
-        public static readonly int PSO2LauncherModelVersion = 5;
+        public static readonly int PSO2LauncherModelVersion = 6;
         internal const string UniqueName = "pso2lealauncher-v4";
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -109,6 +109,7 @@ namespace Leayal.PSO2Launcher
             }
             using (var _current = new LauncherController(proc, entryProg))
             {
+                var ttt = _current.GetType();
                 _currentController = _current;
                 _current.Run(args ?? Array.Empty<string>());
             }
@@ -118,6 +119,7 @@ namespace Leayal.PSO2Launcher
         private ILauncherProgram? nextProgram;
         private string[]? applicationArgs;
         private readonly Process? parentProcess;
+        private readonly System.Windows.Threading.Dispatcher dispatcher;
 
         /// <summary>The field contains the entry program which was initially used by this controller.</summary>
         public readonly ILauncherProgram EntryProgram;
@@ -141,7 +143,7 @@ namespace Leayal.PSO2Launcher
             }
         }
 
-        internal LauncherController(Process? parentProcess, ILauncherProgram entryProgram) : base(UniqueName)
+        private LauncherController(Process? parentProcess, ILauncherProgram entryProgram) : base(UniqueName)
         {
             if (entryProgram is null) throw new ArgumentNullException(nameof(entryProgram));
 
@@ -152,6 +154,8 @@ namespace Leayal.PSO2Launcher
                 parentProcess.Exited += this.ParentProcess_Exited;
                 parentProcess.EnableRaisingEvents = true;
             }
+
+            this.dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
 
             this.applicationArgs = null;
             this.nextProgram = entryProgram;
@@ -224,7 +228,7 @@ namespace Leayal.PSO2Launcher
         }
 
         /// <summary>Restart the process. However, applying new arguments for the new process.</summary>
-        /// <param name="commandLineArgs">The new command-line arguments</param>
+        /// <param name="commandLineArgs">The new command-line arguments. If null, indicating that the new process will not have any arguments. If you want to use the arguments which was launched this process, use <seealso cref="RestartProcess"/>.</param>
         public void RestartProcessWithArgs(IEnumerable<string>? commandLineArgs)
         {
             var processStartInfo = new ProcessStartInfo(Application.ExecutablePath);
@@ -235,11 +239,19 @@ namespace Leayal.PSO2Launcher
                     processStartInfo.ArgumentList.Add(arg);
                 }
             }
+            void RestartCallback()
+            {
+                Process.Start(processStartInfo)?.Dispose();
+            }
+            this.ProcessShutdown += RestartCallback;
             this.ExitApplication();
-            Process.Start(processStartInfo)?.Dispose();
         }
 
-        /// <summary>Restart the process.</summary>
-        public void RestartProcess() => Application.Restart();
+        /// <summary>Restart the process with the current process's arguments.</summary>
+        public void RestartProcess()
+        {
+            this.ExitApplication();
+            Application.Restart();
+        }
     }
 }

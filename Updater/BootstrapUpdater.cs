@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Helper;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -483,17 +484,48 @@ namespace Leayal.PSO2Launcher.Updater
 
         private static void RestartWithArgs(ICollection<string> commandLineArgs)
         {
-            ProcessStartInfo processStartInfo = new ProcessStartInfo();
-            processStartInfo.FileName = RuntimeValues.EntryExecutableFilename;
-            if (commandLineArgs != null && commandLineArgs.Count != 0)
+            if (AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()) is AssemblyLoadContext context
+                && TryGetAssemblyName(context, "Leayal.SharedInterfaces", out var asm)
+                && asm.GetType("Leayal.SharedInterfaces.Compatibility.CompatStockFunc", false, false) is Type t)
             {
-                foreach (var arg in commandLineArgs)
+                if (t.GetMethod("LauncherController_RestartWithArgs", new Type[] { typeof(IEnumerable<string>) }) is MethodInfo mi)
                 {
-                    processStartInfo.ArgumentList.Add(arg);
+                    var action = mi.CreateDelegate<Action<IEnumerable<string>>>();
+                    action.Invoke(commandLineArgs);
                 }
             }
-            Application.Exit();
-            Process.Start(processStartInfo)?.Dispose();
+            else
+            {
+                var processStartInfo = new ProcessStartInfo(RuntimeValues.EntryExecutableFilename);
+                if (commandLineArgs != null && commandLineArgs.Count != 0)
+                {
+                    foreach (var arg in commandLineArgs)
+                    {
+                        processStartInfo.ArgumentList.Add(arg);
+                    }
+                }
+                AppDomain.CurrentDomain.ProcessExit += new EventHandler((sender, args) =>
+                {
+                    Process.Start(processStartInfo)?.Dispose();
+                });
+
+                Application.Exit();
+            }
+        }
+
+        private static bool TryGetAssemblyName(AssemblyLoadContext context, string name, [NotNullWhen(true)] out Assembly? assembly)
+        {
+            foreach (var asm in context.Assemblies)
+            {
+                if (asm != null && string.Equals(asm.GetName().Name ?? string.Empty, name, StringComparison.Ordinal))
+                {
+                    assembly = asm;
+                    return true;
+                }
+            }
+
+            assembly = null;
+            return false;
         }
     }
 }

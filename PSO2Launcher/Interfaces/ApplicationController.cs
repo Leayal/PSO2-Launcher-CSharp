@@ -134,12 +134,10 @@ namespace Leayal.PSO2Launcher.Interfaces
         /// <summary>Clean up all resources and handles allocated by this instance.</summary>
         public void Dispose()
         {
-            if (!this._disposed)
-            {
-                this._disposed = true;
-                this.Dispose(true);
-                GC.SuppressFinalize(this);
-            }
+            if (this._disposed) return;
+            this._disposed = true;
+            GC.SuppressFinalize(this);
+            this.Dispose(true);
         }
 
         /// <summary>When override, provides the cleanup of all resources allocated.</summary>
@@ -162,7 +160,7 @@ namespace Leayal.PSO2Launcher.Interfaces
             this.Dispose(false);
         }
 
-        static int StreamDrain(System.IO.Stream stream, byte[] buffer, int offset, int count)
+        static int StreamDrain(Stream stream, byte[] buffer, int offset, int count)
         {
             int left = count;
             var read = stream.Read(buffer, offset, left);
@@ -205,6 +203,7 @@ namespace Leayal.PSO2Launcher.Interfaces
                     }
                     t.GetAwaiter().GetResult();
                 }
+                this.ProcessShutdown?.Invoke();
             }
             else
             {
@@ -268,5 +267,8 @@ namespace Leayal.PSO2Launcher.Interfaces
                 this.Arguments = args;
             }
         }
+
+        /// <summary>Occurs when the process is going to be shutdown. This is final and there's no way to stop it.</summary>
+        public event Action? ProcessShutdown;
     }
 }

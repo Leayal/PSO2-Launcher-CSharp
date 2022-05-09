@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data;
+using Leayal.SharedInterfaces.Compatibility;
 using System.IO;
 using ControlzEx.Theming;
 using System.Threading.Tasks;
@@ -317,17 +317,17 @@ namespace Leayal.PSO2Launcher.Core
                                     w.Closed -= mainformclosed;
                                 }
 
-                                this.Shutdown();
+                                if (!CompatStockFunc.HasNative_LauncherController_RestartWithArgs)
+                                {
+                                    App.Current.Shutdown();
+                                }
                                 var args = new List<string>(Environment.GetCommandLineArgs());
                                 args.RemoveAt(0);
                                 if (!args.Contains("--no-self-update-prompt"))
                                 {
                                     args.Add("--no-self-update-prompt");
                                 }
-                                if (args.Contains("--no-self-update"))
-                                {
-                                    args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase));
-                                }
+                                args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase));
                                 if (isInTray)
                                 {
                                     if (!args.Contains("--tray"))
@@ -337,12 +337,10 @@ namespace Leayal.PSO2Launcher.Core
                                 }
                                 else
                                 {
-                                    if (args.Contains("--tray"))
-                                    {
-                                        args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
-                                    }
+                                    args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
                                 }
-                                RestartWithArgs(args);
+                                // RestartWithArgs(args);
+                                CompatStockFunc.LauncherController_RestartWithArgs(args);
                             };
 
                             mainwindow.Closed += mainformclosed;
@@ -350,22 +348,19 @@ namespace Leayal.PSO2Launcher.Core
                         }
                         else
                         {
-                            this.Shutdown();
+                            if (!CompatStockFunc.HasNative_LauncherController_RestartWithArgs)
+                            {
+                                this.Shutdown();
+                            }
                             var args = new List<string>(Environment.GetCommandLineArgs());
                             args.RemoveAt(0);
+                            args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase) || string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
                             if (!args.Contains("--no-self-update-prompt"))
                             {
                                 args.Add("--no-self-update-prompt");
                             }
-                            if (args.Contains("--no-self-update"))
-                            {
-                                args.RemoveAll(x => string.Equals(x, "--no-self-update", StringComparison.OrdinalIgnoreCase));
-                            }
-                            if (args.Contains("--tray"))
-                            {
-                                args.RemoveAll(x => string.Equals(x, "--tray", StringComparison.OrdinalIgnoreCase));
-                            }
-                            RestartWithArgs(args);
+                            // RestartWithArgs(args);
+                            CompatStockFunc.LauncherController_RestartWithArgs(args);
                         }
 
                         // System.Windows.Forms.Application.Restart();
