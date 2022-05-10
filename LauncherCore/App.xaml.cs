@@ -33,7 +33,7 @@ namespace Leayal.PSO2Launcher.Core
         private bool isLightMode;
         public bool IsLightMode => this.isLightMode;
 
-        private readonly Classes.ConfigurationFile config_main;
+        private readonly ConfigurationFile config_main;
         private readonly System.Windows.Forms.Form? dummyForm;
 
         public App() : this(1, null) { }
@@ -42,7 +42,7 @@ namespace Leayal.PSO2Launcher.Core
         {
             this.dummyForm = dummyForm;
             this.BootstrapVersion = bootstrapversion;
-            this.config_main = new Classes.ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
+            this.config_main = new ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             this.JSTClock = new JSTClockTimer();
 
             this.InitializeComponent();

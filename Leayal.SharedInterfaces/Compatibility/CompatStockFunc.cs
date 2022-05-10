@@ -41,7 +41,7 @@ namespace Leayal.SharedInterfaces.Compatibility
                     if (fieldInfo_modelversion.GetValue(null) is int modelVersion)
                     {
                         ModelVersion = modelVersion;
-                        if (modelVersion >= 5)
+                        if (modelVersion >= 6)
                         {
                             if (t_controller.GetProperty("Current", BindingFlags.Public | BindingFlags.Static) is PropertyInfo propInfo)
                             {
@@ -56,13 +56,9 @@ namespace Leayal.SharedInterfaces.Compatibility
                                     {
                                         LauncherController_RestartApplication_Native = mi_RestartApplication.CreateDelegate<Action>(controller);
                                     }
-
-                                    if (modelVersion >= 6)
+                                    if (t_controller.GetMethod("RestartProcessWithArgs", new Type[] { typeof(IEnumerable<string>) }) is MethodInfo mi_RestartProcessWithArgs)
                                     {
-                                        if (t_controller.GetMethod("RestartProcessWithArgs", new Type[] { typeof(IEnumerable<string>) }) is MethodInfo mi_RestartProcessWithArgs)
-                                        {
-                                            LauncherController_RestartWithArgs_Native = mi_RestartProcessWithArgs.CreateDelegate<Action<IEnumerable<string>?>>(controller);
-                                        }
+                                        LauncherController_RestartWithArgs_Native = mi_RestartProcessWithArgs.CreateDelegate<Action<IEnumerable<string>?>>(controller);
                                     }
                                 }
                             }

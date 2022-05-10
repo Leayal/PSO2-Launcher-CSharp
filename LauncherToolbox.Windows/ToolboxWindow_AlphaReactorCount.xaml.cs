@@ -35,7 +35,19 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
             catch { } // Silent everything as we will terminate the process anyway.
         }
-        
+
+        // Init the reusable objects (or strings, in this case) to avoid allocations.
+        // But allow these objects to be collected by GC when they're no longer in use, by using WeakLazy class.
+        // See the window's constructor to see how to use safely in threads.
+        private static readonly WeakLazy<string> lazy_AlphaReactor_en = new WeakLazy<string>(() => "Alpha Reactor"),
+                                                                    lazy_AlphaReactor_jp = new WeakLazy<string>(() => "アルファリアクター"),
+                                                                    lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Shard"),
+                                                                    lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Seed"),
+                                                                    lazy_StellarSeed_jp = new WeakLazy<string>(() => "ステラーシード"),
+                                                                    lazy_DateOnlyFormat = new WeakLazy<string>(() => "yyyy-MM-dd"),
+                                                                    lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
+                                                                    lazy_ShopAction_SetPrice = new WeakLazy<string>(() => "[DisplayToShop-SetValue]");
+
         private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(DateTime.MinValue));
         private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(null));
 
@@ -91,6 +103,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly DelegateSetTime_params @delegateSetTime;
         private readonly DispatcherTimer logcategoryThrottle;
 
+        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice;
+
         private CancellationTokenSource? cancelSrcLoad;
 
         /// <summary>Creates a new window.</summary>
@@ -115,11 +129,24 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.clockInitiallyVisible = clockInitiallyVisible;
             this.mapping = new Dictionary<long, AccountData>();
             this.characters = new ObservableCollection<AccountData>();
+
+            // Init and fork the reference locally to keep the object alive.
+            // Since WeakReference isn't thread-safe. Fork on UI thread and use it until we don't need it anymore should make it safe regardless of thread.
+            this.str_AlphaReactor_en = lazy_AlphaReactor_en.Value;
+            this.str_AlphaReactor_jp = lazy_AlphaReactor_jp.Value;
+            this.str_StellarSeed_en1 = lazy_StellarSeed_en1.Value;
+            this.str_StellarSeed_en2 = lazy_StellarSeed_en2.Value;
+            this.str_StellarSeed_jp = lazy_StellarSeed_jp.Value;
+            this.str_DateOnlyFormat = lazy_DateOnlyFormat.Value;
+            this.str_ActionPickup = lazy_ActionPickup.Value;
+            this.str_ShopAction_SetPrice = lazy_ShopAction_SetPrice.Value;
+
             this.SetTime(TimeZoneHelper.ConvertTimeToLocalJST(DateTime.UtcNow));
             this.Logfiles_NewFileFound = new NewFileFoundEventHandler(this.Logfiles_OnNewFileFound);
             this.timerCallback = new ClockTickerCallback(this.OnClockTicked);
             this.@delegateSetTime = new DelegateSetTime_params(this);
             this.logcategoryThrottle = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Normal, OnThrottleEventInvocation, this.Dispatcher) { Tag = this, IsEnabled = false };
+
             if (clock == null)
             {
                 clock = new JSTClockTimer();
@@ -267,18 +294,68 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.Logreader_DataReceived(null, in data);
         }
 
+        private bool IsAlphaReactor(ReadOnlySpan<char> itemname)
+            => (MemoryExtensions.Equals(itemname, this.str_AlphaReactor_en, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, this.str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
+
+        private bool IsStellarSeed(ReadOnlySpan<char> itemname)
+        {
+            if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            else
+            {
+                // Compare to "Stellar Seed"
+                if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_en1, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                else
+                {
+                    // Compare to "Stella Seed"
+                    var something = this.str_StellarSeed_en1.AsSpan();
+                    if ((something.Length - 1) == itemname.Length && MemoryExtensions.Equals(itemname.Slice(0, 6), something.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(itemname.Slice(6), something.Slice(7), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        // Compare to "Stellar Shard"
+                        if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_en2, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            // Compare to "Stella Shard"
+                            something = this.str_StellarSeed_en2.AsSpan();
+                            if ((something.Length - 1) == itemname.Length && MemoryExtensions.Equals(itemname.Slice(0, 6), something.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(itemname.Slice(6), something.Slice(7), StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
             var datas = arg2.GetDataColumns();
             // All string creations below (aka the "new string()") will allocate a new char[] buffer and copies all the chars to the new buffer.
             // Thus, all strings below can be used beyond the event's invocation.
-            if (MemoryExtensions.Equals(datas[2].Span, "[Pickup]", StringComparison.OrdinalIgnoreCase))
+            if (MemoryExtensions.Equals(datas[2].Span, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase))
             {
-                bool isAlphaReactor = (MemoryExtensions.Equals(datas[5].Span, "Alpha Reactor", StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(datas[5].Span, "アルファリアクター", StringComparison.OrdinalIgnoreCase));
-                bool isStellaSeed = (MemoryExtensions.Equals(datas[5].Span, "Stellar Shard", StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(datas[5].Span, "Stellar Seed", StringComparison.OrdinalIgnoreCase) || datas[5].Span.Equals("ステラーシード", StringComparison.OrdinalIgnoreCase));
+                bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span);
+                bool isStellaSeed = this.IsStellarSeed(datas[5].Span);
                 if (isAlphaReactor || isStellaSeed)
                 {
-                    var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), "yyyy-MM-dd");
+                    var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
                     var logtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
 
@@ -316,7 +393,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     }
                 }
             }
-            else if (MemoryExtensions.Equals(datas[2].Span, "[DisplayToShop-SetValue]", StringComparison.OrdinalIgnoreCase))
+            else if (MemoryExtensions.Equals(datas[2].Span, this.str_ShopAction_SetPrice, StringComparison.OrdinalIgnoreCase))
             {
                 // return;
                 // This has no character/account information in the line. So skip it.

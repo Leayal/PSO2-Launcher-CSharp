@@ -29,8 +29,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class MainMenuWindow : MetroWindowEx
     {
-        private static readonly Lazy<BitmapSource> lazybg_dark = new Lazy<BitmapSource?>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
-            lazybg_light = new Lazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
+        private static readonly WeakLazy<BitmapSource> lazybg_dark = new WeakLazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_dark.png")),
+            lazybg_light = new WeakLazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources._bgimg_light.png"));
 
         // UseClock
         public static readonly DependencyProperty UseClockProperty = DependencyProperty.Register("UseClock", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
