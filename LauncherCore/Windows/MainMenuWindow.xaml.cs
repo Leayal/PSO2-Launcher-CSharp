@@ -214,7 +214,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.CreateNewParagraphInLog($"[System] Launcher is elevated as Administrator. Unless you want to use launcher's functions which requires Administrator, it is not recommended for the launcher to be elevated as Admin.");
             }
 
-            if (App.Current.BootstrapVersion < 4)
+            if (App.Current.BootstrapVersion < 6)
             {
                 const string BootstrapVersionReminder = "[Launcher Updater] You are using an older version of the Launcher's bootstrap. It is recommended to update it.",
                     DowlodEtNow = "(Download it here)";
