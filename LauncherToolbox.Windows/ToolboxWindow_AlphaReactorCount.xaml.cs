@@ -78,8 +78,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         // See the window's constructor to see how to use safely in threads.
         private static readonly WeakLazy<string> lazy_AlphaReactor_en = new WeakLazy<string>(() => "Alpha Reactor"),
                                                                     lazy_AlphaReactor_jp = new WeakLazy<string>(() => "アルファリアクター"),
-                                                                    lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Shard"),
-                                                                    lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Seed"),
+                                                                    lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Seed"),
+                                                                    lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Shard"),
                                                                     lazy_StellarSeed_jp = new WeakLazy<string>(() => "ステラーシード"),
                                                                     lazy_DateOnlyFormat = new WeakLazy<string>(() => "yyyy-MM-dd"),
                                                                     lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
@@ -357,48 +357,19 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private bool IsStellarSeed(ReadOnlySpan<char> itemname)
         {
-            if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-            else
-            {
+            // Compare to "Stellar Seed" in JP.
+            return (MemoryExtensions.Equals(itemname, this.str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase)
                 // Compare to "Stellar Seed"
-                if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_en1, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-                else
-                {
-                    // Compare to "Stella Seed"
-                    var something = this.str_StellarSeed_en1.AsSpan();
-                    if ((something.Length - 1) == itemname.Length && MemoryExtensions.Equals(itemname.Slice(0, 6), something.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(itemname.Slice(6), something.Slice(7), StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        // Compare to "Stellar Shard"
-                        if (MemoryExtensions.Equals(itemname, this.str_StellarSeed_en2, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            // Compare to "Stella Shard"
-                            something = this.str_StellarSeed_en2.AsSpan();
-                            if ((something.Length - 1) == itemname.Length && MemoryExtensions.Equals(itemname.Slice(0, 6), something.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(itemname.Slice(6), something.Slice(7), StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
+                || MemoryExtensions.Equals(itemname, this.str_StellarSeed_en1, StringComparison.OrdinalIgnoreCase)
+                // Compare to "Stellar Shard"
+                || MemoryExtensions.Equals(itemname, this.str_StellarSeed_en2, StringComparison.OrdinalIgnoreCase)
+                // Compare to "Stella Seed"
+                || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en1.AsSpan())
+                // Compare to "Stella Shard"
+                || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en2.AsSpan()));
+
+            static bool CompareStellaWithoutR(in ReadOnlySpan<char> name, ReadOnlySpan<char> comparand)
+                => ((comparand.Length - 1) == name.Length && MemoryExtensions.Equals(name.Slice(0, 6), comparand.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(name.Slice(6), comparand.Slice(7), StringComparison.OrdinalIgnoreCase));
         }
 
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)

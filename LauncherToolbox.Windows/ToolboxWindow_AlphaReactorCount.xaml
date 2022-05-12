@@ -8,7 +8,7 @@
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="ThisSelf" 
                          TitleCharacterCasing="Normal"
-                         Title="Toolbox: Alpha Reactor Counter" MinWidth="350" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                         Title="Toolbox: Alpha Reactor &amp; Stellar Seed Counter" MinWidth="350" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                          Loaded="ThisSelf_Loaded">
     <leawindow:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
@@ -90,13 +90,13 @@
             <Run>
                 <Run.Style>
                     <Style TargetType="Run">
-                        <Setter Property="Text" Value="Stellar Shards" />
+                        <Setter Property="Text" Value="Stellar Seeds" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="0">
-                                <Setter Property="Text" Value="Stellar Shard" />
+                                <Setter Property="Text" Value="Stellar Seed" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="1">
-                                <Setter Property="Text" Value="Stellar Shard" />
+                                <Setter Property="Text" Value="Stellar Seed" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
