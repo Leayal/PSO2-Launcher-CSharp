@@ -15,8 +15,8 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <summary>A string which is a fully qualified path to the typical PSO2 NGS's log directory.</summary>
         public static readonly string DefaultLogDirectoryPath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "log_ngs"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
-        /// <summary>Default implementation of <seealso cref="LogCategories"/>. Created by using <seealso cref="DefaultLogDirectoryPath"/>.</summary>
-        public static readonly Lazy<LogCategories> Default = new Lazy<LogCategories>(() => new LogCategories(DefaultLogDirectoryPath));
+        // <summary>Default implementation of <seealso cref="LogCategories"/>. Created by using <seealso cref="DefaultLogDirectoryPath"/>.</summary>
+        // public static readonly Lazy<LogCategories> Default = new Lazy<LogCategories>(() => new LogCategories(DefaultLogDirectoryPath));
 
         private static readonly Regex r_logFiltering = new Regex(@"(\D*)Log(\d{8})_00\.txt", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -32,19 +32,27 @@ namespace Leayal.PSO2Launcher.Toolbox
         private readonly ConcurrentDictionary<string, LazyIndexing> cache;
         private readonly Task t_refresh;
 
+        private readonly BlockingCollection<BufferData> buffering;
+        private readonly PeriodicTimer bufferFlusher;
+
+        private bool disposed;
+
         /// <summary>Creates a new instance of this class.</summary>
         /// <param name="logDirectoryPath">The path to the log directory. It should be a fully qualified path.</param>
         public LogCategories(string logDirectoryPath)
         {
+            this.disposed = false;
             this.logDir = logDirectoryPath;
+            this.bufferFlusher = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            this.buffering = new BlockingCollection<BufferData>();
             this.cache = new ConcurrentDictionary<string, LazyIndexing>(StringComparer.OrdinalIgnoreCase);
-            var ts = TimeSpan.FromMilliseconds(50);
             this.watcher = new FileSystemWatcher();
             this.watcher.BeginInit();
             this.watcher.Path = string.Empty;
             this.watcher.Filter = "*.txt";
+            this.watcher.SynchronizingObject = null;
             this.watcher.IncludeSubdirectories = false;
-            this.watcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.Size;
+            this.watcher.NotifyFilter = NotifyFilters.FileName;
             this.watcher.Created += this.Watcher_FileCreated;
             this.watcher.Renamed += this.Watcher_Renamed;
             this.watcher.Deleted += this.Watcher_Deleted;
@@ -55,12 +63,12 @@ namespace Leayal.PSO2Launcher.Toolbox
 
         private static string DetermineType(in ReadOnlySpan<char> span)
         {
-            if (span.Equals(ActionLog, StringComparison.OrdinalIgnoreCase)) return ActionLog;
-            else if (span.Equals(ChatLog, StringComparison.OrdinalIgnoreCase)) return ChatLog;
-            else if (span.Equals(RewardLog, StringComparison.OrdinalIgnoreCase)) return RewardLog;
-            else if (span.Equals(StarGemLog, StringComparison.OrdinalIgnoreCase)) return StarGemLog;
-            else if (span.Equals(ScratchLog, StringComparison.OrdinalIgnoreCase)) return ScratchLog;
-            else if (span.Equals(SymbolChatLog, StringComparison.OrdinalIgnoreCase)) return SymbolChatLog;
+            if (MemoryExtensions.Equals(span, ActionLog, StringComparison.OrdinalIgnoreCase)) return ActionLog;
+            else if (MemoryExtensions.Equals(span, ChatLog, StringComparison.OrdinalIgnoreCase)) return ChatLog;
+            else if (MemoryExtensions.Equals(span, RewardLog, StringComparison.OrdinalIgnoreCase)) return RewardLog;
+            else if (MemoryExtensions.Equals(span, StarGemLog, StringComparison.OrdinalIgnoreCase)) return StarGemLog;
+            else if (MemoryExtensions.Equals(span, ScratchLog, StringComparison.OrdinalIgnoreCase)) return ScratchLog;
+            else if (MemoryExtensions.Equals(span, SymbolChatLog, StringComparison.OrdinalIgnoreCase)) return SymbolChatLog;
             else return string.Empty;
         }
 
@@ -68,16 +76,23 @@ namespace Leayal.PSO2Launcher.Toolbox
         {
             private readonly string category;
             private readonly LogCategories parent;
-            private readonly Lazy<Indexing> lazy;
+            // private readonly Lazy<Indexing> lazy;
 
-            public bool IsValueCreated => this.lazy.IsValueCreated;
-            public Indexing Value => this.lazy.Value;
+            private bool _isvaluecreated;
+            private Indexing _value;
+            private object? lockobj;
 
+            public bool IsValueCreated => this._isvaluecreated;
+            public Indexing Value => LazyInitializer.EnsureInitialized(ref this._value, ref this._isvaluecreated, ref this.lockobj, this.Create);
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
             public LazyIndexing(string logCategory, LogCategories parent)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
             {
+                this.lockobj = null;
                 this.category = logCategory;
                 this.parent = parent;
-                this.lazy = new Lazy<Indexing>(this.Create);
+                // this.lazy = new Lazy<Indexing>(this.Create);
             }
 
             private Indexing Create() => new Indexing(this.category, this.parent);
@@ -96,6 +111,9 @@ namespace Leayal.PSO2Launcher.Toolbox
                 if (match.Success)
                 {
                     var span_type = match.Groups[1].ValueSpan;
+                    this.buffering.Add(new BufferDataRename(DetermineType(in span_type), e.OldFullPath, e.FullPath));
+
+                    /*
                     string otherend = DetermineType(in span_type);
                     var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
                     var needLock = !indexing.lockobj.IsWriteLockHeld;
@@ -116,15 +134,22 @@ namespace Leayal.PSO2Launcher.Toolbox
                             indexing.lockobj.ExitWriteLock();
                         }
                     }
-
-                    this.OnNewLogFound(indexing.Name);
+                    */
                 }
             }
         }
 
         private void OnNewLogFound(string? categoryName)
         {
-            this.NewFileFound?.Invoke(this, new NewFileFoundEventArgs(categoryName));
+            ThreadPool.QueueUserWorkItem(this._OnNewLogFound, categoryName);
+        }
+
+        private void _OnNewLogFound(object? categoryNameObj)
+        {
+            if (categoryNameObj is string categoryName)
+            {
+                this.NewFileFound?.Invoke(this, new NewFileFoundEventArgs(categoryName));
+            }
         }
 
         /// <summary>Register <paramref name="callback"/> handler from the event which would occurs when a new log file is found.</summary>
@@ -133,11 +158,6 @@ namespace Leayal.PSO2Launcher.Toolbox
         public async Task StartWatching(NewFileFoundEventHandler callback)
         {
             await this.t_refresh;
-            if (!this.watcher.EnableRaisingEvents)
-            {
-                this.watcher.Path = Directory.CreateDirectory(this.logDir).FullName;
-                this.watcher.EnableRaisingEvents = true;
-            }
             callback.Invoke(this, new NewFileFoundEventArgs(null));
             this.NewFileFound += callback;
         }
@@ -146,7 +166,7 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <param name="callback">The handler to unregister</param>
         /// <remarks>
         /// <para>This method will not stop the <seealso cref="FileSystemWatcher"/> started by <seealso cref="StartWatching(NewFileFoundEventHandler)"/>.</para>
-        /// <para>If you want to stop, consider calling <seealso cref="Dispose"/> when you no longer use this instance.</para>
+        /// <para>If you want to stop, consider calling <seealso cref="Dispose()"/> when you no longer use this instance.</para>
         /// </remarks>
         public void StopWatching(NewFileFoundEventHandler callback)
         {
@@ -156,9 +176,21 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <summary>Stops watching the log directory for new files and clean up all resources allocated by this instance.</summary>
         public void Dispose()
         {
+            if (this.disposed) return;
+            this.disposed = true;
+            GC.SuppressFinalize(this);
+            this.Dispose(true);
+        }
+
+        private void Dispose(bool disposing)
+        {
             this.NewFileFound = null;
             this.watcher.EnableRaisingEvents = false;
             this.watcher.Dispose();
+
+            this.bufferFlusher.Dispose();
+            this.buffering.CompleteAdding();
+            this.buffering.Dispose();
 
             var arr = this.cache.Values.ToArray();
             this.cache.Clear();
@@ -175,6 +207,12 @@ namespace Leayal.PSO2Launcher.Toolbox
             }
         }
 
+        /// <summary>Destructor</summary>
+        ~LogCategories()
+        {
+            this.Dispose(false);
+        }
+
         private void Watcher_Deleted(object sender, FileSystemEventArgs e)
         {
             if (!string.IsNullOrEmpty(e.Name))
@@ -183,8 +221,10 @@ namespace Leayal.PSO2Launcher.Toolbox
                 if (match.Success)
                 {
                     var span_type = match.Groups[1].ValueSpan;
-                    string otherend = DetermineType(in span_type);
+                    this.buffering.Add(new BufferData(DetermineType(in span_type), e.FullPath, BufferDataAction.Remove));
 
+                    /*
+                    string otherend = DetermineType(in span_type);
                     var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
                     bool changed;
                     var needLock = !indexing.lockobj.IsWriteLockHeld;
@@ -207,6 +247,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                     {
                         this.OnNewLogFound(indexing.Name);
                     }
+                    */
                 }
             }
         }
@@ -221,8 +262,10 @@ namespace Leayal.PSO2Launcher.Toolbox
                 if (match.Success)
                 {
                     var span_type = match.Groups[1].ValueSpan;
-                    string otherend = DetermineType(in span_type);
+                    this.buffering.Add(new BufferData(DetermineType(in span_type), e.FullPath, BufferDataAction.Add));
 
+                    /*
+                    string otherend = DetermineType(in span_type);
                     var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
                     bool changed;
                     var needLock = !indexing.lockobj.IsWriteLockHeld;
@@ -254,6 +297,7 @@ namespace Leayal.PSO2Launcher.Toolbox
                     {
                         this.OnNewLogFound(indexing.Name);
                     }
+                    */
                 }
             }
         }
@@ -324,6 +368,13 @@ namespace Leayal.PSO2Launcher.Toolbox
                         string otherend = DetermineType(in span_type);
                         var indexing = this.cache.GetOrAdd(otherend, this.Lazy_Indexing).Value;
 
+                        var items = indexing.Items;
+                        if (!items.ContainsValue(file))
+                        {
+                            items.Add(file, file);
+                        }
+
+                        /*
                         var lockobj = indexing.lockobj;
                         bool needlock = !lockobj.IsWriteLockHeld;
                         try
@@ -345,8 +396,115 @@ namespace Leayal.PSO2Launcher.Toolbox
                                 lockobj.ExitWriteLock();
                             }
                         }
+                        */
                     }
                 }
+
+                this.watcher.Path = Directory.CreateDirectory(this.logDir).FullName;
+                this.watcher.EnableRaisingEvents = true;
+
+                Task.Factory.StartNew(this.InnerFlushBufferData, TaskCreationOptions.LongRunning);
+            }
+        }
+
+        private async Task InnerFlushBufferData()
+        {
+            var locks = new HashSet<ReaderWriterLockSlim>();
+            var changedOnes = new HashSet<string>();
+            try
+            {
+                while (!this.disposed && await this.bufferFlusher.WaitForNextTickAsync())
+                {
+                    try
+                    {
+                        while (!this.disposed && this.buffering.TryTake(out var data))
+                        {
+                            if (data.Action == BufferDataAction.Remove)
+                            {
+                                if (this.cache.TryGetValue(data.Category, out var lazyindexing) && lazyindexing.IsValueCreated)
+                                {
+                                    var indexing = lazyindexing.Value;
+                                    var lockobj = indexing.lockobj;
+                                    if (!lockobj.IsWriteLockHeld)
+                                    {
+                                        lockobj.EnterWriteLock();
+                                        locks.Add(lockobj);
+                                    }
+                                    var items = indexing.Items;
+                                    if (items.Values.Remove(data.Filename))
+                                    {
+                                        changedOnes.Add(data.Category);
+                                    }
+                                }
+                            }
+                            else if (data.Action == BufferDataAction.Add)
+                            {
+                                var indexing = this.cache.GetOrAdd(data.Category, this.Lazy_Indexing).Value;
+                                var lockobj = indexing.lockobj;
+                                if (!lockobj.IsWriteLockHeld)
+                                {
+                                    lockobj.EnterWriteLock();
+                                    locks.Add(lockobj);
+                                }
+                                var items = indexing.Items;
+                                if (!items.ContainsValue(data.Filename))
+                                {
+                                    items.Add(data.Filename, data.Filename);
+                                    changedOnes.Add(data.Category);
+                                }
+                            }
+                            else if (data.Action == BufferDataAction.Rename)
+                            {
+                                var indexing = this.cache.GetOrAdd(data.Category, this.Lazy_Indexing).Value;
+                                var lockobj = indexing.lockobj;
+                                if (!lockobj.IsWriteLockHeld)
+                                {
+                                    lockobj.EnterWriteLock();
+                                    locks.Add(lockobj);
+                                }
+                                var items = indexing.Items;
+                                if (!items.ContainsValue(data.Filename))
+                                {
+                                    items.Add(data.Filename, data.Filename);
+                                    changedOnes.Add(data.Category);
+                                }
+                                if (data is BufferDataRename renamebuffer && items.Values.Remove(renamebuffer.OldFilename))
+                                {
+                                    changedOnes.Add(data.Category);
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        ReleaseLocks(locks);
+                        foreach (var changedOne in changedOnes)
+                        {
+                            this.OnNewLogFound(changedOne);
+                        }
+                        changedOnes.Clear();
+                    }
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+
+            }
+            finally
+            {
+                ReleaseLocks(locks);
+            }
+
+            static void ReleaseLocks(HashSet<ReaderWriterLockSlim> locks)
+            {
+                foreach (var item in locks)
+                {
+                    if (item.IsWriteLockHeld)
+                    {
+                        item.ExitWriteLock();
+                    }
+                }
+                locks.Clear();
             }
         }
 
@@ -369,6 +527,36 @@ namespace Leayal.PSO2Launcher.Toolbox
             {
                 this.lockobj.Dispose();
             }
+        }
+
+        private class BufferData
+        {
+            public readonly string Filename, Category;
+            public readonly BufferDataAction Action;
+
+            public BufferData(string type, string filename, BufferDataAction action)
+            {
+                this.Category = type;
+                this.Filename = filename;
+                this.Action = action;
+            }
+        }
+
+        private class BufferDataRename : BufferData
+        {
+            public readonly string OldFilename;
+
+            public BufferDataRename(string type, string oldFilename, string newFilename) : base(type, newFilename, BufferDataAction.Rename)
+            {
+                this.OldFilename = oldFilename;
+            }
+        }
+
+        private enum BufferDataAction
+        {
+            Add,
+            Remove,
+            Rename
         }
 
         sealed class FileDateComparer : IComparer<string>, IComparer<ReadOnlyMemory<char>>

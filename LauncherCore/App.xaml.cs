@@ -521,7 +521,7 @@ namespace Leayal.PSO2Launcher.Core
         {
             ThemeManager.Current.ThemeChanged -= this.Thememgr_ThemeChanged;
             this.JSTClock.Dispose();
-            ToolboxWindow_AlphaReactorCount.DisposeLogWatcherIfCreated();
+            // ToolboxWindow_AlphaReactorCount.DisposeLogWatcherIfCreated();
             // Double check and close all database connections.
             // Optimally, this should does nothing because all databases have been finalized and closed.
             // SQLite.SQLiteAsyncConnection.ResetPool();

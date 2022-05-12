@@ -239,7 +239,7 @@ namespace Leayal.PSO2Launcher
                     processStartInfo.ArgumentList.Add(arg);
                 }
             }
-            void RestartCallback()
+            void RestartCallback(object? sender, EventArgs e)
             {
                 Process.Start(processStartInfo)?.Dispose();
             }

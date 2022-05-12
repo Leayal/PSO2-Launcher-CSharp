@@ -17,7 +17,7 @@ namespace Leayal.SharedInterfaces.Compatibility
     {
         private readonly static Action? LauncherController_RestartProcess_Native, LauncherController_RestartApplication_Native;
         private readonly static Action<IEnumerable<string>?>? LauncherController_RestartWithArgs_Native;
-
+        private readonly static Action<EventHandler>? LauncherController_ProcessShutdown_NativeEventAdd, LauncherController_ProcessShutdown_NativeEventRemove;
 
         /// <summary>Gets the version number of Bootstrap.</summary>
         public readonly static int ModelVersion;
@@ -60,6 +60,12 @@ namespace Leayal.SharedInterfaces.Compatibility
                                     {
                                         LauncherController_RestartWithArgs_Native = mi_RestartProcessWithArgs.CreateDelegate<Action<IEnumerable<string>?>>(controller);
                                     }
+                                    if (t_controller.GetEvent("ProcessShutdown") is EventInfo ei_ProcessShutdown
+                                        && ei_ProcessShutdown.AddMethod != null && ei_ProcessShutdown.RemoveMethod != null)
+                                    {
+                                        LauncherController_ProcessShutdown_NativeEventAdd = ei_ProcessShutdown.AddMethod.CreateDelegate<Action<EventHandler>>(controller);
+                                        LauncherController_ProcessShutdown_NativeEventRemove = ei_ProcessShutdown.RemoveMethod.CreateDelegate<Action<EventHandler>>(controller);
+                                    }
                                 }
                             }
                         }
@@ -98,6 +104,38 @@ namespace Leayal.SharedInterfaces.Compatibility
             else
             {
                 Application.Restart();
+            }
+        }
+
+        /// <summary>Checks whether <seealso cref="ProcessShutdown"/> has native supports.</summary>
+        public static bool HasNative_LauncherController_ProcessShutdown => (LauncherController_ProcessShutdown_NativeEventAdd != null && LauncherController_ProcessShutdown_NativeEventRemove != null);
+
+        /// <summary>
+        /// Occurs when the process is shutting down. This is final and you have no way to stop it.
+        /// </summary>
+        public static event EventHandler ProcessShutdown
+        {
+            add
+            { 
+                if (LauncherController_ProcessShutdown_NativeEventAdd != null)
+                {
+                    LauncherController_ProcessShutdown_NativeEventAdd.Invoke(value);
+                }
+                else
+                {
+                    AppDomain.CurrentDomain.ProcessExit += value;
+                }
+            }
+            remove
+            {
+                if (LauncherController_ProcessShutdown_NativeEventRemove != null)
+                {
+                    LauncherController_ProcessShutdown_NativeEventRemove.Invoke(value);
+                }
+                else
+                {
+                    AppDomain.CurrentDomain.ProcessExit -= value;
+                }
             }
         }
 

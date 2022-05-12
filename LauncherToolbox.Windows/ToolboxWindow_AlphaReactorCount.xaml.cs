@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,20 +22,56 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
     /// </remarks>
     public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
     {
-        /// <summary>Dispose the log watcher if it has been created. Otherwise does nothing</summary>
-        /// <remarks>You should call this only when you are certain that your application would exit.</remarks>
-        public static void DisposeLogWatcherIfCreated()
+        private static int Count_LogCategories;
+        private static object lockobj_LogCategories;
+        private static LogCategories? instance_LogCategories;
+        private static bool initialized_LogCategories;
+
+        static ToolboxWindow_AlphaReactorCount()
         {
-            try
+            Count_LogCategories = 0;
+            lockobj_LogCategories = new object();
+            instance_LogCategories = null;
+            initialized_LogCategories = false;
+            Leayal.SharedInterfaces.Compatibility.CompatStockFunc.ProcessShutdown += CompatStockFunc_ProcessShutdown;
+        }
+
+        [return: NotNull]
+        private static LogCategories InitializeLogWatcher()
+        {
+            Interlocked.Increment(ref Count_LogCategories);
+#nullable disable
+            return LazyInitializer.EnsureInitialized(ref instance_LogCategories, ref initialized_LogCategories, ref lockobj_LogCategories, CreateInstance_LogCategories);
+#nullable restore
+        }
+
+        private static void DeInitializeLogWatcher()
+        {
+            lock (lockobj_LogCategories)
             {
-                var lazy = LogCategories.Default;
-                if (lazy.IsValueCreated)
+                var count = Interlocked.Decrement(ref Count_LogCategories);
+                if (count == 0)
                 {
-                    lazy.Value.Dispose();
+                    if (instance_LogCategories != null)
+                    {
+                        instance_LogCategories.Dispose();
+                        instance_LogCategories = null;
+                    }
+                    initialized_LogCategories = false;
+                }
+                else if (count < 0)
+                {
+                    Interlocked.Exchange(ref Count_LogCategories, 0);
                 }
             }
-            catch { } // Silent everything as we will terminate the process anyway.
         }
+
+        private static void CompatStockFunc_ProcessShutdown(object? sender, EventArgs e)
+        {
+            instance_LogCategories?.Dispose();
+        }
+
+        private static LogCategories CreateInstance_LogCategories() => new LogCategories(LogCategories.DefaultLogDirectoryPath);
 
         // Init the reusable objects (or strings, in this case) to avoid allocations.
         // But allow these objects to be collected by GC when they're no longer in use, by using WeakLazy class.
@@ -93,7 +130,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         /// </remarks>
         public bool? IsBeforeReset => (bool?)this.GetValue(IsBeforeResetProperty);
 
-        private PSO2LogAsyncListener? logreader;
         private readonly bool shouldDisposeClock, clockInitiallyVisible;
         private readonly ObservableCollection<AccountData> characters;
         private readonly Dictionary<long, AccountData> mapping;
@@ -102,10 +138,13 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly ClockTickerCallback timerCallback;
         private readonly DelegateSetTime_params @delegateSetTime;
         private readonly DispatcherTimer logcategoryThrottle;
+        private readonly LogCategories logCategoriesImpl;
 
         private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice;
 
+        private PSO2LogAsyncListener? logreader;
         private CancellationTokenSource? cancelSrcLoad;
+        private int logloadingstate;
 
         /// <summary>Creates a new window.</summary>
         public ToolboxWindow_AlphaReactorCount() : this(null) { }
@@ -129,6 +168,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.clockInitiallyVisible = clockInitiallyVisible;
             this.mapping = new Dictionary<long, AccountData>();
             this.characters = new ObservableCollection<AccountData>();
+            this.logloadingstate = 0;
 
             // Init and fork the reference locally to keep the object alive.
             // Since WeakReference isn't thread-safe. Fork on UI thread and use it until we don't need it anymore should make it safe regardless of thread.
@@ -141,11 +181,12 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.str_ActionPickup = lazy_ActionPickup.Value;
             this.str_ShopAction_SetPrice = lazy_ShopAction_SetPrice.Value;
 
+            this.logCategoriesImpl = InitializeLogWatcher();
             this.SetTime(TimeZoneHelper.ConvertTimeToLocalJST(DateTime.UtcNow));
             this.Logfiles_NewFileFound = new NewFileFoundEventHandler(this.Logfiles_OnNewFileFound);
             this.timerCallback = new ClockTickerCallback(this.OnClockTicked);
             this.@delegateSetTime = new DelegateSetTime_params(this);
-            this.logcategoryThrottle = new DispatcherTimer(TimeSpan.FromMilliseconds(50), DispatcherPriority.Normal, OnThrottleEventInvocation, this.Dispatcher) { Tag = this, IsEnabled = false };
+            this.logcategoryThrottle = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, OnThrottleEventInvocation, this.Dispatcher) { Tag = this, IsEnabled = false };
 
             if (clock == null)
             {
@@ -172,7 +213,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             {
                 this.timerclock.Dispose();
             }
-            LogCategories.Default.Value.StopWatching(this.Logfiles_NewFileFound);
+            this.logCategoriesImpl.StopWatching(this.Logfiles_NewFileFound);
+            DeInitializeLogWatcher();
             try
             {
                 this.CloseLog();
@@ -188,9 +230,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private async void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
-            var logfiles = LogCategories.Default.Value;
             this.IsClockVisible = this.clockInitiallyVisible;
-            await logfiles.StartWatching(this.Logfiles_NewFileFound);
+            await this.logCategoriesImpl.StartWatching(this.Logfiles_NewFileFound);
         }
 
         private void Logfiles_OnNewFileFound(LogCategories sender, NewFileFoundEventArgs e)
@@ -209,7 +250,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         {
             if (TimeZoneHelper.IsBeforePSO2GameResetTime(in oldTime) && !TimeZoneHelper.IsBeforePSO2GameResetTime(in newTime))
             {
-                this.Dispatcher.InvokeAsync(new Action(this.ForceSelectNewestActionLog));
+                this.Dispatcher.InvokeAsync(this.ForceSelectNewestActionLog);
             }
             else
             {
@@ -225,44 +266,60 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         /// <param name="force">Determines whether a force reload the log file is required.</param>
         public async Task SelectNewestLog(string categoryName, bool force = false)
         {
-            var logCategory = LogCategories.Default.Value;
-            string? filepath = logCategory.SelectLog(categoryName, -1);
-            if (string.IsNullOrEmpty(filepath))
+            if (Interlocked.CompareExchange(ref this.logloadingstate, 1, 0) == 0)
             {
-                this.CloseLog();
-            }
-            else
-            {
-                if (!force && this.logreader is not null && string.Equals(Path.IsPathFullyQualified(filepath) ? filepath : Path.GetFullPath(filepath), this.logreader.Fullpath, StringComparison.OrdinalIgnoreCase)) return;
-                if (File.Exists(filepath))
+                try
                 {
-                    this.CloseLog();
-                    this.RefreshDate();
-                    this.LoadLog(filepath);
-                    string? secondLast = logCategory.SelectLog(categoryName, -2);
-                    if (!string.IsNullOrEmpty(secondLast) && File.Exists(secondLast))
+                    string? filepath = this.logCategoriesImpl.SelectLog(categoryName, -1);
+                    var currentLogPath = string.Empty;
+                    while (currentLogPath != filepath)
                     {
-                        using (var cancel = new CancellationTokenSource())
+                        currentLogPath = filepath;
+                        if (string.IsNullOrEmpty(filepath))
                         {
-                            try
+                            this.CloseLog();
+                        }
+                        else
+                        {
+                            if (!force && this.logreader is not null && string.Equals(Path.IsPathFullyQualified(filepath) ? filepath : Path.GetFullPath(filepath), this.logreader.Fullpath, StringComparison.OrdinalIgnoreCase)) return;
+                            if (File.Exists(filepath))
                             {
-                                this.cancelSrcLoad?.Cancel();
-                            }
-                            catch (ObjectDisposedException) { }
-                            catch (InvalidOperationException) { }
-                            this.cancelSrcLoad = cancel;
-                            try
-                            {
-                                await PSO2LogAsyncListener.FetchAllData(secondLast, this.cancelSrcLoad.Token, this.ConvertDataReceivedCallbackToEventHandler);
-                            }
-                            catch (ObjectDisposedException) { }
-                            catch (InvalidOperationException) { }
-                            finally
-                            {
-                                this.cancelSrcLoad = null;
+                                this.CloseLog();
+                                this.RefreshDate();
+                                this.LoadLog(filepath);
+                                string? secondLast = this.logCategoriesImpl.SelectLog(categoryName, -2);
+                                if (!string.IsNullOrEmpty(secondLast) && File.Exists(secondLast))
+                                {
+                                    using (var cancel = new CancellationTokenSource())
+                                    {
+                                        try
+                                        {
+                                            this.cancelSrcLoad?.Cancel();
+                                        }
+                                        catch (ObjectDisposedException) { }
+                                        catch (InvalidOperationException) { }
+                                        this.cancelSrcLoad = cancel;
+                                        try
+                                        {
+                                            await PSO2LogAsyncListener.FetchAllData(secondLast, this.cancelSrcLoad.Token, this.ConvertDataReceivedCallbackToEventHandler);
+                                        }
+                                        catch (ObjectDisposedException) { }
+                                        catch (InvalidOperationException) { }
+                                        finally
+                                        {
+                                            this.cancelSrcLoad = null;
+                                        }
+                                    }
+                                }
                             }
                         }
+
+                        filepath = this.logCategoriesImpl.SelectLog(categoryName, -1);
                     }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref this.logloadingstate, 0);
                 }
             }
         }

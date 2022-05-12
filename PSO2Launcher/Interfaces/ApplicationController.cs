@@ -203,7 +203,7 @@ namespace Leayal.PSO2Launcher.Interfaces
                     }
                     t.GetAwaiter().GetResult();
                 }
-                this.ProcessShutdown?.Invoke();
+                this.ProcessShutdown?.Invoke(this, EventArgs.Empty);
             }
             else
             {
@@ -269,6 +269,6 @@ namespace Leayal.PSO2Launcher.Interfaces
         }
 
         /// <summary>Occurs when the process is going to be shutdown. This is final and there's no way to stop it.</summary>
-        public event Action? ProcessShutdown;
+        public event EventHandler? ProcessShutdown;
     }
 }
