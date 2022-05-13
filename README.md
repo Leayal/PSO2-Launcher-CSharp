@@ -31,6 +31,8 @@ This project is just a hobby one.
       - Game start with SEGA login (Bypass user's setting).
       - Forget SEGA Login (Forget the SEGA login if user logged in with `remember the login info`).
     - Check for PSO2 updates.
+    - Scan for damaged/missing game files.
+    - Toolbox.
 - Configure PSO2 Client's options.
   - Classic options are planned.
 - Customizable RSS Feeds:
@@ -40,9 +42,11 @@ This project is just a hobby one.
 - \[BETA\] PSO2 Client Troubleshooting:
   - The feature is currently in beta, but it's not changing anything to the system or any files so it's perfectly safe to try. Any technical advices, fixes and explanations are welcomed to share, but please do so by [Creating issues](https://github.com/Leayal/PSO2-Launcher-CSharp/issues) with `label` including `enhancement`. The more you explain about how and why the problem is there, and how the fix works is valuable information.
   - Main purpose is to help player who has technical issue(s) with the game client. However, anything outside of the game client is not mentioned, such as Internet's problem, damaged OS's important files, etc...
-  - Most of results and words are "advices", it is not a 'must' to follow accordingly unless stated.
+  - Most of results and words are "advices", it is **NOT** a 'must' to follow accordingly unless stated.
 - Convenient Utilities/Toolbox:
-  - Currently, the toolbox has only `PSO2 Alpha Reactor Counter` which helps user to keep track of the amount of Alpha Reactor that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
+  - Currently, the toolbox has only 2 items:
+    - `Alpha Reactor & Stellar Seed Counter` which helps user to keep track of the amount of Alpha Reactor and Stellar Seed that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
+    - `PSO2 Data Organizer (BETA)` which helps user to manage the local files (E.g: Deleting PSO2 Classic, move PSO2 Classic's files to another place).
   - The toolbox is accessible via the main menu and via the quick menu if you minimize the launcher to tray.
 - Minimal JST clock:
   - The clock can be enabled/disabled in Launcher Behavior Manager dialog.
@@ -56,7 +60,8 @@ This project is just a hobby one.
 ### Launcher arguments:
 
 - `--tray`: Launch the launcher and minimize to tray immediately.
-- `--no-self-update`: Launcher the launcher without checking for self-updates. In the other words, ignore all launcher's updates.
+- `--no-self-update`: Launch the launcher without checking for self-updates. In the other words, ignore all launcher's updates.
+- `--no-self-update-prompt`: Launch the launcher and agree to update if there's any self-updates found without user's interaction.
 
 # UI Previews
 
