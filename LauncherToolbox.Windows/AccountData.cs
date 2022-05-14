@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 
@@ -11,10 +12,17 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly HashSet<string> names;
         private readonly StringBuilder sb;
 
-        private static readonly DependencyPropertyKey NamePropertyKey = DependencyProperty.RegisterReadOnly("Name", typeof(string), typeof(AccountData), new PropertyMetadata(string.Empty));
-        public static readonly DependencyProperty NameProperty = NamePropertyKey.DependencyProperty;
+        // private static readonly DependencyPropertyKey NamePropertyKey = DependencyProperty.RegisterReadOnly("Name", typeof(string), typeof(AccountData), new PropertyMetadata(string.Empty));
+        // public static readonly DependencyProperty NameProperty = NamePropertyKey.DependencyProperty;
 
-        public string Name => (string)this.GetValue(NameProperty);
+        // public string Name => (string)this.GetValue(NameProperty);
+
+        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(AccountData), new PropertyMetadata(false));
+        public bool IsAccountIdVisible
+        {
+            get => (bool)this.GetValue(IsAccountIdVisibleProperty);
+            set => this.SetValue(IsAccountIdVisibleProperty, value);
+        }
 
         private static readonly DependencyPropertyKey NamesOnlyPropertyKey = DependencyProperty.RegisterReadOnly("NamesOnly", typeof(string), typeof(AccountData), new PropertyMetadata(string.Empty));
         public static readonly DependencyProperty NamesOnlyProperty = NamesOnlyPropertyKey.DependencyProperty;
@@ -31,6 +39,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         }
 
         public static readonly DependencyProperty StellarSeedCountProperty = DependencyProperty.Register("StellarSeedCount", typeof(int), typeof(AccountData), new PropertyMetadata(0));
+
         public int StellarSeedCount
         {
             get => (int)this.GetValue(StellarSeedCountProperty);
@@ -63,8 +72,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     }
                 }
                 this.SetValue(NamesOnlyPropertyKey, this.sb.ToString());
-                this.sb.Append(" (Account ID: ").Append(this.AccountID).Append(')');
-                this.SetValue(NamePropertyKey, this.sb.ToString());
+                // this.sb.Append(" (Account ID: ").Append(this.AccountID).Append(')');
+                // this.SetValue(NamePropertyKey, this.sb.ToString());
             }
         }
 

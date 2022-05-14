@@ -18,7 +18,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
     /// <remarks>
     /// <para>This class is standalone and does not require the Launcher's Core. If you want to use this class as standalone tool, feel free to do so.</para>
     /// <para>Please note that you still need to properly setup an <seealso cref="Application"/> for <seealso cref="MetroWindowEx"/> in case of standalone.</para>
-    /// <para>If you have an instance of <seealso cref="ToolboxWindow_AlphaReactorCount"/>, please call <seealso cref="DisposeLogWatcherIfCreated"/> when you exit the application.</para>
     /// </remarks>
     public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
     {
@@ -88,6 +87,22 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(DateTime.MinValue));
         private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(null));
 
+        /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="IsAccountIdVisible"/> property.</summary>
+        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(false, (obj, e) =>
+        {
+            if (obj is ToolboxWindow_AlphaReactorCount window)
+            {
+                if (window.characters is IReadOnlyCollection<AccountData> accounts)
+                {
+                    var value = (bool)e.NewValue;
+                    foreach (var account in accounts)
+                    {
+                        account.IsAccountIdVisible = value;
+                    }
+                }
+            }
+        }));
+
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="CurrentTime"/> property.</summary>
         public static readonly DependencyProperty CurrentTimeProperty = CurrentTimePropertyKey.DependencyProperty;
 
@@ -109,6 +124,13 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 }
             }
         }));
+
+        /// <summary>Gets or sets the boolean to determine whether the account ID to be visible.</summary>
+        public bool IsAccountIdVisible
+        {
+            get => (bool)this.GetValue(IsAccountIdVisibleProperty);
+            set => this.SetValue(IsAccountIdVisibleProperty, value);
+        }
 
         /// <summary>Gets a <seealso cref="DateTime"/> of the current time.</summary>
         /// <remarks>This is not high-resolution and therefore may not be accurate.</remarks>
@@ -464,7 +486,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private void AccountSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems is not null && e.AddedItems.Count != 0)
+            if (e.AddedItems != null && e.AddedItems.Count != 0)
             {
                 this.AlphaCounter.DataContext = e.AddedItems[0];
             }

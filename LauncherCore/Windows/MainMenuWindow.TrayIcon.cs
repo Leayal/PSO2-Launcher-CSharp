@@ -114,7 +114,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             var toolboxMenu = new ToolStripMenuItem("Toolbox");
 
-            var toolbox_openPSO2AlphaReactorCounter = new ToolStripMenuItem("Open PSO2 Alpha Reactor Counter")
+            var toolbox_openPSO2AlphaReactorCounter = new ToolStripMenuItem("Open Alpha Reactor && Stellar Seed Counter")
             {
                 Tag = StaticResources.Url_Toolbox_AlphaReactorCounter
             };
