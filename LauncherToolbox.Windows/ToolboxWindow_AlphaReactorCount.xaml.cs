@@ -88,20 +88,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(null));
 
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="IsAccountIdVisible"/> property.</summary>
-        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(false, (obj, e) =>
-        {
-            if (obj is ToolboxWindow_AlphaReactorCount window)
-            {
-                if (window.characters is IReadOnlyCollection<AccountData> accounts)
-                {
-                    var value = (bool)e.NewValue;
-                    foreach (var account in accounts)
-                    {
-                        account.IsAccountIdVisible = value;
-                    }
-                }
-            }
-        }));
+        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(false));
 
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="CurrentTime"/> property.</summary>
         public static readonly DependencyProperty CurrentTimeProperty = CurrentTimePropertyKey.DependencyProperty;

@@ -8,16 +8,10 @@
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="ThisSelf" 
                          TitleCharacterCasing="Normal"
-                         Title="Toolbox: Alpha Reactor &amp; Stellar Seed Counter" MinWidth="350" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                         Title="Toolbox: Alpha Reactor &amp; Stellar Seed Counter" MinWidth="300" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                          Loaded="ThisSelf_Loaded">
     <leawindow:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
-            <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=IsAccountIdVisible,Mode=TwoWay}">
-                <ToggleButton.ToolTip>
-                    <TextBlock Text="Toggle 'View Account ID'" />
-                </ToggleButton.ToolTip>
-                <iconPacks:PackIconFontAwesome Kind="EyeSolid" />
-            </ToggleButton>
             <ToggleButton IsChecked="{Binding ElementName=ThisSelf,Path=Topmost,Mode=TwoWay}">
                 <ToggleButton.ToolTip>
                     <TextBlock Text="Toggle 'Always On Top'" />
@@ -30,6 +24,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -41,8 +36,8 @@
             <ComboBox.ItemTemplate>
                 <DataTemplate>
                     <Grid>
-                        <TextBlock Text="{Binding NamesOnly, Mode=OneWay}" mah:VisibilityHelper.IsCollapsed="{Binding IsAccountIdVisible,Mode=OneWay}" />
-                        <TextBlock mah:VisibilityHelper.IsVisible="{Binding IsAccountIdVisible,Mode=OneWay}">
+                        <TextBlock Text="{Binding NamesOnly, Mode=OneWay}" mah:VisibilityHelper.IsCollapsed="{Binding RelativeSource={RelativeSource AncestorType={x:Type leawindow:MetroWindowEx}},Path=IsAccountIdVisible,Mode=OneWay}" />
+                        <TextBlock mah:VisibilityHelper.IsVisible="{Binding RelativeSource={RelativeSource AncestorType={x:Type leawindow:MetroWindowEx}},Path=IsAccountIdVisible,Mode=OneWay}">
                             <Run Text="{Binding NamesOnly, Mode=OneWay}" />
                             <Run Text="( Account ID:" />
                             <Run Text="{Binding ID, Mode=OneWay}" />
@@ -52,8 +47,14 @@
                 </DataTemplate>
             </ComboBox.ItemTemplate>
         </ComboBox>
+        <ToggleButton BorderThickness="1" Grid.Column="2" IsChecked="{Binding ElementName=ThisSelf,Path=IsAccountIdVisible,Mode=TwoWay}">
+            <ToggleButton.ToolTip>
+                <TextBlock Text="Toggle 'View Account ID'" />
+            </ToggleButton.ToolTip>
+            <iconPacks:PackIconFontAwesome Kind="EyeSolid" />
+        </ToggleButton>
 
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="350">
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="350">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Collapsed" />
@@ -69,7 +70,7 @@
             <Run Text="Please login the game and pick anything up with your character so that the counter can start tracking." />
         </TextBlock>
 
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center">
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Visible" />
@@ -116,7 +117,7 @@
             </Run>
         </TextBlock>
 
-        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" TextAlignment="Center" TextWrapping="Wrap"
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="3" TextAlignment="Center" TextWrapping="Wrap"
                    mah:VisibilityHelper.IsVisible="{Binding ElementName=ThisSelf,Mode=OneWay,Path=IsClockVisible}"
                    ToolTip="The current JST time is calculated from your local time and clock. Please ensure that your local clock is correct.">
             <Run Text="Current JST Time:" />

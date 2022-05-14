@@ -17,13 +17,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         // public string Name => (string)this.GetValue(NameProperty);
 
-        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(AccountData), new PropertyMetadata(false));
-        public bool IsAccountIdVisible
-        {
-            get => (bool)this.GetValue(IsAccountIdVisibleProperty);
-            set => this.SetValue(IsAccountIdVisibleProperty, value);
-        }
-
         private static readonly DependencyPropertyKey NamesOnlyPropertyKey = DependencyProperty.RegisterReadOnly("NamesOnly", typeof(string), typeof(AccountData), new PropertyMetadata(string.Empty));
         public static readonly DependencyProperty NamesOnlyProperty = NamesOnlyPropertyKey.DependencyProperty;
 
