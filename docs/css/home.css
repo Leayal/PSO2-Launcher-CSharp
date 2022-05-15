@@ -78,6 +78,40 @@ div.root div.body {
     width: fit-content;
 }
 
+.git-commit-list {
+    display: flex;
+    flex-direction: column;
+}
+
+    .git-commit-list .git-commit-item {
+        display: flex;
+        flex-direction: column;
+        border: 3px solid black;
+    }
+
+    .git-commit-list .git-commit-item .git-commit-header {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .git-commit-list .git-commit-item .git-commit-header h2 {
+        margin: 0px;
+        margin-right: 5px;
+    }
+    
+    .git-commit-list .git-commit-item .git-commit-summary {
+        white-space: pre-wrap;
+    }
+
+        .git-commit-list .git-commit-item a.git-commit-viewdetail {
+            display: none;
+            margin-left: auto;
+        }
+
+        .git-commit-list .git-commit-item:hover a.git-commit-viewdetail {
+            display: block;
+        }
+
 a.neon-button {
     position: relative;
     display: inline-block;
