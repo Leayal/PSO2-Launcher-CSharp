@@ -1,0 +1,29 @@
+﻿.git-commit-list {
+    display: flex;
+    flex-direction: column;
+}
+
+    .git-commit-list .git-commit-item {
+        display: flex;
+        flex-direction: column;
+        border: 3px solid black;
+        padding: 8px;
+    }
+
+    .git-commit-list .git-commit-item .git-commit-header {
+        display: flex;
+        flex-direction: row;
+    }
+    
+    .git-commit-list .git-commit-item .git-commit-summary {
+        white-space: pre-wrap;
+    }
+
+        .git-commit-list .git-commit-item a.git-commit-viewdetail {
+            display: none;
+            margin-left: auto;
+        }
+
+        .git-commit-list .git-commit-item:hover a.git-commit-viewdetail {
+            display: block;
+        }

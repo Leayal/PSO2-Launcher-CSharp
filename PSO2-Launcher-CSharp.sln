@@ -39,6 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox", "Launcher
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherBlazorSite", "LauncherBlazorSite\LauncherBlazorSite.csproj", "{43B16218-0B6B-46B2-BDEB-06679D89A498}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug HTTP Requests|Any CPU = Debug HTTP Requests|Any CPU
@@ -154,6 +156,12 @@ Global
 		{664516AC-3941-4801-B070-5E7864B0D70A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{664516AC-3941-4801-B070-5E7864B0D70A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{664516AC-3941-4801-B070-5E7864B0D70A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Debug HTTP Requests|Any CPU.ActiveCfg = Debug|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Debug HTTP Requests|Any CPU.Build.0 = Debug|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43B16218-0B6B-46B2-BDEB-06679D89A498}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

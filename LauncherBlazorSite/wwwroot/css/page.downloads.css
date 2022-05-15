@@ -1,0 +1,10 @@
+﻿.git-release, .git-assets {
+    display: flex;
+    flex-direction: column;
+}
+
+.git-assets a {
+
+    border: 1px solid;
+    border-radius: 5px;
+}

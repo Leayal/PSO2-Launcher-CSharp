@@ -1,0 +1,60 @@
+﻿@page "/changelogs"
+@using Octokit;
+@using Client;
+<link href="css/page.changelogs.css" rel="stylesheet" />
+
+<PageTitle>Change Logs</PageTitle>
+
+<h1>All commits from Github.</h1>
+
+@if (commitdatas == null)
+{
+    <Preloader_TextRing />
+}
+else
+{
+    <div class="git-commit-list">
+        @foreach (var commitInfo in commitdatas)
+        {
+            <div class="git-commit-item">
+                <div class="git-commit-header">
+                    <h3>@commitInfo.Commit.Committer.Date.LocalDateTime.ToLongDateString() at @commitInfo.Commit.Committer.Date.LocalDateTime.ToLongTimeString()</h3>
+                    <span>by @commitInfo.Commit.Committer.Name</span>
+                    <a class="git-commit-viewdetail" target="_blank" href="@commitInfo.HtmlUrl">View more details on Github</a>
+                </div>
+                <span class="git-commit-summary">@commitInfo.Commit.Message</span>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private static IReadOnlyList<GitHubCommit>? commitdatas;
+    private static Task<IReadOnlyList<GitHubCommit>>? t_commitdatas;
+    private static DateTimeOffset? lastfetch;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var thenow = DateTimeOffset.Now;
+        if (t_commitdatas == null || lastfetch == null || (thenow  - lastfetch.Value) > TimeSpan.FromHours(1))
+        {
+            lastfetch = thenow;
+            t_commitdatas = StaticResources.GithubClient.Repository.Commit.GetAll("Leayal", "PSO2-Launcher-CSharp");    
+        }
+        commitdatas = await t_commitdatas;
+    }
+
+    public class CommitJsonInfo
+    {
+        public readonly string AuthorName, CommitUrl, CommitMessage;
+        public readonly DateTime CommitTimestamp;
+
+        public CommitJsonInfo(string authorname, string commiturl, string msg, DateTime timestamp)
+        {
+            this.AuthorName = authorname;
+            this.CommitUrl = commiturl;
+            this.CommitMessage = msg;
+            this.CommitTimestamp = timestamp;
+        }
+    }
+}
