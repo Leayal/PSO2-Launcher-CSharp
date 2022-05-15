@@ -269,7 +269,7 @@
       "url": "PSO2-Launcher-CSharp\/icon-512.png"
     },
     {
-      "hash": "sha256-tARRDjhCBraxd6Sp0Hte+U076fdvwz650JS3WeQjH5s=",
+      "hash": "sha256-0LQm+7Tp+4OhqmKBCHu38FNndmVMh+lt4yknRgxWwdc=",
       "url": "PSO2-Launcher-CSharp\/index.html"
     },
     {
@@ -277,5 +277,5 @@
       "url": "PSO2-Launcher-CSharp\/manifest.json"
     }
   ],
-  "version": "vTImcw0V"
+  "version": "fFCq+iip"
 };
