@@ -36,6 +36,28 @@ import { Octokit } from "https://cdn.skypack.dev/@octokit/rest";
             RenderHome(content);
         }
     }
+
+    function AddLoadingElement(parentDom) {
+        const loader = d.createElement("div");
+        const animation = d.createElement("div");
+        animation.classList.add("cssload-tetrominos");
+        for (let i = 1; i <= 4; i++) {
+            const loader_box = d.createElement("div");
+            loader_box.classList.add("cssload-tetromino");
+            loader_box.classList.add("cssload-box" + i.toString());
+            animation.appendChild(loader_box);
+        }
+        loader.classList.add("loader3d");
+        loader.appendChild(animation);
+        parentDom.appendChild(loader);
+    }
+
+    function RemoveLoadingElement(parentDom) {
+        const loader = parentDom.querySelector(".loader3d");
+        if (loader) {
+            parentDom.removeChild(loader);
+        }
+    }
     
     function RenderHome(parentDom) {
         const home_body = d.createElement("p"), home_title = d.createElement("h2");
@@ -46,7 +68,9 @@ import { Octokit } from "https://cdn.skypack.dev/@octokit/rest";
     }     
 
     async function RenderDownloads(parentDom) {
+        AddLoadingElement(parentDom);
         const latestReleaseInfo = (await octokit.rest.repos.getLatestRelease(targetRepo)).data;
+        RemoveLoadingElement(parentDom);
         const release_body = d.createElement("p"), release_title = d.createElement("h1"), release_assets = d.createElement("div"), title_download = d.createElement("h1");
         
         release_title.textContent = latestReleaseInfo.name;
@@ -70,7 +94,9 @@ import { Octokit } from "https://cdn.skypack.dev/@octokit/rest";
     }
 
     async function RenderChangelog(parentDom) {
+        AddLoadingElement(parentDom);
         const commitlogs = (await octokit.rest.repos.listCommits(targetRepo)).data;
+        RemoveLoadingElement(parentDom);
         const commit_list = d.createElement("div"), page_description = d.createElement("h1");
         
         for (const commitData of commitlogs) {
