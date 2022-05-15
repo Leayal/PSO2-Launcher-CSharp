@@ -74,7 +74,6 @@ import { Octokit } from "https://cdn.skypack.dev/@octokit/rest";
         const commit_list = d.createElement("div"), page_description = d.createElement("h1");
         
         for (const commitData of commitlogs) {
-            console.log(commitData);
             const commit_item = d.createElement("div"), commit_header = d.createElement("div");
             const commit_title = d.createElement("h2"), commit_author = d.createElement("span"), commit_summary = d.createElement("p");
             const commit_viewMoreDetail = d.createElement("a");
