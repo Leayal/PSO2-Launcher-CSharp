@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
     // Another madness's gonna be here.
-    public class PatchListItem
+    public class PatchListItem : IEquatable<PatchListItem>
     {
         internal const string AffixFilename = ".pat";
 
@@ -257,6 +258,38 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             // result.Add(mem);
             // return result;
             yield return mem;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is PatchListItem item)
+            {
+                return this.Equals(item);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            var hashcode = new HashCode();
+            hashcode.Add(this.Origin);
+            hashcode.Add(this.RemoteFilename, PathStringComparer.Default);
+            return hashcode.ToHashCode();
+        }
+
+        public bool Equals(PatchListItem other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+            else
+            {
+                return (this.Origin == other.Origin && PathStringComparer.Default.Equals(this.RemoteFilename, other.RemoteFilename));
+            }
         }
     }
 }

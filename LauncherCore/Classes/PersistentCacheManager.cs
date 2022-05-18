@@ -155,7 +155,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 {
                     lockObj.Done();
                 }
-            }, new ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>(this, safe_lockObj.Value, entryName, factory, verifyCache, args, cancellationToken), cancellationToken).Unwrap();
+            }, new ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>(this, safe_lockObj.Value, entryName, factory, verifyCache, args, cancellationToken), cancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).Unwrap();
         }
 
         private LazySemaphoreSlimEx CreateNewSemaphore(string entryName) => new LazySemaphoreSlimEx(this.lockObjs, entryName);

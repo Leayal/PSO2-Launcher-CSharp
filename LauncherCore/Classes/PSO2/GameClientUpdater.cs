@@ -202,29 +202,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             this.OnFileCheckBegin(-1);
                         }
 
-                        var t_check = Task.Factory.StartNew(async () =>
-                        {
-                            try
-                            { 
-                                await this.InnerScanForFilesNeedToDownload(pendingFiles, dir_pso2bin, dir_classic_data, tweakerhashcacheDump, selection, fScanReboot, fScanClassic, duhB, patchlist, (in DownloadItem item) =>
-                                {
-                                    // bag_needtodownload.Add(item.PatchInfo);
-                                    resultsOfDownloads.TryAdd(item.PatchInfo, null);
-                                    this.OnDownloadQueueAdded();
-                                }, cancellationToken);
-                            }
-                            finally
-                            {
-                                pendingFiles.CompleteAdding();
-                                this.OnFileCheckEnd();
-                            }
-                        }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                        var scannerObj = new UglyWrapper_Obj_Scanner(this, pendingFiles, duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump, dir_pso2bin, dir_classic_data, selection, fScanReboot, fScanClassic, patchlist);
+                        var t_check = Task.Factory.StartNew(scannerObj.Work, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
 
                         var tasks = new Task[taskCount];
                         for (int i = 0; i < taskCount; i++)
                         {
-                            var wrapped = new UglyWrapper_MetaObj(i, this, pendingFiles, duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump);
-                            tasks[i] = Task.Factory.StartNew(wrapped.Start, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
+                            var wrapped = new UglyWrapper_Obj_Downloader(i, this, pendingFiles, duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump);
+                            tasks[i] = Task.Factory.StartNew(wrapped.Start, cancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                         }
 
                         await Task.WhenAll(t_check, Task.WhenAll(tasks));
@@ -285,17 +270,70 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             await this.t_operation;
         }
 
-        class UglyWrapper_MetaObj
+        sealed class UglyWrapper_Obj_Scanner
         {
-            public readonly int Id;
             private readonly GameClientUpdater thisRef;
-            public readonly BlockingCollection<DownloadItem>? pendingFiles;
-            public readonly IFileCheckHashCache? duhB;
-            public readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
-            public readonly CancellationToken cancellationToken;
+            private readonly BlockingCollection<DownloadItem> pendingFiles;
+            private readonly IFileCheckHashCache duhB;
+            private readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
+            private readonly CancellationToken cancellationToken;
             private readonly PSO2TweakerHashCache? tweakerhashcacheDump;
 
-            public UglyWrapper_MetaObj(int id, GameClientUpdater updater, BlockingCollection<DownloadItem>? collection, IFileCheckHashCache? db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token, PSO2TweakerHashCache? tweakerhashcacheDump)
+            private readonly string dir_pso2bin;
+            private readonly string? dir_classic_data;
+            private readonly GameClientSelection selection;
+            private readonly FileScanFlags fScanReboot, fScanClassic;
+            private readonly PatchListMemory patchlist;
+
+            public UglyWrapper_Obj_Scanner(GameClientUpdater updater, BlockingCollection<DownloadItem> collection, IFileCheckHashCache db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token, PSO2TweakerHashCache? tweakerhashcacheDump,
+                string dir_pso2bin, string? dir_classic_data, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, PatchListMemory patchlist)
+            {
+                this.thisRef = updater;
+                this.pendingFiles = collection;
+                this.duhB = db;
+                this.resultsOfDownloads = results;
+                this.cancellationToken = token;
+                this.tweakerhashcacheDump = tweakerhashcacheDump;
+                this.dir_pso2bin = dir_pso2bin;
+                this.dir_classic_data = dir_classic_data;
+                this.selection = selection;
+                this.fScanReboot = fScanReboot;
+                this.fScanClassic = fScanClassic;
+                this.patchlist = patchlist;
+            }
+
+            public async Task Work()
+            {
+                try
+                {
+                    await this.thisRef.InnerScanForFilesNeedToDownload(this.pendingFiles, this.dir_pso2bin, this.dir_classic_data, this.tweakerhashcacheDump, this.selection, this.fScanReboot, this.fScanClassic, this.duhB, this.patchlist, this._DownloadQueueAdd, this.cancellationToken);
+                }
+                finally
+                {
+                    this.pendingFiles.CompleteAdding();
+                    this.thisRef.OnFileCheckEnd();
+                }
+            }
+
+            private void _DownloadQueueAdd(in DownloadItem item)
+            {
+                // bag_needtodownload.Add(item.PatchInfo);
+                this.resultsOfDownloads.TryAdd(item.PatchInfo, null);
+                this.thisRef.OnDownloadQueueAdded();
+            }
+    }
+
+        sealed class UglyWrapper_Obj_Downloader
+        {
+            private readonly int Id;
+            private readonly GameClientUpdater thisRef;
+            private readonly BlockingCollection<DownloadItem> pendingFiles;
+            private readonly IFileCheckHashCache duhB;
+            private readonly ConcurrentDictionary<PatchListItem, bool?> resultsOfDownloads;
+            private readonly CancellationToken cancellationToken;
+            private readonly PSO2TweakerHashCache? tweakerhashcacheDump;
+
+            public UglyWrapper_Obj_Downloader(int id, GameClientUpdater updater, BlockingCollection<DownloadItem> collection, IFileCheckHashCache db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token, PSO2TweakerHashCache? tweakerhashcacheDump)
             {
                 this.Id = id;
                 this.thisRef = updater;

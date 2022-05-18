@@ -1,6 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -227,14 +228,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             private IEnumerable<BackupRestoreItem> Walk()
             {
                 string currentDir, bakDir;
+                int offset;
                 if (this.doesReboot)
                 {
                     currentDir = Path.GetFullPath(Path.Combine("data", "win32reboot"), this.Root);
                     bakDir = Path.Combine(currentDir, "backup");
+                    offset = bakDir.Length + 1;
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.AllDirectories))
                     {
                         var relativePath = Path.GetRelativePath(bakDir, file);
-                        yield return new BackupRestoreItem(file, relativePath, Path.GetFullPath(relativePath, currentDir));
+                        yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.GetFullPath(relativePath, currentDir));
                     }
                 }
 
@@ -242,10 +245,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     currentDir = Path.GetFullPath(Path.Combine("data", "win32"), this.Root);
                     bakDir = Path.Combine(currentDir, "backup");
+                    offset = bakDir.Length + 1;
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.TopDirectoryOnly))
                     {
                         var relativePath = Path.GetRelativePath(bakDir, file);
-                        yield return new BackupRestoreItem(file, relativePath, Path.GetFullPath(relativePath, currentDir));
+                        yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.GetFullPath(relativePath, currentDir));
                     }
                 }
             }
@@ -259,21 +263,29 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        public readonly struct BackupRestoreItem
+        public readonly struct BackupRestoreItem : IEquatable<BackupRestoreItem>
         {
-            public readonly string RelativePath;
-            public readonly string BackupFileDestination;
-            public readonly string BackupFileSourcePath;
+            public readonly ReadOnlyMemory<char> RelativePath;
+            public readonly string BackupFileSourcePath, BackupFileDestination;
 
-            public BackupRestoreItem(string sourcePath, string relativePath, string to)
+            public BackupRestoreItem(string sourcePath, ReadOnlyMemory<char> relativePath, string to)
             {
                 this.BackupFileSourcePath = sourcePath;
                 this.RelativePath = relativePath;
                 this.BackupFileDestination = to;
             }
+
+            public override bool Equals([NotNullWhen(true)] object obj) => (obj is BackupRestoreItem item && this.Equals(item));
+
+            public bool Equals(BackupRestoreItem other)
+                => string.Equals(this.BackupFileSourcePath, other.BackupFileSourcePath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+            public override int GetHashCode() => HashCode.Combine(this.RelativePath, this.BackupFileSourcePath);
+
+            public override string ToString() => $"BackupRestoreItem: {this.RelativePath}";
         }
 
-        class DownloadItem
+        sealed class DownloadItem : IEquatable<DownloadItem>
         {
             public readonly PatchListItem PatchInfo;
             public readonly string Destination;
@@ -286,6 +298,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.Destination = dest;
                 this.SymlinkTo = linkTo;
             }
+
+            public bool Equals(DownloadItem? other) => (other != null && other.PatchInfo.Equals(this.PatchInfo));
+
+            public override bool Equals(object? obj) => (obj is DownloadItem item && this.Equals(item));
+
+            public override int GetHashCode() => this.PatchInfo.GetHashCode();
 #nullable restore
         }
     }

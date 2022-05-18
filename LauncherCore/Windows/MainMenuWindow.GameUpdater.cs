@@ -563,7 +563,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         class GameClientUpdateResultLogDialogFactory : ILogDialogFactory
         {
             private readonly IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> items;
-            public readonly Guid Id;
+            private readonly Guid Id;
             private readonly bool _cancel;
             private readonly int list_count;
             private readonly string pso2dir;

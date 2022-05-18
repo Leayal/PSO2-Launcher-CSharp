@@ -376,16 +376,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        public class PatchListItemLogData
+        public class PatchListItemLogData : IEquatable<PatchListItemLogData>
         {
             public string Size { get; }
             public string Name { get; }
 
             public PatchListItemLogData(string name, long size)
             {
-                this.Size = Leayal.Shared.NumericHelper.ToHumanReadableFileSize(in size);
+                this.Size = Shared.NumericHelper.ToHumanReadableFileSize(in size);
                 this.Name = name;
             }
+
+            public bool Equals(PatchListItemLogData other) => (other != null && string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase));
+
+            public override bool Equals(object obj) => (obj is PatchListItemLogData item && this.Equals(item));
+
+            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name);
         }
     }
 }

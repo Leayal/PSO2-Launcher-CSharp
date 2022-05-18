@@ -439,11 +439,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         else
                         {
-                            bool flag_cacheOnly = flags.HasFlag(FileScanFlags.CacheOnly),
-                                flag_forceRefresh = flags.HasFlag(FileScanFlags.ForceRefreshCache),
-                                flag_useFileSize = flags.HasFlag(FileScanFlags.FileSizeMismatch),
-                                flag_missingOnly = flags.HasFlag(FileScanFlags.MissingFilesOnly),
-                                flag_useMd5 = flags.HasFlag(FileScanFlags.MD5HashMismatch);
+                            bool flag_cacheOnly = (flags & FileScanFlags.CacheOnly) != 0,
+                                flag_forceRefresh = (flags & FileScanFlags.ForceRefreshCache) != 0,
+                                flag_useFileSize = (flags & FileScanFlags.FileSizeMismatch) != 0,
+                                flag_missingOnly = (flags & FileScanFlags.MissingFilesOnly) != 0,
+                                flag_useMd5 = (flags & FileScanFlags.MD5HashMismatch) != 0;
 
                             if (flag_forceRefresh)
                             {

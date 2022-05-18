@@ -1,6 +1,7 @@
 ﻿using ICSharpCode.AvalonEdit.Rendering;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Windows.Input;
 
@@ -8,7 +9,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 {
     class CustomHyperlinkElementGenerator : VisualLineElementGenerator
     {
-        public readonly struct Placements
+        public readonly struct Placements : IEquatable<Placements>
         {
             public readonly int Offset, Length; // Line
 
@@ -18,6 +19,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 this.Offset = offset;
                 this.Length = length;
             }
+
+            public override bool Equals([NotNullWhen(true)] object obj) => (obj is Placements item && this.Equals(item));
+
+            public bool Equals(Placements item) => (this.Offset == item.Offset && this.Length == item.Length);
+
+            public override int GetHashCode() => HashCode.Combine(this.Offset, this.Length);
         }
 
         public readonly Dictionary<Placements, Uri> Items;

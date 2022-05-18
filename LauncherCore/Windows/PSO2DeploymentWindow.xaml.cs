@@ -137,6 +137,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(DownloaderProfileClassicSelectionProperty, value);
         }
 
+        public static readonly DependencyProperty IsInstallingWebview2RuntimeProperty = DependencyProperty.Register("IsInstallingWebview2Runtime", typeof(bool), typeof(PSO2DeploymentWindow), new PropertyMetadata(true));
+        public bool IsInstallingWebview2Runtime
+        {
+            get => (bool)this.GetValue(IsInstallingWebview2RuntimeProperty);
+            set => this.SetValue(IsInstallingWebview2RuntimeProperty, value);
+        }
+
         private readonly PSO2HttpClient httpclient;
         private readonly Dictionary<GameClientSelection, EnumComboBox.ValueDOM<GameClientSelection>> gameSelection_list;
         private readonly Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>> profileFlags_list, profileClassicFlags_list;
@@ -240,6 +247,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         string dir_deployment = this.PSO2DeploymentDirectory,
                             dir_pso2_bin = this.PSO2BinDirectory;
                         var gameClientSelection = this.GameClientDownloadSelection;
+                        var isinstallwebview2 = this.IsInstallingWebview2Runtime;
 
                         try
                         {
@@ -250,7 +258,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             this.ProgressBar_DeployProgressSecondary.ProgressBar.IsIndeterminate = true;
                             await ResetProgress(this.ProgressBar_DeployProgressSecondary, 100d);
 
-                            var deploymentsuccess = await Task.Run(async () => await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, canceltoken), canceltoken);
+                            var deploymentsuccess = await Task.Run(async () => await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, isinstallwebview2, canceltoken), canceltoken);
 
                             // Useless if but it's safe
                             if (Directory.Exists(dir_pso2_bin))
@@ -368,7 +376,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private async Task<bool> BeginDeployProgress(string deployment_destination, string pso2_bin_destination, GameClientSelection gameClientSelection, CancellationToken cancellationToken)
+        private async Task<bool> BeginDeployProgress(string deployment_destination, string pso2_bin_destination, GameClientSelection gameClientSelection, bool installwebview2, CancellationToken cancellationToken)
         {
             // Ensure that all operation happen here are revertable.
             // => Cancel or on Error = revert everything back to previous state, not just delete files and it's done.
@@ -533,13 +541,58 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }, cancellationToken).Unwrap();
 
-                await dispatcher.InvokeAsync(delegate
+                bool installwebview2Result = false;
+                if (installwebview2)
                 {
-                    progressbar_first.Text = "Finalizing deployment (Step: 4/4)";
-                    progressbar_first.ProgressBar.Value = 4;
-                    progressbar_second.Text = "Please wait";
-                    progressbar_second.ProgressBar.IsIndeterminate = true;
-                });
+                    var installerPath = Path.Combine(pso2_bin, "microsoftedgewebview2setup.exe");
+                    if (File.Exists(installerPath))
+                    {
+                        await dispatcher.InvokeAsync(delegate
+                        {
+                            progressbar_first.Text = "Installing WebView2 Evergreen Runtime (Step: 4/4)";
+                            progressbar_first.ProgressBar.Value = 4;
+                            progressbar_second.Text = "Invoking 'Microsoft Edge Update' installer in silent mode. Please wait...";
+                            progressbar_second.ProgressBar.IsIndeterminate = true;
+                        });
+                        using (var proc = new System.Diagnostics.Process())
+                        {
+                            proc.StartInfo.FileName = installerPath;
+                            proc.StartInfo.Arguments = "/silent /install";
+                            proc.StartInfo.Verb = "runas";
+                            try
+                            {
+                                proc.Start();
+                                await proc.WaitForExitAsync(cancellationToken);
+                            }
+                            catch (OperationCanceledException) { }
+                            catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+                            {
+                                // User selected `No` for the UAC prompt.
+                            }
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                if (!proc.HasExited)
+                                {
+                                    proc.Kill(true);
+                                }
+                            }
+                            else
+                            {
+                                installwebview2Result = true;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    await dispatcher.InvokeAsync(delegate
+                    {
+                        progressbar_first.Text = "Finalizing deployment (Step: 4/4)";
+                        progressbar_first.ProgressBar.Value = 4;
+                        progressbar_second.Text = "Please wait";
+                        progressbar_second.ProgressBar.IsIndeterminate = true;
+                    });
+                }
 
                 var hasDx11 = Requirements.HasDirectX11();
                 var hasVC14_x86 = Requirements.GetVC14RedistVersion(false);
@@ -554,6 +607,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     if (isSuccess)
                     {
                         paragraphs = PSO2TroubleshootingWindow.GetRtfOfRequirements(hasDx11, hasVC14_x64, hasVC14_x86, true, true);
+
                         var p1 = new Paragraph();
                         p1.Inlines.Add(new Run("If you want to re-organize your data files before downloading them."));
                         p1.Inlines.Add(new LineBreak());
@@ -566,6 +620,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                         // Yup, insert at the beginning twice => reverse order
                         paragraphs.Insert(0, new Paragraph(new Run("Game requirements:")));
+
+                        if (installwebview2)
+                        {
+                            if (installwebview2Result)
+                            {
+                                paragraphs.Insert(0, new Paragraph(new Run("WebView2 Evergreen Runtime installed successfully.")));
+                            }
+                            else
+                            {
+                                paragraphs.Insert(0, new Paragraph(new Run("WebView2 Evergreen Runtime installation has been cancelled or encountered an error.")));
+                            }
+                        }
+
                         paragraphs.Insert(0, new Paragraph(new Run("The deployment has been completed successfully.")));
                     }
                     else

@@ -85,6 +85,9 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Text="PSO2 Download Type: " TextAlignment="Right" VerticalAlignment="Center" />
                     <localui:EnumComboBox Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloadselection" SelectionChanged="ComboBox_downloadselection_SelectionChanged" />
@@ -94,6 +97,44 @@
 
                     <TextBlock Grid.Row="2" Text="PSO2 Classic Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=ComboBox_downloaderprofileclassic,Path=Visibility,Mode=OneWay}" />
                     <localui:EnumComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofileclassic" SelectionChanged="ComboBox_downloaderprofileclassic_SelectionChanged" />
+
+                    <TextBlock Grid.Row="4" TextAlignment="Right">
+                        <Run Text="Install" />
+                        <localui:HyperlinkOpenDefaultBrowser NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/">
+                            WebView2 Evergreen Runtime
+                        </localui:HyperlinkOpenDefaultBrowser>
+                    </TextBlock>
+                    <CheckBox Grid.Row="4" Grid.Column="1" IsChecked="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=TwoWay}">
+                        <TextBlock>
+                            <Run Text="[ Optional, but recommended." />
+                            <Hyperlink>
+                                <Hyperlink.ToolTip>
+                                    <TextBlock>
+                                        <Run Text="This info is taken on 17th May 2022. It may turn out to be incorrect in the future." />
+                                        <LineBreak />
+                                        <Run Text="WebView2 Runtime is optional because:" />
+                                        <LineBreak />
+                                        <Run Text="- It's only used by the official game launcher." />
+                                        <LineBreak />
+                                        <Run Text="- If the official launcher can't find WebView2 runtime, it will fall-back to use Internet Explorer component." />
+                                        <LineBreak />
+                                        <Run Text="Hence, if you decide to not install it, all the functions of the game client and official launcher should still work as expected." />
+                                        <LineBreak />
+                                        <Run Text="However, this PSO2Launcher can also make use of WebView2 to render the PSO2 News just like what the official launcher does." />
+                                        <LineBreak />
+                                        <Run Text="Therefore, it is recommended to install if you are frequently checking news through the official launcher or this PSO2Launcher." />
+                                    </TextBlock>
+                                </Hyperlink.ToolTip>
+                                Hover to see why?
+                            </Hyperlink>
+                            <Run Text="]" />
+                        </TextBlock>
+                    </CheckBox>
+                    <TextBlock Grid.Row="5" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=OneWay}">
+                        <Run Text="At the end of deploying PSO2, there may be an UAC prompt popup ask for permission to run 'Microsoft Edge Update'." />
+                        <LineBreak />
+                        <Run Text="That 'Microsoft Edge Update' is the WebView2 runtime installation." />
+                    </TextBlock>
                 </Grid>
             </mah:MetroTabItem>
             <mah:MetroTabItem x:Name="TabOverviewsBeforeDeploy" Selector.Selected="TabOverviewsBeforeDeploy_Selected">
@@ -110,6 +151,8 @@
                             <RowDefinition Height="10" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="10" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="Overview details" TextAlignment="Center" FontSize="16" />
@@ -128,6 +171,22 @@
 
                         <TextBlock Grid.Row="6" Text="PSO2 game client's Classic downloader profile: " TextAlignment="Right" />
                         <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=DownloaderProfileClassicSelectionText}" />
+
+                        <TextBlock Grid.Row="8" TextAlignment="Right" Text="Install WebView2 Evergreen Runtime: " />
+                        <TextBlock Grid.Row="8" Grid.Column="1">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=OneWay}" Value="True">
+                                            <Setter Property="Text" Value="Yes" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=OneWay}" Value="False">
+                                            <Setter Property="Text" Value="No" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Grid>
                 </ScrollViewer>
             </mah:MetroTabItem>

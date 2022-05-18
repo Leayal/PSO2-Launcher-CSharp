@@ -46,7 +46,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <param name="revealed">The delegate to invoke.</param>
         /// <remarks>The unmanaged array will be safelty cleared and deallocated after when the delegate exits for whatever reasons. (Unhandled exceptions or returned void).</remarks>
         /// <exception cref="ObjectDisposedException">The <seealso cref="SecureString"/> has already been disposed.</exception>
-        public static void Reveal<TArg>(this SecureString myself, SecretRevealedTextWithParam<TArg> revealed, TArg arg)
+        public static void Reveal<TArg>(this SecureString myself, SecretRevealedText<TArg> revealed, TArg arg)
         {
             IntPtr pointer = IntPtr.Zero;
             try
@@ -68,38 +68,59 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
+        /// <summary>Invoke the <see cref="SecretRevealedText"/> delegate with the revealed password in form of an unmanaged array of <seealso cref="char"/>.</summary>
+        /// <param name="myself">The <seealso cref="SecureString"/> to reveal.</param>
+        /// <param name="revealed">The delegate to invoke.</param>
+        /// <remarks>The unmanaged array will be safelty cleared and deallocated after when the delegate exits for whatever reasons. (Unhandled exceptions or returned void).</remarks>
+        /// <exception cref="ObjectDisposedException">The <seealso cref="SecureString"/> has already been disposed.</exception>
+        public static TResult Reveal<TArg, TResult>(this SecureString myself, SecretRevealedText<TArg, TResult> revealed, TArg arg)
+        {
+            IntPtr pointer = IntPtr.Zero;
+            try
+            {
+                pointer = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                ReadOnlySpan<char> span;
+                unsafe
+                {
+                    span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
+                }
+                return revealed.Invoke(span, arg);
+            }
+            finally
+            {
+                if (pointer != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer);
+                }
+            }
+        }
+
         public static void Import(this SecureString myself, byte[] data) => Import(myself, data, null);
 
         public static void Import(this SecureString myself, byte[] data, byte[] entropy)
         {
             byte[] buffer = null;
+            char[] chars = null;
             try
             {
                 buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
-                char[] chars = null;
-                try
+                chars = Encoding.Unicode.GetChars(buffer);
+                var span = chars.AsSpan();
+                myself.Clear();
+                for (int i = 0; i < chars.Length; i++)
                 {
-                    chars = Encoding.Unicode.GetChars(buffer);
-                    var span = chars.AsSpan();
-                    myself.Clear();
-                    for (int i = 0; i < chars.Length; i++)
-                    {
-                        myself.AppendChar(chars[i]);
-                    }
-                }
-                finally
-                {
-                    if (chars != null)
-                    {
-                        Array.Fill<char>(chars, char.MinValue);
-                    }
+                    myself.AppendChar(chars[i]);
                 }
             }
             finally
             {
+                if (chars != null)
+                {
+                    Array.Clear(chars);
+                }
                 if (buffer != null)
                 {
-                    Array.Fill<byte>(buffer, 0);
+                    Array.Clear(buffer);
                 }
             }
         }
@@ -114,12 +135,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
                 char[] chars = null;
+                int i = 0;
                 try
                 {
                     chars = Encoding.Unicode.GetChars(buffer);
                     var span = chars.AsSpan();
                     result = new SecureString();
-                    for (int i = 0; i < chars.Length; i++)
+                    for (i = 0; i < chars.Length; i++)
                     {
                         result.AppendChar(chars[i]);
                     }
@@ -136,7 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 {
                     if (chars != null)
                     {
-                        Array.Fill<char>(chars, char.MinValue);
+                        Array.Clear(chars, 0, i);
                     }   
                 }
             }
@@ -144,7 +166,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (buffer != null)
                 {
-                    Array.Fill<byte>(buffer, 0);
+                    Array.Clear(buffer);
                 }
             }
             return result;
@@ -152,10 +174,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public static byte[] Export(this SecureString myself) => Export(myself, null);
 
-        public static byte[] Export(this SecureString myself, byte[] entropy)
-        {
-            byte[] result = null;
-            Reveal(myself, (in ReadOnlySpan<char> chars) =>
+        public static byte[] Export(this SecureString myself, byte[]? entropy)
+            => Reveal(myself, (in ReadOnlySpan<char> chars, byte[] __entropy) =>
             {
                 byte[] buffer = null;
                 try
@@ -163,18 +183,100 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     var writtenBytes = Encoding.Unicode.GetByteCount(chars);
                     buffer = new byte[writtenBytes];
                     Encoding.Unicode.GetBytes(chars, buffer);
-                    result = ProtectedData.Protect(buffer, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
+                    
+                    return ProtectedData.Protect(buffer, __entropy, DataProtectionScope.CurrentUser);
                 }
                 finally
                 {
                     if (buffer != null)
                     {
-                        Array.Fill<byte>(buffer, 0);
+                        Array.Clear(buffer);
                     }
                 }
-                
-            });
-            return result;
+            }, (entropy == null || entropy.Length == 0) ? _entropy : entropy);
+
+        public static bool Equals(this SecureString myself, SecureString other, StringComparison comparison)
+        {
+            IntPtr pointer1 = IntPtr.Zero, pointer2 = IntPtr.Zero;
+            try
+            {
+                pointer1 = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                pointer2 = Marshal.SecureStringToGlobalAllocUnicode(other);
+                ReadOnlySpan<char> span1, span2;
+                unsafe
+                {
+                    span1 = new ReadOnlySpan<char>(pointer1.ToPointer(), myself.Length);
+                    span2 = new ReadOnlySpan<char>(pointer2.ToPointer(), other.Length);
+                }
+                return MemoryExtensions.Equals(span1, span2, comparison);
+            }
+            finally
+            {
+                if (pointer1 != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer1);
+                }
+                if (pointer2 != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer2);
+                }
+            }
+        }
+
+        public static bool BinaryEquals(this SecureString myself, SecureString other)
+        {
+            IntPtr pointer1 = IntPtr.Zero, pointer2 = IntPtr.Zero;
+            try
+            {
+                pointer1 = Marshal.SecureStringToGlobalAllocUnicode(myself);
+                pointer2 = Marshal.SecureStringToGlobalAllocUnicode(other);
+                ReadOnlySpan<char> span1, span2;
+                unsafe
+                {
+                    span1 = new ReadOnlySpan<char>(pointer1.ToPointer(), myself.Length);
+                    span2 = new ReadOnlySpan<char>(pointer2.ToPointer(), other.Length);
+                }
+                return MemoryExtensions.SequenceEqual(MemoryMarshal.Cast<char, byte>(span1), MemoryMarshal.Cast<char, byte>(span2));
+            }
+            finally
+            {
+                if (pointer1 != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer1);
+                }
+                if (pointer2 != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(pointer2);
+                }
+            }
+        }
+
+        public static bool Equals(this SecureString myself, byte[] protectedData, StringComparison comparison) => Equals(myself, protectedData, null, comparison);
+
+        public static bool Equals(this SecureString myself, byte[] protectedData, byte[]? entropy, StringComparison comparison)
+        {
+            return Reveal(myself, (in ReadOnlySpan<char> myselfChars, (byte[] protectedData, byte[] entropy, StringComparison comparison) args) =>
+            {
+                byte[] buffer = null;
+                char[] chars = null;
+                try
+                {
+                    buffer = ProtectedData.Unprotect(args.protectedData, args.entropy, DataProtectionScope.CurrentUser);
+                    chars = Encoding.Unicode.GetChars(buffer);
+                    return MemoryExtensions.Equals(myselfChars, chars, args.comparison);
+                }
+                finally
+                {
+                    if (chars != null)
+                    {
+                        Array.Clear(chars);
+                    }
+                    if (buffer != null)
+                    {
+                        Array.Clear(buffer);
+                    }
+                }
+            }, (protectedData, (entropy == null || entropy.Length == 0) ? _entropy : entropy, comparison));
         }
 
         public static void EncodeTo(this SecureString myself, Stream stream, out int writtenBytes)
@@ -201,7 +303,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 {
                     span = new ReadOnlySpan<char>(pointer.ToPointer(), myself.Length);
                 }
-
                 writtenBytes = encoding.GetByteCount(span);
                 buffer = new byte[writtenBytes];
                 encoding.GetBytes(span, buffer);
@@ -211,7 +312,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (buffer != null)
                 {
-                    Array.Fill<byte>(buffer, 0);
+                    Array.Clear(buffer);
                 }
 
                 if (pointer != IntPtr.Zero)
@@ -249,6 +350,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         }
 
         public delegate void SecretRevealedText(in ReadOnlySpan<char> characters);
-        public delegate void SecretRevealedTextWithParam<TArg>(in ReadOnlySpan<char> characters, TArg arg);
+        public delegate void SecretRevealedText<TArg>(in ReadOnlySpan<char> characters, TArg arg);
+        public delegate TResult SecretRevealedText<TArg, TResult>(in ReadOnlySpan<char> characters, TArg arg);
     }
 }

@@ -7,6 +7,7 @@
                   xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.UIElements" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                   mc:Ignorable="d" Name="thisSelf"
                   Background="Transparent" Selector.Selected="MetroTabItem_SelectionChanged" Selector.Unselected="MetroTabItem_SelectionChanged"
+                  IsTabStop="False" Focusable="False"
                   d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.ColumnDefinitions>

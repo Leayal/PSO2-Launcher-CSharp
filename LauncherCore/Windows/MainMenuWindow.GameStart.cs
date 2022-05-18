@@ -328,19 +328,37 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             using (var id = loginForm.GetUsername())
                                             {
                                                 Directory.CreateDirectory(configFolderPath); // Totally unneccessary but did it anyway.
-                                                using (var fs = File.Create(usernamePath))
+                                                byte[] buffer = id.Export();
+                                                var bufferlen = buffer.Length;
+                                                try
                                                 {
-                                                    byte[] buffer = id.Export();
-                                                    try
+                                                    var isNewFile = !File.Exists(usernamePath);
+                                                    using (var fshandle = File.OpenHandle(usernamePath, isNewFile ? FileMode.Create : FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, FileOptions.None, isNewFile ? bufferlen : 0))
+                                                    using (var fs = new FileStream(fshandle, FileAccess.ReadWrite))
                                                     {
-                                                        fs.Write(buffer, 0, buffer.Length);
+                                                        var fslen = fs.Length;
+                                                        // All this to avoid unnecessary write....
+                                                        if (isNewFile || fslen != bufferlen)
+                                                        {
+                                                            fs.Write(buffer, 0, buffer.Length);
+                                                            fs.Flush();
+                                                        }
+                                                        else
+                                                        {
+                                                            var content = new byte[fslen];
+                                                            if (fs.Read(content, 0, content.Length) != content.Length || !id.Equals(content, StringComparison.Ordinal))
+                                                            {
+                                                                fs.Position = 0;
+                                                                fs.SetLength(bufferlen);
+                                                                fs.Write(buffer, 0, buffer.Length);
+                                                                fs.Flush();
+                                                            }
+                                                        }
                                                     }
-                                                    finally
-                                                    {
-                                                        Array.Fill<byte>(buffer, 0);
-                                                    }
-
-                                                    fs.Flush();
+                                                }
+                                                finally
+                                                {
+                                                    Array.Clear(buffer);
                                                 }
                                             }
                                         }
