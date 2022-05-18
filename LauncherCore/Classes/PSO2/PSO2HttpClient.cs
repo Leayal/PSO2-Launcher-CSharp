@@ -18,23 +18,33 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     public class PSO2HttpClient : IDisposable
     {
-        private static readonly string[] _hardcodedWhichAreUsuallyDeletedOnes =
+        private static readonly int[] _hardcodedWhichAreUsuallyDeletedOnes;
+
+        static PSO2HttpClient()
         {
-            "data/win32/8608a2bc214fcffce7f3339ca6b290b4",
-            "data/win32/32db82383bc3234605882b35bb5bca4d",
-            "data/win32/c37b9bc003130afc0b0608a7191ee738",
-            "data/win32/b2448e2023a4ceca7881d3acfaae96cd",
-            "data/win32/74cdd2b68f9614e70dd0b67a80e4d723",
-            "data/win32/b2effb45fc1161ef980bb45ab6611d79",
-            "data/win32/d4455ebc2bef618f29106da7692ebc1a", // Likely to be the integrity table file to
-            "data/win32/ffbff2ac5b7a7948961212cefd4d402c", // Likely to be the chat censorship file
-            "data/win32/13b588fc47b0078d9d4623188a6ae440",
-            "data/win32/9dc4e510eddebae273570fa5f5265eec",
-            "data/win32/e7c15fb8c18091496b4ac8d5ee0511d6",
-            "data/win32/00e5c66ef3b171161094f2b729121590",
-            "data/win32/fd2c2ba34b4347d17585ed320858d775",
-            "data/win32/711d974e5677f99b7f42acca71c9c2bc"
-        };
+            var names_hardcodedWhichAreUsuallyDeletedOne = new string[] {
+                "data/win32/8608a2bc214fcffce7f3339ca6b290b4",
+                "data/win32/32db82383bc3234605882b35bb5bca4d",
+                "data/win32/c37b9bc003130afc0b0608a7191ee738",
+                "data/win32/b2448e2023a4ceca7881d3acfaae96cd",
+                "data/win32/74cdd2b68f9614e70dd0b67a80e4d723",
+                "data/win32/b2effb45fc1161ef980bb45ab6611d79",
+                "data/win32/d4455ebc2bef618f29106da7692ebc1a", // Likely to be the integrity table file to
+                "data/win32/ffbff2ac5b7a7948961212cefd4d402c", // Likely to be the chat censorship file
+                "data/win32/13b588fc47b0078d9d4623188a6ae440",
+                "data/win32/9dc4e510eddebae273570fa5f5265eec",
+                "data/win32/e7c15fb8c18091496b4ac8d5ee0511d6",
+                "data/win32/00e5c66ef3b171161094f2b729121590",
+                "data/win32/fd2c2ba34b4347d17585ed320858d775",
+                "data/win32/711d974e5677f99b7f42acca71c9c2bc"
+            };
+            _hardcodedWhichAreUsuallyDeletedOnes = new int[names_hardcodedWhichAreUsuallyDeletedOne.Length];
+            for (int i = 0; i < names_hardcodedWhichAreUsuallyDeletedOne.Length; i++)
+            {
+                _hardcodedWhichAreUsuallyDeletedOnes[i] = PathStringComparer.Default.GetHashCode(names_hardcodedWhichAreUsuallyDeletedOne[i]);
+            }
+            Array.Sort(_hardcodedWhichAreUsuallyDeletedOnes);
+        }
 
         private readonly HttpClient client;
         private const string UA_AQUA_HTTP = "AQUA_HTTP";
@@ -294,20 +304,37 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PatchListMemory> GetLauncherListAsync(CancellationToken cancellationToken)
             => this.GetLauncherListAsync(null, cancellationToken);
 
+        public Task<PatchListMemory> GetPatchListAvatarAsync(CancellationToken cancellationToken)
+            => this.GetPatchListAvatarAsync(null, cancellationToken);
+
+        /// <remarks>Read more from <seealso cref="GetPatchListRegionsAsync(PatchRootInfo?, CancellationToken)"/></remarks>
+        public Task<PatchListMemory> GetPatchListRegionsAsync(CancellationToken cancellationToken)
+            => this.GetPatchListRegionsAsync(null, cancellationToken);
+
         public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
             // var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
             var t_classic = this.GetPatchListClassicAsync(rootInfo, cancellationToken).ConfigureAwait(false);
-            var t_ngs = this.GetPatchListNGSFullAsync(rootInfo, cancellationToken).ConfigureAwait(false);
+            var t_ngs = this.InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken).ConfigureAwait(false);
 
             var ngs = await t_ngs;
             var therest = await t_classic;
             var dictionary = new Dictionary<string, PatchListItem>(ngs.Count + therest.Count, StringComparer.OrdinalIgnoreCase);
             foreach (var item in ngs) dictionary.Add(item.GetFilenameWithoutAffix(), item);
-            
             foreach (var item in therest) dictionary.TryAdd(item.GetFilenameWithoutAffix(), item);
-
+            
             return new PatchListMemory(rootInfo, null, dictionary);
+        }
+
+        /// <remarks>I may be wrong. This seems to be a random things SEGA put in-time to pre-download files for any coming major updates.</remarks>
+        public Task<PatchListMemory> GetPatchListRegionsAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+        {
+            /* Log:
+             * - 18th May 2022: patchlist_region1st.txt -> composed both win32 and win32reboot datas. Purpose: unknown but seems to be aelio. Note: ?? June 2022 is Kvaris (third region, aka Reboot Tundra) update.
+             */
+
+            // Currently there's only one region so we will just forward the function calls.
+            return this.InnerGetPatchListAsync(rootInfo, "patchlist_region1st.txt", true, cancellationToken);
         }
 
         public Task<PatchListMemory> GetPatchListAlwaysAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
@@ -322,8 +349,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PatchListMemory> GetPatchListNGSFullAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
             => this.InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken);
 
-        public Task<PatchListMemory> GetLauncherListAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+    public Task<PatchListMemory> GetLauncherListAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
             => this.InnerGetPatchListAsync(rootInfo, "launcherlist.txt", null, cancellationToken);
+
+        public Task<PatchListMemory> GetPatchListAvatarAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
+            => this.InnerGetPatchListAsync(rootInfo, "patchlist_avatar.txt", true, cancellationToken);
 #nullable restore
         #endregion
 
@@ -331,19 +361,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Need to be able to open stream (to download or handle resources from SEGA's server directly)
 
         private static bool IsTweakerDeletedFiles(PatchListItem item)
-        {
-            var nameCode = string.GetHashCode(item.GetSpanFilenameWithoutAffix(), StringComparison.OrdinalIgnoreCase);
-            string comparer;
-            for (int i = 0; i < _hardcodedWhichAreUsuallyDeletedOnes.Length; i++)
-            {
-                comparer = _hardcodedWhichAreUsuallyDeletedOnes[i];
-                if (nameCode == string.GetHashCode(comparer, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+            => (Array.BinarySearch<int>(_hardcodedWhichAreUsuallyDeletedOnes, PathStringComparer.Default.GetHashCode(item.GetSpanFilenameWithoutAffix())) >= 0);
 
         public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
         {

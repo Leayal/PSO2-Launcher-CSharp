@@ -1,4 +1,5 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using Leayal.PSO2.UserConfig;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -53,7 +54,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     }
                     File.WriteAllText(localFilePath, versionStringRaw);
 
-                    localFilePath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                    var pso2conf_dir = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                    if (downloadMode == GameClientSelection.NGS_AND_CLASSIC || downloadMode == GameClientSelection.Classic_Only)
+                    {
+                        var confPath = Path.GetFullPath("user.pso2", pso2conf_dir);
+                        Directory.CreateDirectory(pso2conf_dir);
+
+                        var conf = File.Exists(confPath) ? UserConfig.FromFile(confPath) : new UserConfig("Ini");
+                        conf["DataDownload"] = 1; // Must be a number, 1 indicated that Classic files have been downloaded so no more prompt at the in-game's login menu.
+                        conf.SaveAs(confPath);
+                    }
+
+                    localFilePath = Path.GetFullPath("_version.ver", pso2conf_dir);
                     if (File.Exists(localFilePath))
                     {
                         var attr = File.GetAttributes(localFilePath);

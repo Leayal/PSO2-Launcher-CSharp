@@ -2,25 +2,57 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes
 {
+    /// <summary>A path (specialized in local file path, regardless full or relative path) comparer.</summary>
+    /// <remarks>This class is thread-safe.</remarks>
     public sealed class PathStringComparer : IEqualityComparer<string?>, IEqualityComparer<ReadOnlyMemory<char>>
     {
+        /// <summary>The shared instance that can be used at anytime.</summary>
         public static readonly PathStringComparer Default = new PathStringComparer();
         private readonly static bool IsDifferentSeparator = (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar);
 
-        // private static char[] seperators = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+        private static readonly char[] seperators = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
         private PathStringComparer() { }
 
-        public ReadOnlyMemory<char> NormalizePath(ReadOnlyMemory<char> path)
+        public static string NormalizePath(string path)
+        {
+            var span = Path.TrimEndingDirectorySeparator(path.AsSpan());
+            var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : -1;
+            if (found == -1)
+            {
+                if (span.Length == path.Length)
+                {
+                    return path;
+                }
+                else
+                {
+                    return path.Substring(0, span.Length);
+                }
+            }
+            else
+            {
+                return string.Create(span.Length, ((span.Length != path.Length) ? path.AsMemory(0, span.Length) : path.AsMemory(), found), (c, obj) =>
+                {
+                    obj.Item1.Span.CopyTo(c);
+                    for (int i = obj.found; i < c.Length; i++)
+                    {
+                        if (c[i] == Path.AltDirectorySeparatorChar)
+                        {
+                            c[i] = Path.DirectorySeparatorChar;
+                        }
+                    }
+                });
+            }
+        }
+
+        public static ReadOnlyMemory<char> NormalizePath(ReadOnlyMemory<char> path)
         {
             var span = Path.TrimEndingDirectorySeparator(path.Span);
-            var found = IsDifferentSeparator ? span.IndexOf(Path.AltDirectorySeparatorChar) : -1;
+            var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : -1;
             if (found == -1)
             {
                 if (span.Length == path.Length)
@@ -34,13 +66,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
             else
             {
-                if (span.Length != path.Length)
+                return string.Create(span.Length, ((span.Length != path.Length) ? path.Slice(0, span.Length) : path, found), (c, obj) =>
                 {
-                    path = path.Slice(0, span.Length);
-                }
-                return string.Create(path.Length, (path, found), (c, obj) =>
-                {
-                    obj.path.Span.CopyTo(c);
+                    obj.Item1.Span.CopyTo(c);
                     for (int i = obj.found; i < c.Length; i++)
                     {
                         if (c[i] == Path.AltDirectorySeparatorChar)
@@ -54,7 +82,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public int GetHashCode([DisallowNull] string path)
         {
-            if (path.Length == 0)
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+            else if (path.Length == 0)
             {
                 return path.GetHashCode();
             }
@@ -80,18 +112,50 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y)
-            => MemoryExtensions.Equals(NormalizePath(x).Span, NormalizePath(y).Span, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) => (this.GetHashCode(x) == this.GetHashCode(y));
 
-        public int GetHashCode(ReadOnlyMemory<char> obj)
+        public int GetHashCode(ReadOnlyMemory<char> path) => this.GetHashCode(path.Span);
+
+        public int GetHashCode(ReadOnlySpan<char> path)
         {
-            if (obj.IsEmpty)
+            if (path.IsEmpty)
             {
                 return string.Empty.GetHashCode();
             }
             else
             {
-                return string.GetHashCode(NormalizePath(obj).Span, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                var span = Path.TrimEndingDirectorySeparator(path);
+
+                var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : span.IndexOf(Path.DirectorySeparatorChar);
+                if (found == -1)
+                {
+                    return string.GetHashCode(span, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                }
+                else
+                {
+                    var hashcodegen = new HashCode();
+                    var pathCaseComparer = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                    var pathSplitterCode = Path.DirectorySeparatorChar.GetHashCode();
+                    while (found != -1)
+                    {
+                        hashcodegen.Add(string.GetHashCode(span.Slice(0, found), pathCaseComparer));
+                        hashcodegen.Add(pathSplitterCode);
+                        span = span.Slice(found + 1);
+                        if (span.IsEmpty)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            found = IsDifferentSeparator ? span.IndexOfAny(seperators) : span.IndexOf(Path.DirectorySeparatorChar);
+                        }
+                    }
+                    if (!span.IsEmpty)
+                    {
+                        hashcodegen.Add(string.GetHashCode(span, pathCaseComparer));
+                    }
+                    return hashcodegen.ToHashCode();
+                }
             }
         }
     }

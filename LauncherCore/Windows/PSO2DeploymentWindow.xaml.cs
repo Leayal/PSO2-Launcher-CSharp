@@ -645,54 +645,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.RichTextBox_FinishingWords.Document.Blocks.AddRange(paragraphs);
                 });
 
-                if (isSuccess)
-                {
-                    try
-                    {
-                        PSO2.UserConfig.UserConfig conf;
-                        if (File.Exists(this.path_pso2conf))
-                        {
-                            conf = PSO2.UserConfig.UserConfig.FromFile(this.path_pso2conf);
-                            AdjustPSO2UserConfig(conf, gameClientSelection);
-                            conf.SaveAs(this.path_pso2conf);
-                        }
-                        else
-                        {
-                            conf = new PSO2.UserConfig.UserConfig("Ini");
-                            AdjustPSO2UserConfig(conf, gameClientSelection);
-                            if (!Directory.Exists(this.directory_pso2conf)) // Should be safe for symlink 
-                            {
-                                Directory.CreateDirectory(this.directory_pso2conf);
-                            }
-                            conf.SaveAs(this.path_pso2conf);
-                        }
-                    }
-                    catch
-                    {
-                        _ = this.Dispatcher.InvokeAsync(this.WarnUserAboutPSO2UserConfigFailureAfterDeployment);
-                    }
-                }
-
                 return isSuccess;
             }
-        }
-
-        private static void AdjustPSO2UserConfig(PSO2.UserConfig.UserConfig conf, GameClientSelection gameClientSelection)
-        {
-            if (gameClientSelection == GameClientSelection.NGS_AND_CLASSIC)
-            {
-                conf["DataDownload"] = 1; // NGS and classic
-            }
-            else
-            {
-                conf["DataDownload"] = 0; // NGS Prologue only
-            }
-        }
-
-        private void WarnUserAboutPSO2UserConfigFailureAfterDeployment()
-        {
-            Prompt_Generic.Show(this, "Launcher couldn't set the 'PSO2 game client's download type' setting to the PSO2 configuration file due to unknown problem." + Environment.NewLine + "The setting which was failed is only used by official PSO2 launcher. Thus, it shouldn't cause any problems with the game itself." + Environment.NewLine
-                + "PSO2 configuration file location: " + this.path_pso2conf, "Warning (that can be ignored)", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private static async Task ResetProgress(ExtendedProgressBar progressbar, double max)
