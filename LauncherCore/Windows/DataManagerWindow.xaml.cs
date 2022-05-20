@@ -6,6 +6,7 @@ using Leayal.Shared.Windows;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.IO;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -131,8 +132,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 Prompt_Generic.Show(this, "The 'pso2_bin' path is invalid.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            var gameClientSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
+
             this._config.PSO2_BIN = pso2bin;
-            this._config.DownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
+            this._config.DownloadSelection = gameClientSelection;
             this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
             this._config.DownloaderProfileClassic = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpresetclassic.SelectedItem).Value;
             this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
@@ -145,6 +148,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.DownloaderCheckThrottle = (int)this.numberbox_throttledownload.Value;
 
             this._config.Save();
+
+            var path_pso2conf = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "user.pso2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            PSO2.UserConfig.UserConfig conf;
+            if (File.Exists(path_pso2conf))
+            {
+                conf = PSO2.UserConfig.UserConfig.FromFile(path_pso2conf);
+                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection))
+                {
+                    conf.SaveAs(path_pso2conf);
+                }
+            }
+            else
+            {
+                conf = new PSO2.UserConfig.UserConfig("Ini");
+                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection))
+                {
+                    var directory_pso2conf = Path.GetDirectoryName(path_pso2conf);
+                    if (!Directory.Exists(directory_pso2conf)) // Should be safe for symlink 
+                    {
+                        Directory.CreateDirectory(directory_pso2conf);
+                    }
+                    conf.SaveAs(path_pso2conf);
+                }
+            }
+
             this.CustomDialogResult = true;
             this.Close();
             // SystemCommands.CloseWindow(this);

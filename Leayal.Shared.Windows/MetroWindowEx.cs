@@ -255,7 +255,7 @@ namespace Leayal.Shared.Windows
         /// <inheritdoc/>
         protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
         {
-            if (e.Property == IconProperty)
+            if (this._autoassignedIcon && e.Property == IconProperty)
             {
                 this._autoassignedIcon = false;
             }

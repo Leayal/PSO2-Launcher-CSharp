@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Leayal.Shared;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -83,7 +84,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             if (File.Exists(this.Filename))
             {
                 var attr = File.GetAttributes(this.Filename);
-                if (attr.HasFlag(FileAttributes.ReadOnly))
+                if (attr.HasReadOnlyFlag())
                 {
                     File.SetAttributes(this.Filename, attr & ~FileAttributes.ReadOnly);
                 }
@@ -92,7 +93,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     this.SaveTo(fs);
                     fs.Flush();
                 }
-                if (attr.HasFlag(FileAttributes.ReadOnly))
+                if (attr.HasReadOnlyFlag())
                 {
                     File.SetAttributes(this.Filename, attr);
                 }

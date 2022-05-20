@@ -7,7 +7,13 @@ using System.IO;
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     /// <summary>A path (specialized in local file path, regardless full or relative path) comparer.</summary>
-    /// <remarks>This class is thread-safe.</remarks>
+    /// <remarks>
+    /// <para>This class is thread-safe.</para>
+    /// <para>This doesn't cover the case where the path has `..` in the middle.</para>
+    /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
+    /// <code>GetHashCode("folder1\folder2\..\file1.dat") != GetHashCode("folder1\file1.dat"), despite the fact that they should be equal.</code>
+    /// <code>Equal("folder1\folder2\..\file1.dat", "folder1\file1.dat") => false, despite the fact that it should be true.</code>
+    /// </remarks>
     public sealed class PathStringComparer : IEqualityComparer<string?>, IEqualityComparer<ReadOnlyMemory<char>>
     {
         /// <summary>The shared instance that can be used at anytime.</summary>
@@ -18,7 +24,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         private PathStringComparer() { }
 
-        public static string NormalizePath(string path)
+        /// <summary>Normalize the path separator in the string to be all same.</summary>
+        /// <param name="path">The string contains the path to normalize.</param>
+        /// <returns>The same string if there is no modification happens, or the new allocated string which has the normalized path.</returns>
+        /// <remarks>This also calls <seealso cref="Path.TrimEndingDirectorySeparator"/> internally so the returned path will not have the directory separator at the end.</remarks>
+        public static string NormalizePathSeparator(string path)
         {
             var span = Path.TrimEndingDirectorySeparator(path.AsSpan());
             var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : -1;
@@ -49,7 +59,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public static ReadOnlyMemory<char> NormalizePath(ReadOnlyMemory<char> path)
+        /// <summary>Normalize the path separator in the string to be all same.</summary>
+        /// <param name="path">The memory contains the path to normalize.</param>
+        /// <returns>The same memory if there is no modification happens, or the new allocated memory which has the normalized path.</returns>
+        /// <remarks>This also calls <seealso cref="Path.TrimEndingDirectorySeparator"/> internally so the returned path will not have the directory separator at the end.</remarks>
+        public static ReadOnlyMemory<char> NormalizePathSeparator(ReadOnlyMemory<char> path)
         {
             var span = Path.TrimEndingDirectorySeparator(path.Span);
             var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : -1;
@@ -80,6 +94,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
+        /// <remarks>
+        /// <para>This doesn't cover the case where the path has `..` in the middle.</para>
+        /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
+        /// <code>GetHashCode("folder1\folder2\..\file1.dat") != GetHashCode("folder1\file1.dat"), despite the fact that they should be equal.</code>
+        /// </remarks>
         public int GetHashCode([DisallowNull] string path)
         {
             if (path == null)
@@ -96,6 +115,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
+        /// <remarks>
+        /// <para>This doesn't cover the case where the path has `..` in the middle.</para>
+        /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
+        /// <code>Equal("folder1\folder2\..\file1.dat", "folder1\file1.dat") => false, despite the fact that it should be true.</code>
+        /// </remarks>
         public bool Equals(string? left, string? right)
         {
             if (left == null && right == null)
@@ -112,10 +136,20 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
+        /// <remarks>
+        /// <para>This doesn't cover the case where the path has `..` in the middle.</para>
+        /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
+        /// <code>Equal("folder1\folder2\..\file1.dat", "folder1\file1.dat") => false, despite the fact that it should be true.</code>
+        /// </remarks>
         public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) => (this.GetHashCode(x) == this.GetHashCode(y));
 
         public int GetHashCode(ReadOnlyMemory<char> path) => this.GetHashCode(path.Span);
 
+        /// <remarks>
+        /// <para>This doesn't cover the case where the path has `..` in the middle.</para>
+        /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
+        /// <code>GetHashCode("folder1\folder2\..\file1.dat") != GetHashCode("folder1\file1.dat"), despite the fact that they should be equal.</code>
+        /// </remarks>
         public int GetHashCode(ReadOnlySpan<char> path)
         {
             if (path.IsEmpty)
@@ -133,6 +167,15 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
                 else
                 {
+                    if (found == 1 && span[0] == '.')
+                    {
+                        span = IsDifferentSeparator ? span.Slice(1).TrimStart(seperators) : span.Slice(1).TrimStart(Path.DirectorySeparatorChar);
+                        found = IsDifferentSeparator ? span.IndexOfAny(seperators) : span.IndexOf(Path.DirectorySeparatorChar);
+                        if (found == -1)
+                        {
+                            return string.GetHashCode(span, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                        }
+                    }
                     var hashcodegen = new HashCode();
                     var pathCaseComparer = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
                     var pathSplitterCode = Path.DirectorySeparatorChar.GetHashCode();

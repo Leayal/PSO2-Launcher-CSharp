@@ -18,7 +18,7 @@ namespace Leayal.PSO2Launcher
         internal static LauncherController _currentController;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-        /// <summary>Gets the path for the executable file that started the application, not including the executable name.</summary>
+        /// <summary>Gets the full path to the parent directory of the executable file that started the application.</summary>
         public static string RootDirectory => Program.RootDirectory;
 
         /// <summary>Get the instance of this class.</summary>

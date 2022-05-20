@@ -201,9 +201,20 @@ namespace Leayal.PSO2Launcher.Core
             {
                 if (this.dummyForm is System.Windows.Forms.Form form)
                 {
-                    form.Hide();
-                    form.ShowInTaskbar = false;
-                    form.Dispose();
+                    if (!form.Disposing && !form.IsDisposed)
+                    {
+                        form.FormClosed += (formObj, ev) =>
+                        {
+                            if (formObj is System.Windows.Forms.Form dummy)
+                            {
+                                if (!!dummy.Disposing && !dummy.IsDisposed)
+                                {
+                                    dummy.Dispose();
+                                }
+                            }
+                        };
+                        form.Close();
+                    }
                 }
                 mainmenuwindow.ShowActivated = false;
                 mainmenuwindow.ShowInTaskbar = false;
@@ -228,9 +239,23 @@ namespace Leayal.PSO2Launcher.Core
                 window.Activate();
                 if (this.dummyForm is System.Windows.Forms.Form form)
                 {
-                    form.Hide();
-                    form.ShowInTaskbar = false;
-                    form.Dispose();
+                    // form.Hide();
+                    if (!form.Disposing && !form.IsDisposed)
+                    {
+                        form.FormClosed += (formObj, ev) =>
+                        {
+                            if (formObj is System.Windows.Forms.Form dummy)
+                            {
+                                if (!!dummy.Disposing && !dummy.IsDisposed)
+                                {
+                                    dummy.Dispose();
+                                }
+                            }
+                        };
+                        form.Close();
+                    }
+                    // form.ShowInTaskbar = false;
+                    // form.Dispose();
                 }
             }
         }

@@ -169,6 +169,8 @@ namespace Leayal.Shared
             IEnumerator IEnumerable.GetEnumerator() => new TextBufferer(new StreamReader(this.filepath), this.buffersize, this.pool);
         }
 
+        public static bool HasReadOnlyFlag(this FileAttributes attributes) => ((attributes & FileAttributes.ReadOnly) != 0);
+
         private class TextBufferer : IEnumerator<ReadOnlyMemory<char>>
         {
             private readonly char[] buffer;

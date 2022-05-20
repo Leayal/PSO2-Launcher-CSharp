@@ -227,7 +227,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             public MonitorCountOptionDOM(string name, string displayName) : base(name, displayName)
             {
-                var monitorCount = ScreenInformation.GetMonitorCount();
+                // System.Windows.Forms.SystemInformation.MonitorCount
+                var monitorCount = System.Windows.Forms.SystemInformation.MonitorCount; // ScreenInformation.GetMonitorCount();
                 var dictionary = new Dictionary<int, string>(monitorCount);
                 for (int i = 0; i < monitorCount; i++)
                 {

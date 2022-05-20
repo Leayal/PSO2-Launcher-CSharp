@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -24,8 +25,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             => this.ProgressEnd?.Invoke(TaskID, currentFile, in isSuccess);
 
         public event OperationBeginHandler OperationBegin;
-        private void OnOperationBegin(int concurrentlevel)
-        => this.OperationBegin?.Invoke(this, concurrentlevel);
+        private void OnOperationBegin(int concurrentlevel) => this.OperationBegin?.Invoke(this, concurrentlevel);
 
         public event OperationCompletedHandler OperationCompleted;
         //private void OnClientOperationComplete1(string dir_pso2bin, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     else if (File.Exists(localFilePath))
                     {
                         var attr = File.GetAttributes(localFilePath);
-                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                        if (attr.HasReadOnlyFlag())
                         {
                             File.SetAttributes(localFilePath, attr & ~FileAttributes.ReadOnly);
                         }
@@ -55,27 +55,48 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     File.WriteAllText(localFilePath, versionStringRaw);
 
                     var pso2conf_dir = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
-                    if (downloadMode == GameClientSelection.NGS_AND_CLASSIC || downloadMode == GameClientSelection.Classic_Only)
-                    {
-                        var confPath = Path.GetFullPath("user.pso2", pso2conf_dir);
-                        Directory.CreateDirectory(pso2conf_dir);
+                    var path_pso2conf = Path.GetFullPath("user.pso2", pso2conf_dir);
+                    UserConfig conf;
 
-                        var conf = File.Exists(confPath) ? UserConfig.FromFile(confPath) : new UserConfig("Ini");
-                        conf["DataDownload"] = 1; // Must be a number, 1 indicated that Classic files have been downloaded so no more prompt at the in-game's login menu.
-                        conf.SaveAs(confPath);
+                    static bool ReadjustPSO2UserConfig(UserConfig conf, GameClientSelection downloadMode) => (Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode) || AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode switch
+                    {
+                        GameClientSelection.NGS_Only => true,
+                        GameClientSelection.NGS_AND_CLASSIC => true,
+                        _ => false
+                    }));
+
+                    if (File.Exists(path_pso2conf))
+                    {
+                        conf = UserConfig.FromFile(path_pso2conf);
+                        if (ReadjustPSO2UserConfig(conf, downloadMode))
+                        {
+                            conf.SaveAs(path_pso2conf);
+                        }
+                    }
+                    else
+                    {
+                        conf = new UserConfig("Ini");
+                        if (ReadjustPSO2UserConfig(conf, downloadMode))
+                        {
+                            if (!Directory.Exists(pso2conf_dir)) // Should be safe for symlink 
+                            {
+                                Directory.CreateDirectory(pso2conf_dir);
+                            }
+                            conf.SaveAs(path_pso2conf);
+                        }
                     }
 
                     localFilePath = Path.GetFullPath("_version.ver", pso2conf_dir);
                     if (File.Exists(localFilePath))
                     {
                         var attr = File.GetAttributes(localFilePath);
-                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                        if (attr.HasReadOnlyFlag())
                         {
                             File.SetAttributes(localFilePath, attr & ~FileAttributes.ReadOnly);
                         }
                         File.WriteAllText(localFilePath, versionStringRaw);
                     }
-
+                    
                     if (!string.IsNullOrWhiteSpace(pso2tweaker_dirpath))
                     {
                         var pso2tweakerconfig = new PSO2TweakerConfig();
@@ -104,7 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         }
 
                                         var attr = File.Exists(tweakerhashcacheDump.CachePath) ? File.GetAttributes(tweakerhashcacheDump.CachePath) : FileAttributes.Normal;
-                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        if (attr.HasReadOnlyFlag())
                                         {
                                             File.SetAttributes(tweakerhashcacheDump.CachePath, attr & ~FileAttributes.ReadOnly);
                                         }
@@ -119,7 +140,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     if (File.Exists(data_filestxt))
                                     {
                                         var attr = File.GetAttributes(data_filestxt);
-                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        if (attr.HasReadOnlyFlag())
                                         {
                                             File.SetAttributes(data_filestxt, attr & ~FileAttributes.ReadOnly);
                                         }
@@ -133,7 +154,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             sw.Flush();
                                         }
 
-                                        if (attr.HasFlag(FileAttributes.ReadOnly))
+                                        if (attr.HasReadOnlyFlag())
                                         {
                                             File.SetAttributes(data_filestxt, attr);
                                         }
@@ -164,17 +185,38 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+        private static bool AdjustPSO2UserConfig_FirstDownloadCheck(UserConfig conf, bool value)
+        {
+            if (value)
+            {
+                if (!conf.TryGetProperty("FirstDownloadCheck", out var val_FirstDownloadCheck) || val_FirstDownloadCheck is not bool val || val != true)
+                {
+                    conf["FirstDownloadCheck"] = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public event BackupFileFoundHandler BackupFileFound;
-        private Task OnBackupFileFound(BackupFileFoundEventArgs e)
+        private async Task OnBackupFileFound(BackupFileFoundEventArgs e)
         {
             var callback = this.BackupFileFound;
-            if (callback == null)
+            if (callback != null)
             {
-                return Task.CompletedTask;
-            }
-            else
-            {
-                return callback.Invoke(this, e);
+                var invokeList = callback.GetInvocationList();
+                for (int i = 0; i < invokeList.Length; i++)
+                {
+                    if (invokeList[i] is BackupFileFoundHandler handler)
+                    {
+                        try
+                        {
+                            await handler.Invoke(this, e);
+                        }
+                        catch { }
+                    }
+                }
+                // return callback.Invoke(this, e);
             }
         }
 

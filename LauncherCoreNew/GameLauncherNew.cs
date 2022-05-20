@@ -23,6 +23,17 @@ namespace Leayal.PSO2Launcher.Core
         {
             this._bootstrapversion = bootstrapversion;
 
+            var form = new DummyForm();
+            form.Show();
+            form.Refresh();
+
+            // Poke the message loop once so that our dummy form above will process all Win32/User message, including rendering.
+            // Application.DoEvents();
+
+            // The Dispatcher on this current thread will be resumed/started once the App's main window is initialized.
+            // Technically, when the main window show up, the dummyform will close.
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeAsync(form.Close, System.Windows.Threading.DispatcherPriority.Loaded);
+
             if (AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()) is AssemblyLoadContext context)
             {
                 var assembly_probing_path = Path.GetFullPath("bin", LauncherController.RootDirectory);
@@ -32,10 +43,7 @@ namespace Leayal.PSO2Launcher.Core
                 SolveTheUncoolAssembliesThatDoesNotDoWellWithLoadContexts(context, Path.Combine(assembly_probing_path, "MahApps.Metro.IconPacks.FontAwesome.dll"), null);
             }
 
-            var form = new DummyForm();
-            form.Show();
-            Application.DoEvents();
-            this._app = new App(this._bootstrapversion, form);
+            this._app = new App(this._bootstrapversion, null);
             // var adminClient = new Leayal.PSO2Launcher.AdminProcess.AdminClient();
             // this.isLightMode = false;
         }
@@ -164,6 +172,15 @@ namespace Leayal.PSO2Launcher.Core
                 this.FormBorderStyle = FormBorderStyle.FixedSingle;
                 this.StartPosition = FormStartPosition.CenterScreen;
                 //*/
+            }
+
+            protected override void OnFormClosed(FormClosedEventArgs e)
+            {
+                base.OnFormClosed(e);
+                if (!this.Disposing && !this.IsDisposed)
+                {
+                    this.Dispose();
+                }
             }
 
             // protected override bool ShowWithoutActivation => true;

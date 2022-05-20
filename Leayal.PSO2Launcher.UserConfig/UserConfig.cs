@@ -34,7 +34,7 @@ namespace Leayal.PSO2.UserConfig
                 sb = this._sb.Value;
             }
             this.WriteValueTo(sb);
-            using (StreamWriter sw = new StreamWriter(filepath, false, Encoding.UTF8))
+            using (var sw = new StreamWriter(File.ResolveLinkTarget(filepath, true)?.FullName ?? filepath, false, Encoding.UTF8))
             {
                 sw.WriteLine(sb.ToString());
                 sw.Flush();

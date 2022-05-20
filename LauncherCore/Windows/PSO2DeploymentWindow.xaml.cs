@@ -645,8 +645,75 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.RichTextBox_FinishingWords.Document.Blocks.AddRange(paragraphs);
                 });
 
+                if (isSuccess)
+                {
+                    try
+                    {
+                        PSO2.UserConfig.UserConfig conf;
+                        if (File.Exists(this.path_pso2conf))
+                        {
+                            conf = PSO2.UserConfig.UserConfig.FromFile(this.path_pso2conf);
+                            if (AdjustPSO2UserConfig(conf, gameClientSelection))
+                            {
+                                conf.SaveAs(this.path_pso2conf);
+                            }
+                        }
+                        else
+                        {
+                            conf = new PSO2.UserConfig.UserConfig("Ini");
+                            if (AdjustPSO2UserConfig(conf, gameClientSelection))
+                            {
+                                if (!Directory.Exists(this.directory_pso2conf)) // Should be safe for symlink 
+                                {
+                                    Directory.CreateDirectory(this.directory_pso2conf);
+                                }
+                                conf.SaveAs(this.path_pso2conf);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        _ = this.Dispatcher.InvokeAsync(this.WarnUserAboutPSO2UserConfigFailureAfterDeployment);
+                    }
+                }
+
                 return isSuccess;
             }
+        }
+
+        /// <summary>Adjust the configuration file according to <paramref name="gameClientSelection"/> value.</summary>
+        /// <param name="conf"></param>
+        /// <param name="gameClientSelection"></param>
+        /// <returns>True if the file has changed. False when the value is already same and no modification happened.</returns>
+        internal static bool AdjustPSO2UserConfig(PSO2.UserConfig.UserConfig conf, GameClientSelection gameClientSelection)
+        {
+            if (gameClientSelection == GameClientSelection.NGS_AND_CLASSIC)
+            {
+                if (!conf.TryGetProperty("DataDownload", out var val_DataDownload) || val_DataDownload is not int num || num != 1)
+                {
+                    conf["DataDownload"] = 1; // NGS and classic
+                    return true;
+                }
+            }
+            else
+            {
+                // A flag which the game use to determine whether the prompt `Download additional data` has been shown for the first time the player enters the game.
+                // Set true so that the prompt won't show up in-game.
+                // conf["FirstDownloadCheck"] = true;
+
+                if (!conf.TryGetProperty("DataDownload", out var val_DataDownload) || val_DataDownload is not int num || num != 0)
+                {
+                    conf["DataDownload"] = 0; // NGS Only
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void WarnUserAboutPSO2UserConfigFailureAfterDeployment()
+        {
+            Prompt_Generic.Show(this, "Launcher couldn't set the 'PSO2 game client's download type' setting to the PSO2 configuration file due to unknown problem." + Environment.NewLine + "The setting which was failed is only used by official PSO2 launcher. Thus, it shouldn't cause any problems with the game itself." + Environment.NewLine
+                + "PSO2 configuration file location: " + this.path_pso2conf, "Warning (that can be ignored)", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private static async Task ResetProgress(ExtendedProgressBar progressbar, double max)

@@ -108,6 +108,7 @@ namespace Leayal.Shared
         }
         */
 
+        /// <summary>A boolean which determines whether the current running process is elevated.</summary>
         public static readonly bool IsCurrentProcessElevated;
 
         static UacHelper()
@@ -118,9 +119,15 @@ namespace Leayal.Shared
             }
         }
 
+        /// <summary>Gets a boolean which determines whether the specified process is elevated.</summary>
+        /// <param name="process">The process to determine.</param>
+        /// <returns>True if the process is elevated. Otherwise, false.</returns>
         public static bool IsProcessElevated(Process process) => IsProcessElevated(process.Handle);
 
-        public static bool IsProcessElevated(in IntPtr processHandle)
+        /// <summary>Gets a boolean which determines whether the specified process is elevated.</summary>
+        /// <param name="processHandle">The handle to a process.</param>
+        /// <returns>True if the process is elevated. Otherwise, false.</returns>
+        public static bool IsProcessElevated(IntPtr processHandle)
         {
             if (IsUacEnabled)
             {

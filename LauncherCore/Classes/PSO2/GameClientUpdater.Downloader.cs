@@ -192,7 +192,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     if (File.Exists(localFilePath))
                                     {
                                         attrFlags = File.GetAttributes(localFilePath);
-                                        if (attrFlags.HasFlag(FileAttributes.ReadOnly))
+                                        if (attrFlags.HasReadOnlyFlag())
                                         {
                                             // Remove readonly flags from the old file
                                             // This should avoid error caused by ReadOnly file. Especially on file overwriting.
@@ -202,7 +202,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     else if (Directory.Exists(localFilePath))
                                     {
                                         var directoryAttrFlags = File.GetAttributes(localFilePath);
-                                        if (directoryAttrFlags.HasFlag(FileAttributes.ReadOnly))
+                                        if (directoryAttrFlags.HasReadOnlyFlag())
                                         {
                                             // Remove readonly flags from the old file
                                             // This should avoid error caused by ReadOnly file. Especially on file overwriting.
