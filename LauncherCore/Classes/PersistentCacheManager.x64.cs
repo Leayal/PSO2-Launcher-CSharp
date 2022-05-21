@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SQLite.X64;
 
+#nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     partial class PersistentCacheManager
@@ -87,11 +88,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
             class CacheHeaderEntry
             {
                 [PrimaryKey, Unique, NotNull, MaxLength(2048), Collation("NOCASE")]
-                public string EntryName { get; set; }
+                public string? EntryName { get; set; }
 
                 [NotNull]
-                public byte[] Data { get; set; }
+                public byte[]? Data { get; set; }
             }
         }
     }
 }
+#nullable restore

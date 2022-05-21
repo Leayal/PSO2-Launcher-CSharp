@@ -119,7 +119,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 remoteVersion = await this.GetRemoteVersionAsync(patchInfoRoot, cancellationToken);
             }
 
-            if (!PSO2Version.TrySafeParse(in verString, out var localPSO2Ver) || localPSO2Ver != remoteVersion)
+            if (!PSO2Version.TryParse(verString, out var localPSO2Ver) || localPSO2Ver != remoteVersion)
             {
                 return true;
             }
@@ -127,13 +127,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return false;
         }
 
+#nullable enable
         public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
             => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, selection, fScanReboot, fScanClassic, cancellationToken);
 
         public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? pso2tweaker_binpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
             => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, pso2tweaker_binpath, selection, fScanReboot, fScanClassic, cancellationToken);
 
-#nullable enable
         public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? dir_classic_data, string? pso2tweaker_dirpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
         {
             if (fScanReboot == FileScanFlags.None)

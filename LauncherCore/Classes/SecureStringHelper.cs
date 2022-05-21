@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Security.Cryptography;
 
+#nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     /// <summary>Provides convenient extended methods to deal with <seealso cref="SecureString"/>.</summary>
@@ -97,10 +98,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public static void Import(this SecureString myself, byte[] data) => Import(myself, data, null);
 
-        public static void Import(this SecureString myself, byte[] data, byte[] entropy)
+        public static void Import(this SecureString myself, byte[] data, byte[]? entropy)
         {
-            byte[] buffer = null;
-            char[] chars = null;
+            byte[]? buffer = null;
+            char[]? chars = null;
             try
             {
                 buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
@@ -127,14 +128,14 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public static SecureString Import(byte[] data) => Import(data, null);
 
-        public static SecureString Import(byte[] data, byte[] entropy)
+        public static SecureString Import(byte[] data, byte[]? entropy)
         {
-            SecureString result = null;
-            byte[] buffer = null;
+            SecureString? result = null;
+            byte[]? buffer = null;
             try
             {
                 buffer = ProtectedData.Unprotect(data, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
-                char[] chars = null;
+                char[]? chars = null;
                 int i = 0;
                 try
                 {
@@ -177,7 +178,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public static byte[] Export(this SecureString myself, byte[]? entropy)
             => Reveal(myself, (in ReadOnlySpan<char> chars, byte[] __entropy) =>
             {
-                byte[] buffer = null;
+                byte[]? buffer = null;
                 try
                 {
                     var writtenBytes = Encoding.Unicode.GetByteCount(chars);
@@ -257,8 +258,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
         {
             return Reveal(myself, (in ReadOnlySpan<char> myselfChars, (byte[] protectedData, byte[] entropy, StringComparison comparison) args) =>
             {
-                byte[] buffer = null;
-                char[] chars = null;
+                byte[]? buffer = null;
+                char[]? chars = null;
                 try
                 {
                     buffer = ProtectedData.Unprotect(args.protectedData, args.entropy, DataProtectionScope.CurrentUser);
@@ -354,3 +355,4 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public delegate TResult SecretRevealedText<TArg, TResult>(in ReadOnlySpan<char> characters, TArg arg);
     }
 }
+#nullable restore

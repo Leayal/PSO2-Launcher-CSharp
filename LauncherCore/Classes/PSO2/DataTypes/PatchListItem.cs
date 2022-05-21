@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
@@ -28,7 +24,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsRebootData;
 
-        private string? cachedRemoteFilename, cachedFilenameWithoutAffix;
+        private string cachedRemoteFilename, cachedFilenameWithoutAffix;
 
         public PatchListItem(PatchListBase origin, ReadOnlyMemory<char> filename, in long size, ReadOnlyMemory<char> md5) : this(origin, filename, md5, in size, null) { }
 

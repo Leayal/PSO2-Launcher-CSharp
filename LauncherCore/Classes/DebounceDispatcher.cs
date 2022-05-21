@@ -23,7 +23,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
     {
         private readonly Dispatcher _dispatcher;
         private DispatcherTimer timer;
-        private DateTime timerStarted { get; set; } = DateTime.UtcNow.AddYears(-1);
 
         public DebounceDispatcher(Dispatcher dispatcher)
         {
@@ -71,7 +70,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             timer.Start();
         }
 
-        private static void DebounceInvocation(object? sender, EventArgs e)
+        private static void DebounceInvocation(object sender, EventArgs e)
         {
             if (sender is DispatcherTimer timer && timer.Tag is DebounceDispatcher debouncer)
             {
@@ -165,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        private static void ThrottleInvocation(object? sender, EventArgs e)
+        private static void ThrottleInvocation(object sender, EventArgs e)
         {
             if (sender is DispatcherTimer timer && timer.Tag is DebounceDispatcher debouncer)
             {

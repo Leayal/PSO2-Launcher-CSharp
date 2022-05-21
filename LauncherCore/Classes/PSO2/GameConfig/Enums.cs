@@ -36,10 +36,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
     enum ScreenMode
     {
         /// <summary>Windowed with border.</summary>
-        /// <remarks>This was there since the ancient time and it still hasn't been changed since.</remarks>
+        /// <remarks>
+        /// <para>This was there since the ancient time and it still hasn't been changed since.</para>
+        /// <para>This mode may also receive the benefits which Borderless Fullscreen offers. But that depends on hardware's capability and operating system's configuration.</para>
+        /// </remarks>
         Windowed,
 
-        /// <summary>Borderless fullscreen (the other name is Windowed Fullscreen).</summary>
+        /// <summary>Borderless fullscreen (the other names are Virtual Fullscreen and Windowed Fullscreen).</summary>
         /// <remarks>
         /// <para>This should be preferred when you sure that you meet the conditions of one of these 3 <see href="https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/dxgi-flip-model">DXGI Flip model</see> modes:</para>
         /// <list type="table">
@@ -89,7 +92,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         /// </item>
         /// </list>
         /// </remarks>
-        [EnumDisplayName("Borderless Fullscreen")]
+        [EnumDisplayName("Windowed Fullscreen")]
         BorderlessFullscreen,
 
         /// <summary>Exclusive fullscreen is the old/traditional fullscreen mode where the process take full control of the GPU's output (the output to a monitor).</summary>

@@ -18,6 +18,7 @@ using System.ComponentModel;
 using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 using Microsoft.Win32;
 
+#nullable enable
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     /// <summary>
@@ -25,8 +26,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
     /// </summary>
     public partial class DataOrganizerWindow : MetroWindowEx
     {
-        const string PresetDeletePSO2Classic = "deletePSO2Classic";
-        const string PresetDeletePSO2Classic_FetchPatchList = PresetDeletePSO2Classic + "-fetchpatchlist";
         private static readonly char[] trimEndPath = { '*', Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
         private static readonly DependencyPropertyKey HasBulkActionSettingsPropertyKey = DependencyProperty.RegisterReadOnly("HasBulkActionSettings", typeof(bool), typeof(DataOrganizerWindow), new PropertyMetadata(false));
         public static readonly DependencyProperty HasBulkActionSettingsProperty = HasBulkActionSettingsPropertyKey.DependencyProperty;
@@ -503,7 +502,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             if (File.Exists(srcMove))
                             {
                                 var dstMove = Path.GetFullPath(item.TextBoxValue);
-                                Directory.CreateDirectory(Path.GetDirectoryName(dstMove));
+                                var dstParent = Path.GetDirectoryName(dstMove);
+                                if (dstParent != null)
+                                {
+                                    Directory.CreateDirectory(dstParent);
+                                }
                                 var symlinkInfo = File.ResolveLinkTarget(srcMove, true);
                                 if (symlinkInfo == null)
                                 {
@@ -530,7 +533,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             else if (action == DataAction.MoveAndSymlink)
                             {
                                 var dstMove = Path.GetFullPath(item.TextBoxValue);
-                                Directory.CreateDirectory(Path.GetDirectoryName(dstMove));
+                                var dstParent = Path.GetDirectoryName(dstMove);
+                                if (dstParent != null)
+                                {
+                                    Directory.CreateDirectory(dstParent);
+                                }
                                 File.CreateSymbolicLink(srcMove, dstMove);
                             }
                         }
@@ -689,7 +696,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void BuilkSelectAll(IEnumerable list)
+        private void BuilkSelectAll(IEnumerable? list)
         {
             if (list != null)
             {
@@ -703,7 +710,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void BuilkDeselectAll(IEnumerable list)
+        private void BuilkDeselectAll(IEnumerable? list)
         {
             if (list != null)
             {
@@ -758,3 +765,4 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
     }
 }
+#nullable restore

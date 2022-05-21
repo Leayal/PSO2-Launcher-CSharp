@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.Shared
 {
+    /// <summary>A helper class providing convenient methods to read User Account Control (UAC)'s settings.</summary>
     public static class UacHelper
     {
         private const string uacRegistryKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System";
@@ -28,9 +29,9 @@ namespace Leayal.Shared
         static extern bool CloseHandle(IntPtr hObject);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern bool GetTokenInformation([In] IntPtr TokenHandle, [In] TOKEN_INFORMATION_CLASS TokenInformationClass, ref TOKEN_ELEVATION_TYPE TokenInformation, [In] uint TokenInformationLength, [Out] out uint ReturnLength);
+        private static extern bool GetTokenInformation([In] IntPtr TokenHandle, [In] TOKEN_INFORMATION_CLASS TokenInformationClass, ref TOKEN_ELEVATION_TYPE TokenInformation, [In] uint TokenInformationLength, [Out] out uint ReturnLength);
 
-        public enum TOKEN_INFORMATION_CLASS
+        private enum TOKEN_INFORMATION_CLASS
         {
             TokenUser = 1,
             TokenGroups,
@@ -63,26 +64,24 @@ namespace Leayal.Shared
             MaxTokenInfoClass
         }
 
-        public enum TOKEN_ELEVATION_TYPE
+        private enum TOKEN_ELEVATION_TYPE
         {
             TokenElevationTypeDefault = 1,
             TokenElevationTypeFull,
             TokenElevationTypeLimited
         }
 
+        /// <summary>Gets a boolean determining whether UAC is enabled or not.</summary>
         public static bool IsUacEnabled
         {
             get
             {
-                using (RegistryKey uacKey = Registry.LocalMachine.OpenSubKey(uacRegistryKey, false))
+                using (var uacKey = Registry.LocalMachine.OpenSubKey(uacRegistryKey, false))
                 {
                     var obj = uacKey.GetValue(uacRegistryValue);
                     if (obj is int i && i != 0)
                     {
                         return true;
-
-                        // bool result = uacKey.GetValue(uacRegistryValue).Equals(1);
-                        // return result;
                     }
                     else
                     {
@@ -131,8 +130,7 @@ namespace Leayal.Shared
         {
             if (IsUacEnabled)
             {
-                IntPtr tokenHandle = IntPtr.Zero;
-                if (!OpenProcessToken(processHandle, TOKEN_READ, out tokenHandle))
+                if (!OpenProcessToken(processHandle, TOKEN_READ, out var tokenHandle))
                 {
                     throw new ApplicationException("Could not get process token. Win32 Error Code: " + Marshal.GetLastWin32Error());
                 }
@@ -162,12 +160,11 @@ namespace Leayal.Shared
             }
             else
             {
-                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                using (var identity = WindowsIdentity.GetCurrent())
                 {
-                    WindowsPrincipal principal = new WindowsPrincipal(identity);
-                    bool result = principal.IsInRole(WindowsBuiltInRole.Administrator)
-                               || principal.IsInRole(0x200); //Domain Administrator
-                    return result;
+                    var principal = new WindowsPrincipal(identity);
+                    return (principal.IsInRole(WindowsBuiltInRole.Administrator)
+                               || principal.IsInRole(0x200)); // Domain Administrator
                 }
             }
         }

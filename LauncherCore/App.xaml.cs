@@ -1,13 +1,11 @@
 ﻿using Leayal.SharedInterfaces;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using Leayal.SharedInterfaces.Compatibility;
 using System.IO;
 using ControlzEx.Theming;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.Win32;
 using System.Diagnostics;
 using Leayal.Shared;
 using Leayal.Shared.Windows;
@@ -17,6 +15,7 @@ using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Toolbox.Windows;
 using Leayal.PSO2Launcher.Toolbox;
 
+#nullable enable
 namespace Leayal.PSO2Launcher.Core
 {
     /// <summary>
@@ -207,7 +206,7 @@ namespace Leayal.PSO2Launcher.Core
                         {
                             if (formObj is System.Windows.Forms.Form dummy)
                             {
-                                if (!!dummy.Disposing && !dummy.IsDisposed)
+                                if (!dummy.Disposing && !dummy.IsDisposed)
                                 {
                                     dummy.Dispose();
                                 }
@@ -246,7 +245,7 @@ namespace Leayal.PSO2Launcher.Core
                         {
                             if (formObj is System.Windows.Forms.Form dummy)
                             {
-                                if (!!dummy.Disposing && !dummy.IsDisposed)
+                                if (!dummy.Disposing && !dummy.IsDisposed)
                                 {
                                     dummy.Dispose();
                                 }
@@ -296,21 +295,6 @@ namespace Leayal.PSO2Launcher.Core
                 MessageBox.Show(str, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             e.Handled = true;
-        }
-
-        private static void RestartWithArgs(ICollection<string> commandLineArgs)
-        {
-            ProcessStartInfo processStartInfo = new();
-            processStartInfo.FileName = RuntimeValues.EntryExecutableFilename;
-            if (commandLineArgs != null && commandLineArgs.Count != 0)
-            {
-                foreach (var arg in commandLineArgs)
-                {
-                    processStartInfo.ArgumentList.Add(arg);
-                }
-            }
-            System.Windows.Forms.Application.Exit();
-            Process.Start(processStartInfo)?.Dispose();
         }
 
         public void ExecuteCommandUrl(Uri url)
@@ -553,3 +537,4 @@ namespace Leayal.PSO2Launcher.Core
         }
     }
 }
+#nullable restore

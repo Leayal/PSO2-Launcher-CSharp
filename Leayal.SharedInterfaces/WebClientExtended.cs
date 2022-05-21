@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.SharedInterfaces
 {
+
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
+    [Obsolete("This class is not recommended to use. Please use System.Net.Http.HttpClient instead.", false)]
     public class WebClientExtended : WebClient
     {
         public WebClientExtended() : base()
@@ -26,4 +27,5 @@ namespace Leayal.SharedInterfaces
             return request;
         }
     }
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
 }

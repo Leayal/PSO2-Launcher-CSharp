@@ -16,7 +16,18 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.ReleaseCandidate = rc;
         }
 
-        public static bool TryParse(in string versionString, out PSO2Version value) => TryParse(versionString.AsSpan(), out value);
+        public static bool TryParse(string versionString, out PSO2Version value)
+        {
+            if (versionString == null)
+            {
+                value = default;
+                return false;
+            }
+            else
+            {
+                return TryParse(versionString.AsSpan(), out value);
+            }
+        }
 
         public static bool TryParse(ReadOnlySpan<char> versionString, out PSO2Version value)
         {
@@ -30,6 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
                 value = default;
                 return false;
             }
+
             var comparand = "v_rc_".AsSpan();
             ReadOnlySpan<char> buffer;
             if (versionString[0] == comparand[0])
@@ -68,18 +80,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return false;
         }
 
-        public static bool TrySafeParse(in string versionString, out PSO2Version value)
-        {
-            var trimmed = versionString.AsSpan().Trim(); // For safety, trim it
-            var spaceIndex = trimmed.IndexOfAny(new char[] { ' ', '\t' });
-            if (spaceIndex != -1)
-            {
-                trimmed = trimmed.Slice(0, spaceIndex);
-            }
-
-            return PSO2Version.TryParse(trimmed, out value);
-        }
-
         /// <summary>Compares this instance to a specified <see cref="PSO2Version"/> and returns an indication of their relative values.</summary>
         /// <returns>
         /// <para>A signed number indicating the relative values of this instance and value.</para>
@@ -88,7 +88,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <para><b>Zero</b> – This instance is equal to <paramref name="other"/>.</para>
         /// <para><b>Greater than zero</b> – This instance is greater than <paramref name="other"/>.</para>
         /// </returns>
-        public int CompareTo(PSO2Version other)
+        public readonly int CompareTo(PSO2Version other)
         {
             var verCompare = this.Version.CompareTo(other.Version);
             if (verCompare == 0)
@@ -125,7 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return int.Parse(sb.ToString());
         }
 
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             if (obj is PSO2Version ver)
             {
@@ -134,11 +134,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return false;
         }
 
-        public readonly override int GetHashCode() => this.Version.GetHashCode() ^ this.ReleaseCandidate.GetHashCode();
+        public readonly override int GetHashCode() => HashCode.Combine(this.Version, this.ReleaseCandidate);
 
         public readonly override string ToString() => $"v{this.Version}_rc_{this.ReleaseCandidate}";
 
-        public bool Equals(PSO2Version other) => (this.Version.Equals(other.Version) && this.ReleaseCandidate.Equals(other.ReleaseCandidate));
+        public readonly bool Equals(PSO2Version other) => (this.Version.Equals(other.Version) && this.ReleaseCandidate.Equals(other.ReleaseCandidate));
 
         public static bool operator ==(PSO2Version left, PSO2Version right) => ((left.Version == right.Version) && (left.ReleaseCandidate == right.ReleaseCandidate));
 

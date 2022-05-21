@@ -15,7 +15,7 @@ namespace Leayal.SharedInterfaces
 
         protected ConfigurationFileBase() : this(StringComparer.OrdinalIgnoreCase) { }
 
-        protected ConfigurationFileBase(IEqualityComparer<string?> comparer)
+        protected ConfigurationFileBase(IEqualityComparer<string> comparer)
         {
             this.keyValuePairs = new Dictionary<string, ValueWrap>(comparer);
         }

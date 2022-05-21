@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Leayal.Shared;
 
+#nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     public partial class GameClientUpdater
@@ -58,17 +59,29 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var path_pso2conf = Path.GetFullPath("user.pso2", pso2conf_dir);
                     UserConfig conf;
 
-                    static bool ReadjustPSO2UserConfig(UserConfig conf, GameClientSelection downloadMode) => (Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode) || AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode switch
+                    static bool AdjustPSO2UserConfig_FirstDownloadCheck(UserConfig conf, GameClientSelection downloadMode)
                     {
-                        GameClientSelection.NGS_Only => true,
-                        GameClientSelection.NGS_AND_CLASSIC => true,
-                        _ => false
-                    }));
+                        if (downloadMode switch
+                        {
+                            GameClientSelection.NGS_Only => true,
+                            GameClientSelection.NGS_AND_CLASSIC => true,
+                            GameClientSelection.Classic_Only => true,
+                            _ => false
+                        })
+                        {
+                            if (!conf.TryGetProperty("FirstDownloadCheck", out var val_FirstDownloadCheck) || val_FirstDownloadCheck is not bool val || val != true)
+                            {
+                                conf["FirstDownloadCheck"] = true;
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
 
                     if (File.Exists(path_pso2conf))
                     {
                         conf = UserConfig.FromFile(path_pso2conf);
-                        if (ReadjustPSO2UserConfig(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode))
                         {
                             conf.SaveAs(path_pso2conf);
                         }
@@ -76,7 +89,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     else
                     {
                         conf = new UserConfig("Ini");
-                        if (ReadjustPSO2UserConfig(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode))
                         {
                             if (!Directory.Exists(pso2conf_dir)) // Should be safe for symlink 
                             {
@@ -185,19 +198,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        private static bool AdjustPSO2UserConfig_FirstDownloadCheck(UserConfig conf, bool value)
-        {
-            if (value)
-            {
-                if (!conf.TryGetProperty("FirstDownloadCheck", out var val_FirstDownloadCheck) || val_FirstDownloadCheck is not bool val || val != true)
-                {
-                    conf["FirstDownloadCheck"] = true;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public event BackupFileFoundHandler BackupFileFound;
         private async Task OnBackupFileFound(BackupFileFoundEventArgs e)
         {
@@ -251,7 +251,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public class BackupFileFoundEventArgs : EventArgs
         {
             public readonly string Root;
-            private IEnumerable<BackupRestoreItem> walking;
+            private IEnumerable<BackupRestoreItem>? walking;
             private readonly bool doesReboot, doesClassic;
 
             public bool HasRebootBackup => this.doesReboot;
@@ -329,14 +329,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.BackupFileDestination = to;
             }
 
-            public override bool Equals([NotNullWhen(true)] object obj) => (obj is BackupRestoreItem item && this.Equals(item));
+            public override readonly bool Equals(object? obj) => (obj is BackupRestoreItem item && this.Equals(item));
 
-            public bool Equals(BackupRestoreItem other)
+            public readonly bool Equals(BackupRestoreItem other)
                 => string.Equals(this.BackupFileSourcePath, other.BackupFileSourcePath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
-            public override int GetHashCode() => HashCode.Combine(this.RelativePath, this.BackupFileSourcePath);
+            public override readonly int GetHashCode() => HashCode.Combine(this.RelativePath, this.BackupFileSourcePath);
 
-            public override string ToString() => $"BackupRestoreItem: {this.RelativePath}";
+            public override readonly string ToString() => $"BackupRestoreItem: {this.RelativePath}";
         }
 
         sealed class DownloadItem : IEquatable<DownloadItem>
@@ -362,3 +362,4 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
     }
 }
+#nullable restore

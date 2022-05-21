@@ -620,6 +620,24 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             var baseUri = new Uri(patchBaseUrl);
             var filelistUrl = new Uri(baseUri, filelistFilename);
+            static async Task<PatchListMemory> GetFromRemote(HttpClient client, PatchRootInfo rootInfo, Uri filelistUrl, bool? isReboot, string filelistFilename, CancellationToken cancellationToken)
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
+                {
+                    request.Headers.Host = filelistUrl.Host;
+                    SetUA_AQUA_HTTP(request);
+                    using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        using (var contentstream = response.Content.ReadAsStream(cancellationToken))
+                        using (var tr = new StreamReader(contentstream))
+                        using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
+                        {
+                            return parser.ToMemory();
+                        }
+                    }
+                }
+            }
 
             if (this.dataCache != null)
             {
@@ -628,21 +646,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     if (stream == null)
                     {
-                        using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
-                        {
-                            request.Headers.Host = baseUri.Host;
-                            SetUA_AQUA_HTTP(request);
-                            using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                            {
-                                response.EnsureSuccessStatusCode();
-                                using (var contentstream = response.Content.ReadAsStream(cancellationToken))
-                                using (var tr = new StreamReader(contentstream))
-                                using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
-                                {
-                                    return parser.ToMemory();
-                                }
-                            }
-                        }
+                        return await GetFromRemote(this.client, rootInfo, filelistUrl, isReboot, filelistFilename, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -657,21 +661,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else
             {
-                using (var request = new HttpRequestMessage(HttpMethod.Get, filelistUrl))
-                {
-                    request.Headers.Host = baseUri.Host;
-                    SetUA_AQUA_HTTP(request);
-                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
-                    {
-                        response.EnsureSuccessStatusCode();
-                        using (var stream = response.Content.ReadAsStream(cancellationToken))
-                        using (var tr = new StreamReader(stream))
-                        using (var parser = new PatchListDeferred(rootInfo, isReboot, tr, false))
-                        {
-                            return parser.ToMemory();
-                        }
-                    }
-                }
+                return await GetFromRemote(this.client, rootInfo, filelistUrl, isReboot, filelistFilename, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -809,8 +799,42 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         private async Task<PSO2Version> InnerGetPatchVersionAsync(string patchUrl, CancellationToken cancellationToken)
         {
+            static PSO2Version ReadPSO2VersionFromStream(string? raw)
+            {
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    throw new UnexpectedDataFormatException();
+                }
+
+                if (PSO2Version.TryParse(raw, out var result))
+                {
+                    return result;
+                }
+                else
+                {
+                    throw new UnexpectedDataFormatException();
+                }
+            }
+
             var baseUri = new Uri(patchUrl);
             var requestUri = new Uri(baseUri, "version.ver");
+
+            static async Task<PSO2Version> FulfillFromRemote(HttpClient client, Uri requestUri, CancellationToken cancellationToken)
+            {
+               
+                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
+                {
+                    request.Headers.Host = requestUri.Host;
+                    SetUA_AQUA_HTTP(request);
+                    // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
+                    using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                        return ReadPSO2VersionFromStream(raw);
+                    }
+                }
+            }
 
             if (this.dataCache != null)
             {
@@ -818,79 +842,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 {
                     if (stream == null)
                     {
-                        using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
-                        {
-                            request.Headers.Host = baseUri.Host;
-                            SetUA_AQUA_HTTP(request);
-                            // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
-                            using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
-                            {
-                                response.EnsureSuccessStatusCode();
-                                var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                                if (string.IsNullOrWhiteSpace(raw))
-                                {
-                                    throw new UnexpectedDataFormatException();
-                                }
-
-                                if (PSO2Version.TrySafeParse(in raw, out var result))
-                                {
-                                    return result;
-                                }
-                                else
-                                {
-                                    throw new UnexpectedDataFormatException();
-                                }
-                            }
-                        }
+                        return await FulfillFromRemote(this.client, requestUri, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
                         using (var tr = new StreamReader(stream))
                         {
-                            var raw = tr.ReadLine();
-                            if (string.IsNullOrWhiteSpace(raw))
-                            {
-                                throw new UnexpectedDataFormatException();
-                            }
-
-                            if (PSO2Version.TrySafeParse(in raw, out var result))
-                            {
-                                return result;
-                            }
-                            else
-                            {
-                                throw new UnexpectedDataFormatException();
-                            }
+                            return ReadPSO2VersionFromStream(tr.ReadLine());
                         }
                     }
                 }
             }
             else
             {
-                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUri))
-                {
-                    request.Headers.Host = baseUri.Host;
-                    SetUA_AQUA_HTTP(request);
-                    // By default it complete with buffering with HttpCompletionOption.ResponseContentRead
-                    using (var response = await this.client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false))
-                    {
-                        response.EnsureSuccessStatusCode();
-                        var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                        if (string.IsNullOrWhiteSpace(raw))
-                        {
-                            throw new UnexpectedDataFormatException();
-                        }
-
-                        if (PSO2Version.TrySafeParse(in raw, out var result))
-                        {
-                            return result;
-                        }
-                        else
-                        {
-                            throw new UnexpectedDataFormatException();
-                        }
-                    }
-                }
+                return await FulfillFromRemote(this.client, requestUri, cancellationToken).ConfigureAwait(false);
             }
         }
 #nullable restore
