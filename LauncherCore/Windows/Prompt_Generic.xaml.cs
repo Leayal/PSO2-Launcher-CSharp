@@ -139,8 +139,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            dialog.ShowAsModal(parent);
-            return dialog._result;
+            return dialog.ShowAsModal(parent);
         }
 
         public static MessageBoxResult? ShowError(Window parent, string? text, string? title, Exception exception, MessageBoxButton buttons, MessageBoxImage image)
@@ -164,7 +163,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private MessageBoxResult? _result;
 
-        private Prompt_Generic(in MessageBoxButton buttons, in MessageBoxImage image) : base()
+        protected Prompt_Generic(in MessageBoxButton buttons, in MessageBoxImage image) : base()
         {
             this.AutoHideInTaskbarByOwnerIsVisible = true;
             this._result = null;
@@ -233,10 +232,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             };
         }
 
-        private void ShowAsModal(Window parent)
+        protected MessageBoxResult? ShowAsModal(Window parent)
         {
             this.Owner = parent;
             this.ShowDialog();
+
+            return this._result;
         }
 
         private string ReFormatDialogAsText()

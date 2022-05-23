@@ -29,24 +29,26 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ThisSelf_Loaded(object sender, RoutedEventArgs e)
         {
-            this.checkbox_loadweblauncher.IsChecked = this._config.LauncherLoadWebsiteAtStartup;
-            this.checkbox_checkpso2updatestartup.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartup;
-            this.checkbox_checkpso2updatestartup_prompt.IsChecked = this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt;
+            var conf = this._config;
 
-            this.checkbox_backgroundselfupdatechecker.IsChecked = this._config.LauncherCheckForSelfUpdates;
-            this.numbericbox_backgroundselfupdatechecker_intervalhour.Value = this._config.LauncherCheckForSelfUpdates_IntervalHour;
-            this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked = this._config.LauncherCheckForSelfUpdatesNotifyIfInTray;
+            this.checkbox_loadweblauncher.IsChecked = conf.LauncherLoadWebsiteAtStartup;
+            this.checkbox_checkpso2updatestartup.IsChecked = conf.LauncherCheckForPSO2GameUpdateAtStartup;
+            this.checkbox_checkpso2updatestartup_prompt.IsChecked = conf.LauncherCheckForPSO2GameUpdateAtStartupPrompt;
 
-            this.checkbox_useusewebview2.IsChecked = this._config.UseWebView2IfAvailable;
+            this.checkbox_backgroundselfupdatechecker.IsChecked = conf.LauncherCheckForSelfUpdates;
+            this.numbericbox_backgroundselfupdatechecker_intervalhour.Value = conf.LauncherCheckForSelfUpdates_IntervalHour;
+            this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked = conf.LauncherCheckForSelfUpdatesNotifyIfInTray;
 
-            this.checkbox_lauchlauncherasadmin.IsChecked = this._config.LaunchLauncherAsAdmin;
+            this.checkbox_useusewebview2.IsChecked = conf.UseWebView2IfAvailable;
+
+            this.checkbox_lauchlauncherasadmin.IsChecked = conf.LaunchLauncherAsAdmin;
             this.checkbox_lauchlauncherasadmin.Checked += this.Checkbox_lauchlauncherasadmin_Checked;
 
-            this.checkbox_checkpso2updatebeforegamestart.IsChecked = this._config.CheckForPSO2GameUpdateBeforeLaunchingGame;
-            this.checkbox_useclock.IsChecked = this._config.LauncherUseClock;
+            this.checkbox_checkpso2updatebeforegamestart.IsChecked = conf.CheckForPSO2GameUpdateBeforeLaunchingGame;
+            this.checkbox_useclock.IsChecked = conf.LauncherUseClock;
             this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
 
-            var defaultval_GameStartStyle = this._config.DefaultGameStartStyle;
+            var defaultval_GameStartStyle = conf.DefaultGameStartStyle;
             var vals_GameStartStyle = Enum.GetValues<GameStartStyle>();
             var listOfGameStartStyles = new List<EnumComboBox.ValueDOM<GameStartStyle>>(vals_GameStartStyle.Length);
             EnumComboBox.ValueDOM<GameStartStyle> default_GameStartStyle = null;
@@ -76,14 +78,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             }
-            if (this._config.PSO2Tweaker_CompatEnabled)
+            if (conf.PSO2Tweaker_CompatEnabled)
             {
-                var tweakerexe = this._config.PSO2Tweaker_Bin_Path;
+                var tweakerexe = conf.PSO2Tweaker_Bin_Path;
                 if (!string.IsNullOrWhiteSpace(tweakerexe) && System.IO.File.Exists(tweakerexe))
                 {
                     var dom_StartWithPSO2Tweaker = new EnumComboBox.ValueDOM<GameStartStyle>(GameStartStyle.StartWithPSO2Tweaker);
                     listOfGameStartStyles.Add(dom_StartWithPSO2Tweaker);
-                    if (this._config.PSO2Tweaker_LaunchGameWithTweaker)
+                    if (conf.PSO2Tweaker_LaunchGameWithTweaker)
                     {
                         default_GameStartStyle = dom_StartWithPSO2Tweaker;
                     }
@@ -98,33 +100,43 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.combobox_defaultgamestartstyle.SelectedItem = default_GameStartStyle;
             }
+
+            var defaultval_PSO2DataBackupBehavior = conf.PSO2DataBackupBehavior;
+            var dict_PSO2DataBackupBehavior = EnumComboBox.EnumToDictionary<PSO2DataBackupBehavior>();
+            this.combobox_pso2databackupbehavior.ItemsSource = dict_PSO2DataBackupBehavior.Values;
+            if (dict_PSO2DataBackupBehavior.TryGetValue(defaultval_PSO2DataBackupBehavior, out var dom))
+            {
+                this.combobox_pso2databackupbehavior.SelectedItem = dom;
+            }
+            else
+            {
+                this.combobox_pso2databackupbehavior.SelectedIndex = 0;
+            }
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
-            if (this._webbrowserloaded)
+            var conf = this._config;
+            if (this._webbrowserloaded && this.checkbox_useusewebview2.IsChecked != conf.UseWebView2IfAvailable)
             {
-                if (this.checkbox_useusewebview2.IsChecked != this._config.UseWebView2IfAvailable)
+                if (Prompt_Generic.Show(this, "The launcher will have to re-initialize the web browser control because it has already been loaded with a different framework." + Environment.NewLine + "This re-initialization process may make the UI freeze a little bit." + Environment.NewLine + "Are you sure you want to continue?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
                 {
-                    if (Prompt_Generic.Show(this, "The launcher will have to re-initialize the web browser control because it has already been loaded with a different framework." + Environment.NewLine + "This re-initialization process may make the UI freeze a little bit." + Environment.NewLine + "Are you sure you want to continue?", "Question", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
-                    {
-                        return;
-                    }
+                    return;
                 }
             }
 
-            this._config.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
-            this._config.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
-            this._config.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
-            this._config.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
-            this._config.LaunchLauncherAsAdmin = (this.checkbox_lauchlauncherasadmin.IsChecked == true);
+            conf.LauncherLoadWebsiteAtStartup = (this.checkbox_loadweblauncher.IsChecked == true);
+            conf.LauncherCheckForPSO2GameUpdateAtStartup = (this.checkbox_checkpso2updatestartup.IsChecked == true);
+            conf.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
+            conf.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
+            conf.LaunchLauncherAsAdmin = (this.checkbox_lauchlauncherasadmin.IsChecked == true);
 
-            this._config.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
-            this._config.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
-            this._config.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
-            this._config.LauncherCheckForSelfUpdatesNotifyIfInTray = (this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked == true);
+            conf.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
+            conf.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
+            conf.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
+            conf.LauncherCheckForSelfUpdatesNotifyIfInTray = (this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked == true);
 
-            this._config.UseWebView2IfAvailable = (this.checkbox_useusewebview2.IsChecked == true);
+            conf.UseWebView2IfAvailable = (this.checkbox_useusewebview2.IsChecked == true);
 
             if (this.combobox_defaultgamestartstyle.SelectedItem is EnumComboBox.ValueDOM<GameStartStyle> dom_GameStartStyle)
             {
@@ -132,16 +144,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 switch (val)
                 {
                     case GameStartStyle.StartWithPSO2Tweaker:
-                        this._config.PSO2Tweaker_LaunchGameWithTweaker = true;
+                        conf.PSO2Tweaker_LaunchGameWithTweaker = true;
                         break;
                     default:
-                        this._config.PSO2Tweaker_LaunchGameWithTweaker = false;
-                        this._config.DefaultGameStartStyle = val;
+                        conf.PSO2Tweaker_LaunchGameWithTweaker = false;
+                        conf.DefaultGameStartStyle = val;
                         break;
                 }
             }
 
-            this._config.Save();
+            conf.PSO2DataBackupBehavior = ((EnumComboBox.ValueDOM<PSO2DataBackupBehavior>)(this.combobox_pso2databackupbehavior.SelectedItem)).Value;
+
+            conf.Save();
             this.CustomDialogResult = true;
             this.Close();
             // SystemCommands.CloseWindow(this);

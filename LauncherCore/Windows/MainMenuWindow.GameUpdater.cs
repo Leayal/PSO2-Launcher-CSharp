@@ -124,6 +124,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var downloaderProfile = this.config_main.DownloaderProfile;
             var downloaderProfileClassic = this.config_main.DownloaderProfileClassic;
             var conf_DownloadType = this.config_main.DownloadSelection;
+            bool shouldScanForBackups = (this.config_main.PSO2DataBackupBehavior != PSO2DataBackupBehavior.IgnoreAll);
             GameClientSelection downloadType;
             switch (selection)
             {
@@ -171,7 +172,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     sb.Append("(Your setting has been set to ignore Classic files. However, you have selected scanning including Classic files. If you continue, your game client may become full NGS and Classic game)");
                 }
 
-                if (downloaderProfile == FileScanFlags.CacheOnly || downloaderProfileClassic == FileScanFlags.CacheOnly)
+                if (downloaderProfile == FileScanFlags.CacheOnly || (downloaderProfileClassic == FileScanFlags.CacheOnly && (selection == GameClientSelection.NGS_AND_CLASSIC || selection == GameClientSelection.Classic_Only)))
                 {
                     sb.AppendLine();
                     sb.Append("(If the download profile is 'Cache Only', it will be treated as 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
@@ -263,7 +264,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
                 }
                 else
                 {
@@ -560,7 +561,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        class GameClientUpdateResultLogDialogFactory : ILogDialogFactory
+        sealed class GameClientUpdateResultLogDialogFactory : ILogDialogFactory
         {
             private readonly IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> items;
             private readonly Guid Id;
@@ -582,88 +583,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)
         {
-            if (this.Dispatcher.CheckAccess())
+            var backupbehavior = this.config_main.PSO2DataBackupBehavior;
+
+            static bool? ShowPrompt(MainMenuWindow window, GameClientUpdater.BackupFileFoundEventArgs e)
+                    => ((Prompt_PSO2DataBackupFound.Show(window, e, window.config_main) == MessageBoxResult.Yes) ? false : null);
+
+            e.Handled = backupbehavior switch
             {
-                string msg;
-                if (e.HasClassicBackup && e.HasRebootBackup)
-                {
-                    msg = "Found backup for classic and NGS files.\r\nDo you want to restore the backup?";
-                }
-                else
-                {
-                    if (e.HasClassicBackup)
-                    {
-                        msg = "Found backup for classic files.\r\nDo you want to restore the backup?";
-                    }
-                    else if (e.HasRebootBackup)
-                    {
-                        msg = "Found backup for NGS files.\r\nDo you want to restore the backup?";
-                    }
-                    else
-                    {
-                        msg = null;
-                    }
-                }
-                if (msg != null)
-                {
-                    if (Prompt_Generic.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-                    {
-                        e.Handled = false;
-                    }
-                    else
-                    {
-                        e.Handled = null;
-                    }
-                }
-                else
-                {
-                    e.Handled = false;
-                }
-            }
-            else
-            {
-                TaskCompletionSource<bool?> tsrc = new();
-                _ = this.Dispatcher.InvokeAsync(delegate
-                {
-                    string msg;
-                    if (e.HasClassicBackup && e.HasRebootBackup)
-                    {
-                        msg = "Found backup for classic and NGS files.\r\nDo you want to restore the backup?";
-                    }
-                    else
-                    {
-                        if (e.HasClassicBackup)
-                        {
-                            msg = "Found backup for classic files.\r\nDo you want to restore the backup?";
-                        }
-                        else if (e.HasRebootBackup)
-                        {
-                            msg = "Found backup for NGS files.\r\nDo you want to restore the backup?";
-                        }
-                        else
-                        {
-                            msg = null;
-                        }
-                    }
-                    if (msg != null)
-                    {
-                        if (Prompt_Generic.Show(this, msg, "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
-                        {
-                            tsrc.SetResult(false);
-                        }
-                        else
-                        {
-                            tsrc.SetResult(null);
-                        }
-                    }
-                    else
-                    {
-                        tsrc.SetResult(false);
-                    }
-                });
-                e.Handled = await tsrc.Task;
-            }
-            
+                PSO2DataBackupBehavior.RestoreWithoutAsking => false,
+                PSO2DataBackupBehavior.IgnoreAll => null, // We will never reach this but let put it here to show intention.
+                _ => (this.Dispatcher.CheckAccess() ? ShowPrompt(this, e) : await this.Dispatcher.InvokeAsync<bool?>(() => ShowPrompt(this, e)).Task.ConfigureAwait(false))
+            };
         }
     }
 }

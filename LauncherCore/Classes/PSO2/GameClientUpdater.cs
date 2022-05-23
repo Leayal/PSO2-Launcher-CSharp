@@ -128,13 +128,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
 #nullable enable
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
-            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, selection, fScanReboot, fScanClassic, cancellationToken);
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, bool fShouldScanForBackup, CancellationToken cancellationToken)
+            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, null, selection, fScanReboot, fScanClassic, fShouldScanForBackup, cancellationToken);
 
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? pso2tweaker_binpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
-            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, pso2tweaker_binpath, selection, fScanReboot, fScanClassic, cancellationToken);
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? pso2tweaker_binpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, bool fShouldScanForBackup, CancellationToken cancellationToken)
+            => await this.ScanAndDownloadFilesAsync(dir_pso2bin, null, pso2tweaker_binpath, selection, fScanReboot, fScanClassic, fShouldScanForBackup, cancellationToken);
 
-        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? dir_classic_data, string? pso2tweaker_dirpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, CancellationToken cancellationToken)
+        public async Task ScanAndDownloadFilesAsync(string dir_pso2bin, string? dir_classic_data, string? pso2tweaker_dirpath, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, bool fShouldScanForBackup, CancellationToken cancellationToken)
         {
             if (fScanReboot == FileScanFlags.None)
             {
@@ -169,10 +169,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         duhB = FileCheckHashCache.Create(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
 
-                        var ev_backup = await SearchForBackup(dir_pso2bin, selection);
-                        if (ev_backup != null)
+                        if (fShouldScanForBackup)
                         {
-                            RestoreBackups(ev_backup, in cancellationToken);
+                            var ev_backup = await SearchForBackup(dir_pso2bin, selection);
+                            if (ev_backup != null)
+                            {
+                                RestoreBackups(ev_backup, in cancellationToken);
+                            }
                         }
 
                         patchlist = await t_patchlist;

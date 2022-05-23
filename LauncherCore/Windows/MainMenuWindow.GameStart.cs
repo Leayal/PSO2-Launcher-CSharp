@@ -162,7 +162,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
-                        bool isLaunchWithTweaker = e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker;
+                        bool isLaunchWithTweaker = (e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker);
                         string tweakerPath = this.config_main.PSO2Tweaker_Bin_Path;
                         if (isLaunchWithTweaker)
                         {
@@ -172,7 +172,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 return;
                             }
                         }
-
+                        
                         using (var existingProcess = await TryFindPSO2Process(filename))
                         {
                             if (existingProcess != null)
@@ -483,7 +483,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.CreateNewParagraphInLog("[GameStart] Quick check executable files...");
 
                                 // Select "Balanced" for safety reason.
-                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, FileScanFlags.CacheOnly, cancelToken);
+                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, FileScanFlags.CacheOnly, false, cancelToken);
 
                                 if (!cancelToken.IsCancellationRequested)
                                 {

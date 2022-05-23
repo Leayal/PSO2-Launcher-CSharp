@@ -109,6 +109,30 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("pso2_downloadselection", (int)value);
         }
 
+        public PSO2DataBackupBehavior PSO2DataBackupBehavior
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2_databackup_behavior", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    var num = (int)val.Value;
+                    var vals = Enum.GetValues<PSO2DataBackupBehavior>();
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        if (!EnumVisibleInOptionAttribute.TryGetIsVisible(vals[i], out var isvisible) || isvisible)
+                        {
+                            if (((int)vals[i]) == num)
+                            {
+                                return vals[i];
+                            }
+                        }
+                    }
+                }
+                return PSO2DataBackupBehavior.Ask;
+            }
+            set => this.Set("pso2_databackup_behavior", (int)value);
+        }
+
         public PSO2.FileScanFlags DownloaderProfile
         {
             get

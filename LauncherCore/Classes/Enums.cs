@@ -30,6 +30,18 @@ namespace Leayal.PSO2Launcher.Core.Classes
         NonPersistentRemember
     }
 
+    public enum PSO2DataBackupBehavior
+    {
+        [EnumDisplayName("Ask me if I want to restore or not")]
+        Ask = 0,
+
+        [EnumDisplayName("Restore without asking me")]
+        RestoreWithoutAsking,
+
+        [EnumDisplayName("Ignore all backups (Really NOT recommended)")]
+        IgnoreAll
+    }
+
     enum CustomLibraryModMetadata_TrustVerificationState
     {
         Bypassed = 0,

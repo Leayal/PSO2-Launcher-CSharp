@@ -312,7 +312,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             if (factorSetting > 0)
             {
                 fileCheckThrottleFactor = Convert.ToInt32(1000 / factorSetting);
-                if (fileCheckThrottleFactor < 20)
+                if (fileCheckThrottleFactor < 10)
                 {
                     fileCheckThrottleFactor = 0;
                 }
