@@ -220,6 +220,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+        public event BackupFileRestoreCompleteHandler BackupFileRestoreComplete;
+
         public event FileCheckBeginHandler FileCheckBegin;
         private void OnFileCheckBegin(in int total) => this.FileCheckBegin?.Invoke(this, total);
 
@@ -245,6 +247,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public delegate void OperationBeginHandler(GameClientUpdater sender, int concurrentlevel);
         public delegate Task BackupFileFoundHandler(GameClientUpdater sender, BackupFileFoundEventArgs e);
 
+        public delegate void BackupFileRestoreCompleteHandler(GameClientUpdater sender, BackupFileFoundEventArgs? e, int numberOfBackupFiles);
+
         private delegate void DownloadFinishCallback(in DownloadItem item, in bool success);
         private delegate void InnerDownloadQueueAddCallback(in DownloadItem item);
             
@@ -252,10 +256,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             public readonly string Root;
             private IEnumerable<BackupRestoreItem>? walking;
-            private readonly bool doesReboot, doesClassic;
-
-            public bool HasRebootBackup => this.doesReboot;
-            public bool HasClassicBackup => this.doesClassic;
+            public readonly GameClientSelection GameSelection;
+            private readonly PatchListMemory patchlist;
 
             /// <summary>
             /// <para>True to tell the <seealso cref="GameClientUpdater"/> that you have handled the backup restoring progress.</para>
@@ -279,41 +281,69 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 }
             }
 
+            private static bool ShouldBackup(PatchListItem item, in GameClientSelection selection)
+            {
+                switch (selection)
+                {
+                    case GameClientSelection.NGS_AND_CLASSIC:
+                        return true;
+                    case GameClientSelection.Classic_Only:
+                        return (item.IsRebootData == false);
+                    case GameClientSelection.NGS_Prologue_Only:
+                    case GameClientSelection.NGS_Only:
+                        return (item.IsRebootData != false);
+                    default:
+                        return false;
+                }
+            }
+
             private IEnumerable<BackupRestoreItem> Walk()
             {
-                string currentDir, bakDir;
+                string prefix, bakDir, currentDir;
                 int offset;
-                if (this.doesReboot)
+
+                var selection = this.GameSelection;
+                var sb = new System.Text.StringBuilder();
+
+                prefix = Path.Combine("data", "win32reboot");
+                currentDir = Path.Combine(this.Root, prefix);
+                bakDir = Path.Combine(currentDir, "backup");
+                if (Directory.Exists(bakDir))
                 {
-                    currentDir = Path.GetFullPath(Path.Combine("data", "win32reboot"), this.Root);
-                    bakDir = Path.Combine(currentDir, "backup");
                     offset = bakDir.Length + 1;
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.AllDirectories))
                     {
-                        var relativePath = Path.GetRelativePath(bakDir, file);
-                        yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.GetFullPath(relativePath, currentDir));
+                        var relativePath = file.AsSpan(offset);
+                        if (this.patchlist.TryGetByFilename(sb.Clear().Append(prefix).Append(Path.DirectorySeparatorChar).Append(relativePath).Replace('\\', '/').ToString(), out var item) && ShouldBackup(item, in selection))
+                        {
+                            yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.Join(currentDir.AsSpan(), relativePath));
+                        }
                     }
                 }
 
-                if (this.doesClassic)
+                prefix = Path.Combine("data", "win32");
+                currentDir = Path.Combine(this.Root, prefix);
+                bakDir = Path.Combine(currentDir, "backup");
+                if (Directory.Exists(bakDir))
                 {
-                    currentDir = Path.GetFullPath(Path.Combine("data", "win32"), this.Root);
-                    bakDir = Path.Combine(currentDir, "backup");
                     offset = bakDir.Length + 1;
                     foreach (var file in Directory.EnumerateFiles(bakDir, "*", SearchOption.TopDirectoryOnly))
                     {
-                        var relativePath = Path.GetRelativePath(bakDir, file);
-                        yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.GetFullPath(relativePath, currentDir));
+                        var relativePath = file.AsSpan(offset);
+                        if (this.patchlist.TryGetByFilename(sb.Clear().Append(prefix).Append(Path.DirectorySeparatorChar).Append(relativePath).Replace('\\', '/').ToString(), out var item) && ShouldBackup(item, in selection))
+                        {
+                            yield return new BackupRestoreItem(file, file.AsMemory(offset), Path.Join(currentDir.AsSpan(), relativePath));
+                        }
                     }
                 }
             }
 
-            public BackupFileFoundEventArgs(string pso2_bin, bool reboot, bool classic)
+            public BackupFileFoundEventArgs(string pso2_bin, GameClientSelection selection, PatchListMemory patchlist)
             {
                 this.Handled = false;
                 this.Root = pso2_bin;
-                this.doesReboot = reboot;
-                this.doesClassic = classic;
+                this.GameSelection = selection;
+                this.patchlist = patchlist;
             }
         }
 

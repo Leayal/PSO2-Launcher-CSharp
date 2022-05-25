@@ -264,6 +264,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
                     }
+                    if (!shouldScanForBackups)
+                    {
+                        this.CreateNewParagraphInLog("[GameUpdater] Ignores all backups file (based on user's setting in Launcher's Behavior)...");
+                    }
                     await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
                 }
                 else
@@ -352,6 +356,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             result.OperationBegin += this.GameClientUpdater_OperationBegin;
             result.BackupFileFound += this.GameClientUpdater_BackupFileFound;
+            result.BackupFileRestoreComplete += this.GameClientUpdater_BackupFileRestoreComplete;
             result.OperationCompleted += this.GameUpdaterComponent_OperationCompleted;
             result.ProgressReport += this.GameUpdaterComponent_ProgressReport;
             result.ProgressBegin += this.GameUpdaterComponent_ProgressBegin;
@@ -585,15 +590,54 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             var backupbehavior = this.config_main.PSO2DataBackupBehavior;
 
+            static bool AcceptRestoreBackupWithoutAsking(MainMenuWindow window)
+            {
+                window.CreateNewParagraphInLog("[GameUpdater] Restoring backup files without asking user (based on user's setting in Launcher's Behavior)...");
+                return false;
+            }
+
             static bool? ShowPrompt(MainMenuWindow window, GameClientUpdater.BackupFileFoundEventArgs e)
-                    => ((Prompt_PSO2DataBackupFound.Show(window, e, window.config_main) == MessageBoxResult.Yes) ? false : null);
+            {
+                window.CreateNewParagraphInLog("[GameUpdater] Backup data file found.");
+                if (Prompt_PSO2DataBackupFound.Show(window, e, window.config_main) == MessageBoxResult.Yes)
+                {
+                    window.CreateNewParagraphInLog("[GameUpdater] User accepted to restore backup files.");
+                    return false;
+                }
+                else
+                {
+                    window.CreateNewParagraphInLog("[GameUpdater] User declined. Ignoring all backup files.");
+                    return null;
+                }
+            }
 
             e.Handled = backupbehavior switch
             {
-                PSO2DataBackupBehavior.RestoreWithoutAsking => false,
+                PSO2DataBackupBehavior.RestoreWithoutAsking => AcceptRestoreBackupWithoutAsking(this),
                 PSO2DataBackupBehavior.IgnoreAll => null, // We will never reach this but let put it here to show intention.
                 _ => (this.Dispatcher.CheckAccess() ? ShowPrompt(this, e) : await this.Dispatcher.InvokeAsync<bool?>(() => ShowPrompt(this, e)).Task.ConfigureAwait(false))
             };
         }
+
+#nullable enable
+        private void GameClientUpdater_BackupFileRestoreComplete(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs? e, int numberOfBackupFiles)
+        {
+            if (e == null)
+            {
+                this.CreateNewParagraphInLog("[GameUpdater] Launcher found no backup files to restore.");
+            }
+            else if (numberOfBackupFiles >= 0)
+            {
+                if (numberOfBackupFiles == 0 || numberOfBackupFiles == 1)
+                {
+                    this.CreateNewParagraphInLog($"[GameUpdater] Restored {numberOfBackupFiles} backup file.");
+                }
+                else
+                {
+                    this.CreateNewParagraphInLog($"[GameUpdater] Restored {numberOfBackupFiles} backup files.");
+                }
+            }
+        }
+#nullable restore
     }
 }

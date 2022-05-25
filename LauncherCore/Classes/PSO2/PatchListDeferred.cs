@@ -68,12 +68,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         /// <remarks>What do you expect? It's deferred reading. It's best suit for forward-only read operation.</remarks>
-        public override bool TryGetByFilename(in string filename, out PatchListItem value)
+        public override bool TryGetByFilename(string filename, out PatchListItem value)
         {
             throw new NotSupportedException();
         }
 
-        public override bool TryGetByFilenameExact(in string filename, out PatchListItem value)
+        public override bool TryGetByFilenameExact(string filename, out PatchListItem value)
         {
             throw new NotSupportedException();
         }

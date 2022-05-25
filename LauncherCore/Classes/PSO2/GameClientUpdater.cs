@@ -171,14 +171,32 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                         if (fShouldScanForBackup)
                         {
-                            var ev_backup = await SearchForBackup(dir_pso2bin, selection);
+                            var ev_backup = await SearchForBackup(dir_pso2bin, selection, t_patchlist);
                             if (ev_backup != null)
                             {
-                                RestoreBackups(ev_backup, in cancellationToken);
+                                var handled = ev_backup.Handled;
+                                if (handled == false)
+                                {
+                                    var numOfFileRestored = RestoreBackups(ev_backup, in cancellationToken);
+                                    this.BackupFileRestoreComplete?.Invoke(this, ev_backup, numOfFileRestored);
+                                }
+                                else if (handled == true)
+                                {
+                                    this.BackupFileRestoreComplete?.Invoke(this, ev_backup, -2);
+                                }
+                                else
+                                {
+                                    this.BackupFileRestoreComplete?.Invoke(this, ev_backup, -1);
+                                }
+                            }
+                            else
+                            {
+                                this.BackupFileRestoreComplete?.Invoke(this, null, -1);
                             }
                         }
 
                         patchlist = await t_patchlist;
+
                         resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
                         ver = await GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
                         if (!string.IsNullOrWhiteSpace(pso2tweaker_dirpath) && Directory.Exists(pso2tweaker_dirpath))
@@ -239,6 +257,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             await duhB.DisposeAsync();
                             duhB = null;
+                        }
+                        if (resultsOfDownloads == null)
+                        {
+                            resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(1, 0);
                         }
                         IReadOnlyCollection<PatchListItem> list_all;
                         if (patchlist == null)

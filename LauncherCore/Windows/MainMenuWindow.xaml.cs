@@ -880,8 +880,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ThisWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (this._isTweakerRunning
-                && Prompt_Generic.Show(this, $"The launcher is currently managing PSO2 Tweaker.{Environment.NewLine}It is recommended to exit the PSO2 Tweaker before closing this launcher to avoid config corruption.{Environment.NewLine}Are you sure you still want to close the launcher before closing PSO2 Tweaker?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) != MessageBoxResult.Yes)
+            if ((this._isTweakerRunning && Prompt_Generic.Show(this, $"The launcher is currently managing PSO2 Tweaker.{Environment.NewLine}It is recommended to exit the PSO2 Tweaker before closing this launcher to avoid config corruption.{Environment.NewLine}Are you sure you still want to close the launcher before closing PSO2 Tweaker?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) != MessageBoxResult.Yes)
+                || (this.pso2Updater.IsBusy && Prompt_Generic.Show(this, $"The launcher is currently updating PSO2 client.{Environment.NewLine}Are you sure you still want to close the launcher before the operation is completed?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes))
             {
                 e.Cancel = true;
             }

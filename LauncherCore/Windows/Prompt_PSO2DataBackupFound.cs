@@ -30,31 +30,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 Title = "PSO2 Data Backup Found"
             };
 
-            string msg;
-            if (e.HasClassicBackup && e.HasRebootBackup)
-            {
-                msg = $"Found backup for NGS and Classic files.{Environment.NewLine}Do you want to restore the backup?";
-            }
-            else
-            {
-                if (e.HasClassicBackup)
-                {
-                    msg = $"Found backup for Classic files.{Environment.NewLine}Do you want to restore the backup?";
-                }
-                else if (e.HasRebootBackup)
-                {
-                    msg = $"Found backup for NGS files.{Environment.NewLine}Do you want to restore the backup?";
-                }
-                else
-                {
-                    msg = string.Empty;
-                }
-            }
-
             var grid = new Grid();
             grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition() { Height = GridLength.Auto });
-            grid.Children.Add(new TextBlock() { Text = msg, TextWrapping = TextWrapping.WrapWithOverflow });
+            grid.Children.Add(new TextBlock() { Text = $"Found PSO2 data backup files.{Environment.NewLine}Do you want to restore the backup?", TextWrapping = TextWrapping.WrapWithOverflow });
 
             var checkbox_noaskingagain = new CheckBox() { Content = new TextBlock() { Text = "Don't ask me again" }, IsChecked = false, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             Grid.SetRow(checkbox_noaskingagain, 1);

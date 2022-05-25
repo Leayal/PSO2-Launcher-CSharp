@@ -1,5 +1,4 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
-using Leayal.PSO2Launcher.Helper;
 using Leayal.Shared;
 using SymbolicLinkSupport;
 using System;
@@ -78,11 +77,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return PatchListBase.Create(arr_PatchListBase);
         }
 
-        private static void RestoreBackups(BackupFileFoundEventArgs e_onBackup, in CancellationToken cancellationToken)
+        private static int RestoreBackups(BackupFileFoundEventArgs e_onBackup, in CancellationToken cancellationToken)
         {
-            if (e_onBackup != null && e_onBackup.Handled == false)
+            int filecount = 0;
+            if (e_onBackup.Handled == false)
             {
-                string? dest = null;
+                string fullbakdirpath_reboot = Path.GetFullPath(Path.Combine("data", "win32reboot", "backup"), e_onBackup.Root),
+                    fullbakdirpath_classic = Path.GetFullPath(Path.Combine("data", "win32", "backup"), e_onBackup.Root);
+                string ? dest = null;
                 byte[]? buffer = null;
                 try
                 {
@@ -92,6 +94,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         {
                             break;
                         }
+                        filecount++;
                         dest = item.BackupFileDestination;
                         if (File.Exists(dest))
                         {
@@ -182,8 +185,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 var attr = FileAttributes.Normal;
                                 if (Directory.Exists(dest))
                                 {
-                                    if ((e_onBackup.HasRebootBackup && string.Equals(Path.GetFullPath(Path.Combine("data", "win32reboot", "backup"), e_onBackup.Root), dest, StringComparison.OrdinalIgnoreCase))
-                                        || e_onBackup.HasClassicBackup && string.Equals(Path.GetFullPath(Path.Combine("data", "win32", "backup"), e_onBackup.Root), dest, StringComparison.OrdinalIgnoreCase))
+                                    if (string.Equals(fullbakdirpath_reboot, dest, StringComparison.OrdinalIgnoreCase) || string.Equals(fullbakdirpath_classic, dest, StringComparison.OrdinalIgnoreCase))
                                     {
                                         File.Delete(item.BackupFileSourcePath);
                                         continue;
@@ -219,86 +221,51 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 // This should clean up all empty directories created by backup.
                 // However, it does not hurt if the empty directories still there.
                 // So optional, silent the error since it's okay even if it fails.
-                if (e_onBackup.HasRebootBackup)
-                {
-                    var reboot = Path.GetFullPath(Path.Combine("data", "win32reboot", "backup"), e_onBackup.Root);
-                    if (Directory.Exists(reboot) && !DirectoryHelper.IsDirectoryNotEmpty(reboot))
-                    {
-                        try
-                        {
-                            Directory.Delete(reboot, true);
-                        }
-                        catch { }
-                    }
-                }
 
-                // Technically, this can't happen as classic files are all non-directory files.
-                // But add it, just-in-case.
-                // However, it does not hurt if the empty directories still there.
-                // So optional, silent the error since it's okay even if it fails.
-                if (e_onBackup.HasClassicBackup)
+                // Add "Directory.ResolveLinkTarget" so that in case the backup directory is actually a symlink. We will preserve it instead.
+                if (Directory.Exists(fullbakdirpath_reboot) && Directory.ResolveLinkTarget(fullbakdirpath_classic, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(fullbakdirpath_reboot))
                 {
-                    var classic = Path.GetFullPath(Path.Combine("data", "win32", "backup"), e_onBackup.Root);
-                    if (Directory.Exists(classic) && !DirectoryHelper.IsDirectoryNotEmpty(classic))
+                    try
                     {
-                        try
-                        {
-                            Directory.Delete(classic, true);
-                        }
-                        catch { }
+                        Directory.Delete(fullbakdirpath_reboot, true);
                     }
+                    catch { }
+                }
+                if (Directory.Exists(fullbakdirpath_classic) && Directory.ResolveLinkTarget(fullbakdirpath_classic, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(fullbakdirpath_classic))
+                {
+                    try
+                    {
+                        Directory.Delete(fullbakdirpath_classic, true);
+                    }
+                    catch { }
                 }
             }
+            return filecount;
         }
 
-        private async Task<BackupFileFoundEventArgs?> SearchForBackup(string dir_pso2bin, GameClientSelection selection)
+        private async Task<BackupFileFoundEventArgs?> SearchForBackup(string dir_pso2bin, GameClientSelection selection, Task<PatchListMemory> t_patchlist)
         {
-            BackupFileFoundEventArgs? e_onBackup = null;
-            bool bakExist_classic, bakExist_reboot;
             switch (selection)
             {
                 case GameClientSelection.NGS_AND_CLASSIC:
-                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
-                    if (bakExist_reboot || bakExist_classic)
-                    {
-                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, bakExist_classic);
-                        await this.OnBackupFileFound(e_onBackup);
-                    }
-                    break;
-
                 case GameClientSelection.NGS_Prologue_Only:
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
-                    if (bakExist_reboot)
-                    {
-                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, false);
-                        await this.OnBackupFileFound(e_onBackup);
-                    }
-                    break;
-
                 case GameClientSelection.Classic_Only:
-                    bakExist_classic = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup"));
-                    if (bakExist_classic)
-                    {
-                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, false, bakExist_classic);
-                        await this.OnBackupFileFound(e_onBackup);
-                    }
-                    break;
-
-                case GameClientSelection.Always_Only:
-                    break;
-
                 case GameClientSelection.NGS_Only:
-                    bakExist_reboot = DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup"));
-                    if (bakExist_reboot)
+                    if (DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32", "backup")) || DirectoryHelper.IsDirectoryExistsAndNotEmpty(Path.Combine(dir_pso2bin, "data", "win32reboot", "backup")))
                     {
-                        e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, bakExist_reboot, false);
+                        var e_onBackup = new BackupFileFoundEventArgs(dir_pso2bin, selection, await t_patchlist);
                         await this.OnBackupFileFound(e_onBackup);
+                        return e_onBackup;
                     }
-                    break;
+                    else
+                    {
+                        return null;
+                    }
+                case GameClientSelection.Always_Only: // Explictly handle this by ignoring backups.
+                    return null;
+                default:
+                    return null;
             }
-
-            return e_onBackup;
         }
 
         private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)

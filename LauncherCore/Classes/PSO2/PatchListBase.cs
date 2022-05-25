@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
@@ -33,11 +34,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected abstract IEnumerator<PatchListItem> CreateEnumerator();
 
-        public virtual bool TryGetByFilename(in string filename, out PatchListItem value)
+        public virtual bool TryGetByFilename(string filename, out PatchListItem value)
         {
             if (filename.EndsWith(PatchListItem.AffixFilename))
             {
-                if (this.TryGetByFilenameExact(in filename, out value))
+                if (this.TryGetByFilenameExact(filename, out value))
                 {
                     return true;
                 }
@@ -48,14 +49,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else
             {
-                if (this.TryGetByFilenameExact(in filename, out value))
+                if (this.TryGetByFilenameExact(filename, out value))
                 {
                     return true;
                 }
                 else
                 {
                     var affixedName = filename + PatchListItem.AffixFilename;
-                    return this.TryGetByFilenameExact(in affixedName, out value);
+                    return this.TryGetByFilenameExact(affixedName, out value);
                 }
             }
         }
@@ -75,7 +76,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.Dispose(false);
         }
 
-        public abstract bool TryGetByFilenameExact(in string filename, out PatchListItem value);
+        public abstract bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem value);
 
         protected abstract void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy);
 

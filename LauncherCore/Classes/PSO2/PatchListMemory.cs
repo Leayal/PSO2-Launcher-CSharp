@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -17,12 +15,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public PatchListMemory(PatchRootInfo rootInfo, bool? isReboot, IDictionary<string, PatchListItem> items) : base(rootInfo, isReboot)
         {
-            this._items = new Dictionary<string, PatchListItem>(items, StringComparer.OrdinalIgnoreCase);
+            this._items = new Dictionary<string, PatchListItem>(items, PathStringComparer.Default);
         }
 
         public PatchListMemory(PatchRootInfo rootInfo, bool? isReboot) : base(rootInfo, isReboot)
         {
-            this._items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
+            this._items = new Dictionary<string, PatchListItem>(PathStringComparer.Default);
         }
 
         internal PatchListMemory(PatchRootInfo rootInfo, bool? isReboot, Dictionary<string, PatchListItem> items) : base(rootInfo, isReboot)
@@ -32,7 +30,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected override IEnumerator<PatchListItem> CreateEnumerator() => this._items.Values.GetEnumerator();
 
-        public override bool TryGetByFilenameExact(in string filename, out PatchListItem value) => this._items.TryGetValue(filename, out value);
+        public override bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem value) => this._items.TryGetValue(filename, out value);
 
         protected override void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy)
         {

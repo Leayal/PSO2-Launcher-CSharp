@@ -11,8 +11,7 @@
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="thisWindow"
                          MinHeight="600" MinWidth="880"
-                         Loaded="ThisWindow_Loaded"
-                         Closing="ThisWindow_Closing"
+                         Loaded="ThisWindow_Loaded" Closing="ThisWindow_Closing"
                          Title="PSO2 JP Launcher" Height="600" Width="880" TitleCharacterCasing="Normal" KeepBorderOnMaximize="False" ShowTitleBar="False" WindowStartupLocation="CenterScreen" UseNoneWindowStyle="True" TitleBarHeight="1">
     <Grid>
         <Grid.RowDefinitions>

@@ -14,7 +14,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
     /// <code>GetHashCode("folder1\folder2\..\file1.dat") != GetHashCode("folder1\file1.dat"), despite the fact that they should be equal.</code>
     /// <code>Equal("folder1\folder2\..\file1.dat", "folder1\file1.dat") => false, despite the fact that it should be true.</code>
     /// </remarks>
-    public sealed class PathStringComparer : IEqualityComparer<string?>, IEqualityComparer<ReadOnlyMemory<char>>
+    public sealed class PathStringComparer : StringComparer, IEqualityComparer<string?>, IEqualityComparer<ReadOnlyMemory<char>>, IComparer<string>, IComparer<ReadOnlyMemory<char>>
     {
         /// <summary>The shared instance that can be used at anytime.</summary>
         public static readonly PathStringComparer Default = new PathStringComparer();
@@ -30,6 +30,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <remarks>This also calls <seealso cref="Path.TrimEndingDirectorySeparator"/> internally so the returned path will not have the directory separator at the end.</remarks>
         public static string NormalizePathSeparator(string path)
         {
+            if (string.IsNullOrWhiteSpace(path)) return path;
+
             var span = Path.TrimEndingDirectorySeparator(path.AsSpan());
             var found = IsDifferentSeparator ? span.IndexOfAny(seperators) : -1;
             if (found == -1)
@@ -99,7 +101,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
         /// <code>GetHashCode("folder1\folder2\..\file1.dat") != GetHashCode("folder1\file1.dat"), despite the fact that they should be equal.</code>
         /// </remarks>
-        public int GetHashCode([DisallowNull] string path)
+        public override int GetHashCode([DisallowNull] string path)
         {
             if (path == null)
             {
@@ -120,7 +122,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <para>E.g: folder1\folder2\..\file1.dat -> will likely take that ".." as if it's a normal folder name, not a go-back indicator.</para>
         /// <code>Equal("folder1\folder2\..\file1.dat", "folder1\file1.dat") => false, despite the fact that it should be true.</code>
         /// </remarks>
-        public bool Equals(string? left, string? right)
+        public override bool Equals(string? left, string? right)
         {
             if (left == null && right == null)
             {
@@ -201,6 +203,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 }
             }
         }
+
+        public override int Compare(string? x, string? y) => string.Compare(NormalizePathSeparator(x), NormalizePathSeparator(y), StringComparison.OrdinalIgnoreCase);
+
+        public int CompareTo(string? x, string? y) => this.Compare(x, y);
+
+        public int Compare(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) => MemoryExtensions.CompareTo(NormalizePathSeparator(x).Span, NormalizePathSeparator(y).Span, StringComparison.OrdinalIgnoreCase);
     }
 }
 #nullable restore
