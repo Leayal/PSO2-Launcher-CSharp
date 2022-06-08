@@ -80,6 +80,9 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                                                                     lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Seed"),
                                                                     lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Shard"),
                                                                     lazy_StellarSeed_jp = new WeakLazy<string>(() => "ステラーシード"),
+                                                                    lazy_Snoal_en1 = new WeakLazy<string>(() => "Snoal"),
+                                                                    lazy_Snoal_en2 = new WeakLazy<string>(() => "Snowk"),
+                                                                    lazy_Snoal_jp = new WeakLazy<string>(() => "スノークス"),
                                                                     lazy_DateOnlyFormat = new WeakLazy<string>(() => "yyyy-MM-dd"),
                                                                     lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
                                                                     lazy_ShopAction_SetPrice = new WeakLazy<string>(() => "[DisplayToShop-SetValue]");
@@ -149,8 +152,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly DispatcherTimer logcategoryThrottle;
         private readonly LogCategories logCategoriesImpl;
 
-        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice;
-
+        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice,
+            str_Snoal_en1, str_Snoal_en2, str_Snoal_jp;
         private PSO2LogAsyncListener? logreader;
         private CancellationTokenSource? cancelSrcLoad;
         private int logloadingstate;
@@ -186,6 +189,9 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.str_StellarSeed_en1 = lazy_StellarSeed_en1.Value;
             this.str_StellarSeed_en2 = lazy_StellarSeed_en2.Value;
             this.str_StellarSeed_jp = lazy_StellarSeed_jp.Value;
+            this.str_Snoal_en1 = lazy_Snoal_en1.Value;
+            this.str_Snoal_en2 = lazy_Snoal_en2.Value;
+            this.str_Snoal_jp = lazy_Snoal_jp.Value;
             this.str_DateOnlyFormat = lazy_DateOnlyFormat.Value;
             this.str_ActionPickup = lazy_ActionPickup.Value;
             this.str_ShopAction_SetPrice = lazy_ShopAction_SetPrice.Value;
@@ -381,6 +387,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 => ((comparand.Length - 1) == name.Length && MemoryExtensions.Equals(name.Slice(0, 6), comparand.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(name.Slice(6), comparand.Slice(7), StringComparison.OrdinalIgnoreCase));
         }
 
+        private bool IsSnoal(ReadOnlySpan<char> itemname)
+            => (MemoryExtensions.Equals(itemname, this.str_Snoal_jp, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, this.str_Snoal_en1, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, this.str_Snoal_en2, StringComparison.OrdinalIgnoreCase));
+
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
             var datas = arg2.GetDataColumns();
@@ -390,7 +401,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             {
                 bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span);
                 bool isStellaSeed = this.IsStellarSeed(datas[5].Span);
-                if (isAlphaReactor || isStellaSeed)
+                bool isSnoal = this.IsSnoal(datas[5].Span);
+                if (isAlphaReactor || isStellaSeed || isSnoal)
                 {
                     var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
@@ -414,7 +426,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         if (dateonly_logtime_jst == dateonly_currenttime_jst)
                         {
-                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0);
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnoal ? 1 : 0);
                         }
                         else
                         {
@@ -441,7 +453,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0)
+        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snoalIncrement = 0)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -464,10 +476,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     data.StellarSeedCount += stellarSeedIncrement;
                 }
+                if (snoalIncrement != 0)
+                {
+                    data.SnoalCount += snoalIncrement;
+                }
             }
             else
             {
-                this.Dispatcher.Invoke((Action<long, string, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement });
+                this.Dispatcher.Invoke((Action<long, string, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snoalIncrement });
             }
         }
 

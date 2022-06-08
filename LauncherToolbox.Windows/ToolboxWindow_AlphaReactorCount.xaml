@@ -82,6 +82,7 @@
                 </Style>
             </TextBlock.Style>
             <Run Text="The account has picked up these for today:" />
+            <LineBreak />
             <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
             <Run>
                 <Run.Style>
@@ -98,7 +99,7 @@
                     </Style>
                 </Run.Style>
             </Run>
-            <Run Text="and" />
+            <Run Text="|" />
             <Run Text="{Binding StellarSeedCount, Mode=OneWay}"/>
             <Run>
                 <Run.Style>
@@ -110,6 +111,23 @@
                             </DataTrigger>
                             <DataTrigger Binding="{Binding StellarSeedCount, Mode=OneWay}" Value="1">
                                 <Setter Property="Text" Value="Stellar Seed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Run.Style>
+            </Run>
+            <Run Text="|" />
+            <Run Text="{Binding SnoalCount, Mode=OneWay}"/>
+            <Run>
+                <Run.Style>
+                    <Style TargetType="Run">
+                        <Setter Property="Text" Value="Snoals" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SnoalCount, Mode=OneWay}" Value="0">
+                                <Setter Property="Text" Value="Snoal" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SnoalCount, Mode=OneWay}" Value="1">
+                                <Setter Property="Text" Value="Snoal" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
