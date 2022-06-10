@@ -20,7 +20,7 @@ namespace Leayal.PSO2Launcher.Core
 
         public static readonly Uri Url_ShowPathInExplorer_SpecialFolder_JP_PSO2Config = new Uri("pso2lealauncher://showpathinexplorer/specialfolder/jp/pso2config");
 
-        public static readonly Uri Url_Toolbox_AlphaReactorCounter = new Uri("pso2lealauncher://toolbox/alphareactorcounter");
+        public static readonly Uri Url_Toolbox_VendorItemPickupCounter = new Uri("pso2lealauncher://toolbox/vendoritempickupcounter");
         public static readonly Uri Url_Toolbox_PSO2DataOrganizer = new Uri("pso2lealauncher://toolbox/pso2dataorganizer");
 
         public static readonly Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");

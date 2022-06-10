@@ -382,7 +382,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 {
                     img.Source = ico_alphareactor.Value;
                 }
-                item.Tag = StaticResources.Url_Toolbox_AlphaReactorCounter;
+                item.Tag = StaticResources.Url_Toolbox_VendorItemPickupCounter;
             }
         }
 

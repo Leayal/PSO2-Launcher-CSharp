@@ -51,7 +51,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 foreach (var w in App.Current.Windows)
                 {
-                    if (w is Toolbox.Windows.ToolboxWindow_AlphaReactorCount tbw)
+                    if (w is Toolbox.Windows.ToolboxWindow_VendorItemPickupCount tbw)
                     {
                         tbw.IsClockVisible = b;
                     }

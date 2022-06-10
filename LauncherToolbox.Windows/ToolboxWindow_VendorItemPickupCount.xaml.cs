@@ -19,14 +19,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
     /// <para>This class is standalone and does not require the Launcher's Core. If you want to use this class as standalone tool, feel free to do so.</para>
     /// <para>Please note that you still need to properly setup an <seealso cref="Application"/> for <seealso cref="MetroWindowEx"/> in case of standalone.</para>
     /// </remarks>
-    public partial class ToolboxWindow_AlphaReactorCount : MetroWindowEx
+    public partial class ToolboxWindow_VendorItemPickupCount : MetroWindowEx
     {
         private static int Count_LogCategories;
         private static object lockobj_LogCategories;
         private static LogCategories? instance_LogCategories;
         private static bool initialized_LogCategories;
 
-        static ToolboxWindow_AlphaReactorCount()
+        static ToolboxWindow_VendorItemPickupCount()
         {
             Count_LogCategories = 0;
             lockobj_LogCategories = new object();
@@ -87,11 +87,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                                                                     lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
                                                                     lazy_ShopAction_SetPrice = new WeakLazy<string>(() => "[DisplayToShop-SetValue]");
 
-        private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(DateTime.MinValue));
-        private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(null));
+        private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(DateTime.MinValue));
+        private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(null));
 
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="IsAccountIdVisible"/> property.</summary>
-        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(false));
+        public static readonly DependencyProperty IsAccountIdVisibleProperty = DependencyProperty.Register("IsAccountIdVisible", typeof(bool), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(false));
 
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="CurrentTime"/> property.</summary>
         public static readonly DependencyProperty CurrentTimeProperty = CurrentTimePropertyKey.DependencyProperty;
@@ -100,9 +100,9 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         public static readonly DependencyProperty IsBeforeResetProperty = IsBeforeResetPropertyKey.DependencyProperty;
 
         /// <summary><seealso cref="DependencyProperty"/> for <seealso cref="IsClockVisible"/> property.</summary>
-        private static readonly DependencyProperty IsClockVisibleProperty = DependencyProperty.Register("IsClockVisible", typeof(bool), typeof(ToolboxWindow_AlphaReactorCount), new PropertyMetadata(false, (obj, e) =>
+        private static readonly DependencyProperty IsClockVisibleProperty = DependencyProperty.Register("IsClockVisible", typeof(bool), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(false, (obj, e) =>
         {
-            if (obj is ToolboxWindow_AlphaReactorCount window && e.NewValue is bool b)
+            if (obj is ToolboxWindow_VendorItemPickupCount window && e.NewValue is bool b)
             {
                 if (b)
                 {
@@ -159,23 +159,23 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private int logloadingstate;
 
         /// <summary>Creates a new window.</summary>
-        public ToolboxWindow_AlphaReactorCount() : this(null) { }
+        public ToolboxWindow_VendorItemPickupCount() : this(null) { }
 
         /// <summary>Creates a new window with the given icon and a new clock instance.</summary>
         /// <param name="icon">The bitmap contains the window's icon you want to set.</param>
-        public ToolboxWindow_AlphaReactorCount(BitmapSource? icon) : this(icon, null, true, true) { }
+        public ToolboxWindow_VendorItemPickupCount(BitmapSource? icon) : this(icon, null, true, true) { }
 
         /// <summary>Creates a new window with the given icon and a new clock instance.</summary>
         /// <param name="icon">The bitmap contains the window's icon you want to set.</param>
         /// <param name="clockInitiallyVisible">A boolean determines whether the timer will be in active and displayed in the UI when the window is shown.</param>
-        public ToolboxWindow_AlphaReactorCount(BitmapSource? icon, bool clockInitiallyVisible) : this(icon, null, true, clockInitiallyVisible) { }
+        public ToolboxWindow_VendorItemPickupCount(BitmapSource? icon, bool clockInitiallyVisible) : this(icon, null, true, clockInitiallyVisible) { }
 
         /// <summary>Creates a new window with the given icon</summary>
         /// <param name="icon">The bitmap contains the window's icon you want to set.</param>
         /// <param name="clock">The timer clock which will be used to display the JST time on the UI.</param>
         /// <param name="disposeTimer">A boolean determines whether the timer should be disposed when the window is closed.</param>
         /// <param name="clockInitiallyVisible">A boolean determines whether the timer will be in active and displayed in the UI when the window is shown.</param>
-        public ToolboxWindow_AlphaReactorCount(BitmapSource? icon, JSTClockTimer? clock, bool disposeTimer, bool clockInitiallyVisible) : base()
+        public ToolboxWindow_VendorItemPickupCount(BitmapSource? icon, JSTClockTimer? clock, bool disposeTimer, bool clockInitiallyVisible) : base()
         {
             this.clockInitiallyVisible = clockInitiallyVisible;
             this.mapping = new Dictionary<long, AccountData>();
@@ -367,11 +367,20 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         }
 
         private bool IsAlphaReactor(ReadOnlySpan<char> itemname)
-            => (MemoryExtensions.Equals(itemname, this.str_AlphaReactor_en, StringComparison.OrdinalIgnoreCase)
+        {
+            if (itemname.IsEmpty) return false;
+
+            return (MemoryExtensions.Equals(itemname, this.str_AlphaReactor_en, StringComparison.OrdinalIgnoreCase)
                 || MemoryExtensions.Equals(itemname, this.str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
+        }
 
         private bool IsStellarSeed(ReadOnlySpan<char> itemname)
         {
+            if (itemname.IsEmpty) return false;
+
+            static bool CompareStellaWithoutR(in ReadOnlySpan<char> name, ReadOnlySpan<char> comparand)
+                => ((comparand.Length - 1) == name.Length && MemoryExtensions.Equals(name.Slice(0, 6), comparand.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(name.Slice(6), comparand.Slice(7), StringComparison.OrdinalIgnoreCase));
+
             // Compare to "Stellar Seed" in JP.
             return (MemoryExtensions.Equals(itemname, this.str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase)
                 // Compare to "Stellar Seed"
@@ -382,15 +391,28 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en1.AsSpan())
                 // Compare to "Stella Shard"
                 || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en2.AsSpan()));
-
-            static bool CompareStellaWithoutR(in ReadOnlySpan<char> name, ReadOnlySpan<char> comparand)
-                => ((comparand.Length - 1) == name.Length && MemoryExtensions.Equals(name.Slice(0, 6), comparand.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(name.Slice(6), comparand.Slice(7), StringComparison.OrdinalIgnoreCase));
         }
 
-        private bool IsSnoal(ReadOnlySpan<char> itemname)
-            => (MemoryExtensions.Equals(itemname, this.str_Snoal_jp, StringComparison.OrdinalIgnoreCase)
-                || MemoryExtensions.Equals(itemname, this.str_Snoal_en1, StringComparison.OrdinalIgnoreCase)
-                || MemoryExtensions.Equals(itemname, this.str_Snoal_en2, StringComparison.OrdinalIgnoreCase));
+        private bool IsSnowk(ReadOnlySpan<char> itemname)
+        {
+            if (itemname.IsEmpty) return false;
+
+            static bool CompareWithEndingS(in ReadOnlySpan<char> name, ReadOnlySpan<char> comparand)
+            {
+                int offsetLen = name.Length - 1;
+
+                if (comparand.Length != offsetLen) return false;
+                ref readonly var lastChar = ref name[offsetLen];
+                if (lastChar != 's' && lastChar != 'S') return false;
+
+                // Can use StartsWith, but nah.
+                return MemoryExtensions.Equals(name.Slice(0, offsetLen), comparand, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return (MemoryExtensions.Equals(itemname, this.str_Snoal_jp, StringComparison.OrdinalIgnoreCase)
+                || CompareWithEndingS(in itemname, this.str_Snoal_en1)
+                || CompareWithEndingS(in itemname, this.str_Snoal_en2));
+        }
 
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
@@ -401,8 +423,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             {
                 bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span);
                 bool isStellaSeed = this.IsStellarSeed(datas[5].Span);
-                bool isSnoal = this.IsSnoal(datas[5].Span);
-                if (isAlphaReactor || isStellaSeed || isSnoal)
+                bool isSnowk = this.IsSnowk(datas[5].Span);
+                if (isAlphaReactor || isStellaSeed || isSnowk)
                 {
                     var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
@@ -426,7 +448,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         if (dateonly_logtime_jst == dateonly_currenttime_jst)
                         {
-                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnoal ? 1 : 0);
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnowk ? 1 : 0);
                         }
                         else
                         {
@@ -453,7 +475,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snoalIncrement = 0)
+        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snowkIncrement = 0)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -476,14 +498,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     data.StellarSeedCount += stellarSeedIncrement;
                 }
-                if (snoalIncrement != 0)
+                if (snowkIncrement != 0)
                 {
-                    data.SnoalCount += snoalIncrement;
+                    data.SnowkCount += snowkIncrement;
                 }
             }
             else
             {
-                this.Dispatcher.Invoke((Action<long, string, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snoalIncrement });
+                this.Dispatcher.Invoke((Action<long, string, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snowkIncrement });
             }
         }
 
@@ -538,7 +560,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
 
         private static void OnThrottleEventInvocation(object? sender, EventArgs e)
         {
-            if (sender is DispatcherTimer timer && timer.Tag is ToolboxWindow_AlphaReactorCount window)
+            if (sender is DispatcherTimer timer && timer.Tag is ToolboxWindow_VendorItemPickupCount window)
             {
                 timer.Stop();
                 _ = window.SelectNewestLog(LogCategories.ActionLog);
@@ -548,9 +570,9 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         class DelegateSetTime_params
         {
             public DateTime arg;
-            public readonly ToolboxWindow_AlphaReactorCount window;
+            public readonly ToolboxWindow_VendorItemPickupCount window;
 
-            public DelegateSetTime_params(ToolboxWindow_AlphaReactorCount w)
+            public DelegateSetTime_params(ToolboxWindow_VendorItemPickupCount w)
             {
                 this.window = w;
             }

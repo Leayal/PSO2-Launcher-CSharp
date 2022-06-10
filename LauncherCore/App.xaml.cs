@@ -478,11 +478,11 @@ namespace Leayal.PSO2Launcher.Core
                         catch { }
                     });
                 }
-                else if (string.Equals(urlstr, StaticResources.Url_Toolbox_AlphaReactorCounter.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(urlstr, StaticResources.Url_Toolbox_VendorItemPickupCounter.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
-                        var window = new ToolboxWindow_AlphaReactorCount(DefaultAppIcon, this.JSTClock, false, this.config_main.LauncherUseClock);
+                        var window = new ToolboxWindow_VendorItemPickupCount(DefaultAppIcon, this.JSTClock, false, this.config_main.LauncherUseClock);
                         window.Show();
                     }
                     catch (Exception ex)

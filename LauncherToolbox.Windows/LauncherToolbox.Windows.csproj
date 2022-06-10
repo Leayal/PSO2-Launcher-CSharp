@@ -22,13 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="ToolboxWindow_AlphaReactorCount.xaml.cs">
+    <Compile Update="ToolboxWindow_VendorItemPickupCount.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="ToolboxWindow_AlphaReactorCount.xaml">
+    <Page Update="ToolboxWindow_VendorItemPickupCount.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>
     </Page>

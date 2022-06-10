@@ -39,12 +39,12 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             set => this.SetValue(StellarSeedCountProperty, value);
         }
 
-        public static readonly DependencyProperty SnoalCountProperty = DependencyProperty.Register("SnoalCount", typeof(int), typeof(AccountData), new PropertyMetadata(0));
+        public static readonly DependencyProperty SnowkCountProperty = DependencyProperty.Register("SnowkCount", typeof(int), typeof(AccountData), new PropertyMetadata(0));
 
-        public int SnoalCount
+        public int SnowkCount
         {
-            get => (int)this.GetValue(SnoalCountProperty);
-            set => this.SetValue(SnoalCountProperty, value);
+            get => (int)this.GetValue(SnowkCountProperty);
+            set => this.SetValue(SnowkCountProperty, value);
         }
 
         public AccountData(long characterID)

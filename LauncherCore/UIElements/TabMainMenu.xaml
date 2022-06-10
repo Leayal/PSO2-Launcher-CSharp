@@ -34,7 +34,7 @@
                 <ContextMenu>
                     <MenuItem Click="MenuItemToolBox_Click" Loaded="MenuItem_AlphaReactorCounter_Loaded">
                         <MenuItem.Header>
-                            <TextBlock Text="Alpha Reactor &amp; Stellar Seed Counter" VerticalAlignment="Center" />
+                            <TextBlock Text="Vendor Items Pickup Counter" VerticalAlignment="Center" />
                         </MenuItem.Header>
                         <MenuItem.Icon>
                             <Image Stretch="UniformToFill" StretchDirection="DownOnly" MaxHeight="32" MaxWidth="32" MinHeight="16" MinWidth="16" />
