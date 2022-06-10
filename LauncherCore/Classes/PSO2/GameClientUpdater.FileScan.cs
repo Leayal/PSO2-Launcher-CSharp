@@ -223,22 +223,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 // So optional, silent the error since it's okay even if it fails.
 
                 // Add "Directory.ResolveLinkTarget" so that in case the backup directory is actually a symlink. We will preserve it instead.
-                if (Directory.Exists(fullbakdirpath_reboot) && Directory.ResolveLinkTarget(fullbakdirpath_classic, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(fullbakdirpath_reboot))
+                static void TryDelEmptyBackupFolder(string path)
                 {
-                    try
+                    if (Directory.Exists(path) && Directory.ResolveLinkTarget(path, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(path))
                     {
-                        Directory.Delete(fullbakdirpath_reboot, true);
+                        try
+                        {
+                            Directory.Delete(path, true);
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
-                if (Directory.Exists(fullbakdirpath_classic) && Directory.ResolveLinkTarget(fullbakdirpath_classic, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(fullbakdirpath_classic))
-                {
-                    try
-                    {
-                        Directory.Delete(fullbakdirpath_classic, true);
-                    }
-                    catch { }
-                }
+
+                TryDelEmptyBackupFolder(fullbakdirpath_reboot);
+                TryDelEmptyBackupFolder(fullbakdirpath_classic);
             }
             return filecount;
         }
