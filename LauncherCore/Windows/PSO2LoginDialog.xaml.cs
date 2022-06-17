@@ -221,6 +221,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    // Close the dialog and terminate any operations.
+                    // this.CustomDialogResult = false;
+                    // this.Close();
+                }
                 catch (PSO2LoginException ex)
                 {
                     Prompt_Generic.Show(this, "Failed to login.\r\nError code: " + ex.ErrorCode.ToString(), "Login failure", MessageBoxButton.OK, MessageBoxImage.Exclamation);
@@ -241,7 +247,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private static string NormalizeOTP(string otpRaw) => otpRaw.Replace(' ', string.Empty[0]);
+        // private static string NormalizeOTP(string otpRaw) => otpRaw.Replace(' ', string.Empty[0]);
 
         private PSO2LoginToken _loginToken;
         public PSO2LoginToken LoginToken => this._loginToken;
