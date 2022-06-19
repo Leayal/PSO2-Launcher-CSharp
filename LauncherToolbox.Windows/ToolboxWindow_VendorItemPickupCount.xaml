@@ -7,7 +7,7 @@
                          xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="ThisSelf" 
-                         TitleCharacterCasing="Normal"
+                         TitleCharacterCasing="Normal" TitleBarHeight="25"
                          Title="Vendor Items Pickup Counter" MinWidth="300" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                          Loaded="ThisSelf_Loaded">
     <leawindow:MetroWindowEx.RightWindowCommands>
@@ -128,6 +128,23 @@
                             </DataTrigger>
                             <DataTrigger Binding="{Binding SnowkCount, Mode=OneWay}" Value="1">
                                 <Setter Property="Text" Value="Snowk" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Run.Style>
+            </Run>
+             <Run Text="|" />
+            <Run Text="{Binding BlizzardiumCount, Mode=OneWay}"/>
+            <Run>
+                <Run.Style>
+                    <Style TargetType="Run">
+                        <Setter Property="Text" Value="Blizzardiums" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding BlizzardiumCount, Mode=OneWay}" Value="0">
+                                <Setter Property="Text" Value="Blizzardium" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding BlizzardiumCount, Mode=OneWay}" Value="1">
+                                <Setter Property="Text" Value="Blizzardium" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

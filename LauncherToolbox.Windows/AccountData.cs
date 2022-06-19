@@ -47,6 +47,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             set => this.SetValue(SnowkCountProperty, value);
         }
 
+        public static readonly DependencyProperty BlizzardiumCountProperty = DependencyProperty.Register("BlizzardiumCount", typeof(int), typeof(AccountData), new PropertyMetadata(0));
+
+        public int BlizzardiumCount
+        {
+            get => (int)this.GetValue(BlizzardiumCountProperty);
+            set => this.SetValue(BlizzardiumCountProperty, value);
+        }
+
         public AccountData(long characterID)
         {
             this.sb = new StringBuilder();

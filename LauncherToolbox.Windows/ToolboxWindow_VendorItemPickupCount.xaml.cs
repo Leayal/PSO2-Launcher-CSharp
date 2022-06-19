@@ -77,6 +77,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         // See the window's constructor to see how to use safely in threads.
         private static readonly WeakLazy<string> lazy_AlphaReactor_en = new WeakLazy<string>(() => "Alpha Reactor"),
                                                                     lazy_AlphaReactor_jp = new WeakLazy<string>(() => "アルファリアクター"),
+                                                                    lazy_Blizzardium_en = new WeakLazy<string>(() => "Blizzardium"),
+                                                                    lazy_Blizzardium_jp = new WeakLazy<string>(() => "ブリザーディアム"),
                                                                     lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Seed"),
                                                                     lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Shard"),
                                                                     lazy_StellarSeed_jp = new WeakLazy<string>(() => "ステラーシード"),
@@ -153,7 +155,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly LogCategories logCategoriesImpl;
 
         private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice,
-            str_Snoal_en1, str_Snoal_en2, str_Snoal_jp;
+            str_Snoal_en1, str_Snoal_en2, str_Snoal_jp, str_Blizzardium_en, str_Blizzardium_jp;
         private PSO2LogAsyncListener? logreader;
         private CancellationTokenSource? cancelSrcLoad;
         private int logloadingstate;
@@ -186,6 +188,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             // Since WeakReference isn't thread-safe. Fork on UI thread and use it until we don't need it anymore should make it safe regardless of thread.
             this.str_AlphaReactor_en = lazy_AlphaReactor_en.Value;
             this.str_AlphaReactor_jp = lazy_AlphaReactor_jp.Value;
+            this.str_Blizzardium_en = lazy_Blizzardium_en.Value;
+            this.str_Blizzardium_jp = lazy_Blizzardium_jp.Value;
             this.str_StellarSeed_en1 = lazy_StellarSeed_en1.Value;
             this.str_StellarSeed_en2 = lazy_StellarSeed_en2.Value;
             this.str_StellarSeed_jp = lazy_StellarSeed_jp.Value;
@@ -374,6 +378,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || MemoryExtensions.Equals(itemname, this.str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
         }
 
+        private bool IsBlizzardium(ReadOnlySpan<char> itemname)
+        {
+            if (itemname.IsEmpty) return false;
+
+            return (MemoryExtensions.Equals(itemname, this.str_Blizzardium_en, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, this.str_Blizzardium_jp, StringComparison.OrdinalIgnoreCase));
+        }
+
         private bool IsStellarSeed(ReadOnlySpan<char> itemname)
         {
             if (itemname.IsEmpty) return false;
@@ -421,10 +433,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             // Thus, all strings below can be used beyond the event's invocation.
             if (MemoryExtensions.Equals(datas[2].Span, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase))
             {
-                bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span);
-                bool isStellaSeed = this.IsStellarSeed(datas[5].Span);
-                bool isSnowk = this.IsSnowk(datas[5].Span);
-                if (isAlphaReactor || isStellaSeed || isSnowk)
+                bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span),
+                    isStellaSeed = this.IsStellarSeed(datas[5].Span),
+                    isSnowk = this.IsSnowk(datas[5].Span),
+                    isBlizzardium = this.IsBlizzardium(datas[5].Span);
+                if (isAlphaReactor || isStellaSeed || isSnowk || isBlizzardium)
                 {
                     var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
@@ -448,7 +461,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         if (dateonly_logtime_jst == dateonly_currenttime_jst)
                         {
-                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnowk ? 1 : 0);
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnowk ? 1 : 0, isBlizzardium ? 1 : 0);
                         }
                         else
                         {
@@ -475,7 +488,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snowkIncrement = 0)
+        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snowkIncrement = 0, int blizzardiumIncrement = 0)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -502,10 +515,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     data.SnowkCount += snowkIncrement;
                 }
+                if (blizzardiumIncrement != 0)
+                {
+                    data.BlizzardiumCount += blizzardiumIncrement;
+                }
             }
             else
             {
-                this.Dispatcher.Invoke((Action<long, string, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snowkIncrement });
+                this.Dispatcher.Invoke((Action<long, string, int, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snowkIncrement, blizzardiumIncrement });
             }
         }
 
