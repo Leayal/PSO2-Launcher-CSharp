@@ -201,7 +201,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         }
                                         else
                                         {
-                                            Prompt_Generic.Show(this, $"- Please check your OTP device's date and time.{Environment.NewLine}- Verify if the OTP system is in sync with the the system.", "Wrong OTP", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                                            Prompt_Generic.Show(this, $"- Please check your OTP device's date and time.{Environment.NewLine}- Verify if the OTP's system is in sync with the SEGA's system.", "Wrong OTP", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                                         }
                                     }
                                     else
