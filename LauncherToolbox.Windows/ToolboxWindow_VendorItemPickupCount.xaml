@@ -6,9 +6,9 @@
                          xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                          xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
-                         mc:Ignorable="d" x:Name="ThisSelf" 
+                         mc:Ignorable="d" x:Name="ThisSelf"
                          TitleCharacterCasing="Normal" TitleBarHeight="25"
-                         Title="Vendor Items Pickup Counter" MinWidth="300" MaxWidth="600" MinHeight="60" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
+                         Title="Vendor Items Pickup Counter" MinWidth="300" MaxWidth="800" MinHeight="60" MaxHeight="600" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                          Loaded="ThisSelf_Loaded">
     <leawindow:MetroWindowEx.RightWindowCommands>
         <mah:WindowCommands>
@@ -32,7 +32,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <TextBlock Text="Select Account: " VerticalAlignment="Center" TextAlignment="Center" />
-        <ComboBox Grid.Column="1" x:Name="AccountSelector" Loaded="AccountSelector_Loaded" SelectionChanged="AccountSelector_SelectionChanged">
+        <ComboBox Grid.Column="1" x:Name="AccountSelector" Loaded="AccountSelector_Loaded" SelectionChanged="AccountSelector_SelectionChanged" Height="30">
             <ComboBox.ItemTemplate>
                 <DataTemplate>
                     <Grid>
@@ -70,7 +70,7 @@
             <Run Text="Please login the game and pick anything up with your character so that the counter can start tracking." />
         </TextBlock>
 
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center">
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center" FontSize="13">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Visible" />
@@ -81,8 +81,6 @@
                     </Style.Triggers>
                 </Style>
             </TextBlock.Style>
-            <Run Text="The account has picked up these for today:" />
-            <LineBreak />
             <Run Text="{Binding AlphaReactorCount, Mode=OneWay}"/>
             <Run>
                 <Run.Style>
