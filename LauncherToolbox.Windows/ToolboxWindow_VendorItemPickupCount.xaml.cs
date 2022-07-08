@@ -370,7 +370,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.Logreader_DataReceived(null, in data);
         }
 
-        private bool IsAlphaReactor(ReadOnlySpan<char> itemname)
+        private bool IsAlphaReactor(in ReadOnlySpan<char> itemname)
         {
             if (itemname.IsEmpty) return false;
 
@@ -378,7 +378,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || MemoryExtensions.Equals(itemname, this.str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
         }
 
-        private bool IsBlizzardium(ReadOnlySpan<char> itemname)
+        private bool IsBlizzardium(in ReadOnlySpan<char> itemname)
         {
             if (itemname.IsEmpty) return false;
 
@@ -386,7 +386,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || MemoryExtensions.Equals(itemname, this.str_Blizzardium_jp, StringComparison.OrdinalIgnoreCase));
         }
 
-        private bool IsStellarSeed(ReadOnlySpan<char> itemname)
+        private bool IsStellarSeed(in ReadOnlySpan<char> itemname)
         {
             if (itemname.IsEmpty) return false;
 
@@ -405,7 +405,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en2.AsSpan()));
         }
 
-        private bool IsSnowk(ReadOnlySpan<char> itemname)
+        private bool IsSnowk(in ReadOnlySpan<char> itemname)
         {
             if (itemname.IsEmpty) return false;
 
@@ -426,6 +426,19 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 || CompareWithEndingS(in itemname, this.str_Snoal_en2));
         }
 
+        private static bool TryGetQuantity(ReadOnlySpan<char> text, out int number)
+        {
+            const string thenum = "num(";
+            int thenumlen = thenum.Length;
+            if (text.StartsWith(thenum, StringComparison.OrdinalIgnoreCase) && (text[text.Length - 1] == ')') && int.TryParse(text.Slice(thenumlen, text.Length - thenumlen - 1), out number))
+            {
+                return true;
+            }
+
+            number = 0;
+            return false;
+        }
+
         private void Logreader_DataReceived(PSO2LogAsyncListener? arg1, in PSO2LogData arg2)
         {
             var datas = arg2.GetDataColumns();
@@ -433,12 +446,16 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             // Thus, all strings below can be used beyond the event's invocation.
             if (MemoryExtensions.Equals(datas[2].Span, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase))
             {
-                bool isAlphaReactor = this.IsAlphaReactor(datas[5].Span),
-                    isStellaSeed = this.IsStellarSeed(datas[5].Span),
-                    isSnowk = this.IsSnowk(datas[5].Span),
-                    isBlizzardium = this.IsBlizzardium(datas[5].Span);
-                if (isAlphaReactor || isStellaSeed || isSnowk || isBlizzardium)
+                bool isAlphaReactor, isStellaSeed = false, isSnowk = false, isBlizzardium = false;
+                var itemnameSpan = datas[5].Span;
+                if ((isAlphaReactor = this.IsAlphaReactor(in itemnameSpan)) || (isStellaSeed = this.IsStellarSeed(in itemnameSpan)) || (isSnowk = this.IsSnowk(in itemnameSpan)) || (isBlizzardium = this.IsBlizzardium(in itemnameSpan)))
                 {
+                    int quantity;
+                    if (!TryGetQuantity(datas[datas.Count - 1].Span, out quantity) && !TryGetQuantity(datas[datas.Count - 2].Span, out quantity))
+                    {
+                        quantity = 1;
+                    }
+
                     var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
                     var logtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
@@ -461,7 +478,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         if (dateonly_logtime_jst == dateonly_currenttime_jst)
                         {
-                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? 1 : 0, isStellaSeed ? 1 : 0, isSnowk ? 1 : 0, isBlizzardium ? 1 : 0);
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? quantity : 0, isStellaSeed ? quantity : 0, isSnowk ? quantity : 0, isBlizzardium ? quantity : 0);
                         }
                         else
                         {

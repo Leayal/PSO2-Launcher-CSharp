@@ -70,7 +70,7 @@
             <Run Text="Please login the game and pick anything up with your character so that the counter can start tracking." />
         </TextBlock>
 
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center" FontSize="13">
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" x:Name="AlphaCounter" TextWrapping="Wrap" TextAlignment="Center" FontSize="14">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
                     <Setter Property="Visibility" Value="Visible" />
