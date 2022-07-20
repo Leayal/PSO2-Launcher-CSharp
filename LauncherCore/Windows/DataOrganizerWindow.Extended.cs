@@ -1,15 +1,40 @@
 ﻿using Leayal.PSO2Launcher.Core.UIElements;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class DataOrganizerWindow
     {
+        private static int CountDoNothing(List<CustomizationFileListItem> list)
+        {
+            int result = 0, count = list.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (list[i].SelectedAction == DataAction.DoNothing)
+                {
+                    result++;
+                }
+            }
+            return result;
+        }
+
+        private static void EnsureMoveOverwriteIgnoreReadonlyFlag(string src, string dst)
+        {
+            if (File.Exists(dst))
+            {
+                var attr = File.GetAttributes(dst);
+                if ((attr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                {
+                    File.SetAttributes(dst, attr & ~FileAttributes.ReadOnly);
+                }
+                File.Delete(dst);
+            }
+            File.Move(src, dst, true);
+        }
+
         public enum DataAction
         {
             DoNothing,

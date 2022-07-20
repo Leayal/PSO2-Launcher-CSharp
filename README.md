@@ -46,7 +46,7 @@ This project is just a hobby one.
 - Convenient Utilities/Toolbox:
   - Currently, the toolbox has only 2 items:
     - `Alpha Reactor & Stellar Seed Counter` which helps user to keep track of the amount of Alpha Reactor and Stellar Seed that user has picked up in-game. [How does it work?](Feature-Explanation.md#PSO2-Alpha-Reactor-Counter)
-    - `PSO2 Data Organizer (BETA)` which helps user to manage the local files (E.g: Deleting PSO2 Classic, move PSO2 Classic's files to another place).
+    - `PSO2 Data Organizer` which helps user to manage the local files (E.g: Deleting PSO2 Classic, move PSO2 Classic's files to another place).
   - The toolbox is accessible via the main menu and via the quick menu if you minimize the launcher to tray.
 - Minimal JST clock:
   - The clock can be enabled/disabled in Launcher Behavior Manager dialog.

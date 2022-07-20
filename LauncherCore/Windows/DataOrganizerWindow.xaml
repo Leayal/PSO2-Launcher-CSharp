@@ -11,7 +11,7 @@
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d"
                          WindowStartupLocation="CenterOwner" x:Name="thisSelf" ShowTitleBar="False" WindowButtonCommandsOverlayBehavior="Never"
-                         ResizeMode="CanResize" Title="PSO2 Data Organizer (BETA)" Height="600" Width="800"
+                         ResizeMode="CanResize" Title="PSO2 Data Organizer" Height="600" Width="800"
                          Loaded="ThisSelf_Loaded">
     <Grid Margin="5,0,5,5">
         <Grid.ColumnDefinitions>

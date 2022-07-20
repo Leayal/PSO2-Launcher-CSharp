@@ -408,22 +408,30 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async void ButtonStartActions_Click(object sender, RoutedEventArgs e)
         {
-            this.tabProgressRing.IsSelected = true;
+            //this.tabProgressRing.IsSelected = true;
             try
             {
                 if (this.CustomizationFileList?.SourceCollection is List<CustomizationFileListItem> list)
                 {
-                    this.tabActionProgress.IsSelected = true;
-                    var result = await Task.Factory.StartNew(this.StartAction, list, TaskCreationOptions.LongRunning);
-                    if (result)
+                    var actionItemCount = list.Count - CountDoNothing(list);
+                    if (actionItemCount == 0)
                     {
-                        Prompt_Generic.Show(this, "Everything is done nicely.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                        this.CustomDialogResult = true;
-                        this.DialogResult = true;
+                        Prompt_Generic.Show(this, "All files' action are \"DoNothing\". Which means there will be no operation takes place. Which also means you should just close this dialog without doing anything else.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
-                    else if (!this._cancelAllOps.IsCancellationRequested)
+                    else
                     {
-                        Prompt_Generic.Show(this, "Something went wrong in the progress.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        this.tabActionProgress.IsSelected = true;
+                        var result = await Task.Factory.StartNew(this.StartAction, new ValueTuple<List<CustomizationFileListItem>, int>(list, actionItemCount), TaskCreationOptions.LongRunning);
+                        if (result)
+                        {
+                            Prompt_Generic.Show(this, "Everything is done nicely.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                            this.CustomDialogResult = true;
+                            this.DialogResult = true;
+                        }
+                        else if (!this._cancelAllOps.IsCancellationRequested)
+                        {
+                            Prompt_Generic.Show(this, "Something went wrong in the progress.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
                     }
                 }  
             }
@@ -469,19 +477,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             var pso2dir = this._config.PSO2_BIN;
             var dispatcher = this.Dispatcher;
-            using (var debouncer = new DebounceDispatcher(dispatcher))
+            if (obj is ValueTuple<List<CustomizationFileListItem>, int> data)
             {
-                if (obj is List<CustomizationFileListItem> list && list.Count != 0)
+                var (list, actionItemCount) = data;
+                if (actionItemCount == 0) return false;
+                using (var debouncer = new DebounceDispatcher(dispatcher))
                 {
                     double value = 0;
-                    dispatcher.Invoke(this.SetProgressBarMax, Convert.ToDouble(list.Count));
+                    dispatcher.Invoke(this.SetProgressBarMax, Convert.ToDouble(actionItemCount));
                     foreach (var item in list)
                     {
-                        value++;
                         if (this._cancelAllOps.IsCancellationRequested)
                         {
                             return false;
                         }
+                        if (item.SelectedAction == DataAction.DoNothing) continue;
+                        value++;
                         var action = item.SelectedAction;
                         if (action == DataAction.Delete)
                         {
@@ -510,10 +521,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 var symlinkInfo = File.ResolveLinkTarget(srcMove, true);
                                 if (symlinkInfo == null)
                                 {
-                                    File.Move(srcMove, dstMove, true);
-                                    if (action == DataAction.MoveAndSymlink)
+                                    if (!string.Equals(srcMove, dstMove, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        File.CreateSymbolicLink(srcMove, dstMove);
+                                        EnsureMoveOverwriteIgnoreReadonlyFlag(srcMove, dstMove);
+                                        if (action == DataAction.MoveAndSymlink)
+                                        {
+                                            File.CreateSymbolicLink(srcMove, dstMove);
+                                        }
                                     }
                                 }
                                 else
@@ -521,7 +535,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     var realsrcMove = symlinkInfo.FullName;
                                     if (!string.Equals(realsrcMove, dstMove, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        File.Move(realsrcMove, dstMove, true);
+                                        EnsureMoveOverwriteIgnoreReadonlyFlag(realsrcMove, dstMove);
                                         if (action == DataAction.MoveAndSymlink)
                                         {
                                             File.Delete(srcMove);
@@ -545,10 +559,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     dispatcher.InvokeAsync(this.SetProgressBarComplete);
                     return true;
                 }
-                else
-                {
-                    return false;
-                }
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -755,8 +769,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is Button btn && btn.DataContext is CustomizationFileListItem item)
             {
                 var fsd = this._SaveFileDialog.Value;
+                fsd.Reset();
                 fsd.Title = $"Specify location to put file '{item.RelativeFilename}' to";
                 fsd.FileName = Path.GetFileName(item.RelativeFilename);
+                fsd.DereferenceLinks = false;
                 if (fsd.ShowDialog(this) == true)
                 {
                     item.TextBoxValue = fsd.FileName;

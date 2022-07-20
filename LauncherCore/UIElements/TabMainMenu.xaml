@@ -42,7 +42,7 @@
                     </MenuItem>
                     <MenuItem Click="MenuItemToolBox_Click"  Loaded="MenuItem_PSO2DataOrganizer_Loaded">
                         <MenuItem.Header>
-                            <TextBlock Text="PSO2 Data Organizer (BETA)" VerticalAlignment="Center" />
+                            <TextBlock Text="PSO2 Data Organizer" VerticalAlignment="Center" />
                         </MenuItem.Header>
                         <MenuItem.Icon>
                             <iconPacks:PackIconFontAwesome Kind="BufferBrands" />
