@@ -81,7 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     if (File.Exists(path_pso2conf))
                     {
                         conf = UserConfig.FromFile(path_pso2conf);
-                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
                         {
                             conf.SaveAs(path_pso2conf);
                         }
@@ -89,7 +89,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     else
                     {
                         conf = new UserConfig("Ini");
-                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
                         {
                             if (!Directory.Exists(pso2conf_dir)) // Should be safe for symlink 
                             {

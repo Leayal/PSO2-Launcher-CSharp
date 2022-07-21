@@ -687,7 +687,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         /// <returns>True if the file has changed. False when the value is already same and no modification happened.</returns>
         internal static bool AdjustPSO2UserConfig(PSO2.UserConfig.UserConfig conf, GameClientSelection gameClientSelection)
         {
-            if (gameClientSelection == GameClientSelection.NGS_AND_CLASSIC)
+            if (gameClientSelection == GameClientSelection.NGS_AND_CLASSIC || gameClientSelection == GameClientSelection.Classic_Only)
             {
                 if (!conf.TryGetProperty("DataDownload", out var val_DataDownload) || val_DataDownload is not int num || num != 1)
                 {
