@@ -87,6 +87,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                                                                     lazy_Snoal_jp = new WeakLazy<string>(() => "スノークス"),
                                                                     lazy_DateOnlyFormat = new WeakLazy<string>(() => "yyyy-MM-dd"),
                                                                     lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
+                                                                    lazy_ActionPickupToWarehouse = new WeakLazy<string>(() => "[Pickup-ToWarehouse"),
                                                                     lazy_ShopAction_SetPrice = new WeakLazy<string>(() => "[DisplayToShop-SetValue]");
 
         private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(DateTime.MinValue));
@@ -154,8 +155,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly DispatcherTimer logcategoryThrottle;
         private readonly LogCategories logCategoriesImpl;
 
-        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ShopAction_SetPrice,
-            str_Snoal_en1, str_Snoal_en2, str_Snoal_jp, str_Blizzardium_en, str_Blizzardium_jp;
+        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ActionPickupToWarehouse,
+            str_ShopAction_SetPrice, str_Snoal_en1, str_Snoal_en2, str_Snoal_jp, str_Blizzardium_en, str_Blizzardium_jp;
         private PSO2LogAsyncListener? logreader;
         private CancellationTokenSource? cancelSrcLoad;
         private int logloadingstate;
@@ -198,6 +199,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.str_Snoal_jp = lazy_Snoal_jp.Value;
             this.str_DateOnlyFormat = lazy_DateOnlyFormat.Value;
             this.str_ActionPickup = lazy_ActionPickup.Value;
+            this.str_ActionPickupToWarehouse = lazy_ActionPickupToWarehouse.Value;
             this.str_ShopAction_SetPrice = lazy_ShopAction_SetPrice.Value;
 
             this.logCategoriesImpl = InitializeLogWatcher();
@@ -444,7 +446,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             var datas = arg2.GetDataColumns();
             // All string creations below (aka the "new string()") will allocate a new char[] buffer and copies all the chars to the new buffer.
             // Thus, all strings below can be used beyond the event's invocation.
-            if (MemoryExtensions.Equals(datas[2].Span, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase))
+            var span_actionType = datas[2].Span;
+            if (MemoryExtensions.Equals(span_actionType, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.StartsWith(span_actionType, this.str_ActionPickupToWarehouse, StringComparison.OrdinalIgnoreCase))
             {
                 bool isAlphaReactor, isStellaSeed = false, isSnowk = false, isBlizzardium = false;
                 var itemnameSpan = datas[5].Span;
