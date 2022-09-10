@@ -1,5 +1,6 @@
 @echo off
 cd /d %~dp0
+call Tools\SetupEnv.bat
 SETLOCAL
 REM Microsoft was too weird in management SDKs that I have to put everything in the repo.
 REM Resulting in enlarge the repo for no benefits or anything good at all. Simply evolving backward.

@@ -1,5 +1,6 @@
 @echo off
 cd /d %~dp0
+call Tools\SetupEnv.bat
 SETLOCAL
 SET "PublishRootDir=docs\publish\v6"
 SET "MSBUILDDISABLENODEREUSE=1"
