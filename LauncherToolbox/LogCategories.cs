@@ -1,11 +1,6 @@
-﻿using Leayal.Shared;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 
 namespace Leayal.PSO2Launcher.Toolbox
 {
@@ -26,6 +21,22 @@ namespace Leayal.PSO2Launcher.Toolbox
         /// <para>This can be used to requests path to a log file of the category with the method <seealso cref="SelectLog(string, int)"/>.</para>
         /// </remarks>
         public static readonly string ActionLog = "Action", ChatLog = "Chat", RewardLog = "Reward", StarGemLog = "StarGem", ScratchLog = "Scratch", SymbolChatLog = "SymbolChat";
+
+        /// <summary>The log category name.</summary>
+        /// <remarks>
+        /// <para>This category contains information about costumes' rewards (E.g: Receiving SG from a SG-claimable costumes). This is different from <seealso cref="StarGemLog"/>.</para>
+        /// <para>This can be used to check for which log is found when the <seealso cref="NewFileFoundEventHandler"/> occurs.</para>
+        /// <para>This can be used to requests path to a log file of the category with the method <seealso cref="SelectLog(string, int)"/>.</para>
+        /// </remarks>
+        public static readonly string CostumeGetRewardLog = "CostumeGetReward";
+
+        /// <summary>The log category name.</summary>
+        /// <remarks>
+        /// <para>This category contains information skill points (E.g: Obtaining from quests or anything, and spending points on skills). This is different from <seealso cref="ActionLog"/> and <seealso cref="RewardLog"/>.</para>
+        /// <para>This can be used to check for which log is found when the <seealso cref="NewFileFoundEventHandler"/> occurs.</para>
+        /// <para>This can be used to requests path to a log file of the category with the method <seealso cref="SelectLog(string, int)"/>.</para>
+        /// </remarks>
+        public static readonly string PointLog = "Point";
 
         private readonly string logDir;
         private readonly FileSystemWatcher watcher;
@@ -61,6 +72,10 @@ namespace Leayal.PSO2Launcher.Toolbox
             this.t_refresh = Task.Run(this.InternalRefresh);
         }
 
+        /// <summary>This is mainly to ensure consistent names' casing. E.g: "ActionLog" instead of "Actionlog" or "actionLog" or "actionlog".</summary>
+        /// <param name="span">The name of log category to normalize.</param>
+        /// <returns>The normalized name of the category. Or the uppercase version of the string if the string isn't in any known categories.</returns>
+        /// <remarks>Known categories are: Action, Chat, Reward, StarGem, Scratch, SymbolChat, CostumeGetReward, Point.</remarks>
         private static string DetermineType(in ReadOnlySpan<char> span)
         {
             if (MemoryExtensions.Equals(span, ActionLog, StringComparison.OrdinalIgnoreCase)) return ActionLog;
@@ -69,7 +84,25 @@ namespace Leayal.PSO2Launcher.Toolbox
             else if (MemoryExtensions.Equals(span, StarGemLog, StringComparison.OrdinalIgnoreCase)) return StarGemLog;
             else if (MemoryExtensions.Equals(span, ScratchLog, StringComparison.OrdinalIgnoreCase)) return ScratchLog;
             else if (MemoryExtensions.Equals(span, SymbolChatLog, StringComparison.OrdinalIgnoreCase)) return SymbolChatLog;
-            else return string.Empty;
+            else if (MemoryExtensions.Equals(span, PointLog, StringComparison.OrdinalIgnoreCase)) return PointLog;
+            else if (MemoryExtensions.Equals(span, CostumeGetRewardLog, StringComparison.OrdinalIgnoreCase)) return CostumeGetRewardLog;
+            else if (span.Length > 3 && MemoryExtensions.EndsWith(span, "Log", StringComparison.OrdinalIgnoreCase)) return TurnIt(span.Slice(0, span.Length - 3));
+            else return TurnIt(in span);
+
+            // This looks hackish but there's no other ways (that I know) to avoid making unnecessary garbage.
+            static string TurnIt(in ReadOnlySpan<char> data)
+            {
+                var result = new string(char.MinValue, data.Length);
+                unsafe
+                {
+                    fixed (char* c = result)
+                    {
+                        var resultSpan = new Span<char>(c, data.Length);
+                        data.ToUpper(resultSpan, null);
+                    }
+                }
+                return result;
+            }
         }
 
         sealed class LazyIndexing
