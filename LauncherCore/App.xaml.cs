@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Toolbox.Windows;
 using Leayal.PSO2Launcher.Toolbox;
+using SQLite;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core
@@ -44,12 +45,18 @@ namespace Leayal.PSO2Launcher.Core
             this.config_main = new ConfigurationFile(Path.GetFullPath(Path.Combine("config", "launcher.json"), RuntimeValues.RootDirectory));
             this.JSTClock = new JSTClockTimer();
 
-            this.InitializeComponent();
+            // Full path to the file.
+            var fullpath = Path.Combine(RuntimeValues.RootDirectory, "bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "e_sqlcipher.dll");
+            // System.IO.File.WriteAllText("Nano.txt", fullpath);
+            SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(fullpath));
+            SQLitePCL.raw.FreezeProvider();
 
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();
             }
+
+            this.InitializeComponent();
 
             var thememgr = ThemeManager.Current;
             thememgr.ThemeSyncMode = ThemeSyncMode.SyncWithAppMode;

@@ -15,25 +15,14 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>$(MSBuildProjectName.Replace(" ", "_").Replace("-", "_"))</RootNamespace>
 		<Nullable>enable</Nullable>
+		<DefineConstants>USE_SQLITEPCL_RAW;NO_SQLITEPCL_RAW_BATTERIES</DefineConstants>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
-
-	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-		<DebugSymbols>false</DebugSymbols>
-		<DebugType></DebugType>
-		<DefineConstants>USE_SQLITEPCL_RAW;RELEASE</DefineConstants>
-		<DocumentationFile>bin\Release\netstandard2.0\SQLite-net.xml</DocumentationFile>
-	</PropertyGroup>
-	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-		<DefineConstants>USE_SQLITEPCL_RAW;DEBUG</DefineConstants>
-		<DocumentationFile>bin\Debug\netstandard2.0\SQLite-net.xml</DocumentationFile>
-	</PropertyGroup>
-	<ItemGroup>
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.2" />
-	</ItemGroup>
 	<ItemGroup>
 		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+	  <PackageReference Include="SQLitePCLRaw.core" Version="2.1.2" />
+	  <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.1.2" />
 	</ItemGroup>
 </Project>

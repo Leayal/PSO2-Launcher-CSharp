@@ -230,7 +230,9 @@ namespace SQLite
 		static SQLiteConnection()
 		{
 			// Full path to the file.
-            SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(System.IO.Path.Combine(Leayal.SharedInterfaces.RuntimeValues.RootDirectory, "bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "e_sqlcipher.dll")));
+			var fullpath = System.IO.Path.Combine(Leayal.SharedInterfaces.RuntimeValues.RootDirectory, "bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "e_sqlcipher.dll");
+            // System.IO.File.WriteAllText("Nano.txt", fullpath);
+            SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(fullpath));
             SQLitePCL.raw.FreezeProvider();
             // SQLitePCL.Batteries_V2.Init();
 		}
@@ -4445,7 +4447,7 @@ namespace SQLite
 			Serialized = 3
 		}
 
-		const string LibraryPath = "sqlite3";
+		// const string LibraryPath = "sqlite3";
 
 #if !USE_CSHARP_SQLITE && !USE_WP8_NATIVE_SQLITE && !USE_SQLITEPCL_RAW
 		[DllImport(LibraryPath, EntryPoint = "sqlite3_threadsafe", CallingConvention=CallingConvention.Cdecl)]
