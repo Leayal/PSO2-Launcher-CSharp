@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<AssemblyName>SQLite-net</AssemblyName>
+		<PackageId>sqlite-net-sqlcipher</PackageId>
+		<AssemblyTitle>SQLite-net SQLCipher .NET Standard Library</AssemblyTitle>
+		<Description>
+			SQLite-net is an open source and light weight library providing easy SQLite database storage for .NET, Mono, and Xamarin applications.
+			This version uses SQLitePCLRaw to provide platform independent versions of SQLite with the SQLCipher extension.
+			This enables secure access to the database with password (key) access.
+		</Description>
+		<PackageTags>sqlite-net;sqlite;database;orm;encryption;sqlcipher</PackageTags>
+		<Configurations>Release;Debug</Configurations>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<RootNamespace>$(MSBuildProjectName.Replace(" ", "_").Replace("-", "_"))</RootNamespace>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+		<DebugSymbols>false</DebugSymbols>
+		<DebugType></DebugType>
+		<DefineConstants>USE_SQLITEPCL_RAW;RELEASE</DefineConstants>
+		<DocumentationFile>bin\Release\netstandard2.0\SQLite-net.xml</DocumentationFile>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DefineConstants>USE_SQLITEPCL_RAW;DEBUG</DefineConstants>
+		<DocumentationFile>bin\Debug\netstandard2.0\SQLite-net.xml</DocumentationFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.2" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
+	</ItemGroup>
+</Project>

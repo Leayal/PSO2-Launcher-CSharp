@@ -1,0 +1,4 @@
+[submodule "ZamboniLib"]
+	path = ZamboniLib
+	url = https://github.com/Leayal/ZamboniLib
+	branch = netstandard2

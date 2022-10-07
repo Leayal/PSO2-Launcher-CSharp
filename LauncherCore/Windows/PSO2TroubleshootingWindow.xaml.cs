@@ -244,13 +244,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             list.Add(paragraph);
 
             var url_article_vcredist = new Uri("https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0");
-            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x64): ")));
+            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2022 (x64): ")));
             switch (vc14_x64)
             {
                 case VCRedistVersion.None:
                     isOkay = false;
                     paragraph.Inlines.Add(new Run("Not Installed (") { Foreground = Brushes.Red });
-                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2019 64-bit")) { NavigateUri = url_article_vcredist };
+                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2022 64-bit")) { NavigateUri = url_article_vcredist };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
@@ -259,13 +259,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));
                     break;
-                case VCRedistVersion.VC2019:
-                    paragraph.Inlines.Add(new Run("VC++ 2019 Installed") { Foreground = Brushes.Green });
+                case VCRedistVersion.VC2022:
+                    paragraph.Inlines.Add(new Run("VC++ 2022 Installed") { Foreground = Brushes.Green });
+                    break;
+                case VCRedistVersion.NewerThanExpected:
+                    paragraph.Inlines.Add(new Run("VC++ newer than 2022 Installed") { Foreground = Brushes.Green });
                     break;
                 default:
                     isOkay = false;
-                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x64.ToString().Substring(2)} Installed [Recommended to update to VC++ 2019] (") { Foreground = Brushes.Yellow });
-                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2019 64-bit")) { NavigateUri = url_article_vcredist };
+                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x64.ToString().Substring(2)} Installed [Recommended to update to VC++ 2022] (") { Foreground = Brushes.Yellow });
+                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2022 64-bit")) { NavigateUri = url_article_vcredist };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
@@ -277,13 +280,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             list.Add(paragraph);
 
-            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2019 (x86): ")));
+            paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2022 (x86): ")));
             switch (vc14_x86)
             {
                 case VCRedistVersion.None:
                     isOkay = false;
                     paragraph.Inlines.Add(new Run("Not Installed") { Foreground = Brushes.Red });
-                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2019 32-bit")) { NavigateUri = url_article_vcredist };
+                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2022 32-bit")) { NavigateUri = url_article_vcredist };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
@@ -292,13 +295,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));
                     break;
-                case VCRedistVersion.VC2019:
-                    paragraph.Inlines.Add(new Run("VC++ 2019 Installed") { Foreground = Brushes.Green });
+                case VCRedistVersion.VC2022:
+                    paragraph.Inlines.Add(new Run("VC++ 2022 Installed") { Foreground = Brushes.Green });
+                    break;
+                case VCRedistVersion.NewerThanExpected:
+                    paragraph.Inlines.Add(new Run("VC++ newer than 2022 Installed") { Foreground = Brushes.Green });
                     break;
                 default:
                     isOkay = false;
-                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x86.ToString().Substring(2)} Installed [Recommended to update to VC++ 2019] (") { Foreground = Brushes.Yellow });
-                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2019 32-bit")) { NavigateUri = url_article_vcredist };
+                    paragraph.Inlines.Add(new Run($"VC++ {vc14_x86.ToString().Substring(2)} Installed [Recommended to update to VC++ 2022] (") { Foreground = Brushes.Yellow });
+                    link = new Hyperlink(new Run("Visit Microsoft Support Center to download VC++ 2022 32-bit")) { NavigateUri = url_article_vcredist };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));

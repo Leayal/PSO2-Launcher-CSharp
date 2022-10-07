@@ -20,7 +20,7 @@ namespace Leayal.PSO2.Installer
 
         public static VCRedistVersion GetVC14RedistVersion(bool x64)
         {
-            using (var hive = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+            using (var hive = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, x64 ? RegistryView.Registry64 : RegistryView.Registry32))
             {
                 return GetVC14RedistVersion(hive, x64);
             }
@@ -51,10 +51,20 @@ namespace Leayal.PSO2.Installer
                                 // Expect 16 ~ 16
                                 return VCRedistVersion.VC2017;
                             }
-                            else
+                            else if (minor < 30)
                             {
                                 // Expect 20 ~ 29
                                 return VCRedistVersion.VC2019;
+                            }
+                            else if (minor < 40)
+                            {
+                                // Expect 30~39
+                                return VCRedistVersion.VC2022;
+                            }
+                            else
+                            {
+                                // 40+
+                                return VCRedistVersion.NewerThanExpected;
                             }
                         }
                         else

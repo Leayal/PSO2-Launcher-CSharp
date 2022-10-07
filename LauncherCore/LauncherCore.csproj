@@ -52,7 +52,7 @@
     <PackageReference Include="AvalonEdit" Version="6.1.3.50" />
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
     <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="4.11.0" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.1.0" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.1.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,6 +69,7 @@
     <ProjectReference Include="..\PSO2Launcher\PSO2Launcher.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <ProjectReference Include="..\SQLite-net-sqlcipher\SQLite-net-sqlcipher.csproj" />
     <ProjectReference Include="..\WebViewCompat\WebViewCompat.csproj">
       <Private>true</Private>
     </ProjectReference>

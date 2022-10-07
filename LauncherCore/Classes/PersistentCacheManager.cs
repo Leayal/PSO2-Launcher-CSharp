@@ -6,10 +6,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using SQLite;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public abstract partial class PersistentCacheManager : IDisposable
+    public class PersistentCacheManager : IDisposable
     {
         protected const string dbName = "__.db";
         public readonly string CacheRootDirectory;
@@ -17,19 +18,22 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private readonly SemaphoreSlim dbLock;
         private bool _disposed;
 
-        public static PersistentCacheManager Create(string rootDirectory)  => Environment.Is64BitProcess ? new PersistentCacheManagerX64(rootDirectory) : new PersistentCacheManagerX86(rootDirectory);
+        private readonly SQLiteConnection conn;
 
-        protected PersistentCacheManager(string rootDirectory, bool earlyInitDatabase)
+        /// <summary>Only for backward-compatible now. Use constructor instead</summary>
+        /// <param name="rootDirectory"></param>
+        /// <returns></returns>
+        public static PersistentCacheManager Create(string rootDirectory) => new PersistentCacheManager(rootDirectory);
+
+        public PersistentCacheManager(string rootDirectory)
         {
             this._disposed = false;
             this.lockObjs = new ConcurrentDictionary<string, LazySemaphoreSlimEx>(StringComparer.OrdinalIgnoreCase);
             this.dbLock = new SemaphoreSlim(0, 1);
             this.CacheRootDirectory = Directory.CreateDirectory(rootDirectory).FullName;
-            
-            if (earlyInitDatabase)
-            {
-                this.InitHeadersDatabase();
-            }
+
+            this.conn = new SQLiteConnection(new SQLiteConnectionString(Path.Combine(rootDirectory, dbName), SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.Create | SQLiteOpenFlags.PrivateCache, true, "leapersistcachedir"));
+            this.InitHeadersDatabase();
         }
 
         /// <summary>Fetch a cache entry.</summary>
@@ -160,15 +164,61 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         private LazySemaphoreSlimEx CreateNewSemaphore(string entryName) => new LazySemaphoreSlimEx(this.lockObjs, entryName);
 
-        protected virtual void InitHeadersDatabase()
+
+        private void InitHeadersDatabase()
         {
+            this.conn.EnableWriteAheadLogging();
+            this.conn.CreateTable<CacheHeaderEntry>();
             this.dbLock.Release();
         }
-        protected abstract Task<JsonDocument> FetchCacheHeader(string entryName, CancellationToken cancellationToken);
-        protected abstract Task WriteCacheHeader(string entryName, ReadOnlyMemory<byte> entryHeaderData, CancellationToken cancellationToken);
-        protected abstract Task DeleteCacheHeader(string entryName, CancellationToken cancellationToken);
 
-        protected async Task<IDisposable> EnterDatabaseLock(CancellationToken cancellationToken)
+        private async Task<JsonDocument?> FetchCacheHeader(string entryName, CancellationToken cancellationToken)
+        {
+            using (var lockObj = await this.EnterDatabaseLock(cancellationToken))
+            {
+                if (this.conn.Find<CacheHeaderEntry>(entryName) is CacheHeaderEntry header)
+                {
+                    return JsonDocument.Parse(header.Data, new JsonDocumentOptions() { CommentHandling = JsonCommentHandling.Skip });
+                }
+            }
+            return null;
+        }
+        private async Task WriteCacheHeader(string entryName, ReadOnlyMemory<byte> entryHeaderData, CancellationToken cancellationToken)
+        {
+            using (var lockObj = await this.EnterDatabaseLock(cancellationToken))
+            {
+                var savepoint = this.conn.SaveTransactionPoint();
+                try
+                {
+                    this.conn.InsertOrReplace(new CacheHeaderEntry() { EntryName = entryName, Data = entryHeaderData.ToArray() });
+                    this.conn.Release(savepoint);
+                }
+                catch
+                {
+                    this.conn.RollbackTo(savepoint);
+                    throw;
+                }
+            }
+        }
+        private async Task DeleteCacheHeader(string entryName, CancellationToken cancellationToken)
+        {
+            using (var lockObj = await this.EnterDatabaseLock(cancellationToken))
+            {
+                var savepoint = this.conn.SaveTransactionPoint();
+                try
+                {
+                    this.conn.Delete<CacheHeaderEntry>(entryName);
+                    this.conn.Release(savepoint);
+                }
+                catch
+                {
+                    this.conn.RollbackTo(savepoint);
+                    throw;
+                }
+            }
+        }
+
+        private async Task<IDisposable> EnterDatabaseLock(CancellationToken cancellationToken)
         {
             var result = new DatabaseAsyncLock(this.dbLock);
             await this.dbLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -237,6 +287,15 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     this._lazy.Value.Dispose();
                 }
             }
+        }
+
+        class CacheHeaderEntry
+        {
+            [PrimaryKey, Unique, NotNull, MaxLength(2048), Collation("NOCASE")]
+            public string? EntryName { get; set; }
+
+            [NotNull]
+            public byte[]? Data { get; set; }
         }
 
         protected class SemaphoreSlimEx : SemaphoreSlim
