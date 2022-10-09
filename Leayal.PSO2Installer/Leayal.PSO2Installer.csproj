@@ -5,7 +5,6 @@
     <RootNamespace>Leayal.PSO2.Installer</RootNamespace>
     <UseWPF>true</UseWPF>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
-    <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
   </PropertyGroup>
 

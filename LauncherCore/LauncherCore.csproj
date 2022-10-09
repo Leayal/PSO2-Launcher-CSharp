@@ -7,10 +7,10 @@
     <ApplicationIcon />
     <StartupObject />
     <RootNamespace>Leayal.PSO2Launcher.Core</RootNamespace>
-    <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
+    <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
@@ -19,10 +19,6 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702</NoWarn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
-    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -58,6 +54,7 @@
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
     <ProjectReference Include="..\LauncherToolbox.Windows\LauncherToolbox.Windows.csproj" />
     <ProjectReference Include="..\LauncherToolbox\LauncherToolbox.csproj" />
+    <ProjectReference Include="..\Leayal.PSO2.Modding\Leayal.PSO2.Modding.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Installer\Leayal.PSO2Installer.csproj" />
     <ProjectReference Include="..\Leayal.PSO2Launcher.UserConfig\Leayal.PSO2.UserConfig.csproj" />
     <ProjectReference Include="..\Leayal.Shared.Windows\Leayal.Shared.Windows.csproj" />

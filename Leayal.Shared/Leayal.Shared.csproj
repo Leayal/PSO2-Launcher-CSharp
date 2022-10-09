@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
-    <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

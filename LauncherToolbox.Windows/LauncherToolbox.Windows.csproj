@@ -6,7 +6,6 @@
     <UseWPF>true</UseWPF>
     <Authors>Dramiel Leayal</Authors>
     <RootNamespace>Leayal.PSO2Launcher.Toolbox.Windows</RootNamespace>
-    <DebugType>full</DebugType>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Description>Provides UI for PSO2 Tools. This is standalone and does not require PSO2LeaLauncher's core components.</Description>
   </PropertyGroup>

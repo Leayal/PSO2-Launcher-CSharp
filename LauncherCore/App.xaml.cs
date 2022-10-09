@@ -15,6 +15,7 @@ using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Toolbox.Windows;
 using Leayal.PSO2Launcher.Toolbox;
 using SQLite;
+using Leayal.PSO2.Modding.Cache;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core
@@ -47,9 +48,20 @@ namespace Leayal.PSO2Launcher.Core
 
             // Full path to the file.
             var fullpath = Path.Combine(RuntimeValues.RootDirectory, "bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "e_sqlcipher.dll");
-            // System.IO.File.WriteAllText("Nano.txt", fullpath);
             SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(fullpath));
             SQLitePCL.raw.FreezeProvider();
+
+            Task.Run(async delegate
+            {
+                var modcache = new ModCacheFile(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\mods\DLSS\metadata-cache.db");
+                await modcache.Init();
+                await modcache.GetOrSetFileCacheData("nvngx_dlss2.4.12.dll", "FD41BD81D82273F69896ECC0235AEA19");
+
+                var modcache2 = new ModCacheFile(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\mods\checksum-disable\metadata-cache.db");
+                await modcache2.Init();
+                await modcache2.GetOrSetFileCacheData("nvngx_dlss2.4.12.dll", "FD41BD81D82273F69896ECC0235AEA19");
+            });
+            
 
             if (File.Exists(this.config_main.Filename))
             {
@@ -160,7 +172,7 @@ namespace Leayal.PSO2Launcher.Core
         }
 #nullable restore
 
-        private void Thememgr_ThemeChanged(object sender, ThemeChangedEventArgs e)
+        private void Thememgr_ThemeChanged(object? sender, ThemeChangedEventArgs e)
         {
             var thememgr = (sender as ThemeManager) ?? ThemeManager.Current;
             var mode = string.Equals(e.NewTheme.BaseColorScheme, ThemeManager.BaseColorLight, StringComparison.OrdinalIgnoreCase);
@@ -237,7 +249,7 @@ namespace Leayal.PSO2Launcher.Core
             }
         }
 
-        private void Mainmenuwindow_FirstShown(object sender, EventArgs e)
+        private void Mainmenuwindow_FirstShown(object? sender, EventArgs e)
         {
             if (sender is Windows.MainMenuWindow window)
             {
@@ -326,7 +338,7 @@ namespace Leayal.PSO2Launcher.Core
                                 isInTray = false;
                             }
 
-                            void mainformclosed(object sender, EventArgs e)
+                            void mainformclosed(object? sender, EventArgs e)
                             {
                                 if (sender is Window w)
                                 {

@@ -4,7 +4,6 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <DebugType>full</DebugType>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <RootNamespace>Leayal.PSO2Launcher.Toolbox</RootNamespace>
     <Authors>Dramiel Leayal</Authors>

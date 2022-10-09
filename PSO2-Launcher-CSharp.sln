@@ -39,7 +39,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox", "Launcher
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLite-net-sqlcipher", "SQLite-net-sqlcipher\SQLite-net-sqlcipher.csproj", "{7D5217FF-D9C8-4357-99D0-23695DAFC90E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLite-net-sqlcipher", "SQLite-net-sqlcipher\SQLite-net-sqlcipher.csproj", "{7D5217FF-D9C8-4357-99D0-23695DAFC90E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.PSO2.Modding", "Leayal.PSO2.Modding\Leayal.PSO2.Modding.csproj", "{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -162,6 +164,12 @@ Global
 		{7D5217FF-D9C8-4357-99D0-23695DAFC90E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D5217FF-D9C8-4357-99D0-23695DAFC90E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D5217FF-D9C8-4357-99D0-23695DAFC90E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Debug HTTP Requests|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Debug HTTP Requests|Any CPU.Build.0 = Debug|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

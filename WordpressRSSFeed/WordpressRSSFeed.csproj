@@ -4,7 +4,6 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <RootNamespace>Leayal.PSO2Launcher.RSS.Handlers</RootNamespace>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
-    <DebugType>full</DebugType>
     <Authors>Dramiel Leayal</Authors>
   </PropertyGroup>
 

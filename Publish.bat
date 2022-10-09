@@ -19,7 +19,7 @@ IF EXIST "%~dp0Tools\sdk\6.0.100\dotnet.exe" (
 )
 
 dotnet build -c Release -o "Build\LauncherCore-natives" "LauncherCore\LauncherCore.csproj"
-dotnet publish -c Publish --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCoreNew" "LauncherCoreNew\LauncherCoreNew.csproj"
+dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\LauncherCoreNew" "LauncherCoreNew\LauncherCoreNew.csproj"
 del /Q /F "Build\LauncherCoreNew\e_sqlcipher.dll"
 del /Q /F "Build\LauncherCoreNew\WebView2Loader.dll"
 del /F /Q "Build\LauncherCoreNew\Microsoft.Web.WebView2.WPF.dll"
@@ -35,7 +35,7 @@ if not exist %PublishRootDir%\files\native-x86 (
 )
 copy /B /L /Y "Build\LauncherCore-natives\runtimes\win-x86\native\*.dll" "%PublishRootDir%\files\native-x86\"
 
-dotnet publish -c Publish --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\Updater" "Updater\Updater.csproj"
+dotnet publish -c Release --no-self-contained -p:PublishReadyToRun=true -r win-x64 -o "Build\Updater" "Updater\Updater.csproj"
 copy /B /L /Y "Build\Updater\*.dll" "%PublishRootDir%\files\"
 
 if not exist %PublishRootDir%\files\plugins\rss (

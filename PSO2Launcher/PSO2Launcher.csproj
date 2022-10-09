@@ -7,12 +7,11 @@
     <RootNamespace>Leayal.PSO2Launcher</RootNamespace>
     <AssemblyName>PSO2LeaLauncher</AssemblyName>
     <StartupObject />
-    <Configurations>Debug;Release;Publish;Debug HTTP Requests</Configurations>
+    <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <ApplicationIcon>Resources\1.ico</ApplicationIcon>
     <Version>3.0.0</Version>
-	<FileVersion>3.2.5</FileVersion>
+	  <FileVersion>3.2.5</FileVersion>
     <UseWPF>True</UseWPF>
-    <DebugType>full</DebugType>
     <Nullable>enable</Nullable>
     <Authors>Dramiel Leayal</Authors>
     <Description>PSO2 Launcher for PSO2: NGS JP</Description>
@@ -27,20 +26,9 @@
     <OutputPath />
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|AnyCPU'">
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Publish'">
-    <Optimize>True</Optimize>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebuggerSupport>false</DebuggerSupport>
-	<StartupHookSupport>false</StartupHookSupport>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <Optimize>True</Optimize>
-    <DebuggerSupport>false</DebuggerSupport>
-    <StartupHookSupport>false</StartupHookSupport>
+	  <StartupHookSupport>false</StartupHookSupport>
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
