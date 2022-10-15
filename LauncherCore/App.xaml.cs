@@ -51,18 +51,6 @@ namespace Leayal.PSO2Launcher.Core
             SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(fullpath));
             SQLitePCL.raw.FreezeProvider();
 
-            Task.Run(async delegate
-            {
-                var modcache = new ModCacheFile(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\mods\DLSS\metadata-cache.db");
-                await modcache.Init();
-                await modcache.GetOrSetFileCacheData("nvngx_dlss2.4.12.dll", "FD41BD81D82273F69896ECC0235AEA19");
-
-                var modcache2 = new ModCacheFile(@"E:\All Content\VB_Project\visual studio 2019\PSO2-Launcher-CSharp\Test\mods\checksum-disable\metadata-cache.db");
-                await modcache2.Init();
-                await modcache2.GetOrSetFileCacheData("nvngx_dlss2.4.12.dll", "FD41BD81D82273F69896ECC0235AEA19");
-            });
-            
-
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();
