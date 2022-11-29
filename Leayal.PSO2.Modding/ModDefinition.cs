@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Leayal.PSO2.Modding.Cache;
+using System.Reflection.Metadata;
 
 namespace Leayal.PSO2.Modding
 {
     /// <summary>Contains mod's infomation.</summary>
     public sealed class ModDefinition
     {
-        private static readonly ReadOnlyDictionary<string, FileDefinition> EmptyFileList = new ReadOnlyDictionary<string, FileDefinition>(new Dictionary<string, FileDefinition>(0));
+        private static readonly ReadOnlyDictionary<string, IndividualFileDefinition> EmptyFileList = new ReadOnlyDictionary<string, IndividualFileDefinition>(new Dictionary<string, IndividualFileDefinition>(0));
 
         /// <summary>The name of the modification package.</summary>
         public readonly string ModName;
@@ -27,7 +28,7 @@ namespace Leayal.PSO2.Modding
         public readonly string ModDirectory;
 
         /// <summary>Gets the list of modded files.</summary>
-        public readonly ReadOnlyDictionary<string, FileDefinition> Files;
+        public readonly ReadOnlyDictionary<string, IndividualFileDefinition> Files;
         
         /// <summary>Constructor.</summary>
         /// <param name="mod_directory"></param>
@@ -52,40 +53,19 @@ namespace Leayal.PSO2.Modding
 
                 if (root.TryGetProperty("files", out var prop_files) && prop_files.ValueKind == JsonValueKind.Object)
                 {
-                    Dictionary<string, FileDefinition> list = ((root.TryGetProperty("file-count", out var prop_fileCount) && prop_fileCount.ValueKind == JsonValueKind.Number) ?
-                        new Dictionary<string, FileDefinition>(prop_fileCount.GetInt32()) : new Dictionary<string, FileDefinition>());
+                    Dictionary<string, IndividualFileDefinition> list = ((root.TryGetProperty("file-count", out var prop_fileCount) && prop_fileCount.ValueKind == JsonValueKind.Number) ?
+                        new Dictionary<string, IndividualFileDefinition>(prop_fileCount.GetInt32()) : new Dictionary<string, IndividualFileDefinition>());
 
                     foreach (var obj in prop_files.EnumerateObject())
                     {
-                        var relativeFilepath = obj.Name;
+                        var relativeFilepathInModArchive = obj.Name;
                         var obj_val = obj.Value;
-                        if (obj_val.ValueKind == JsonValueKind.Object)
+                        if (IndividualFileDefinition.TryParse(relativeFilepathInModArchive, in obj_val, out var fileDef))
                         {
-                            string? targetPath, targetMd5 = null;
-                            if (obj_val.TryGetProperty("target-path", out var prop_targetPath) && prop_targetPath.ValueKind == JsonValueKind.String)
-                            {
-                                targetPath = prop_targetPath.GetString();
-                                if (string.IsNullOrEmpty(targetPath))
-                                {
-                                    targetPath = relativeFilepath;
-                                }
-                            }
-                            else
-                            {
-                                targetPath = relativeFilepath;
-                            }
-                            if (obj_val.TryGetProperty("target-md5", out var prop_targetMd5) && prop_targetMd5.ValueKind == JsonValueKind.String)
-                            {
-                                targetMd5 = prop_targetMd5.GetString();
-                                if (string.IsNullOrWhiteSpace(targetMd5))
-                                {
-                                    targetMd5 = null;
-                                }
-                            }
-                            list.Add(relativeFilepath, new FileDefinition(targetPath, targetMd5));
+                            list.Add(relativeFilepathInModArchive, fileDef);
                         }  
                     }
-                    this.Files = new ReadOnlyDictionary<string, FileDefinition>(list);
+                    this.Files = new ReadOnlyDictionary<string, IndividualFileDefinition>(list);
                 }
                 else
                 {

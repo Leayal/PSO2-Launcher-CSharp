@@ -72,10 +72,51 @@ namespace Leayal.PSO2.UserConfig
         {
             int pos1 = 0;
             var data = jsonData.Span;
-            ReadOnlyMemory<char> tmpBuffer = ReadOnlyMemory<char>.Empty, currentProperty = ReadOnlyMemory<char>.Empty;
+            ReadOnlyMemory<char> currentProperty = ReadOnlyMemory<char>.Empty;
             List<ReadOnlyMemory<char>> r_currentPath = new List<ReadOnlyMemory<char>>();
             UserConfig root = null;
             ConfigToken token = null;
+
+            static void SetTokenValue(ConfigToken token, in ReadOnlyMemory<char> currentProperty, in ReadOnlyMemory<char> jsonData, int pos1, int currentPos)
+            {
+                var tmpBuffer = jsonData.Slice(pos1, currentPos - pos1);
+                var val = tmpBuffer.Trim();
+                var spanVal = val.Span;
+                if (spanVal.IsEmpty)
+                {
+                    token[in currentProperty] = null;
+                }
+                else
+                {
+                    if (long.TryParse(spanVal, System.Globalization.NumberStyles.Integer, null, out var number))
+                    {
+                        token[in currentProperty] = number;
+                    }
+                    else if (double.TryParse(spanVal, System.Globalization.NumberStyles.Float, null, out var _floatnumber))
+                    {
+                        token[in currentProperty] = _floatnumber;
+                    }
+                    else if (bool.TryParse(spanVal, out var _boolean))
+                    {
+                        token[in currentProperty] = _boolean;
+                    }
+                    else if (spanVal[0] == '"' && spanVal[spanVal.Length - 1] == '"')
+                    {
+                        if (spanVal.Length == 2)
+                        {
+                            token[in currentProperty] = string.Empty;
+                        }
+                        else
+                        {
+                            token[in currentProperty] = new string(spanVal.Slice(1, spanVal.Length - 2));
+                        }
+                    }
+                    else
+                    {
+                        token[in currentProperty] = val;
+                    }
+                }
+            }
 
             for (int currentPos = 0; currentPos < data.Length; currentPos++)
             {
@@ -87,11 +128,11 @@ namespace Leayal.PSO2.UserConfig
                     case '\r':
                         break;
                     case '=':
-                        tmpBuffer = jsonData.Slice(pos1, currentPos - pos1);
+                        var propBuffer = jsonData.Slice(pos1, currentPos - pos1);
                         pos1 = currentPos + 1;
-                        if (!tmpBuffer.IsEmpty && !tmpBuffer.Span.IsWhiteSpace())
+                        if (!propBuffer.IsEmpty && !propBuffer.Span.IsWhiteSpace())
                         {
-                            currentProperty = tmpBuffer.Trim();
+                            currentProperty = propBuffer.Trim();
                         }
                         break;
                     case '{':
@@ -113,6 +154,11 @@ namespace Leayal.PSO2.UserConfig
                         pos1 = currentPos + 1;
                         break;
                     case '}':
+                        if (!currentProperty.IsEmpty && !currentProperty.Span.IsWhiteSpace())
+                        {
+                            SetTokenValue(token, in currentProperty, in jsonData, pos1, currentPos);
+                            currentProperty = ReadOnlyMemory<char>.Empty;
+                        }
                         r_currentPath.RemoveAt(r_currentPath.Count - 1);
                         token = SelectOrCreate(root, r_currentPath);
                         pos1 = currentPos + 1;
@@ -120,42 +166,14 @@ namespace Leayal.PSO2.UserConfig
                     case ',':
                         if (!currentProperty.IsEmpty && !currentProperty.Span.IsWhiteSpace())
                         {
-                            tmpBuffer = jsonData.Slice(pos1, currentPos - pos1);
-                            var val = tmpBuffer.Trim();
-                            var spanVal = val.Span;
-                            if (long.TryParse(spanVal, System.Globalization.NumberStyles.Integer, null, out var number))
-                            {
-                                token[in currentProperty] = number;
-                            }
-                            else if (double.TryParse(spanVal, System.Globalization.NumberStyles.Float, null, out var _floatnumber))
-                            {
-                                token[in currentProperty] = _floatnumber;
-                            }
-                            else if (bool.TryParse(spanVal, out var _boolean))
-                            {
-                                token[in currentProperty] = _boolean;
-                            }
-                            else if (spanVal[0] == '"' && spanVal[spanVal.Length - 1] == '"')
-                            {
-                                if (spanVal.Length == 2)
-                                {
-                                    token[in currentProperty] = string.Empty;
-                                }
-                                else
-                                {
-                                    token[in currentProperty] = new string(spanVal.Slice(1, spanVal.Length - 2));
-                                }
-                            }
-                            else
-                            {
-                                token[in currentProperty] = val;
-                            }
+                            SetTokenValue(token, in currentProperty, in jsonData, pos1, currentPos);
                             currentProperty = ReadOnlyMemory<char>.Empty;
                         }
                         pos1 = currentPos + 1;
                         break;
                 }
             }
+
             return root;
         }
 

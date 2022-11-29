@@ -14,7 +14,7 @@ div.root {
 div.root div.body {
     display: flex;
     flex-direction: row;
-    height: 100%;
+    flex: auto;
 }
 
 .side-bar {
