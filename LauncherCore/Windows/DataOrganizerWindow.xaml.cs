@@ -37,6 +37,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     case DataAction.MoveAndSymlink:
                     case DataAction.Move:
+                    case DataAction.Copy:
                         window.SetValue(HasBulkActionSettingsPropertyKey, true);
                         break;
                     default:
@@ -47,8 +48,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }));
         public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
         
-        public static readonly DataAction[] DataActions = (StaticResources.IsCurrentProcessAdmin ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.MoveAndSymlink }
-                                                                                                                                        : new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move });
+        public static readonly DataAction[] DataActions = (StaticResources.IsCurrentProcessAdmin ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy, DataAction.MoveAndSymlink }
+                                                                                                                                        : new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy });
 
         public ICollectionView CustomizationFileList
         {
@@ -504,7 +505,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 File.Delete(delPath);
                             }
                         }
-                        else if (action == DataAction.Move || action == DataAction.MoveAndSymlink)
+                        else if (action == DataAction.Move || action == DataAction.Copy || action == DataAction.MoveAndSymlink)
                         {
                             var a = new ActionProgressReport(value, (action == DataAction.MoveAndSymlink) ? $"Move & Symlink '{item.RelativeFilename}'" : $"Moving '{item.RelativeFilename}'", this.ActionProgress_Value);
                             debouncer.ThrottleEx(30, a.Invoke);
@@ -523,10 +524,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 {
                                     if (!string.Equals(srcMove, dstMove, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        EnsureMoveOverwriteIgnoreReadonlyFlag(srcMove, dstMove);
-                                        if (action == DataAction.MoveAndSymlink)
+                                        switch (action)
                                         {
-                                            File.CreateSymbolicLink(srcMove, dstMove);
+                                            case DataAction.Copy:
+                                                EnsureCopyOverwriteIgnoreReadonlyFlag(srcMove, dstMove);
+                                                break;
+                                            case DataAction.Move:
+                                                EnsureMoveOverwriteIgnoreReadonlyFlag(srcMove, dstMove);
+                                                break;
+                                            case DataAction.MoveAndSymlink:
+                                                EnsureMoveOverwriteIgnoreReadonlyFlag(srcMove, dstMove);
+                                                File.CreateSymbolicLink(srcMove, dstMove);
+                                                break;
                                         }
                                     }
                                 }
@@ -535,11 +544,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     var realsrcMove = symlinkInfo.FullName;
                                     if (!string.Equals(realsrcMove, dstMove, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        EnsureMoveOverwriteIgnoreReadonlyFlag(realsrcMove, dstMove);
-                                        if (action == DataAction.MoveAndSymlink)
+                                        switch (action)
                                         {
-                                            File.Delete(srcMove);
-                                            File.CreateSymbolicLink(srcMove, dstMove);
+                                            case DataAction.Copy:
+                                                EnsureCopyOverwriteIgnoreReadonlyFlag(realsrcMove, dstMove);
+                                                break;
+                                            case DataAction.Move:
+                                                EnsureMoveOverwriteIgnoreReadonlyFlag(realsrcMove, dstMove);
+                                                break;
+                                            case DataAction.MoveAndSymlink:
+                                                EnsureMoveOverwriteIgnoreReadonlyFlag(realsrcMove, dstMove);
+                                                File.Delete(srcMove);
+                                                File.CreateSymbolicLink(srcMove, dstMove);
+                                                break;
                                         }
                                     }
                                 }
@@ -586,6 +603,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             string tbText = hasActionSetting ? this.BulkTextBox.Text : string.Empty;
             if (hasActionSetting && string.IsNullOrEmpty(tbText))
             {
+                Prompt_Generic.Show(this, "You need to set the destination folder location in the input box." + Environment.NewLine + "You can also use browse '...' button to browse for the destination folder.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             var spantbText = tbText.AsSpan();
@@ -604,7 +622,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 keptDirectoryStructure = true;
-                pathDst = Path.GetFullPath(tbText.TrimEnd(trimEndPath));
+                if (tbText.Length == 0)
+                {
+                    pathDst = string.Empty;
+                }
+                else
+                {
+                    pathDst = Path.GetFullPath(tbText.TrimEnd(trimEndPath));
+                }
             }
             var action = this.BulkDataAction;
             var inlines = new List<Inline>(hasActionSetting ? 14 : 4)

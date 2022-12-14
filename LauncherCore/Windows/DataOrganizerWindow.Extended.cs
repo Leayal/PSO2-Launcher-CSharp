@@ -30,9 +30,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     File.SetAttributes(dst, attr & ~FileAttributes.ReadOnly);
                 }
-                File.Delete(dst);
+                // File.Delete(dst);
             }
+            DateTime dt_creation = File.GetCreationTimeUtc(src), dt_access = File.GetLastAccessTimeUtc(src), dt_write = File.GetLastWriteTimeUtc(src);
             File.Move(src, dst, true);
+            File.SetCreationTimeUtc(src, dt_creation);
+            File.SetLastAccessTimeUtc(src, dt_access);
+            File.SetLastWriteTimeUtc(src, dt_write);
+        }
+
+        private static void EnsureCopyOverwriteIgnoreReadonlyFlag(string src, string dst)
+        {
+            if (File.Exists(dst))
+            {
+                var attr = File.GetAttributes(dst);
+                if ((attr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                {
+                    File.SetAttributes(dst, attr & ~FileAttributes.ReadOnly);
+                }
+                // File.Delete(dst);
+            }
+            DateTime dt_creation = File.GetCreationTimeUtc(src), dt_access = File.GetLastAccessTimeUtc(src), dt_write = File.GetLastWriteTimeUtc(src);
+            File.Copy(src, dst, true);
+            File.SetCreationTimeUtc(src, dt_creation);
+            File.SetLastAccessTimeUtc(src, dt_access);
+            File.SetLastWriteTimeUtc(src, dt_write);
         }
 
         public enum DataAction
@@ -40,7 +62,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             DoNothing,
             Delete,
             Move,
-            MoveAndSymlink
+            MoveAndSymlink,
+            Copy
         }
 
         public class CustomizationFileListItem : DependencyObject
@@ -57,6 +80,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         case DataAction.MoveAndSymlink:
                         case DataAction.Move:
+                        case DataAction.Copy:
                             item.SetValue(HasActionSettingsPropertyKey, true);
                             break;
                         default:
@@ -103,6 +127,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             public CustomizationFileListItem() : base()
             {
+                this.RelativeFilename = string.Empty;
                 this._selectedAction = DataAction.DoNothing;
                 this._textBoxValue = string.Empty;
             }

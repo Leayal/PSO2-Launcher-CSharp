@@ -160,6 +160,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
                             <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
@@ -205,11 +206,12 @@
                             <TextBlock Text="Bulk select" />
                         </Button>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding Source={x:Static local:DataOrganizerWindow.DataActions},Mode=OneTime,IsAsync=True}" SelectedItem="{Binding ElementName=thisSelf,Path=BulkDataAction,Mode=TwoWay}" />
-                        <TextBox Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" x:Name="BulkTextBox" />
-                        <Button Grid.Column="3" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" Click="ButtonBulkBrowse_Click">
+                        <TextBlock Grid.Column="2" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" Text="To:" VerticalAlignment="Center" Margin="1" />
+                        <TextBox Grid.Column="3" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" x:Name="BulkTextBox" />
+                        <Button Grid.Column="4" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=HasBulkActionSettings,Mode=OneWay,IsAsync=True}" Click="ButtonBulkBrowse_Click">
                             <TextBlock Text="..." />
                         </Button>
-                        <Button Grid.Column="4" Click="ButtonBulkApply_Click">
+                        <Button Grid.Column="5" Click="ButtonBulkApply_Click">
                             <TextBlock Text="Apply to checked files" />
                         </Button>
                     </Grid>
