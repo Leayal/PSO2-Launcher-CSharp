@@ -254,6 +254,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_checkpso2updatestartup", value);
         }
 
+        public bool LauncherCorrectPSO2DataDownloadSelectionWhenGameStart
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_correctclientdownloadselectatgamestart", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.False)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            set => this.Set("launcher_correctclientdownloadselectatgamestart", value);
+        }
+
         public bool CheckForPSO2GameUpdateBeforeLaunchingGame
         {
             get

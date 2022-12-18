@@ -17,6 +17,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Leayal.PSO2.UserConfig;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -122,7 +123,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (sender is TabMainMenu tab)
             {
                 tab.GameStartEnabled = false;
-                CancellationTokenSource currentCancelSrc = null;
+                CancellationTokenSource? currentCancelSrc = null;
                 try
                 {
                     var dir_pso2bin = this.config_main.PSO2_BIN;
@@ -272,7 +273,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
 
-                        string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
+                        string? dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
                             dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
                         dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
                         dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
@@ -291,14 +292,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         currentCancelSrc = CancellationTokenSource.CreateLinkedTokenSource(this.cancelAllOperation.Token);
                         var cancelToken = currentCancelSrc.Token;
                         // bool isOKay = false;
-                        PSO2LoginToken token = null;
+                        PSO2LoginToken? token = null;
 
                         if (requestedStyle == GameStartStyle.StartWithToken)
                         {
                             if (this.ss_id == null || this.ss_pw == null)
                             {
                                 this.ForgetSEGALogin();
-                                SecureString username;
+                                SecureString? username;
                                 try
                                 {
                                     if (File.Exists(usernamePath))
@@ -467,10 +468,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.TabGameClientUpdateProgressBar.ResetMainProgressBarState();
                                 this.TabGameClientUpdateProgressBar.ResetAllSubDownloadState();
                                 // this.TabGameClientUpdateProgressBar.SetProgressBarCount(pso2Updater.ConcurrentDownloadCount);
-
+                                
                                 if (checkUpdateBeforeLaunch)
                                 {
-                                    var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, cancelToken);
+                                    var pso2RemoteVersion = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
+                                    var hasUpdate = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, pso2RemoteVersion, cancelToken);
                                     if (hasUpdate)
                                     {
                                         if (Prompt_Generic.Show(this, "It seems like your client is not updated. Continue anyway?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -478,6 +480,65 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             return;
                                         }
                                     }
+                                }
+
+                                if (this.config_main.LauncherCorrectPSO2DataDownloadSelectionWhenGameStart)
+                                {
+                                    var path_pso2conf = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "user.pso2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+                                    var downloadMode = this.config_main.DownloadSelection;
+                                    UserConfig conf;
+                                    if (!File.Exists(path_pso2conf))
+                                    {
+                                        var folder = Path.GetDirectoryName(path_pso2conf);
+                                        if (folder != null)
+                                        {
+                                            Directory.CreateDirectory(folder);
+                                        }
+                                        conf = new UserConfig("Ini");
+                                    }
+                                    else
+                                    {
+                                        conf = UserConfig.FromFile(path_pso2conf);
+                                    }
+
+                                    // For now, only adjust the "DataDownload" property in the config file.
+                                    // Leave FirstDownloadCheck alone.
+                                    if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
+                                    {
+                                        conf.SaveAs(path_pso2conf);
+                                    }
+                                    /*
+                                    switch (downloadMode)
+                                    {
+                                        case GameClientSelection.NGS_Only:
+                                        case GameClientSelection.NGS_Prologue_Only:
+                                            if (GameClientUpdater.AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
+                                            {
+                                                conf.SaveAs(path_pso2conf);
+                                            }
+                                            break;
+                                        case GameClientSelection.NGS_AND_CLASSIC:
+                                        case GameClientSelection.Classic_Only:
+                                            // Quick check for client data files.
+                                            if (string.Equals(this.pso2Updater.GetLocalPSO2Version(dir_pso2bin), pso2RemoteVersion.ToString(), StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                var listOfClassicFiles = await this.pso2HttpClient.GetPatchListClassicAsync(cancelToken);
+                                                bool isOkay = true;
+                                                foreach (var item in listOfClassicFiles)
+                                                {
+                                                    if (!Leayal.Shared.Windows.Kernel32.FileExists(item.GetFilenameWithoutAffix()))
+                                                    {
+                                                        isOkay = false;
+                                                    }
+                                                }
+                                                if (isOkay && (GameClientUpdater.AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode)))
+                                                {
+                                                    conf.SaveAs(path_pso2conf);
+                                                }
+                                            }
+                                            break;
+                                    }
+                                    */
                                 }
 
                                 this.CreateNewParagraphInLog("[GameStart] Quick check executable files...");
@@ -493,35 +554,55 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                         if (pso2tweakerconfig.Load())
                                         {
+                                            string ResStr_Manual = "Manual";
+
                                             this._isTweakerRunning = true;
                                             string tweakerpso2bin = string.IsNullOrWhiteSpace(pso2tweakerconfig.PSO2JPBinFolder) ? string.Empty : Path.GetFullPath(pso2tweakerconfig.PSO2JPBinFolder);
-                                            bool differentpath = !string.Equals(tweakerpso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase);
-                                            string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
-                                            string pso2tweakerpso2clientversion = File.Exists(pso2tweakerpso2clientversionpath) ? File.ReadAllText(pso2tweakerpso2clientversionpath) : string.Empty;
-                                            string pso2tweakercheckforgameupdate = pso2tweakerconfig.UpdateChecks;
+                                            
+                                            // Values before patching
+                                            string pso2tweakerpso2clientversionpath = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "_version.ver"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),
+                                                pso2tweakerpso2clientversion = File.Exists(pso2tweakerpso2clientversionpath) ? File.ReadAllText(pso2tweakerpso2clientversionpath) : string.Empty,
+                                                pso2tweakercheckforgameupdate = pso2tweakerconfig.UpdateChecks,
+                                                pso2tweakerJPRemoteVersion = pso2tweakerconfig.PSO2JPRemoteVersion;
+
                                             bool shouldSave = false;
+
+                                            // Correct the PSO2_BIN path.
+                                            bool differentpath = !string.Equals(tweakerpso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase);
                                             if (differentpath)
                                             {
                                                 pso2tweakerconfig.PSO2JPBinFolder = dir_pso2bin;
                                                 shouldSave = true;
                                             }
-                                            bool differentUpdateChecks = !string.Equals(pso2tweakercheckforgameupdate, "Manual", StringComparison.Ordinal);
+
+                                            // Disable PSO2 client update checker
+                                            bool differentUpdateChecks = !string.Equals(pso2tweakercheckforgameupdate, ResStr_Manual, StringComparison.Ordinal);
                                             if (differentUpdateChecks)
                                             {
-                                                pso2tweakerconfig.UpdateChecks = "Manual";
+                                                pso2tweakerconfig.UpdateChecks = ResStr_Manual;
                                                 shouldSave = true;
+                                            }
+
+                                            // Readjust the PSO2JPRemoteVersion to match latest version to avoid installation prompt.
+                                            var pso2versionlocal = pso2Updater.GetLocalPSO2Version(dir_pso2bin);
+                                            bool differentJPRemoteVersion = !string.Equals(pso2tweakerJPRemoteVersion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
+                                            if (differentJPRemoteVersion)
+                                            {
+                                                pso2tweakerconfig.PSO2JPRemoteVersion = pso2versionlocal;
+                                                shouldSave = true;
+                                            }
+
+                                            bool differentversion = string.Equals(pso2tweakerpso2clientversion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
+                                            if (differentversion)
+                                            {
+                                                File.WriteAllText(pso2tweakerpso2clientversionpath, pso2versionlocal);
                                             }
                                             if (shouldSave)
                                             {
                                                 pso2tweakerconfig.Save();
                                                 shouldSave = false;
                                             }
-                                            var pso2versionlocal = pso2Updater.GetLocalPSO2Version(dir_pso2bin);
-                                            bool differentversion = string.Equals(pso2tweakerpso2clientversion, pso2versionlocal, StringComparison.OrdinalIgnoreCase);
-                                            if (differentversion)
-                                            {
-                                                File.WriteAllText(pso2tweakerpso2clientversionpath, pso2versionlocal);
-                                            }
+
                                             this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been patched.");
                                             try
                                             {
@@ -530,7 +611,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                     proc.StartInfo.UseShellExecute = true;
                                                     proc.StartInfo.Verb = "runas";
                                                     proc.StartInfo.FileName = tweakerPath;
-                                                    proc.StartInfo.ArgumentList.Add("-pso2jp");
+                                                    proc.StartInfo.Arguments = "-pso2jp";
                                                     proc.StartInfo.WorkingDirectory = Path.GetDirectoryName(tweakerPath);
                                                     this.CreateNewParagraphInLog("[GameStart] Starting PSO2 Tweaker...");
                                                     proc.Start();
@@ -553,8 +634,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                             // Revert it back.
                                                             pso2tweakerconfig.PSO2JPBinFolder = tweakerpso2bin;
                                                             shouldSave = true;
+
+                                                            if (differentJPRemoteVersion)
+                                                            {
+                                                                pso2tweakerconfig.PSO2JPRemoteVersion = pso2tweakerJPRemoteVersion;
+                                                            }
                                                         }
                                                     }
+
                                                     if (differentUpdateChecks)
                                                     {
                                                         pso2tweakerconfig.UpdateChecks = pso2tweakercheckforgameupdate;

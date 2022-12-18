@@ -28,6 +28,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public event OperationBeginHandler OperationBegin;
         private void OnOperationBegin(int concurrentlevel) => this.OperationBegin?.Invoke(this, concurrentlevel);
 
+        public static bool AdjustPSO2UserConfig_FirstDownloadCheck(UserConfig conf, GameClientSelection downloadMode)
+        {
+            if (downloadMode switch
+            {
+                GameClientSelection.NGS_Only => true,
+                GameClientSelection.NGS_AND_CLASSIC => true,
+                GameClientSelection.Classic_Only => true,
+                _ => false
+            })
+            {
+                if (!conf.TryGetProperty("FirstDownloadCheck", out var val_FirstDownloadCheck) || val_FirstDownloadCheck is not bool val || val != true)
+                {
+                    conf["FirstDownloadCheck"] = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public event OperationCompletedHandler OperationCompleted;
         //private void OnClientOperationComplete1(string dir_pso2bin, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyCollection<PatchListItem> needtodownload, IReadOnlyCollection<PatchListItem> successlist, IReadOnlyCollection<PatchListItem> failurelist, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
         private void OnClientOperationComplete1(string dir_pso2bin, string? pso2tweaker_dirpath, PSO2TweakerHashCache? tweakerhashcacheDump, GameClientSelection downloadMode, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> results, in PSO2Version ver, bool noError, CancellationToken cancellationToken)
@@ -59,29 +78,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var path_pso2conf = Path.GetFullPath("user.pso2", pso2conf_dir);
                     UserConfig conf;
 
-                    static bool AdjustPSO2UserConfig_FirstDownloadCheck(UserConfig conf, GameClientSelection downloadMode)
-                    {
-                        if (downloadMode switch
-                        {
-                            GameClientSelection.NGS_Only => true,
-                            GameClientSelection.NGS_AND_CLASSIC => true,
-                            GameClientSelection.Classic_Only => true,
-                            _ => false
-                        })
-                        {
-                            if (!conf.TryGetProperty("FirstDownloadCheck", out var val_FirstDownloadCheck) || val_FirstDownloadCheck is not bool val || val != true)
-                            {
-                                conf["FirstDownloadCheck"] = true;
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
+                    
 
                     if (File.Exists(path_pso2conf))
                     {
                         conf = UserConfig.FromFile(path_pso2conf);
-                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) | Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
                         {
                             conf.SaveAs(path_pso2conf);
                         }
@@ -89,7 +91,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     else
                     {
                         conf = new UserConfig("Ini");
-                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) || Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
+                        if (AdjustPSO2UserConfig_FirstDownloadCheck(conf, downloadMode) | Windows.PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
                         {
                             if (!Directory.Exists(pso2conf_dir)) // Should be safe for symlink 
                             {

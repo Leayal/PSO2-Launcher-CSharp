@@ -38,6 +38,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="5" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -52,15 +53,32 @@
             <CheckBox Grid.Row="1" Grid.Column="0" Content="Check for PSO2 game updates at startup" Margin="1" x:Name="checkbox_checkpso2updatestartup" />
             <CheckBox Grid.Row="1" Grid.Column="1" Content="Prompt if found any updates" Margin="1" x:Name="checkbox_checkpso2updatestartup_prompt" />
             <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="Check for PSO2 update before launching the game" Margin="1" x:Name="checkbox_checkpso2updatebeforegamestart" />
+            <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_correctclientdownloadselectatgamestart" Content="Allow launcher to correct PSO2 Client Download Selection in PSO2 config file">
+                <CheckBox.ToolTip>
+                    <TextBlock>
+                        <Run Text="This will ensure the pso2 client aware of the launcher's user setting. (" />
+                        <Run Text="NGS Only" TextDecorations="Underline" />
+                        <Run Text="or" />
+                        <Run Text="NGS and Classic" TextDecorations="Underline" />
+                        <Run Text=")" />
+                        <LineBreak />
+                        <Run Text="This will let launcher set the correct value for the" />
+                        <Run Text="DataDownload" TextDecorations="Underline" />
+                        <Run Text="property in the" />
+                        <Run Text="user.pso2" TextDecorations="Underline" />
+                        <Run Text="file" />
+                    </TextBlock>
+                </CheckBox.ToolTip>
+            </CheckBox>
 
-            <TextBlock Grid.Row="3" Text="Default GameStart Method" VerticalAlignment="Center" />
-            <localui:EnumComboBox Grid.Row="3" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
+            <TextBlock Grid.Row="4" Text="Default GameStart Method" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="4" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
 
-            <TextBlock Grid.Row="4" Text="Behavior when PSO2 data backups are found" VerticalAlignment="Center" />
-            <localui:EnumComboBox Grid.Row="4" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_pso2databackupbehavior" />
+            <TextBlock Grid.Row="5" Text="Behavior when PSO2 data backups are found" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="5" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_pso2databackupbehavior" />
 
-            <CheckBox Grid.Row="6" Content="Periodically for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
-            <Grid Grid.Row="6" Grid.Column="1">
+            <CheckBox Grid.Row="7" Content="Periodically for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
+            <Grid Grid.Row="7" Grid.Column="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
@@ -68,11 +86,11 @@
                 <mah:NumericUpDown IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Mode=OneWay,Path=IsChecked}" Minimum="1" x:Name="numbericbox_backgroundselfupdatechecker_intervalhour" PreviewTextInput="Numbericbox_backgroundselfupdatechecker_intervalhour_PreviewTextInput" />
                 <TextBlock Margin="1,0,0,0" Grid.Column="1" Text="hour(s) interval" VerticalAlignment="Center" TextAlignment="Left" />
             </Grid>
-            <CheckBox Grid.Row="7" Grid.Column="1" Content="Allow desktop notification for self-update if launcher is minimized to tray" Margin="1" x:Name="checkbox_backgroundselfupdatechecker_traynotify" ToolTip="Allow launcher to show desktop notification if launcher found an self-update while being minimized to tray."
+            <CheckBox Grid.Row="8" Grid.Column="1" Content="Allow desktop notification for self-update if launcher is minimized to tray" Margin="1" x:Name="checkbox_backgroundselfupdatechecker_traynotify" ToolTip="Allow launcher to show desktop notification if launcher found an self-update while being minimized to tray."
                       IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Path=IsChecked,Mode=OneWay}" />
 
-            <CheckBox Grid.Row="8" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
-            <CheckBox Grid.Row="9" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
+            <CheckBox Grid.Row="9" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
+            <CheckBox Grid.Row="10" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
                 <CheckBox.Content>
                     <TextBlock>
                         <Run Text="Allow using" />
@@ -93,7 +111,7 @@
                 </CheckBox.ToolTip>
             </CheckBox>
             
-            <CheckBox Grid.Row="11" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
+            <CheckBox Grid.Row="12" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">

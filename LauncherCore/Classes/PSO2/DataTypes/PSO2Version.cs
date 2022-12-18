@@ -125,7 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return int.Parse(sb.ToString());
         }
 
-        public override readonly bool Equals(object obj)
+        public override readonly bool Equals(object? obj)
         {
             if (obj is PSO2Version ver)
             {

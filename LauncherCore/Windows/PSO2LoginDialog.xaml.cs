@@ -41,7 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient) : this(conf, webclient, null, false) { }
 
-        public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient, SecureString username, bool disposeUsername)
+        public PSO2LoginDialog(ConfigurationFile conf, PSO2HttpClient webclient, SecureString? username, bool disposeUsername)
         {
             this._loginToken = null;
             this.config = conf;
@@ -52,7 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             InitializeComponent();
 
             var defaultVal = conf.DefaultLoginPasswordRemember;
-            EnumComboBox.ValueDOM<LoginPasswordRememberStyle> defaultItem = null;
+            EnumComboBox.ValueDOM<LoginPasswordRememberStyle>? defaultItem = null;
 
             var vals = Enum.GetValues<LoginPasswordRememberStyle>();
             var items = new List<EnumComboBox.ValueDOM<LoginPasswordRememberStyle>>(vals.Length);
@@ -249,8 +249,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         // private static string NormalizeOTP(string otpRaw) => otpRaw.Replace(' ', string.Empty[0]);
 
-        private PSO2LoginToken _loginToken;
-        public PSO2LoginToken LoginToken => this._loginToken;
+        private PSO2LoginToken? _loginToken;
+        public PSO2LoginToken? LoginToken => this._loginToken;
 
         public SecureString GetPassword()
         {

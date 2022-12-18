@@ -56,7 +56,7 @@ namespace Leayal.Shared
                 var data = new WINTRUST_DATA(file);
                 try
                 {
-                    return (WinVerifyTrust(new IntPtr(-1), new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}"), ref data) == 0);
+                    return (WinVerifyTrust(new IntPtr(-1), WINTRUST_ACTION_GENERIC_VERIFY_V2, ref data) == 0);
                 }
                 finally
                 {
@@ -126,9 +126,9 @@ namespace Leayal.Shared
         private const int WTD_UI_NONE = 2;
         private const int WTD_REVOKE_NONE = 0;
         private const int WTD_CHOICE_FILE = 1;
-        // private static readonly Guid WINTRUST_ACTION_GENERIC_VERIFY_V2 = new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}");
+        private static readonly Guid WINTRUST_ACTION_GENERIC_VERIFY_V2 = new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}");
 
         [DllImport("wintrust.dll", CallingConvention = CallingConvention.Winapi)]
-        private static extern int WinVerifyTrust(IntPtr hwnd, [MarshalAs(UnmanagedType.LPStruct)] Guid pgActionID, ref WINTRUST_DATA pWVTData);
+        private static extern int WinVerifyTrust([In] IntPtr hwnd, [In, MarshalAs(UnmanagedType.LPStruct)] Guid pgActionID, ref WINTRUST_DATA pWVTData);
     }
 }

@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private async void TabMainMenu_ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs e)
+        private async void TabMainMenu_ButtonInstallPSO2_Clicked(object sender, RoutedEventArgs? e)
         {
             if (sender is TabMainMenu tab)
             {

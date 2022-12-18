@@ -51,6 +51,16 @@ namespace Leayal.PSO2Launcher.Core
             SQLitePCL.raw.SetProvider(new SQLite3CustomProvider(fullpath));
             SQLitePCL.raw.FreezeProvider();
 
+            // Set threading mode
+            var opResult = SQLitePCL.raw.sqlite3_config(SQLitePCL.raw.SQLITE_CONFIG_SERIALIZED);
+            if (opResult == SQLitePCL.raw.SQLITE_MISUSE)
+            {
+                // Workaround the issue if the underyling codes did some hacks or tests in order to verify the .dll file is working.
+                SQLitePCL.raw.sqlite3_shutdown();
+                SQLitePCL.raw.sqlite3_config(SQLitePCL.raw.SQLITE_CONFIG_SERIALIZED);
+                SQLitePCL.raw.sqlite3_initialize();
+            }
+
             if (File.Exists(this.config_main.Filename))
             {
                 this.config_main.Load();

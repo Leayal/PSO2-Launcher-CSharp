@@ -79,7 +79,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly PSO2HttpClient pso2HttpClient;
         private readonly GameClientUpdater pso2Updater;
         private readonly CancellationTokenSource cancelAllOperation;
-        private CancellationTokenSource cancelSrc_gameupdater;
+        private CancellationTokenSource? cancelSrc_gameupdater;
         private readonly ConfigurationFile config_main;
         private readonly Lazy<System.Windows.Forms.NotifyIcon> trayIcon;
         private readonly ToggleButton[] toggleButtons;
@@ -761,7 +761,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs e)
+        private void TabMainMenu_ButtonManageGameDataClick(object sender, RoutedEventArgs? e)
         {
             if (sender is TabMainMenu tab)
             {

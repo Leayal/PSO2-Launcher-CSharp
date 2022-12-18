@@ -4661,7 +4661,7 @@ namespace SQLite
 
 		public static Sqlite3Statement Prepare2 (Sqlite3DatabaseHandle db, string query)
 		{
-			Sqlite3Statement stmt = default (Sqlite3Statement);
+			Sqlite3Statement? stmt;
 #if USE_WP8_NATIVE_SQLITE || USE_SQLITEPCL_RAW
 			var r = Sqlite3.sqlite3_prepare_v2 (db, query, out stmt);
 #else

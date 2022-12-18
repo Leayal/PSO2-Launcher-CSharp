@@ -738,7 +738,7 @@ namespace SQLite
 
         protected override bool ReleaseHandle()
         {
-            if (this.handle != IntPtr.Zero)
+            if (!this.IsInvalid)
             {
                 NativeLibrary.Free(this.handle);
                 this.SetHandleAsInvalid();

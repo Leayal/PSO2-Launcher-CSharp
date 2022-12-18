@@ -45,6 +45,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.checkbox_lauchlauncherasadmin.Checked += this.Checkbox_lauchlauncherasadmin_Checked;
 
             this.checkbox_checkpso2updatebeforegamestart.IsChecked = conf.CheckForPSO2GameUpdateBeforeLaunchingGame;
+            this.checkbox_correctclientdownloadselectatgamestart.IsChecked = conf.LauncherCorrectPSO2DataDownloadSelectionWhenGameStart;
             this.checkbox_useclock.IsChecked = conf.LauncherUseClock;
             this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
 
@@ -130,6 +131,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             conf.LauncherCheckForPSO2GameUpdateAtStartupPrompt = (this.checkbox_checkpso2updatestartup_prompt.IsChecked == true);
             conf.CheckForPSO2GameUpdateBeforeLaunchingGame = (this.checkbox_checkpso2updatebeforegamestart.IsChecked == true);
             conf.LaunchLauncherAsAdmin = (this.checkbox_lauchlauncherasadmin.IsChecked == true);
+            conf.LauncherCorrectPSO2DataDownloadSelectionWhenGameStart = (this.checkbox_correctclientdownloadselectatgamestart.IsChecked == true);
 
             conf.LauncherUseClock = (this.checkbox_useclock.IsChecked == true);
             conf.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);

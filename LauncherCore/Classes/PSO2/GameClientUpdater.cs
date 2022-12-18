@@ -80,7 +80,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public Task<PSO2Version> GetRemoteVersionAsync(CancellationToken cancellationToken)
             => this.GetRemoteVersionAsync(null, cancellationToken);
 
-        public async Task<PSO2Version> GetRemoteVersionAsync(PatchRootInfo patchInfoRoot, CancellationToken cancellationToken)
+        public async Task<PSO2Version> GetRemoteVersionAsync(PatchRootInfo? patchInfoRoot, CancellationToken cancellationToken)
         {
             if (patchInfoRoot == null)
             {
@@ -97,7 +97,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             var versionFilePath = Path.GetFullPath("version.ver", dir_pso2bin);
             if (File.Exists(versionFilePath))
             {
-                return QuickFile.ReadFirstLine(versionFilePath);
+                return QuickFile.ReadFirstLine(versionFilePath) ?? string.Empty;
             }
             else
             {
@@ -166,7 +166,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnOperationBegin(taskCount);
 
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
-                        duhB = FileCheckHashCache.Create(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
+                        duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
 
                         if (fShouldScanForBackup)
@@ -255,6 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         if (duhB != null)
                         {
+                            duhB.SetPSO2ClientVersion(ver.ToString());
                             await duhB.DisposeAsync();
                             duhB = null;
                         }
