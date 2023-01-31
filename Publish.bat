@@ -52,5 +52,18 @@ REM del /F /Q "%PublishRootDir%\files\Microsoft.Web.WebView2.WPF.dll"
 REM del /F /Q "%PublishRootDir%\files\WebView2Loader.dll"
 del /F /Q "%PublishRootDir%\files\PSO2LeaLauncher.dll"
 
-Tools\SHA1Maker.exe "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"
+IF "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+ SET SHA1Tool=Tools\SHA1Maker-x64.exe
+ echo Using x64 SHA1Maker.
+) ELSE (
+ IF "%PROCESSOR_ARCHITECTURE%"=="x86" (
+  SET SHA1Tool=Tools\SHA1Maker-x86.exe
+  echo Using x86 SHA1Maker.
+ ) ELSE (
+  SET SHA1Tool=Tools\SHA1Maker.exe
+  echo Using framework-dependent SHA1Maker.
+ )
+)
+
+%SHA1Tool% "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"
 ENDLOCAL
