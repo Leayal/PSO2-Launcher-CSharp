@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Security.Cryptography;
+using Leayal.PSO2Launcher.Toolbox;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes
@@ -256,28 +257,38 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public static bool Equals(this SecureString myself, byte[] protectedData, byte[]? entropy, StringComparison comparison)
         {
-            return Reveal(myself, (in ReadOnlySpan<char> myselfChars, (byte[] protectedData, byte[] entropy, StringComparison comparison) args) =>
+            byte[]? _buffer = null;
+            try
             {
-                byte[]? buffer = null;
-                char[]? chars = null;
-                try
+                _buffer = ProtectedData.Unprotect(protectedData, (entropy == null || entropy.Length == 0) ? _entropy : entropy, DataProtectionScope.CurrentUser);
+                return Reveal(myself, (in ReadOnlySpan<char> myselfChars, (byte[] buffer, StringComparison comparison) args) =>
                 {
-                    buffer = ProtectedData.Unprotect(args.protectedData, args.entropy, DataProtectionScope.CurrentUser);
-                    chars = Encoding.Unicode.GetChars(buffer);
-                    return MemoryExtensions.Equals(myselfChars, chars, args.comparison);
-                }
-                finally
+                    char[]? chars = null;
+                    try
+                    {
+                        chars = Encoding.Unicode.GetChars(args.buffer);
+                        return MemoryExtensions.Equals(myselfChars, chars, args.comparison);
+                    }
+                    finally
+                    {
+                        if (chars != null)
+                        {
+                            Array.Clear(chars);
+                        }
+                    }
+                }, (_buffer, comparison));
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (_buffer != null)
                 {
-                    if (chars != null)
-                    {
-                        Array.Clear(chars);
-                    }
-                    if (buffer != null)
-                    {
-                        Array.Clear(buffer);
-                    }
+                    Array.Clear(_buffer);
                 }
-            }, (protectedData, (entropy == null || entropy.Length == 0) ? _entropy : entropy, comparison));
+            }
         }
 
         public static void EncodeTo(this SecureString myself, Stream stream, out int writtenBytes)

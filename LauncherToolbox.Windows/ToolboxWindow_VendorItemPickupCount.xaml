@@ -131,23 +131,6 @@
                     </Style>
                 </Run.Style>
             </Run>
-             <Run Text="|" />
-            <Run Text="{Binding BlizzardiumCount, Mode=OneWay}"/>
-            <Run>
-                <Run.Style>
-                    <Style TargetType="Run">
-                        <Setter Property="Text" Value="Blizzardiums" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding BlizzardiumCount, Mode=OneWay}" Value="0">
-                                <Setter Property="Text" Value="Blizzardium" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding BlizzardiumCount, Mode=OneWay}" Value="1">
-                                <Setter Property="Text" Value="Blizzardium" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Run.Style>
-            </Run>
         </TextBlock>
 
         <TextBlock Grid.Row="2" Grid.ColumnSpan="3" TextAlignment="Center" TextWrapping="Wrap"

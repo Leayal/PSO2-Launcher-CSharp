@@ -1,4 +1,4 @@
-﻿[string]$myrootpath = Split-Path $MyInvocation.MyCommand.Path -Parent
+[string]$myrootpath = Split-Path $MyInvocation.MyCommand.Path -Parent
 [string]$SDKDir = [System.IO.Path]::Combine($myrootpath, "sdk\6.0.100")
 
 #Write-Host itself does the same but...I'm not entirely sure.

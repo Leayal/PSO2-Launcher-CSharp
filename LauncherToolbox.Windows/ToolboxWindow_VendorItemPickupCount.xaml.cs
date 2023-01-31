@@ -73,22 +73,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private static LogCategories CreateInstance_LogCategories() => new LogCategories(LogCategories.DefaultLogDirectoryPath);
 
         // Init the reusable objects (or strings, in this case) to avoid allocations.
-        // But allow these objects to be collected by GC when they're no longer in use, by using WeakLazy class.
-        // See the window's constructor to see how to use safely in threads.
-        private static readonly WeakLazy<string> lazy_AlphaReactor_en = new WeakLazy<string>(() => "Alpha Reactor"),
-                                                                    lazy_AlphaReactor_jp = new WeakLazy<string>(() => "アルファリアクター"),
-                                                                    lazy_Blizzardium_en = new WeakLazy<string>(() => "Blizzardium"),
-                                                                    lazy_Blizzardium_jp = new WeakLazy<string>(() => "ブリザーディアム"),
-                                                                    lazy_StellarSeed_en1 = new WeakLazy<string>(() => "Stellar Seed"),
-                                                                    lazy_StellarSeed_en2 = new WeakLazy<string>(() => "Stellar Shard"),
-                                                                    lazy_StellarSeed_jp = new WeakLazy<string>(() => "ステラーシード"),
-                                                                    lazy_Snoal_en1 = new WeakLazy<string>(() => "Snoal"),
-                                                                    lazy_Snoal_en2 = new WeakLazy<string>(() => "Snowk"),
-                                                                    lazy_Snoal_jp = new WeakLazy<string>(() => "スノークス"),
-                                                                    lazy_DateOnlyFormat = new WeakLazy<string>(() => "yyyy-MM-dd"),
-                                                                    lazy_ActionPickup = new WeakLazy<string>(() => "[Pickup]"),
-                                                                    lazy_ActionPickupToWarehouse = new WeakLazy<string>(() => "[Pickup-ToWarehouse"),
-                                                                    lazy_ShopAction_SetPrice = new WeakLazy<string>(() => "[DisplayToShop-SetValue]");
+        private static readonly string str_AlphaReactor_en =  "Alpha Reactor", str_AlphaReactor_jp =  "アルファリアクター",
+            str_StellarSeed_en1 =  "Stellar Seed", str_StellarSeed_en2 =  "Stellar Shard", str_StellarSeed_jp =  "ステラーシード",
+            str_Snoal_en1 =  "Snoal", str_Snoal_en2 =  "Snowk", str_Snoal_jp =  "スノークス",
+            str_DateOnlyFormat =  "yyyy-MM-dd", str_Quantity = "num(",
+            str_ActionPickup =  "[Pickup]", str_ActionPickupToWarehouse =  "[Pickup-ToWarehouse", str_ShopAction_SetPrice =  "[DisplayToShop-SetValue]";
 
         private static readonly DependencyPropertyKey CurrentTimePropertyKey = DependencyProperty.RegisterReadOnly("CurrentTime", typeof(DateTime), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(DateTime.MinValue));
         private static readonly DependencyPropertyKey IsBeforeResetPropertyKey = DependencyProperty.RegisterReadOnly("IsBeforeReset", typeof(bool?), typeof(ToolboxWindow_VendorItemPickupCount), new PropertyMetadata(null));
@@ -155,8 +144,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         private readonly DispatcherTimer logcategoryThrottle;
         private readonly LogCategories logCategoriesImpl;
 
-        private readonly string str_AlphaReactor_en, str_AlphaReactor_jp, str_StellarSeed_en1, str_StellarSeed_en2, str_StellarSeed_jp, str_DateOnlyFormat, str_ActionPickup, str_ActionPickupToWarehouse,
-            str_ShopAction_SetPrice, str_Snoal_en1, str_Snoal_en2, str_Snoal_jp, str_Blizzardium_en, str_Blizzardium_jp;
         private PSO2LogAsyncListener? logreader;
         private CancellationTokenSource? cancelSrcLoad;
         private int logloadingstate;
@@ -184,23 +171,6 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             this.mapping = new Dictionary<long, AccountData>();
             this.characters = new ObservableCollection<AccountData>();
             this.logloadingstate = 0;
-
-            // Init and fork the reference locally to keep the object alive.
-            // Since WeakReference isn't thread-safe. Fork on UI thread and use it until we don't need it anymore should make it safe regardless of thread.
-            this.str_AlphaReactor_en = lazy_AlphaReactor_en.Value;
-            this.str_AlphaReactor_jp = lazy_AlphaReactor_jp.Value;
-            this.str_Blizzardium_en = lazy_Blizzardium_en.Value;
-            this.str_Blizzardium_jp = lazy_Blizzardium_jp.Value;
-            this.str_StellarSeed_en1 = lazy_StellarSeed_en1.Value;
-            this.str_StellarSeed_en2 = lazy_StellarSeed_en2.Value;
-            this.str_StellarSeed_jp = lazy_StellarSeed_jp.Value;
-            this.str_Snoal_en1 = lazy_Snoal_en1.Value;
-            this.str_Snoal_en2 = lazy_Snoal_en2.Value;
-            this.str_Snoal_jp = lazy_Snoal_jp.Value;
-            this.str_DateOnlyFormat = lazy_DateOnlyFormat.Value;
-            this.str_ActionPickup = lazy_ActionPickup.Value;
-            this.str_ActionPickupToWarehouse = lazy_ActionPickupToWarehouse.Value;
-            this.str_ShopAction_SetPrice = lazy_ShopAction_SetPrice.Value;
 
             this.logCategoriesImpl = InitializeLogWatcher();
             this.SetTime(TimeZoneHelper.ConvertTimeToLocalJST(DateTime.UtcNow));
@@ -376,16 +346,8 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         {
             if (itemname.IsEmpty) return false;
 
-            return (MemoryExtensions.Equals(itemname, this.str_AlphaReactor_en, StringComparison.OrdinalIgnoreCase)
-                || MemoryExtensions.Equals(itemname, this.str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private bool IsBlizzardium(in ReadOnlySpan<char> itemname)
-        {
-            if (itemname.IsEmpty) return false;
-
-            return (MemoryExtensions.Equals(itemname, this.str_Blizzardium_en, StringComparison.OrdinalIgnoreCase)
-                || MemoryExtensions.Equals(itemname, this.str_Blizzardium_jp, StringComparison.OrdinalIgnoreCase));
+            return (MemoryExtensions.Equals(itemname, str_AlphaReactor_en, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, str_AlphaReactor_jp, StringComparison.OrdinalIgnoreCase));
         }
 
         private bool IsStellarSeed(in ReadOnlySpan<char> itemname)
@@ -396,15 +358,15 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 => ((comparand.Length - 1) == name.Length && MemoryExtensions.Equals(name.Slice(0, 6), comparand.Slice(0, 6), StringComparison.OrdinalIgnoreCase) && MemoryExtensions.Equals(name.Slice(6), comparand.Slice(7), StringComparison.OrdinalIgnoreCase));
 
             // Compare to "Stellar Seed" in JP.
-            return (MemoryExtensions.Equals(itemname, this.str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase)
+            return (MemoryExtensions.Equals(itemname, str_StellarSeed_jp, StringComparison.OrdinalIgnoreCase)
                 // Compare to "Stellar Seed"
-                || MemoryExtensions.Equals(itemname, this.str_StellarSeed_en1, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, str_StellarSeed_en1, StringComparison.OrdinalIgnoreCase)
                 // Compare to "Stellar Shard"
-                || MemoryExtensions.Equals(itemname, this.str_StellarSeed_en2, StringComparison.OrdinalIgnoreCase)
+                || MemoryExtensions.Equals(itemname, str_StellarSeed_en2, StringComparison.OrdinalIgnoreCase)
                 // Compare to "Stella Seed"
-                || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en1.AsSpan())
+                || CompareStellaWithoutR(in itemname, str_StellarSeed_en1.AsSpan())
                 // Compare to "Stella Shard"
-                || CompareStellaWithoutR(in itemname, this.str_StellarSeed_en2.AsSpan()));
+                || CompareStellaWithoutR(in itemname, str_StellarSeed_en2.AsSpan()));
         }
 
         private bool IsSnowk(in ReadOnlySpan<char> itemname)
@@ -423,16 +385,15 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 return MemoryExtensions.Equals(name.Slice(0, offsetLen), comparand, StringComparison.OrdinalIgnoreCase);
             }
 
-            return (MemoryExtensions.Equals(itemname, this.str_Snoal_jp, StringComparison.OrdinalIgnoreCase)
-                || CompareWithEndingS(in itemname, this.str_Snoal_en1)
-                || CompareWithEndingS(in itemname, this.str_Snoal_en2));
+            return (MemoryExtensions.Equals(itemname, str_Snoal_jp, StringComparison.OrdinalIgnoreCase)
+                || CompareWithEndingS(in itemname, str_Snoal_en1)
+                || CompareWithEndingS(in itemname, str_Snoal_en2));
         }
 
         private static bool TryGetQuantity(ReadOnlySpan<char> text, out int number)
         {
-            const string thenum = "num(";
-            int thenumlen = thenum.Length;
-            if (text.StartsWith(thenum, StringComparison.OrdinalIgnoreCase) && (text[text.Length - 1] == ')') && int.TryParse(text.Slice(thenumlen, text.Length - thenumlen - 1), out number))
+            int thenumlen = str_Quantity.Length;
+            if (text.StartsWith(str_Quantity, StringComparison.OrdinalIgnoreCase) && (text[text.Length - 1] == ')') && int.TryParse(text.Slice(thenumlen, text.Length - thenumlen - 1), out number))
             {
                 return true;
             }
@@ -447,11 +408,11 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             // All string creations below (aka the "new string()") will allocate a new char[] buffer and copies all the chars to the new buffer.
             // Thus, all strings below can be used beyond the event's invocation.
             var span_actionType = datas[2].Span;
-            if (MemoryExtensions.Equals(span_actionType, this.str_ActionPickup, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.StartsWith(span_actionType, this.str_ActionPickupToWarehouse, StringComparison.OrdinalIgnoreCase))
+            if (MemoryExtensions.Equals(span_actionType, str_ActionPickup, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.StartsWith(span_actionType, str_ActionPickupToWarehouse, StringComparison.OrdinalIgnoreCase))
             {
-                bool isAlphaReactor, isStellaSeed = false, isSnowk = false, isBlizzardium = false;
+                bool isAlphaReactor, isStellaSeed = false, isSnowk = false;
                 var itemnameSpan = datas[5].Span;
-                if ((isAlphaReactor = this.IsAlphaReactor(in itemnameSpan)) || (isStellaSeed = this.IsStellarSeed(in itemnameSpan)) || (isSnowk = this.IsSnowk(in itemnameSpan)) || (isBlizzardium = this.IsBlizzardium(in itemnameSpan)))
+                if ((isAlphaReactor = this.IsAlphaReactor(in itemnameSpan)) || (isStellaSeed = this.IsStellarSeed(in itemnameSpan)) || (isSnowk = this.IsSnowk(in itemnameSpan)))
                 {
                     int quantity;
                     if (!TryGetQuantity(datas[datas.Count - 1].Span, out quantity) && !TryGetQuantity(datas[datas.Count - 2].Span, out quantity))
@@ -459,17 +420,14 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                         quantity = 1;
                     }
 
-                    var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), this.str_DateOnlyFormat);
+                    var dateonly = DateOnly.ParseExact(datas[0].Span.Slice(0, 10), str_DateOnlyFormat);
                     var timeonly = TimeOnly.Parse(datas[0].Span.Slice(11));
                     var logtime = new DateTime(dateonly.Year, dateonly.Month, dateonly.Day, timeonly.Hour, timeonly.Minute, timeonly.Second, DateTimeKind.Local);
 
                     // Consider push the datetime before reset to become previous day.
-                    logtime = TimeZoneHelper.ConvertTimeToLocalJST(logtime);
-                    var logtime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
-                    logtime = TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now);
-                    var currenttime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(in logtime);
+                    var logtime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(TimeZoneHelper.ConvertTimeToLocalJST(logtime));
+                    var currenttime_jst = TimeZoneHelper.AdjustToPSO2GameResetTime(TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now));
 
-                    // Consider push the datetime before reset to become previous day.
                     var dateonly_logtime_jst = DateOnly.FromDateTime(logtime_jst);
                     var dateonly_currenttime_jst = DateOnly.FromDateTime(currenttime_jst);
 
@@ -481,7 +439,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     {
                         if (dateonly_logtime_jst == dateonly_currenttime_jst)
                         {
-                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? quantity : 0, isStellaSeed ? quantity : 0, isSnowk ? quantity : 0, isBlizzardium ? quantity : 0);
+                            this.AddOrModifyCharacterData(playeridNumber, new string(datas[4].Span), isAlphaReactor ? quantity : 0, isStellaSeed ? quantity : 0, isSnowk ? quantity : 0);
                         }
                         else
                         {
@@ -497,7 +455,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                     }
                 }
             }
-            else if (MemoryExtensions.Equals(datas[2].Span, this.str_ShopAction_SetPrice, StringComparison.OrdinalIgnoreCase))
+            else if (MemoryExtensions.Equals(datas[2].Span, str_ShopAction_SetPrice, StringComparison.OrdinalIgnoreCase))
             {
                 // return;
                 // This has no character/account information in the line. So skip it.
@@ -508,7 +466,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snowkIncrement = 0, int blizzardiumIncrement = 0)
+        private void AddOrModifyCharacterData(long charId, string charName, int alphaReactorIncrement = 0, int stellarSeedIncrement = 0, int snowkIncrement = 0)
         {
             if (this.Dispatcher.CheckAccess())
             {
@@ -535,14 +493,10 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
                 {
                     data.SnowkCount += snowkIncrement;
                 }
-                if (blizzardiumIncrement != 0)
-                {
-                    data.BlizzardiumCount += blizzardiumIncrement;
-                }
             }
             else
             {
-                this.Dispatcher.Invoke((Action<long, string, int, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snowkIncrement, blizzardiumIncrement });
+                this.Dispatcher.BeginInvoke((Action<long, string, int, int, int>)this.AddOrModifyCharacterData, new object[] { charId, charName, alphaReactorIncrement, stellarSeedIncrement, snowkIncrement });
             }
         }
 

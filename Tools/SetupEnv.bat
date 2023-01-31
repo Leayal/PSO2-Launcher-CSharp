@@ -1,5 +1,5 @@
 @echo off
 setlocal
 cd /d %~dp0
-powershell.exe -file "DownloadDotnetSDK.ps1"
+powershell.exe -ExecutionPolicy Bypass -File "DownloadDotnetSDK.ps1"
 endlocal

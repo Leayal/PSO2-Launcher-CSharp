@@ -39,7 +39,7 @@ namespace Leayal.Shared
 
         /// <summary>This will convert the time (local or UTC) to JST local time.</summary>
         /// <param name="dateTime">The time to convert to JST. It can be either UTC or local time. Unspecific time may yield wrong result.</param>
-        /// <returns>A <seealso cref="DateTime"/> which is in JST clock for the given time from <paramref name="dateTime"/>.</returns>
+        /// <returns>A <seealso cref="DateTime"/> which is in JST local time.</returns>
         public static DateTime ConvertTimeToLocalJST(in DateTime dateTime)
         {
             if (JapanTimeZone is not null)
