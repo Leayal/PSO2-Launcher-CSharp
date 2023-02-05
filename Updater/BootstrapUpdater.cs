@@ -16,6 +16,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Helper;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Policy;
 
 namespace Leayal.PSO2Launcher.Updater
 {
@@ -60,40 +61,123 @@ namespace Leayal.PSO2Launcher.Updater
 
             this.bootstrapForm = mainWindow;
 
+            static void YeeeetMyself(Form? window)
+            {
+                if (window != null)
+                {
+                    window.Close();
+                }
+                else
+                {
+                    Application.Exit();
+                }
+                return;
+            }
+
+            StringBuilder? sb = null;
+
+            // If we're compiling targeting .NET 6 and if .NET Desktop Runtime is lower than 6.0.2.
+#if NET6_0
+            Version runtimeVersion = Environment.Version,
+                recommendedVersion = new Version(6, 0, 2);
+
+            if (runtimeVersion.Major < 6)
+            {
+                // WHAT!? Still .NET 5??? You can't be here. Impossible!!
+            }
+            else if (runtimeVersion <= recommendedVersion)
+            {
+                // Upgrade your runtime is recommended. For security reasons.
+                sb = new StringBuilder(768);
+                sb.Append("You're still using .NET Desktop Runtime v").Append(runtimeVersion).Append('.')
+                    .AppendLine()
+                    .Append("It is recommended to update .NET6 Desktop Runtime to the latest version or any versions which are newer than ").Append(recommendedVersion).Append('.')
+                    .AppendLine()
+                    .AppendLine()
+                    .Append("The versions before ").Append(recommendedVersion).Append(" has security issues and should be resolved ASAP by updating the runtime.")
+                    .AppendLine()
+                    .Append("The launcher will soon abandon supporting any runtimes before version ").Append(recommendedVersion).Append('.')
+                    .AppendLine()
+                    .Append("When this happens, it is impossible to run the updated launcher on abandoned runtimes. However, all old launcher versions, which were working on abandoned runtimes, still continue to work as-is.");
+
+                var isStandalone = MemoryExtensions.Equals(Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory().AsSpan()), Path.GetFullPath("dotnet", RuntimeValues.RootDirectory).AsSpan(), StringComparison.OrdinalIgnoreCase);
+
+                sb.AppendLine()
+                    .AppendLine();
+                if (isStandalone)
+                {
+                    sb.AppendLine("Please go to the launcher's release page on Github and download the new standalone package to update the bundled runtime.");
+                }
+                else
+                {
+                    sb.AppendLine("Please go to microsoft .NET download page and download the latest |.NET Desktop Runtime| to install.")
+                        .AppendLine("You DO NOT need the SDKs if you just want to run .NET apps.");
+                }
+                sb.AppendLine()
+                    .Append("[Yes: Open download page and exit launcher; No: Continue using launcher; Cancel: Exit launcher]");
+
+                var informResult = this.bootstrapForm == null ? MessageBox.Show(sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation)
+                : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
+                switch (informResult)
+                {
+                    case DialogResult.Yes:
+                        var url = new Uri(isStandalone ?
+                            "https://leayal.github.io/PSO2-Launcher-CSharp/?page=downloads"
+                            : "https://dotnet.microsoft.com/en-us/download/dotnet/6.0");
+                        using (var proc = Process.Start(Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows)), $"\"{url.AbsoluteUri}\""))
+                        {
+                            proc?.WaitForExit(1000);
+                        }
+                        YeeeetMyself(mainWindow);
+                        return;
+                    case DialogResult.Cancel:
+                        YeeeetMyself(mainWindow);
+                        return;
+                }
+            }
+#endif
+
             // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
             this._osArch = RuntimeInformation.OSArchitecture;
             if (this._osArch != Architecture.X64)
             {
-                var sb = new StringBuilder("Phantasy Star Online 2: New Genesis (Japan) only has 64-bit (specifically, 'AMD64' or 'x86_64' architecture) game client.");
-                sb.AppendLine().AppendLine().Append("Your current operating system is ");
+                if (sb == null)
+                {
+                    // The whole thing below is around 270+ characters already.
+                    sb = new StringBuilder(384);
+                }
+                else
+                {
+                    sb.Clear();
+                }
+                sb.Append("Phantasy Star Online 2: New Genesis (Japan) only has 64-bit (specifically, 'AMD64' or 'x86_64' architecture) game client.")
+                    .AppendLine()
+                    .AppendLine()
+                    .Append("Your current operating system is ");
                 switch (this._osArch)
                 {
                     case Architecture.X86:
-                        sb.Append("32-bit (or 'x86')").Append(", which will not be able to run the game client.");
+                        sb.Append("32-bit (or 'x86')");
                         break;
                     case Architecture.Arm:
-                        sb.Append("ARM 32-bit (or 'ARM')").Append(", which will not be able to run the game client.");
+                        sb.Append("ARM 32-bit (or 'ARM')");
                         break;
                     case Architecture.Arm64:
-                        sb.Append("ARM 64-bit (or 'ARM64')").Append(", which will not be able to run the game client.");
+                        sb.Append("ARM 64-bit (or 'ARM64')");
                         break;
                     default:
-                        sb.Append("'Unknown Architecture', which may not be able to run the game client.");
+                        sb.Append("'Unknown Architecture'");
                         break;
                 }
-                sb.AppendLine().AppendLine().Append("Are you sure you want to continue anyway?");
+                sb.Append(", which will not be able to run the game client.")
+                    .AppendLine()
+                    .AppendLine()
+                    .Append("Are you sure you want to continue anyway?");
                 var informResult = this.bootstrapForm == null ? MessageBox.Show(sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                     : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (informResult != DialogResult.Yes)
                 {
-                    if (mainWindow != null)
-                    {
-                        mainWindow.Close();
-                    }
-                    else
-                    {
-                        Application.Exit();
-                    }
+                    YeeeetMyself(mainWindow);
                     return;
                 }
             }

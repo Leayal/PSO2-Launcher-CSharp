@@ -27,7 +27,6 @@ namespace Leayal.PSO2Launcher.Updater
             if (this.bootstrapContext.MainForm is Form form)
             {
                 form.Close();
-                form.Dispose();
             }
             // this.bootstrapContext.ExitThread();
             return 0;

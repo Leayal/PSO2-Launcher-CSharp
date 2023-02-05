@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
@@ -30,22 +28,29 @@ namespace Leayal.PSO2Launcher.Helper
             }
 
             using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
-            using (var borrowedMemory = System.Buffers.MemoryPool<byte>.Shared.Rent(4096))
             {
-                var buffer = borrowedMemory.Memory;
-                int read;
-                while ((read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
+                var borrowedMemory = System.Buffers.ArrayPool<byte>.Shared.Rent(4096);
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    md5.AppendData(buffer.Slice(0, read).Span);
+                    var buffer = new Memory<byte>(borrowedMemory);
+                    int read;
+                    while ((read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        md5.AppendData(buffer.Slice(0, read).Span);
+                    }
+                    if (md5.TryGetCurrentHash(buffer.Span, out var writtenBytes))
+                    {
+                        return Convert.ToHexString(buffer.Slice(0, writtenBytes).Span);
+                    }
+                    else
+                    {
+                        return Convert.ToHexString(md5.GetCurrentHash());
+                    }
                 }
-                if (md5.TryGetCurrentHash(buffer.Span, out var writtenBytes))
+                finally
                 {
-                    return Convert.ToHexString(buffer.Slice(0, writtenBytes).Span);
-                }
-                else
-                {
-                    return Convert.ToHexString(md5.GetCurrentHash());
+                    System.Buffers.ArrayPool<byte>.Shared.Return(borrowedMemory);
                 }
             }
         }
@@ -66,21 +71,28 @@ namespace Leayal.PSO2Launcher.Helper
             }
 
             using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
-            using (var borrowedMemory = System.Buffers.MemoryPool<byte>.Shared.Rent(4096))
             {
-                var buffer = borrowedMemory.Memory;
-                int read;
-                while ((read = stream.Read(buffer.Span)) != 0)
+                var borrowedMemory = System.Buffers.ArrayPool<byte>.Shared.Rent(4096);
+                try
                 {
-                    md5.AppendData(buffer.Slice(0, read).Span);
+                    var buffer = borrowedMemory.AsSpan();
+                    int read;
+                    while ((read = stream.Read(buffer)) != 0)
+                    {
+                        md5.AppendData(buffer.Slice(0, read));
+                    }
+                    if (md5.TryGetCurrentHash(buffer, out var writtenBytes))
+                    {
+                        return Convert.ToHexString(buffer.Slice(0, writtenBytes));
+                    }
+                    else
+                    {
+                        return Convert.ToHexString(md5.GetCurrentHash());
+                    }
                 }
-                if (md5.TryGetCurrentHash(buffer.Span, out var writtenBytes))
+                finally
                 {
-                    return Convert.ToHexString(buffer.Slice(0, writtenBytes).Span);
-                }
-                else
-                {
-                    return Convert.ToHexString(md5.GetCurrentHash());
+                     System.Buffers.ArrayPool<byte>.Shared.Return(borrowedMemory);
                 }
             }
         }

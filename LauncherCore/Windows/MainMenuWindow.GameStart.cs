@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Leayal.PSO2.UserConfig;
+using ControlzEx.Standard;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -60,9 +61,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
 #nullable enable
         /// <returns>PSO2 process or NULL if not found.</returns>
-        private static Task<Process?> TryFindPSO2Process(string? fullpath = null)
+        private async static Task<Process?> TryFindPSO2Process(string? fullpath = null)
         {
-            return Task.Factory.StartNew<Process?>(obj =>
+            return await Task.Factory.StartNew<Process?>(obj =>
             {
                 Process? result = null;
                 if (obj is string imagePath)
@@ -217,8 +218,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         }
                                         catch (Exception ex)
                                         {
-                                            this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
-                                            Prompt_Generic.Show(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            this.CreateErrorLogInLog("GameStart", "Cannot terminate the current PSO2 process.", "Error", ex);
+                                            // this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
+                                            Prompt_Generic.ShowError(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", ex);
                                             return;
                                         }
                                     }
@@ -687,8 +689,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 catch (PSO2LoginException loginEx)
                 {
-                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.");
-                    Prompt_Generic.ShowError(this, "Failed to login to PSO2.", $"Network Error (Code: {loginEx.ErrorCode})", loginEx);
+                    var title = $"Network Error (Code: {loginEx.ErrorCode})";
+                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.", title, loginEx);
+                    Prompt_Generic.ShowError(this, "Failed to login to PSO2.", title, loginEx);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
@@ -696,20 +699,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     // Prompt_Generic.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
-                catch (TaskCanceledException)
+                catch (TaskCanceledException ex)
                 {
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
                 catch (EmptyPatchListException ex)
                 {
-                    this.CreateNewParagraphInLog("[GameUpdater] " + ex.Message);
+                    this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
                     Prompt_Generic.ShowError(this, ex);
                 }
                 catch (System.Net.Http.HttpRequestException ex)
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
-                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    Prompt_Generic.ShowError(this, ex, "Network Error (Code: " + errorCode + ")");
+                    var title = "Network Error (Code: " + errorCode + ")";
+                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
+                    Prompt_Generic.ShowError(this, ex, title);
                 }
                 catch (System.Net.WebException ex)
                 {
@@ -722,8 +726,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         errorCode = ex.Status.ToString();
                     }
-                    this.CreateNewParagraphInLog($"[GameStart] Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message);
-                    Prompt_Generic.ShowError(this, ex, "Network Error (Code: " + errorCode + ")");
+                    var title = "Network Error (Code: " + errorCode + ")";
+                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
+                    Prompt_Generic.ShowError(this, ex, title);
                 }
                 catch (DatabaseErrorException)
                 {
@@ -732,7 +737,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 catch (Exception ex) when (!Debugger.IsAttached)
                 {
-                    this.CreateNewParagraphInLog("[GameStart] Fail to start game. Error message: " + ex.Message);
+                    this.CreateErrorLogInLog("GameStart", "Fail to start game. Error message: " + ex.Message, null, ex);
                     Prompt_Generic.ShowError(this, ex);
                 }
                 finally

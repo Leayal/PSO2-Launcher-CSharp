@@ -21,6 +21,7 @@ using Leayal.Shared.Windows;
 using System.Windows.Threading;
 using System.Runtime.Loader;
 using System.Runtime.InteropServices;
+using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -87,7 +88,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly RSSFeedPresenter RSSFeedPresenter;
         private readonly Toolbox.ClockTickerCallback clockCallback;
         private readonly Action<DependencyPropertyKey, object> @delegateSetCurrentTime;
-        private readonly object[] @delegateSetCurrentTime_params;
+        private readonly object?[] @delegateSetCurrentTime_params;
         private bool isWebBrowserLoaded;
 
         public MainMenuWindow(ConfigurationFile conf) : base()
@@ -115,7 +116,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 Credentials = null,
                 DefaultProxyCredentials = null
             }, true);
-            this.dialogReferenceByUUID = new Dictionary<Guid, ILogDialogFactory>();
+            this.dialogReferenceByUUID = new Dictionary<Guid, ILogDialogHandler>();
             this.consolelog_hyperlinkparser = new CustomHyperlinkElementGenerator();
             this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
@@ -135,7 +136,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.cancelAllOperation = new CancellationTokenSource();
 
             this.@delegateSetCurrentTime = new Action<DependencyPropertyKey, object>(this.SetValue);
-            this.delegateSetCurrentTime_params = new object[2] { CurrentTimePropertyKey, null };
+            this.delegateSetCurrentTime_params = new object?[2] { CurrentTimePropertyKey, null };
             this.clockCallback = new Toolbox.ClockTickerCallback(this.OnClockTicked);
 
             InitializeComponent();
@@ -181,7 +182,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 FollowingLline = ". The source code can be found on ",
                 i_am_here = "Github";
             // StartingLine + i_am_lea + FollowingLline + i_am_here + '.';
-            this.CreateNewParagraphFormatHyperlinksInLog(string.Create<object>(StartingLine.Length + i_am_lea.Length + FollowingLline.Length + i_am_here.Length + 1, null, (c, _) =>
+            this.CreateNewParagraphFormatHyperlinksInLog(string.Create<string>(StartingLine.Length + i_am_lea.Length + FollowingLline.Length + i_am_here.Length + 1, string.Empty, (c, _) =>
             {
                 var s = c;
                 StartingLine.CopyTo(s);
@@ -218,7 +219,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 const string BootstrapVersionReminder = "[Launcher Updater] You are using an older version of the Launcher's bootstrap. It is recommended to update it.",
                     DowlodEtNow = "(Download it here)";
-                this.CreateNewParagraphFormatHyperlinksInLog(string.Create<object>(BootstrapVersionReminder.Length + DowlodEtNow.Length + 1, null, (c, _) =>
+                this.CreateNewParagraphFormatHyperlinksInLog(string.Create<string>(BootstrapVersionReminder.Length + DowlodEtNow.Length + 1, string.Empty, (c, _) =>
                 {
                     var s = c;
                     BootstrapVersionReminder.CopyTo(s);
@@ -356,13 +357,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 t_stopClientUpdater = tsrc.Task;
                 listOfOperations.Add(t_stopClientUpdater);
 
-                GameClientUpdater.OperationCompletedHandler onfinialize = null;
-                onfinialize = new GameClientUpdater.OperationCompletedHandler(delegate
+                void onfinialize(GameClientUpdater sender, string pso2dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list)
                 {
                     this.pso2Updater.OperationCompleted -= onfinialize;
                     this.CreateNewParagraphInLog("[System] Game client updating has been stopped gracefully.");
                     tsrc.TrySetResult();
-                });
+                }
                 this.pso2Updater.OperationCompleted += onfinialize;
             }
             else
@@ -414,7 +414,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (btn.IsChecked == true)
                 {
                     var path = Path.GetFullPath(Path.Combine("config", "state_togglebtns.txt"), RuntimeValues.RootDirectory);
-                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    var dir = Path.GetDirectoryName(path);
+                    if (dir != null)
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
                     File.WriteAllText(path, btn.Name);
                     break;
                 }
@@ -424,7 +428,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             // await base.OnCleanupBeforeClosed();
         }
 
-        private async void LoadLauncherWebView_Click(object sender, RoutedEventArgs e)
+        private async void LoadLauncherWebView_Click(object? sender, RoutedEventArgs? e)
         {
             var btn = sender as Button;
             if (btn != null)
@@ -440,17 +444,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
             try
             {
                 var filepath = Path.GetFullPath(Path.Combine("bin", "WebViewCompat.dll"), RuntimeValues.RootDirectory);
-                Assembly asm;
+                Assembly? asm;
                 if (File.Exists(filepath))
                 {
-                    var context = AssemblyLoadContext.GetLoadContext(Assembly.GetAssembly(this.GetType()));
-                    if (context == null)
+                    var asm_currentType = Assembly.GetAssembly(this.GetType());
+                    if (asm_currentType == null)
                     {
                         asm = Assembly.LoadFrom(filepath);
                     }
                     else
                     {
-                        asm = context.LoadFromNativeImagePath(filepath, filepath);
+                        var context = AssemblyLoadContext.GetLoadContext(asm_currentType);
+                        if (context == null)
+                        {
+                            asm = Assembly.LoadFrom(filepath);
+                        }
+                        else
+                        {
+                            asm = context.LoadFromNativeImagePath(filepath, filepath);
+                        }
                     }
                 }
                 else
@@ -498,7 +510,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     btn.Click += this.LoadLauncherWebView_Click;
                 }
-                Prompt_Generic.ShowError(this, new System.Windows.Documents.Inline[]
+                var lines = new System.Windows.Documents.Inline[]
                 {
                     new System.Windows.Documents.Run("An error has occurred while loading the necessary libraries for the web engine."),
                     new System.Windows.Documents.LineBreak(),
@@ -507,7 +519,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     new System.Windows.Documents.Run("If the error still persists after restarting, please "),
                     new CommandHyperlink(new System.Windows.Documents.Run("create an issue report")) { NavigateUri = StaticResources.Url_ShowIssuesGithub },
                     new System.Windows.Documents.Run(" on Github."),
-                }, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
+                };
+                this.CreateErrorLogInLog("WebEngine", lines, "Error", ex);
+                Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
             {
@@ -552,6 +566,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
                     AAAAAAA(lines);
                 }
+                this.CreateErrorLogInLog("WebEngine", lines, "Error", ex);
                 Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
@@ -560,12 +575,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     btn.Click += this.LoadLauncherWebView_Click;
                 }
+                this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
         }
 
         
-        private void WebViewCompatControl_Initialized(object sender, EventArgs e)
+        private void WebViewCompatControl_Initialized(object? sender, EventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
@@ -639,7 +655,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         // Combine with WebViewCompatControl_Initialized:
         // The first navigated will be allow. Any subsequent navigations will open with default browser.
         // This is to allow the first navigation which goes to the launcher page.
-        private void Webview_Navigated(object sender, NavigationEventArgs e)
+        private void Webview_Navigated(object? sender, NavigationEventArgs e)
         {
             if (sender is IWebViewCompatControl webview)
             {
@@ -656,7 +672,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Webview_Navigating(object sender, NavigatingEventArgs e)
+        private void Webview_Navigating(object? sender, NavigatingEventArgs e)
         {
             if (sender is IWebViewCompatControl wvc)
             {
@@ -867,7 +883,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Timer_UnloadWebBrowserControl(object sender, EventArgs e)
+        private void Timer_UnloadWebBrowserControl(object? sender, EventArgs e)
         {
             this.timer_unloadWebBrowser.Stop();
             // this.isWebBrowserLoaded = false;

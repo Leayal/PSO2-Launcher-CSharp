@@ -1,4 +1,5 @@
-﻿using Leayal.PSO2Launcher.Core.Classes;
+﻿using ControlzEx.Standard;
+using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;
@@ -294,7 +295,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     else
                     {
-                        this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
+                        this.CreateErrorLogInLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
                         Prompt_Generic.ShowError(this, ex);
                         break;
                     }
@@ -306,12 +307,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (EmptyPatchListException ex)
             {
-                this.CreateNewParagraphInLog("[GameUpdater] " + ex.Message);
+                this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
-                this.CreateNewParagraphInLog("[GameUpdater] An unknown error occured in operation. Error message: " + ex.Message);
+                this.CreateErrorLogInLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
             finally
@@ -476,7 +477,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var totalsizedownloadedtext = Shared.NumericHelper.ToHumanReadableFileSize(in totalsizedownloaded);
 
             Guid dialogguid;
-            Uri crafted;
+            Uri? crafted;
             if (requiredCount == 0)
             {
                 dialogguid = Guid.Empty;

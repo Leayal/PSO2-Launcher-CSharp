@@ -345,11 +345,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.DialogResult = true;
         }
 
+#nullable disable
         class DialogCommandCopyText : ICommand
         {
-#pragma warning disable CS0067
             public event EventHandler CanExecuteChanged;
-#pragma warning restore CS0067
 
             public bool CanExecute(object parameter) => (parameter is Prompt_Generic);
 
@@ -365,5 +364,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
+#nullable restore
     }
 }

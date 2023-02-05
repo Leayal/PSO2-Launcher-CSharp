@@ -1,5 +1,6 @@
 ﻿using ICSharpCode.AvalonEdit.Rendering;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -12,16 +13,20 @@ namespace Leayal.PSO2Launcher.Core.Windows
     partial class MainMenuWindow
     {
         private readonly Classes.CustomHyperlinkElementGenerator consolelog_hyperlinkparser;
-        private readonly Dictionary<Guid, ILogDialogFactory> dialogReferenceByUUID;
+        private readonly Dictionary<Guid, ILogDialogHandler> dialogReferenceByUUID;
 
         public void ShowLogDialogFromGuid(in Guid guid)
         {
-            if (this.dialogReferenceByUUID.TryGetValue(guid, out var factory))
+            if (this.dialogReferenceByUUID.TryGetValue(guid, out var handler))
             {
-                if (factory?.CreateNew() is Window window)
+                if (handler is ILogDialogFactory factory && factory.CreateNew() is Window window)
                 {
                     window.Owner = this;
                     window.ShowDialog();
+                }
+                else if (handler is ILogDialogDisplayer displayer)
+                {
+                    displayer.Show();
                 }
             }
         }
@@ -103,6 +108,62 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.ConsoleLog.Dispatcher.BeginInvoke(new Action<Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter>, bool, bool>(this.CreateNewParagraphInLog),
                      new object[] { callback, newline, followLastLine });
+            }
+        }
+
+        private bool CreateErrorLogInLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        {
+            var logtext = $"[{sender}] {(string.IsNullOrEmpty(message) ? exception.Message : message)}.";
+
+            var dialogguid = Guid.NewGuid();
+            if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
+            {
+                var factory = new ErrorLogDialogFactory(this, message, title, exception);
+                this.dialogReferenceByUUID.Add(dialogguid, factory);
+
+                const string showDetail = " (Show details)";
+                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                {
+                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
+                };
+                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines, newline, followLastLine);
+                return true;
+            }
+            else
+            {
+                this.CreateNewParagraphInLog(logtext, newline, followLastLine);
+                return false;
+            }
+        }
+
+        private bool CreateErrorLogInLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                return this.CreateErrorLogInLog(sender, string.Empty, title, exception, newline, followLastLine);
+            }
+
+            var firstLine = ((System.Windows.Documents.Run?)lines.FirstOrDefault(x => (x is System.Windows.Documents.Run run && !string.IsNullOrWhiteSpace(run.Text))))?.Text;
+            var logtext = $"[{sender}] {(string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine)}.";
+
+            var dialogguid = Guid.NewGuid();
+            if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
+            {
+                var factory = new ExtendedErrorLogDialogFactory(this, lines, title, exception);
+                this.dialogReferenceByUUID.Add(dialogguid, factory);
+
+                const string showDetail = " (Show details)";
+                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                {
+                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
+                };
+                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines, newline, followLastLine);
+                return true;
+            }
+            else
+            {
+                this.CreateNewParagraphInLog(logtext, newline, followLastLine);
+                return false;
             }
         }
 
@@ -199,9 +260,50 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.dialogReferenceByUUID.Clear();
         }
 
-        interface ILogDialogFactory
+        interface ILogDialogHandler { }
+        interface ILogDialogFactory : ILogDialogHandler
         {
             Window CreateNew();
+        }
+
+        interface ILogDialogDisplayer : ILogDialogHandler
+        {
+            void Show();
+        }
+
+        sealed class ErrorLogDialogFactory : ILogDialogDisplayer
+        {
+            private readonly Exception exception;
+            private readonly string? _message, _title;
+            private readonly Window parent;
+
+            public ErrorLogDialogFactory(Window parent, string? message, string? title, Exception exception)
+            {
+                this.parent = parent;
+                this.exception = exception;
+                this._message = message;
+                this._title = title;
+            }
+
+            public void Show() => Prompt_Generic.ShowError(this.parent, this._message, this._title, this.exception);
+        }
+
+        sealed class ExtendedErrorLogDialogFactory : ILogDialogDisplayer
+        {
+            private readonly Exception exception;
+            private readonly string? _title;
+            private readonly ICollection<System.Windows.Documents.Inline> _lines;
+            private readonly Window parent;
+
+            public ExtendedErrorLogDialogFactory(Window parent, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception)
+            {
+                this.parent = parent;
+                this.exception = exception;
+                this._lines = lines;
+                this._title = title;
+            }
+
+            public void Show() => Prompt_Generic.ShowError(this.parent, this._lines, this._title, this.exception, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         readonly struct RelativeLogPlacement : IEquatable<RelativeLogPlacement>
@@ -214,11 +316,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.Length = length;
             }
 
-            public override bool Equals([NotNullWhen(true)] object obj) => (obj is RelativeLogPlacement item && this.Equals(item));
+            public readonly override bool Equals([NotNullWhen(true)] object? obj) => (obj is RelativeLogPlacement item && this.Equals(item));
 
-            public bool Equals(RelativeLogPlacement item) => (this.Offset == item.Offset && this.Length == item.Length);
+            public readonly bool Equals(RelativeLogPlacement item) => (this.Offset == item.Offset && this.Length == item.Length);
 
-            public override int GetHashCode() => HashCode.Combine(this.Offset, this.Length);
+            public readonly override int GetHashCode() => HashCode.Combine(this.Offset, this.Length);
         }
     }
 }
