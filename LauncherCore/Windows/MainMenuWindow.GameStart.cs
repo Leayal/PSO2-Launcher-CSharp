@@ -77,7 +77,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                         for (int i = 0; i < processes.Length; i++)
                         {
-                            if (string.Equals(processes[i].QueryFullProcessImageName(), imagePath, StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(processes[i].QueryFullProcessImageName(4096, true), imagePath, StringComparison.OrdinalIgnoreCase))
                             {
                                 result = processes[i];
                             }

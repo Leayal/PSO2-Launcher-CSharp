@@ -63,7 +63,7 @@ namespace Leayal.Shared
         public static string? QueryFullProcessImageName(this Process process, QueryProcessNameType nameType, int buffer = 2048, bool uacHint = false)
         {
             SafeProcessHandle hProcess;
-            bool isCreatedHandle = false;
+            bool isOwnHandle = false;
             try
             {
                 if (uacHint)
@@ -76,7 +76,7 @@ namespace Leayal.Shared
                     else
                     {
                         hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
-                        isCreatedHandle = true;
+                        isOwnHandle = true;
                     }
                 }
                 else
@@ -89,15 +89,15 @@ namespace Leayal.Shared
             {
                 // Should be access denied. So we open by our own with "LimitedQuery" access right.
                 hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
-                isCreatedHandle = true;
+                isOwnHandle = true;
             }
             try
             {
-                return QueryFullProcessImageName(hProcess, process.Id, nameType, buffer);
+                return QueryFullProcessImageName(hProcess, isOwnHandle ? 0 : process.Id, nameType, buffer);
             }
             finally
             {
-                if (isCreatedHandle)
+                if (isOwnHandle)
                 {
                     hProcess.Dispose();
                 }
@@ -118,22 +118,15 @@ namespace Leayal.Shared
             try
             {
                 uint bufferLength = Convert.ToUInt32(ch.Length);
-                if (UacHelper.IsCurrentProcessElevated)
+                if (QueryFullProcessImageName(processHandle, (uint)dwFlags, ch, ref bufferLength))
                 {
-                    if (QueryFullProcessImageName(processHandle, (uint)dwFlags, ch, ref bufferLength))
-                    {
-                        return new string(ch, 0, Convert.ToInt32(bufferLength));
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    return new string(ch, 0, Convert.ToInt32(bufferLength));
                 }
-                else
+                else if (processId != 0)
                 {
                     using (var hProcess = OpenProcess(QueryLimitedInformation, false, processId))
                     {
-                        if (QueryFullProcessImageName(hProcess, (uint)dwFlags, ch, ref bufferLength))
+                        if (!hProcess.IsInvalid && QueryFullProcessImageName(hProcess, (uint)dwFlags, ch, ref bufferLength))
                         {
                             return new string(ch, 0, Convert.ToInt32(bufferLength));
                         }
@@ -143,7 +136,7 @@ namespace Leayal.Shared
                         }
                     }
                 }
-                
+                return null;
             }
             finally
             {
