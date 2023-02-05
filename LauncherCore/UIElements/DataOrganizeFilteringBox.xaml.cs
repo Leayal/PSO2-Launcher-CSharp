@@ -42,11 +42,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly DependencyProperty FilterDisplayStringProperty = FilterDisplayStringPropertyKey.DependencyProperty;
 
         private ClientType _currentClientType;
-        private string _currentName, _currentFileSizeRaw;
+        private string? _currentName, _currentFileSizeRaw;
         private long _currentFileSize;
         private SizeComparisonType _currentSizeComparisonType;
         private SizeComparisonScale _currentSizeComparisonScale;
-        private ICollectionView _currentView;
+        private ICollectionView? _currentView;
         private bool hasFilter_name, hasFilter_clientType, hasFilter_fileSize;
 
         public ICollectionView ItemsSource
@@ -234,7 +234,10 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
 
         private bool FilterOnlyByName(CustomizationFileListItem item)
-            => item.RelativeFilename.Contains(this._currentName, StringComparison.OrdinalIgnoreCase);
+        {
+            if (string.IsNullOrEmpty(this._currentName)) return true;
+            return item.RelativeFilename.Contains(this._currentName, StringComparison.OrdinalIgnoreCase);
+        }
 
         private bool FilterOnlyByFileSize(object? obj)
         {

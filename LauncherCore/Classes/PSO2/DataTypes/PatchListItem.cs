@@ -9,7 +9,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
     {
         internal const string AffixFilename = ".pat";
 
-        internal readonly PatchListBase Origin;
+        internal readonly PatchListBase? Origin;
 
         /// <remarks>File name contains affix ".pat"</remarks>
         public readonly ReadOnlyMemory<char> RemoteFilename;
@@ -24,12 +24,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsRebootData;
 
-        private string cachedRemoteFilename, cachedFilenameWithoutAffix;
+        private string? cachedRemoteFilename, cachedFilenameWithoutAffix;
 
-        public PatchListItem(PatchListBase origin, ReadOnlyMemory<char> filename, in long size, ReadOnlyMemory<char> md5) : this(origin, filename, md5, in size, null) { }
+        public PatchListItem(PatchListBase? origin, ReadOnlyMemory<char> filename, in long size, ReadOnlyMemory<char> md5) : this(origin, filename, md5, in size, null) { }
 
         /// <param name="m_or_p">True = p. False = m. Null = Not given.</param>
-        public PatchListItem(PatchListBase origin, ReadOnlyMemory<char> filename, ReadOnlyMemory<char> md5, in long size, in bool? m_or_p)
+        public PatchListItem(PatchListBase? origin, ReadOnlyMemory<char> filename, ReadOnlyMemory<char> md5, in long size, in bool? m_or_p)
         {
             this.Origin = origin;
             this.RemoteFilename = filename;
@@ -256,7 +256,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             yield return mem;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is PatchListItem item)
             {
@@ -276,7 +276,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             return hashcode.ToHashCode();
         }
 
-        public bool Equals(PatchListItem other)
+        public bool Equals(PatchListItem? other)
         {
             if (other == null)
             {

@@ -37,7 +37,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         private readonly ObservableCollection<RSSFeedDom> rssfeeds;
         private readonly Dictionary<RSSFeedHandler, RSSFeedDom> linked;
         private static readonly RSSFeedItemClickEventHandler _RSSFeedItemClickEventHandler = new RSSFeedItemClickEventHandler(FeedItem_Click);
-        private RSSFeedDom currentFeedDom;
+        private RSSFeedDom? currentFeedDom;
 
         public RSSFeedPresenter(System.Net.Http.HttpClient webclient)
         {
@@ -56,57 +56,63 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
         public IEnumerable<RSSFeedHandler> RSSFeedHandlers => this.rssfeedhandlers;
 
-        private void Loader_ItemsChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void Loader_ItemsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
             {
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
-                    foreach (var item in e.NewItems)
+                    if (e.NewItems != null)
                     {
-                        if (item is RSSFeedHandler feedAdded)
+                        foreach (var item in e.NewItems)
                         {
-                            var dom = new RSSFeedDom(feedAdded);
-                            this.linked.Add(feedAdded, dom);
-                            this.rssfeeds.Add(dom);
-                            if (this.NoFeedLabel.Visibility != Visibility.Collapsed)
+                            if (item is RSSFeedHandler feedAdded)
                             {
-                                this.NoFeedLabel.Visibility = Visibility.Collapsed;
-                            }
-                            // Ignore "Deferred" setting because we need to poke the feed at least once.
-                            Task.Run(feedAdded.Fetch);
+                                var dom = new RSSFeedDom(feedAdded);
+                                this.linked.Add(feedAdded, dom);
+                                this.rssfeeds.Add(dom);
+                                if (this.NoFeedLabel.Visibility != Visibility.Collapsed)
+                                {
+                                    this.NoFeedLabel.Visibility = Visibility.Collapsed;
+                                }
+                                // Ignore "Deferred" setting because we need to poke the feed at least once.
+                                Task.Run(feedAdded.Fetch);
 
-                            /*
-                            if (this.FeedList.SelectedItem == null)
-                            {
-                                this.FeedList.SelectedIndex = 0;
+                                /*
+                                if (this.FeedList.SelectedItem == null)
+                                {
+                                    this.FeedList.SelectedIndex = 0;
+                                }
+                                */
                             }
-                            */
                         }
                     }
                     break;
                 case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                    foreach (var item in e.OldItems)
+                    if (e.OldItems != null)
                     {
-                        if (item is RSSFeedHandler feedRemoved)
+                        foreach (var item in e.OldItems)
                         {
-                            feedRemoved.Dispose();
-                            if (this.linked.Remove(feedRemoved, out var dom))
+                            if (item is RSSFeedHandler feedRemoved)
                             {
-                                if (this.rssfeeds.Remove(dom))
+                                feedRemoved.Dispose();
+                                if (this.linked.Remove(feedRemoved, out var dom))
                                 {
-                                    if (this.rssfeeds.Count == 0)
+                                    if (this.rssfeeds.Remove(dom))
                                     {
-                                        this.NoFeedLabel.Visibility = Visibility.Visible;
-                                        if (this.FeedList.SelectedItem == dom)
+                                        if (this.rssfeeds.Count == 0)
                                         {
-                                            this.FeedList.SelectedIndex = -1;
+                                            this.NoFeedLabel.Visibility = Visibility.Visible;
+                                            if (this.FeedList.SelectedItem == dom)
+                                            {
+                                                this.FeedList.SelectedIndex = -1;
+                                            }
                                         }
-                                    }
-                                    else
-                                    {
-                                        if (this.FeedList.SelectedItem == dom)
+                                        else
                                         {
-                                            this.FeedList.SelectedIndex = 0;
+                                            if (this.FeedList.SelectedItem == dom)
+                                            {
+                                                this.FeedList.SelectedIndex = 0;
+                                            }
                                         }
                                     }
                                 }
@@ -262,9 +268,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        public event Action<RSSFeedPresenter, RSSFeedHandler> SelectedFeedChanged;
+        public event Action<RSSFeedPresenter, RSSFeedHandler>? SelectedFeedChanged;
 
-        private void CurrentFeed_DeferredRefreshReady(object sender, EventArgs e)
+        private void CurrentFeed_DeferredRefreshReady(object? sender, EventArgs e)
         {
             if (sender is RSSFeedHandler handler)
             {
@@ -299,7 +305,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        public RSSFeedHandler GetSelectedFeedHandler()
+        public RSSFeedHandler? GetSelectedFeedHandler()
         {
             var current = this.currentFeedDom;
             if (current == null)
@@ -310,8 +316,6 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             {
                 return current.Feed;
             }
-
-
         }
 
         public void SelectFeed(RSSFeedHandler feedhandler)
@@ -324,7 +328,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     return;
                 }
 
-                RSSFeedDom found;
+                RSSFeedDom? found;
                 if (this.rssfeeds.Count > i)
                 {
                     found = this.rssfeeds[i];
@@ -348,7 +352,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 {
                     foreach (var dom in this.rssfeeds)
                     {
-                        if (found.Feed == feedhandler)
+                        if (dom.Feed == feedhandler)
                         {
                             this.FeedList.SelectedItem = dom;
                             break;
@@ -362,13 +366,13 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        public RSSFeedHandler LoadFeedConfig(string data)
+        public RSSFeedHandler? LoadFeedConfig(string data)
         {
             var conf = Classes.RSS.FeedChannelConfig.FromData(data);
             return this.LoadFeedConfig(in conf);
         }
 
-        public RSSFeedHandler LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
+        public RSSFeedHandler? LoadFeedConfig(in Classes.RSS.FeedChannelConfig config)
         {
             if (!string.IsNullOrEmpty(config.FeedChannelUrl) && Uri.TryCreate(config.FeedChannelUrl, UriKind.Absolute, out var url))
             {
@@ -391,7 +395,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
                 else
                 {
-                    RSSFeedHandler basehandler = null;
+                    RSSFeedHandler? basehandler = null;
                     if (string.Equals(config.BaseHandler, "Default", StringComparison.OrdinalIgnoreCase))
                     {
                         basehandler = this.loader.CreateHandlerFromUri(url);
@@ -399,9 +403,9 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                     else if (string.Equals(config.BaseHandler, "Generic", StringComparison.OrdinalIgnoreCase))
                     {
                         bool isOkay = true;
-                        IRSSFeedChannelDownloader handler_download = null;
-                        IRSSFeedChannelParser handler_parser = null;
-                        IRSSFeedItemCreator handler_creator = null;
+                        IRSSFeedChannelDownloader? handler_download = null;
+                        IRSSFeedChannelParser? handler_parser = null;
+                        IRSSFeedItemCreator? handler_creator = null;
                         if (string.IsNullOrWhiteSpace(config.DownloadHandler))
                         {
                             handler_download = RSSFeedHandler.Default;
@@ -604,7 +608,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 feed.RefreshEnd += this.Feed_RefreshEnd;
             }
 
-            private void Feed_RefreshEnd(object sender, EventArgs e)
+            private void Feed_RefreshEnd(object? sender, EventArgs e)
             {
                 if (this.Dispatcher.CheckAccess())
                 {
@@ -621,7 +625,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 this.SetValue(IsFeedRefreshingPropertyKey, false);
             }
 
-            private void Feed_RefreshStart(object sender, EventArgs e)
+            private void Feed_RefreshStart(object? sender, EventArgs e)
             {
                 if (this.Dispatcher.CheckAccess())
                 {
@@ -638,7 +642,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 this.SetValue(IsFeedRefreshingPropertyKey, true);
             }
 
-            private void Feed_LastSuccessFetchChanged(object sender, EventArgs e)
+            private void Feed_LastSuccessFetchChanged(object? sender, EventArgs e)
             {
                 if (sender is RSSFeedHandler handler)
                 {
@@ -655,7 +659,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
 
             private void OnLastSuccessFetchChanged(DateTime dt) => this.SetValue(LastSuccessfulRefreshCallRawPropertyKey, dt);
 
-            private void Feed_LastRefreshCallChanged(object sender, EventArgs e)
+            private void Feed_LastRefreshCallChanged(object? sender, EventArgs e)
             {
                 if (sender is RSSFeedHandler handler)
                 {
@@ -684,7 +688,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
 
-            static BitmapImage CreateIconFromStream(Stream stream)
+            static BitmapImage? CreateIconFromStream(Stream stream)
             {
                 if (stream == null)
                 {
@@ -751,7 +755,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
                 else
                 {
-                    this.Dispatcher.BeginInvoke(new Action<char, BitmapImage?>(this.InnerSetImage), new object[] { e.RepresentativeCharacter, bm });
+                    this.Dispatcher.BeginInvoke(new Action<char, BitmapImage?>(this.InnerSetImage), new object?[] { e.RepresentativeCharacter, bm });
                 }
             }
 #nullable restore
@@ -810,7 +814,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
-        private void RssItemContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        private void RssItemContextMenu_ContextMenuOpening(object sender, ContextMenuEventArgs? e)
         {
             if (sender is ListBoxItem item)
             {

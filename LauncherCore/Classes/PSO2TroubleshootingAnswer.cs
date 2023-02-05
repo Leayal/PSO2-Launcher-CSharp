@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
     {
         private readonly IReadOnlyList<PSO2TroubleshootingAnswer> _answers;
 
-        public PSO2TroubleshootingAnswer(string name, string title, string tooltiptext, List<PSO2TroubleshootingAnswer> answers)
+        public PSO2TroubleshootingAnswer(string name, string title, string tooltiptext, List<PSO2TroubleshootingAnswer>? answers)
         {
             this.Name = name;
             this.Title = title;
@@ -37,15 +37,15 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this.Selected?.Invoke(this);
         }
 
-        public event Action<PSO2TroubleshootingAnswer> Selected;
+        public event Action<PSO2TroubleshootingAnswer>? Selected;
 
-        public PSO2TroubleshootingAnswer this[int index] => _answers[index];
+        public PSO2TroubleshootingAnswer this[int index] => this._answers[index];
 
-        public int Count => _answers.Count;
+        public int Count => this._answers.Count;
 
         public IEnumerator<PSO2TroubleshootingAnswer> GetEnumerator()
         {
-            return _answers.GetEnumerator();
+            return this._answers.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

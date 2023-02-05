@@ -30,7 +30,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected override IEnumerator<PatchListItem> CreateEnumerator() => this._items.Values.GetEnumerator();
 
-        public override bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem value) => this._items.TryGetValue(filename, out value);
+        public override bool TryGetByFilenameExact(string filename, [MaybeNullWhen(false)] out PatchListItem value) => this._items.TryGetValue(filename, out value);
 
         protected override void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy)
         {

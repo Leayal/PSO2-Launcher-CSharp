@@ -25,7 +25,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 // Optional. State saving isn't critical and so it can be silently failed.
                 try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(path_state_selected_rss_item));
+                    var parentpath_state_selected_rss_item = Path.GetDirectoryName(path_state_selected_rss_item);
+                    if (parentpath_state_selected_rss_item != null)
+                    {
+                        Directory.CreateDirectory(parentpath_state_selected_rss_item);
+                    }
                     File.WriteAllText(path_state_selected_rss_item, selectedOne.FeedChannelUrl.AbsoluteUri, Encoding.UTF8);
                 }
                 catch { }
@@ -41,10 +45,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             try
             {
                 var path_state_selected_rss_item = Path.GetFullPath(Path.Combine("config", "state_selectedrssfeed.txt"), RuntimeValues.RootDirectory);
-                string selectedFeedUrl;
                 if (File.Exists(path_state_selected_rss_item))
                 {
-                    selectedFeedUrl = Helper.QuickFile.ReadFirstLine(path_state_selected_rss_item);
+                    var selectedFeedUrl = Helper.QuickFile.ReadFirstLine(path_state_selected_rss_item);
                     if (!string.IsNullOrWhiteSpace(selectedFeedUrl) && Uri.TryCreate(selectedFeedUrl, UriKind.Absolute, out _))
                     {
                         return selectedFeedUrl;
@@ -69,13 +72,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             Task.Factory.StartNew((obj) =>
             {
+                if (obj == null) throw new Exception("Dev, check this and think");
                 var myself = (MainMenuWindow)obj;
                 var rootdir = RuntimeValues.RootDirectory;
                 var path_rss_items = Path.GetFullPath(Path.Combine("config", "rss"), rootdir);
 
                 if (Directory.Exists(path_rss_items))
                 {
-                    RSSFeedHandler selectedOne = null;
+                    RSSFeedHandler? selectedOne = null;
                     var selectedFeedUrl = TryGetState_SelectedRssFeed();
                     foreach (var filename in Directory.EnumerateFiles(path_rss_items, "*.json", SearchOption.TopDirectoryOnly))
                     {
@@ -144,10 +148,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                         Task.Factory.StartNew(obj =>
                         {
+                            if (obj == null) throw new Exception("Something went wrong, check this place via debugger.");
                             var datas = (Tuple<MainMenuWindow, Classes.RSS.FeedChannelConfig[]>)obj;
                             var myself = datas.Item1;
                             var confs = new ReadOnlySpan<Classes.RSS.FeedChannelConfig>(datas.Item2);
-                            RSSFeedHandler selectedOne = null;
+                            RSSFeedHandler? selectedOne = null;
                             var selectedFeedUrl = TryGetState_SelectedRssFeed();
 
                             var included = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

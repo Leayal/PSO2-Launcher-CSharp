@@ -214,10 +214,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             return ico;
         }
 
-        private void MenuItemForgetSEGALogin_Click(object sender, EventArgs e)
+        private void MenuItemForgetSEGALogin_Click(object? sender, EventArgs e)
             => this.ForgetSEGALogin();
 
-        private void MenuItem_UrlCommand_Click(object sender, EventArgs e)
+        private void MenuItem_UrlCommand_Click(object? sender, EventArgs e)
         {
             if (sender is ToolStripMenuItem menuitem && menuitem.Tag is Uri uri && uri.IsAbsoluteUri)
             {
@@ -225,7 +225,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Typical_startGame_Click(object sender, EventArgs e)
+        private void Typical_startGame_Click(object? sender, EventArgs e)
         {
             if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
             {
@@ -233,7 +233,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Typical_checkforPSO2Updates_Click(object sender, EventArgs e)
+        private void Typical_checkforPSO2Updates_Click(object? sender, EventArgs e)
         {
             // Unnecessary 'if' but it doesn't hurt to use it.
             if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
@@ -242,7 +242,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Typical_ScanForMissingDamaged_Click(object sender, EventArgs e)
+        private void Typical_ScanForMissingDamaged_Click(object? sender, EventArgs e)
         {
             // Unnecessary 'if' but it doesn't hurt to use it.
             if (this.TabMainMenu.IsSelected && this.TabMainMenu.GameStartEnabled)
@@ -251,7 +251,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Typical_startGame_SubItemsClick(object sender, EventArgs e)
+        private void Typical_startGame_SubItemsClick(object? sender, EventArgs e)
         {
             if (sender is ToolStripMenuItem item && item.Tag is GameStartStyle style)
             {
@@ -263,12 +263,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Menuitem_exit_Click(object sender, EventArgs e)
+        private void Menuitem_exit_Click(object? sender, EventArgs e)
         {
             SystemCommands.CloseWindow(this);
         }
 
-        private void Ico_DoubleClick(object sender, EventArgs e)
+        private void Ico_DoubleClick(object? sender, EventArgs e)
         {
             var modal = App.Current.GetModalOrNull();
             if (modal != null)
@@ -285,7 +285,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void WindowsCommandButtons_MinimizeToTray_Click(object sender, RoutedEventArgs e)
+        private void WindowsCommandButtons_MinimizeToTray_Click(object? sender, RoutedEventArgs e)
         {
             this.IsMinimizedToTray = true;
         }

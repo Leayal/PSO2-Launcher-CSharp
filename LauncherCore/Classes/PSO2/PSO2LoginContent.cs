@@ -17,13 +17,15 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private static readonly byte[] b_1 = Encoding.UTF8.GetBytes("{\"id\":\"");
         private static readonly byte[] b_2 = Encoding.UTF8.GetBytes("\",\"password\":\"");
         private static readonly byte[] b_3 = Encoding.UTF8.GetBytes("\"}");
-        private SecureString username;
-        private SecureString password;
+
+        private readonly bool _keepSecureStringAlive;
+        private SecureString username, password;
 
         private long? computedLength;
 
-        public PSO2LoginContent(SecureString username, SecureString pw) : base()
+        public PSO2LoginContent(SecureString username, SecureString pw, bool keepSecureStringAlive = true) : base()
         {
+            this._keepSecureStringAlive = keepSecureStringAlive;
             this.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
             this.computedLength = null;
             this.username = username;
@@ -31,7 +33,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         // {"id":"","password":""}
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             stream.Write(b_1);
             this.username.EncodeTo(stream, out var b_id);
@@ -59,6 +61,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected override void Dispose(bool disposing)
         {
+            if (!this._keepSecureStringAlive)
+            {
+                this.username?.Dispose();
+                this.password?.Dispose();
+            }
             this.username = null;
             this.password = null;
             base.Dispose(disposing);

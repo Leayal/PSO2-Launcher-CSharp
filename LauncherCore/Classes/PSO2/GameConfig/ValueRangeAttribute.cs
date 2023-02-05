@@ -21,18 +21,25 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
         public static bool TryGetRange(Type type, object obj, out int min, out int max)
         {
             // Attribute.GetCustomAttribute()
-
-            if (!(obj is MemberInfo mem))
+            var mem = obj as MemberInfo;
+            if (mem == null)
             {
                 var membername = obj.ToString();
-                var mems = type.GetMember(membername);
-                if (mems != null && mems.Length != 0)
+                if (string.IsNullOrEmpty(membername))
                 {
-                    mem = mems[0];
+                    mem = null;
                 }
                 else
                 {
-                    mem = null;
+                    var mems = type.GetMember(membername);
+                    if (mems != null && mems.Length != 0)
+                    {
+                        mem = mems[0];
+                    }
+                    else
+                    {
+                        mem = null;
+                    }
                 }
             }
             if (mem != null)

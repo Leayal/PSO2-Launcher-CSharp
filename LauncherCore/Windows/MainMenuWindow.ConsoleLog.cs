@@ -1,18 +1,22 @@
 ﻿using ICSharpCode.AvalonEdit.Rendering;
+using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private readonly Classes.CustomHyperlinkElementGenerator consolelog_hyperlinkparser;
+        private readonly CustomHyperlinkElementGenerator consolelog_hyperlinkparser;
+        private readonly ErrorTextElementGenerator consolelog_errortextparser;
         private readonly Dictionary<Guid, ILogDialogHandler> dialogReferenceByUUID;
 
         public void ShowLogDialogFromGuid(in Guid guid)
@@ -99,7 +103,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     doc.EndUpdate();
                 }
-                if (followLastLine)
+                if (isAlreadyInLastLineView && followLastLine)
                 {
                     consolelog.ScrollToEnd();
                 }
@@ -111,60 +115,81 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private bool CreateErrorLogInLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        private void CreateErrorLogInLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
         {
-            var logtext = $"[{sender}] {(string.IsNullOrEmpty(message) ? exception.Message : message)}.";
-
-            var dialogguid = Guid.NewGuid();
-            if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
+            if (this.ConsoleLog.CheckAccess())
             {
-                var factory = new ErrorLogDialogFactory(this, message, title, exception);
-                this.dialogReferenceByUUID.Add(dialogguid, factory);
+                var logtext = $"{{ERROR}} [{sender}] {(string.IsNullOrEmpty(message) ? exception.Message : message)}.";
 
-                const string showDetail = " (Show details)";
-                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                var consolelog = this.ConsoleLog;
+                var doc = consolelog.Document;
+                var textlength = doc.TextLength;
+                bool isAlreadyInLastLineView = (followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
+                int writtenoffset;
+                doc.BeginUpdate();
+                try
                 {
-                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
-                };
-                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines, newline, followLastLine);
-                return true;
+                    using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(doc, textlength))
+                    {
+                        if (newline)
+                        {
+                            if (textlength != 0)
+                            {
+                                writer.WriteLine();
+                            }
+                        }
+                        writtenoffset = writer.InsertionOffset;
+                        writer.Write(logtext);
+                        writer.Flush();
+
+                    }
+                    // var line = consolelog.Document.GetLineByOffset(writtenoffset);
+                    // var relativeoffset = (line.EndOffset - text.Length) - line.Offset;
+                    // var lineNumber = line.LineNumber;
+                    // var linecontext = consolelog.TextArea.TextView.GetOrConstructVisualLine(line);
+                }
+                finally
+                {
+                    doc.EndUpdate();
+                }
+                this.consolelog_errortextparser.Add(new Placements(in writtenoffset, logtext.Length));
+
+                var dialogguid = Guid.NewGuid();
+                if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
+                {
+                    var factory = new ErrorLogDialogFactory(this, message, title, exception);
+                    this.dialogReferenceByUUID.Add(dialogguid, factory);
+
+                    const string showDetail = " (Show details)";
+                    var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                    {
+                        { new RelativeLogPlacement(1, showDetail.Length - 1), crafted }
+                    };
+                    this.CreateNewParagraphFormatHyperlinksInLog(showDetail, urldefines, false, false);
+                }
+
+                if (isAlreadyInLastLineView && followLastLine)
+                {
+                    consolelog.ScrollToEnd();
+                }
             }
             else
             {
-                this.CreateNewParagraphInLog(logtext, newline, followLastLine);
-                return false;
+                this.ConsoleLog.Dispatcher.BeginInvoke(new Action<string, string, string?, Exception, bool, bool> (this.CreateErrorLogInLog),
+                     new object?[] { sender, message, title, exception, newline, followLastLine });
             }
         }
 
-        private bool CreateErrorLogInLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        private void CreateErrorLogInLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
         {
             if (lines == null || lines.Count == 0)
             {
-                return this.CreateErrorLogInLog(sender, string.Empty, title, exception, newline, followLastLine);
+                this.CreateErrorLogInLog(sender, string.Empty, title, exception, newline, followLastLine);
+                return;
             }
 
             var firstLine = ((System.Windows.Documents.Run?)lines.FirstOrDefault(x => (x is System.Windows.Documents.Run run && !string.IsNullOrWhiteSpace(run.Text))))?.Text;
-            var logtext = $"[{sender}] {(string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine)}.";
-
-            var dialogguid = Guid.NewGuid();
-            if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
-            {
-                var factory = new ExtendedErrorLogDialogFactory(this, lines, title, exception);
-                this.dialogReferenceByUUID.Add(dialogguid, factory);
-
-                const string showDetail = " (Show details)";
-                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
-                {
-                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
-                };
-                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines, newline, followLastLine);
-                return true;
-            }
-            else
-            {
-                this.CreateNewParagraphInLog(logtext, newline, followLastLine);
-                return false;
-            }
+            this.CreateErrorLogInLog(sender, string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine, title, exception, newline, followLastLine);
         }
 
         private void CreateNewParagraphFormatHyperlinksInLog(string text, IReadOnlyDictionary<RelativeLogPlacement, Uri> urls, bool newline = true, bool followLastLine = true)
@@ -212,10 +237,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         var relativePlacement = item.Key;
                         this.consolelog_hyperlinkparser.Items.Add(
-                            new Classes.CustomHyperlinkElementGenerator.Placements(writtenoffset + relativePlacement.Offset, relativePlacement.Length),
+                            new Placements(writtenoffset + relativePlacement.Offset, relativePlacement.Length),
                             item.Value);
                     }
-                    if (followLastLine)
+                    if (isAlreadyInLastLineView && followLastLine)
                     {
                         consolelog.ScrollToEnd();
                     }
@@ -228,7 +253,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private static void VisualLineLinkText_LinkClicked(Classes.CustomHyperlinkElementGenerator.VisualLineLinkTextEx element)
+        private static void VisualLineLinkText_LinkClicked(CustomHyperlinkElementGenerator.VisualLineLinkTextEx element)
         {
             var url = element.NavigateUri;
             if (url != null)
@@ -257,6 +282,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.ConsoleLog.Clear();
             this.ConsoleLog.Document.UndoStack.ClearAll();
             this.consolelog_hyperlinkparser.Items.Clear();
+            this.consolelog_errortextparser.Clear();
             this.dialogReferenceByUUID.Clear();
         }
 

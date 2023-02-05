@@ -74,8 +74,8 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         }
 
         private readonly SimpleDispatcherQueue debounceDispatcher;
-        private DispatcherQueueItem dispatcherQueueItem_IncreaseDownloadedCount, dispatcherQueueItem_IncreaseNeedToDownloadCount;
-        private DispatcherQueueItem dispatcherQueueItem_MainProgressValue;
+        private DispatcherQueueItem? dispatcherQueueItem_IncreaseDownloadedCount, dispatcherQueueItem_IncreaseNeedToDownloadCount;
+        private DispatcherQueueItem? dispatcherQueueItem_MainProgressValue;
         private readonly ObservableCollection<ExtendedProgressBar> indexing;
         private readonly List<ProgressController> controllers;
 

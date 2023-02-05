@@ -38,7 +38,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         return ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader.Load(xmlr, HighlightingManager.Instance);
                     }
                 }
-                return null;
+                throw new ResourceReferenceKeyNotFoundException();
             }
         }),
             highlighter_light = new Lazy<IHighlightingDefinition>(() =>
@@ -53,7 +53,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
                     }
                 }
-                return null;
+                throw new ResourceReferenceKeyNotFoundException();
             });
 
         public PSO2UserConfigurationWindow()

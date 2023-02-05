@@ -13,8 +13,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public event EventHandler CanExecuteChanged;
 #pragma warning restore CS0067
 
-        public bool CanExecute(object parameter) => true;
-
-        public void Execute(object parameter) { }
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) { }
     }
 }

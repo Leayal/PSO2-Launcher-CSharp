@@ -60,8 +60,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                             // Check whether the launcher has the access right or able to create file at the destination
                             bool isSuccess = false;
-                            
-                            Directory.CreateDirectory(Path.GetDirectoryName(localFilePath));
+
+                            var parentLocalFilePath = Path.GetDirectoryName(localFilePath);
+                            if (parentLocalFilePath != null)
+                            {
+                                Directory.CreateDirectory(parentLocalFilePath);
+                            }
 
                             // Reallocation file on the disk if the size if the size is finite.
                             using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))

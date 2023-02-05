@@ -52,7 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var defaultval_GameStartStyle = conf.DefaultGameStartStyle;
             var vals_GameStartStyle = Enum.GetValues<GameStartStyle>();
             var listOfGameStartStyles = new List<EnumComboBox.ValueDOM<GameStartStyle>>(vals_GameStartStyle.Length);
-            EnumComboBox.ValueDOM<GameStartStyle> default_GameStartStyle = null;
+            EnumComboBox.ValueDOM<GameStartStyle>? default_GameStartStyle = null;
             for (int i = 0; i < vals_GameStartStyle.Length; i++)
             {
                 var val = vals_GameStartStyle[i];

@@ -1,8 +1,10 @@
 ﻿using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
@@ -20,9 +22,14 @@ namespace Leayal.Shared
         private static uint TOKEN_QUERY = 0x0008;
         private static uint TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern SafeProcessHandle OpenProcess([In] uint dwDesiredAccess, [In] bool bInheritHandle, [In] int dwProcessId);
+
+        const uint QueryLimitedInformation = 0x1000;
+
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool OpenProcessToken([In] IntPtr ProcessHandle, [In] UInt32 DesiredAccess, [Out] out IntPtr TokenHandle);
+        static extern bool OpenProcessToken([In] SafeProcessHandle ProcessHandle, [In] UInt32 DesiredAccess, [Out] out IntPtr TokenHandle);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -108,31 +115,83 @@ namespace Leayal.Shared
         */
 
         /// <summary>A boolean which determines whether the current running process is elevated.</summary>
+        /// <remarks><see langword="true"/> if the current process is elevated. Otherwise, <see langword="false"/>.</remarks>
         public static readonly bool IsCurrentProcessElevated;
 
         static UacHelper()
         {
             using (var proc = Process.GetCurrentProcess())
             {
-                IsCurrentProcessElevated = IsProcessElevated(proc);
+                // Don't worry about Handle's access right for the current process. Full access right~
+                IsCurrentProcessElevated = IsProcessElevated(proc.SafeHandle);
             }
         }
 
         /// <summary>Gets a boolean which determines whether the specified process is elevated.</summary>
         /// <param name="process">The process to determine.</param>
-        /// <returns>True if the process is elevated. Otherwise, false.</returns>
-        public static bool IsProcessElevated(Process process) => IsProcessElevated(process.Handle);
+        /// <returns><see langword="true"/> if the process is elevated. Otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="System.ComponentModel.Win32Exception">The current process doesn't have enough privilege to query information of target process.</exception>
+        public static bool IsProcessElevated(this Process process)
+        {
+            SafeProcessHandle hProcess;
+            bool isOwnHandle = false;
+            try
+            {
+                if (UacHelper.IsCurrentProcessElevated)
+                {
+                    // This may still cause Access Denied error.
+                    hProcess = process.SafeHandle;
+                }
+                else
+                {
+                    hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                    if (hProcess.IsInvalid)
+                    {
+                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                    isOwnHandle = true;
+                }
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.HResult == -2147467259)
+            {
+                // Should be access denied. So we open by our own with "QueryLimited" access right.
+                hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                if (hProcess.IsInvalid)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
+                isOwnHandle = true;
+            }
+            try
+            {
+                return IsProcessElevated(hProcess);
+            }
+            finally
+            {
+                if (isOwnHandle)
+                {
+                    hProcess.Dispose();
+                }
+            }
+        }
 
         /// <summary>Gets a boolean which determines whether the specified process is elevated.</summary>
         /// <param name="processHandle">The handle to a process.</param>
-        /// <returns>True if the process is elevated. Otherwise, false.</returns>
-        public static bool IsProcessElevated(IntPtr processHandle)
+        /// <returns><see langword="true"/> if the process is elevated. Otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="processHandle"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ObjectDisposedException"><paramref name="processHandle"/> is closed or invalid.</exception>
+        /// <exception cref="System.ComponentModel.Win32Exception">The current process doesn't have enough privilege to query information of target process.</exception>
+        public static bool IsProcessElevated(SafeProcessHandle processHandle)
         {
+            if (processHandle == null) throw new ArgumentNullException(nameof(processHandle));
+            if (processHandle.IsClosed || processHandle.IsInvalid) throw new ObjectDisposedException(nameof(processHandle));
+
             if (IsUacEnabled)
             {
                 if (!OpenProcessToken(processHandle, TOKEN_READ, out var tokenHandle))
                 {
-                    throw new ApplicationException("Could not get process token. Win32 Error Code: " + Marshal.GetLastWin32Error());
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    // throw new ApplicationException("Could not get process token. Win32 Error Code: " + Marshal.GetLastWin32Error());
                 }
 
                 try

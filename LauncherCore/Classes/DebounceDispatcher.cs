@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
     public class DebounceDispatcher : IDisposable
     {
         private readonly Dispatcher _dispatcher;
-        private DispatcherTimer timer;
+        private DispatcherTimer? timer;
 
         public DebounceDispatcher(Dispatcher dispatcher)
         {
@@ -55,7 +55,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <param name="param">optional parameter</param>
         /// <param name="priority">optional priorty for the dispatcher</param>
         /// <param name="disp">optional dispatcher. If not passed or null CurrentDispatcher is used.</param>        
-        public void Debounce(int interval, Action action, DispatcherPriority priority = DispatcherPriority.ApplicationIdle, Dispatcher disp = null)
+        public void Debounce(int interval, Action action, DispatcherPriority priority = DispatcherPriority.ApplicationIdle, Dispatcher? disp = null)
         {
             // kill pending timer and pending ticks
             timer?.Stop();
@@ -70,11 +70,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             timer.Start();
         }
 
-        private static void DebounceInvocation(object sender, EventArgs e)
+        private static void DebounceInvocation(object? sender, EventArgs e)
         {
             if (sender is DispatcherTimer timer && timer.Tag is DebounceDispatcher debouncer)
             {
-                timer?.Stop();
+                timer.Stop();
                 var act = Interlocked.Exchange(ref debouncer.lastKnownAction, null);
                 if (act != null)
                 {
@@ -130,14 +130,14 @@ namespace Leayal.PSO2Launcher.Core.Classes
         }
         */
 
-        private Action lastKnownAction;
+        private Action? lastKnownAction;
 
-        public void ThrottleEx(int interval, Action action, DispatcherPriority priority = DispatcherPriority.Normal, Dispatcher disp = null)
+        public void ThrottleEx(int interval, Action action, DispatcherPriority priority = DispatcherPriority.Normal, Dispatcher? disp = null)
         {
            // if timeout is not up yet - adjust timeout to fire 
             // with potentially new Action parameters
 
-            Interlocked.Exchange<Action>(ref this.lastKnownAction, action);
+            Interlocked.Exchange<Action?>(ref this.lastKnownAction, action);
             if (timer == null)
             {
                 timer = new DispatcherTimer(TimeSpan.FromMilliseconds(interval), priority, ThrottleInvocation, disp ?? this._dispatcher) { Tag = this };
@@ -148,12 +148,12 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        public void Throttle(int interval, Action action, DispatcherPriority priority = DispatcherPriority.Normal, Dispatcher disp = null)
+        public void Throttle(int interval, Action action, DispatcherPriority priority = DispatcherPriority.Normal, Dispatcher? disp = null)
         {
             // if timeout is not up yet - adjust timeout to fire 
             // with potentially new Action parameters
 
-            Interlocked.CompareExchange<Action>(ref this.lastKnownAction, action, null);
+            Interlocked.CompareExchange<Action?>(ref this.lastKnownAction, action, null);
             if (timer == null)
             {
                 timer = new DispatcherTimer(TimeSpan.FromMilliseconds(interval), priority, ThrottleInvocation, disp ?? this._dispatcher) { Tag = this };
@@ -164,11 +164,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        private static void ThrottleInvocation(object sender, EventArgs e)
+        private static void ThrottleInvocation(object? sender, EventArgs e)
         {
             if (sender is DispatcherTimer timer && timer.Tag is DebounceDispatcher debouncer)
             {
-                var okayToGo = Interlocked.Exchange<Action>(ref debouncer.lastKnownAction, null);
+                var okayToGo = Interlocked.Exchange<Action?>(ref debouncer.lastKnownAction, null);
                 if (okayToGo != null && timer.Dispatcher != null)
                 {
                     timer.Dispatcher.InvokeAsync(okayToGo);

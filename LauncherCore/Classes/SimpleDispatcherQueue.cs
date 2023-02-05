@@ -44,7 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public void Start() => this.timer.Start();
         public void Stop() => this.timer.Stop();
 
-        private void Timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object? sender, EventArgs e)
             => this.DispatcherTick(this.timer.Dispatcher);
 
         protected abstract void DispatcherTick(Dispatcher dispatcher);
@@ -164,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private readonly Delegate _action;
         private readonly object[] _params;
         private int state;
-        public event Action<DispatcherQueueItem> Unregistered;
+        public event Action<DispatcherQueueItem>? Unregistered;
 
         public DispatcherQueueItem(Action action) : this(action, Array.Empty<object>()) { }
 

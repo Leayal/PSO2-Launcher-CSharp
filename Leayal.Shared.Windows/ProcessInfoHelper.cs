@@ -70,12 +70,16 @@ namespace Leayal.Shared
                 {
                     if (UacHelper.IsCurrentProcessElevated)
                     {
-                        // This may cause Access Denied error.
+                        // This may still cause Access Denied error.
                         hProcess = process.SafeHandle;
                     }
                     else
                     {
                         hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                        if (hProcess.IsInvalid)
+                        {
+                            return null;
+                        }
                         isOwnHandle = true;
                     }
                 }
@@ -89,6 +93,10 @@ namespace Leayal.Shared
             {
                 // Should be access denied. So we open by our own with "LimitedQuery" access right.
                 hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                if (hProcess.IsInvalid)
+                {
+                    return null;
+                }
                 isOwnHandle = true;
             }
             try

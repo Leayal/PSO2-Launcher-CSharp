@@ -23,7 +23,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// </summary>
     public partial class LibraryModMetadataPrensenter : ListBox
     {
-        internal ObservableCollection<CustomLibraryModMetadata> MetadataSource
+        internal ObservableCollection<CustomLibraryModMetadata>? MetadataSource
         {
             get => this.ItemsSource as ObservableCollection<CustomLibraryModMetadata>;
             set => this.ItemsSource = value;

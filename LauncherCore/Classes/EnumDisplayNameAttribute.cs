@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -17,7 +18,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public virtual string DisplayName { get; }
 
-        public static bool TryGetDisplayName(Enum obj, out string displayName)
+        public static bool TryGetDisplayName(Enum obj, [MaybeNullWhen(false)] out string displayName)
         {
             // Attribute.GetCustomAttribute()
             var membername = obj.ToString();
@@ -37,21 +38,28 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return false;
         }
 
-        public static bool TryGetDisplayName(Type type, object obj, out string displayName)
+        public static bool TryGetDisplayName(Type type, object obj, [MaybeNullWhen(false)] out string displayName)
         {
             // Attribute.GetCustomAttribute()
-
-            if (!(obj is MemberInfo mem))
+            var mem = obj as MemberInfo;
+            if (mem == null)
             {
                 var membername = obj.ToString();
-                var mems = type.GetMember(membername);
-                if (mems != null && mems.Length != 0)
+                if (string.IsNullOrEmpty(membername))
                 {
-                    mem = mems[0];
+                    mem = null;
                 }
                 else
                 {
-                    mem = null;
+                    var mems = type.GetMember(membername);
+                    if (mems != null && mems.Length != 0)
+                    {
+                        mem = mems[0];
+                    }
+                    else
+                    {
+                        mem = null;
+                    }
                 }
             }
             if (mem != null)
@@ -68,7 +76,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return false;
         }
 
-        public static bool TryGetDisplayName(MemberInfo member, out string displayName)
+        public static bool TryGetDisplayName(MemberInfo member, [MaybeNullWhen(false)] out string displayName)
         {
             // Attribute.GetCustomAttribute()
             if (member != null)

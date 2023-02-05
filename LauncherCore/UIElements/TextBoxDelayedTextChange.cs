@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     {
         private bool _isDelayTextChangeEvent;
         private readonly DispatcherTimer _delayTextChanged;
-        private TextChangedEventArgs _e;
+        private TextChangedEventArgs? _e;
         private string _textBeforeFiringEvent;
 
         public string TextBeforeDelay => this._textBeforeFiringEvent;
@@ -56,7 +56,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             this.Style = (System.Windows.Style)App.Current.TryFindResource(typeof(TextBox));
         }
 
-        private void DelayTextChanged_Tick(object sender, EventArgs e)
+        private void DelayTextChanged_Tick(object? sender, EventArgs e)
             => this.RaiseDelayedTextChangedEvent();
 
         private void RaiseDelayedTextChangedEvent()

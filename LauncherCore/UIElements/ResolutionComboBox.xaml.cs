@@ -241,7 +241,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 if (obj is ResolutionDOM dom)
                 {
@@ -253,7 +253,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                 }
             }
 
-            public bool Equals(ResolutionDOM obj) => this.Value.Equals(obj.Value);
+            public bool Equals(ResolutionDOM? obj)
+            {
+                if (obj == null) return false;
+                return this.Value.Equals(obj.Value);
+            }
 
             public override int GetHashCode() => this.Value.GetHashCode();
 

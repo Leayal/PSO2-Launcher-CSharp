@@ -35,7 +35,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 if (this._count == -1)
                 {
                     this._count = 0;
-                    if (mem.TryGetBuffer(out var segment))
+                    if (mem.TryGetBuffer(out var segment) && segment.Array != null)
                     {
                         using (var view = new MemoryStream(segment.Array, segment.Offset, segment.Count, false))
                         using (var sr = new StreamReader(view))
@@ -68,14 +68,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         class PatchListItemWalker : IEnumerator<PatchListItem>
         {
             private readonly PatchListBase parent;
-            private readonly MemoryStream view;
+            private readonly MemoryStream? view;
             private readonly StreamReader tr;
             private PatchListItem currentItem;
 
             public PatchListItemWalker(PatchListSeekableDeferred parent)
             {
                 this.parent = parent;
-                if (parent.mem.TryGetBuffer(out var segment))
+                if (parent.mem.TryGetBuffer(out var segment) && segment.Array != null)
                 {
                     this.view = new MemoryStream(segment.Array, segment.Offset, segment.Count, false);
                     this.view.Position = 0;

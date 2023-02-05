@@ -9,9 +9,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
     {
         public readonly string FeedChannelUrl { get; init; }
         public readonly string BaseHandler { get; init; }
-        public readonly string DownloadHandler { get; init; }
-        public readonly string ParserHandler { get; init; }
-        public readonly string ItemCreatorHandler { get; init; }
+        public readonly string? DownloadHandler { get; init; }
+        public readonly string? ParserHandler { get; init; }
+        public readonly string? ItemCreatorHandler { get; init; }
 
         public readonly bool IsDeferredUpdate { get; init; }
 
@@ -42,7 +42,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                 var downloaderObj = genericHandler.Downloader;
                 var parserObj = genericHandler.Parser;
                 var itemcreatorObj = genericHandler.FeedItemCreator;
-                string downloader, itemcreator, parser;
+                string? downloader, itemcreator, parser;
                 if (downloaderObj is RSSFeedHandler feedhandler_downloader && (RSSFeedHandler.IsDefault(feedhandler_downloader) || RSSFeedHandler.IsGeneric(feedhandler_downloader)))
                 {
                     downloader = null;
@@ -85,7 +85,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                 return new FeedChannelConfig()
                 {
                     FeedChannelUrl = handler.FeedChannelUrl.IsAbsoluteUri ? handler.FeedChannelUrl.AbsoluteUri : handler.FeedChannelUrl.ToString(),
-                    BaseHandler = handler.GetType().FullName,
+                    BaseHandler = handler.GetType().FullName ?? "Generic",
                     DownloadHandler = null,
                     ItemCreatorHandler = null,
                     ParserHandler = null,
@@ -134,7 +134,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                 var channelUrl = prop_FeedChannelUrl.GetString();
                 if (!string.IsNullOrWhiteSpace(channelUrl))
                 {
-                    string val_BaseHandler, val_DownloadHandler, val_ParserHandler, val_ItemCreatorHandler;
+                    string? val_BaseHandler, val_DownloadHandler, val_ParserHandler, val_ItemCreatorHandler;
                     bool deferredupdating = true;
                     if (root.TryGetProperty("BaseHandler", out var prop_BaseHandler) && prop_BaseHandler.ValueKind == JsonValueKind.String)
                     {
@@ -173,7 +173,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
                         deferredupdating = false;
                     }
 
-                    return new FeedChannelConfig() { FeedChannelUrl = channelUrl, BaseHandler = val_BaseHandler, DownloadHandler = val_DownloadHandler, ItemCreatorHandler = val_ItemCreatorHandler, ParserHandler = val_ParserHandler, IsDeferredUpdate = deferredupdating };
+                    return new FeedChannelConfig() { FeedChannelUrl = channelUrl, BaseHandler = val_BaseHandler ?? "Default", DownloadHandler = val_DownloadHandler, ItemCreatorHandler = val_ItemCreatorHandler, ParserHandler = val_ParserHandler, IsDeferredUpdate = deferredupdating };
                 }
             }
             return default;
@@ -181,7 +181,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.RSS
 
         public override int GetHashCode() => this.FeedChannelUrl.GetHashCode() ^ this.BaseHandler.GetHashCode();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is FeedChannelConfig conf)
             {

@@ -145,7 +145,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
             this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
 
-            this._config.DownloaderCheckThrottle = (int)this.numberbox_throttledownload.Value;
+            var val_numberbox_throttledownload = this.numberbox_throttledownload.Value;
+            if (val_numberbox_throttledownload.HasValue)
+            {
+                this._config.DownloaderCheckThrottle = (int)val_numberbox_throttledownload.Value;
+            }
+            else
+            {
+                this._config.DownloaderCheckThrottle = 0;
+            }
 
             this._config.Save();
 
@@ -165,7 +173,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection))
                 {
                     var directory_pso2conf = Path.GetDirectoryName(path_pso2conf);
-                    if (!Directory.Exists(directory_pso2conf)) // Should be safe for symlink 
+                    if (directory_pso2conf != null && !Directory.Exists(directory_pso2conf)) // Should be safe for symlink 
                     {
                         Directory.CreateDirectory(directory_pso2conf);
                     }

@@ -374,7 +374,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return new ReadOnlyMemory<byte>(workingbuffer, 0, hashlen);
             }
 
-            static FileStream OpenToScan(string localFilePath) => new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096 * 2, true);
+            static FileStream OpenToScan(string localFilePath) => new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, true);
 
             using (var throttleWaiter = (fileCheckThrottleFactor == 0 ? null : new PeriodicTimerWithoutException(TimeSpan.FromMilliseconds(fileCheckThrottleFactor))))
             using (var md5engi = IncrementalHash.CreateHash(HashAlgorithmName.MD5))

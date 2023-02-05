@@ -5,28 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Windows.Input;
 
-namespace Leayal.PSO2Launcher.Core.Classes
+namespace Leayal.PSO2Launcher.Core.Classes.AvalonEdit
 {
     class CustomHyperlinkElementGenerator : VisualLineElementGenerator
     {
-        public readonly struct Placements : IEquatable<Placements>
-        {
-            public readonly int Offset, Length; // Line
-
-            public Placements(in int offset, in int length)
-            {
-                // this.Line = line;
-                this.Offset = offset;
-                this.Length = length;
-            }
-
-            public override bool Equals([NotNullWhen(true)] object obj) => (obj is Placements item && this.Equals(item));
-
-            public bool Equals(Placements item) => (this.Offset == item.Offset && this.Length == item.Length);
-
-            public override int GetHashCode() => HashCode.Combine(this.Offset, this.Length);
-        }
-
         public readonly Dictionary<Placements, Uri> Items;
 
         public readonly CustomHyperlinkElementColorizer Colorizer;
@@ -36,8 +18,8 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// </summary>
         public CustomHyperlinkElementGenerator() : base()
         {
-            this.Colorizer = new CustomHyperlinkElementColorizer(this);
-            this.Items = new Dictionary<Placements, Uri>();
+            Colorizer = new CustomHyperlinkElementColorizer(this);
+            Items = new Dictionary<Placements, Uri>();
         }
 
         /// <inheritdoc/>
@@ -49,10 +31,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
             int endOffset = CurrentContext.VisualLine.LastDocumentLine.EndOffset;
             // var segment = CurrentContext.GetText(startOffset, endOffset - startOffset);
             // var span = segment.Text.AsSpan().Slice(segment.Offset, segment.Count);
-            foreach (var item in this.Items)
+            foreach (var item in Items)
             {
                 var info = item.Key;
-                if (startOffset <= info.Offset && (info.Offset + info.Length) <= endOffset)
+                if (startOffset <= info.Offset && info.Offset + info.Length <= endOffset)
                 {
                     return info.Offset;
                 }
@@ -62,7 +44,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         }
 
         /// <inheritdoc/>
-        public override VisualLineElement ConstructElement(int offset)
+        public override VisualLineElement? ConstructElement(int offset)
         {
             // var beginning = CurrentContext.VisualLine.FirstDocumentLine;
             // var firstOffset = beginning.Offset;
@@ -70,7 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             // int endOffset = CurrentContext.VisualLine.LastDocumentLine.EndOffset;
             // var segment = CurrentContext.GetText(offset, endOffset - offset);
             // var span = segment.Text.AsSpan().Slice(segment.Offset, segment.Count);
-            foreach (var item in this.Items)
+            foreach (var item in Items)
             {
                 var info = item.Key;
                 if (offset == info.Offset)
@@ -81,7 +63,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return null;
         }
 
-        public event Action<VisualLineLinkTextEx> LinkClicked;
+        public event Action<VisualLineLinkTextEx>? LinkClicked;
 
         public class VisualLineLinkTextEx : VisualLineText
         {
@@ -92,9 +74,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
             public VisualLineLinkTextEx(CustomHyperlinkElementGenerator generator, VisualLine line, int length, Uri url) : base(line, length)
             {
-                this.NavigateUri = url;
-                this.linked = generator;
-                this.state = 0;
+                NavigateUri = url;
+                linked = generator;
+                state = 0;
             }
 
             protected override void OnQueryCursor(QueryCursorEventArgs e)
@@ -106,10 +88,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
             protected override void OnMouseDown(MouseButtonEventArgs e)
             {
-                if (this.NavigateUri == null) return;
+                if (NavigateUri == null) return;
                 if (e.ChangedButton == MouseButton.Left & !e.Handled && e.LeftButton == MouseButtonState.Pressed)
                 {
-                    Interlocked.CompareExchange(ref this.state, 1, 0);
+                    Interlocked.CompareExchange(ref state, 1, 0);
                     e.Handled = true;
                 }
                 // base.OnMouseDown(e);
@@ -117,17 +99,17 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
             protected override void OnMouseUp(MouseButtonEventArgs e)
             {
-                if (this.NavigateUri == null)
+                if (NavigateUri == null)
                 {
-                    Interlocked.Exchange(ref this.state, 0);
+                    Interlocked.Exchange(ref state, 0);
                     return;
                 }
                 if (e.ChangedButton == MouseButton.Left && !e.Handled && e.LeftButton == MouseButtonState.Released)
                 {
                     e.Handled = true;
-                    if (Interlocked.CompareExchange(ref this.state, 0, 1) == 1)
+                    if (Interlocked.CompareExchange(ref state, 0, 1) == 1)
                     {
-                        this.linked.LinkClicked?.Invoke(this);
+                        linked.LinkClicked?.Invoke(this);
                     }
                 }
                 // base.OnMouseUp(e);
@@ -140,19 +122,20 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
             public System.Windows.Media.Brush ForegroundBrush { get; set; }
 
-            public CustomHyperlinkElementColorizer(CustomHyperlinkElementGenerator parent) : base() 
+            public CustomHyperlinkElementColorizer(CustomHyperlinkElementGenerator parent) : base()
             {
-                this.generator = parent;
+                ForegroundBrush = System.Windows.Media.Brushes.WhiteSmoke;
+                generator = parent;
             }
 
             protected override void ColorizeLine(ICSharpCode.AvalonEdit.Document.DocumentLine line)
             {
                 var currentIndex = line.Offset;
                 var absolutelength = line.EndOffset;
-                foreach (var item in this.generator.Items)
+                foreach (var item in generator.Items)
                 {
                     var info = item.Key;
-                    if (currentIndex <= info.Offset && (info.Offset + info.Length) <= absolutelength)
+                    if (currentIndex <= info.Offset && info.Offset + info.Length <= absolutelength)
                     {
                         currentIndex = info.Offset + info.Length;
                         ChangeLinePart(info.Offset, currentIndex, ApplyChanges);
@@ -169,7 +152,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 // This is where you do anything with the line
                 var props = element.TextRunProperties;
 
-                props.SetForegroundBrush(this.ForegroundBrush);
+                props.SetForegroundBrush(ForegroundBrush);
                 props.SetTextDecorations(System.Windows.TextDecorations.Underline);
                 // props.SetFontHintingEmSize(1d);
                 // props.SetFontRenderingEmSize(1d);

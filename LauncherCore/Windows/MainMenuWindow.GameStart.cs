@@ -699,7 +699,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     // Prompt_Generic.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }
-                catch (TaskCanceledException ex)
+                catch (TaskCanceledException)
                 {
                     this.CreateNewParagraphInLog("[GameStart] User cancelled");
                 }

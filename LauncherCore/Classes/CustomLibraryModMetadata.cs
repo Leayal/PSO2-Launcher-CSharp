@@ -13,11 +13,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
         const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
 
         const string Text_Advice_RemoveIfNotKnown = "If you don't know what {library-mod-name} is or where it's from, please remove it to avoid crashes or bugs caused by this custom library file.";
-        private static StringBuilder GetText_Advice_RemoveIfNotKnown(StringBuilder sb)
+        private static StringBuilder GetText_Advice_RemoveIfNotKnown(StringBuilder? sb)
             => (sb == null ? new StringBuilder(Text_Advice_RemoveIfNotKnown) : sb.Append(Text_Advice_RemoveIfNotKnown));
 
         private static readonly string Text_Advice_UpdateToLatestPossible = "- If you are using {library-mod-name} and if {library-mod-name} isn't at latest version, please update {library-mod-name} to latest version available to your system to avoid crashes and bugs caused by this graphic mod.";
-        private static StringBuilder GetText_Advice_UpdateToLatestPossible(StringBuilder sb)
+        private static StringBuilder GetText_Advice_UpdateToLatestPossible(StringBuilder? sb)
         {
             if (sb == null)
             {
@@ -107,22 +107,22 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 else
                 {
                     var info = FileVersionInfo.GetVersionInfo(filepath);
-                    this.ProductName = info.ProductName;
+                    this.ProductName = info.ProductName ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(this.ProductName))
                     {
                         this.ProductName = Text_Unknown; // Path.GetFileNameWithoutExtension(this.ProductName);
                     }
-                    this.Summary = info.FileDescription;
+                    this.Summary = info.FileDescription ?? string.Empty;
                     if (string.IsNullOrWhiteSpace(this.Summary))
                     {
                         this.Summary = Text_NotGiven;
                     }
-                    this.FileVersion = info.FileVersion;
+                    this.FileVersion = info.FileVersion ?? string.Empty;
                     if (string.IsNullOrEmpty(this.FileVersion))
                     {
                         this.FileVersion = Text_Unknown;
                     }
-                    this.ProductVersion = info.ProductVersion;
+                    this.ProductVersion = info.ProductVersion ?? string.Empty;
                     if (string.IsNullOrEmpty(this.ProductVersion))
                     {
                         this.ProductVersion = Text_Unknown;

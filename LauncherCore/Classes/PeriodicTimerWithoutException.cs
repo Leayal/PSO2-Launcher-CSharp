@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return this.timer.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is PeriodicTimer timer)
             {

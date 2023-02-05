@@ -22,6 +22,7 @@ using System.Windows.Threading;
 using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -119,6 +120,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.dialogReferenceByUUID = new Dictionary<Guid, ILogDialogHandler>();
             this.consolelog_hyperlinkparser = new CustomHyperlinkElementGenerator();
             this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
+            this.consolelog_errortextparser = new ErrorTextElementGenerator();
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.RSSFeedPresenter.SelectedFeedChanged += this.RSSFeedPresenter_SelectedFeedChanged;
             this.pso2HttpClient = new PSO2HttpClient(this.webclient, Path.GetFullPath(Path.Combine("data", "cache", "leapso2client"), RuntimeValues.RootDirectory));
@@ -152,6 +154,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.ConsoleLog.TextArea.TextView.ElementGenerators.Add(this.consolelog_hyperlinkparser);
             this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_hyperlinkparser.Colorizer);
+            this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_errortextparser.Colorizer);
 
             this.RSSFeedPresenterBorder.Child = this.RSSFeedPresenter;
 
@@ -332,12 +335,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.BgImg.Source = lazybg_light.Value;
                 this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Light Mode.");
                 this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Blue;
+                this.consolelog_errortextparser.Colorizer.ForegroundBrush = Brushes.DarkRed;
             }
             else
             {
                 this.BgImg.Source = lazybg_dark.Value;
                 this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Dark Mode.");
                 this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Yellow;
+                this.consolelog_errortextparser.Colorizer.ForegroundBrush = Brushes.IndianRed;
             }
             this.ConsoleLog.TextArea.TextView.Redraw();
         }

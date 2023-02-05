@@ -79,7 +79,7 @@ namespace Leayal.PSO2Launcher.Core
             }
         }
 
-        private void OnNextInstanceStarted(object sender, bool timedOut)
+        private void OnNextInstanceStarted(object? sender, bool timedOut)
         {
             if (sender is App app)
             {

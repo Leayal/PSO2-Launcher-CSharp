@@ -362,6 +362,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public int CountSuccess { get; init; }
             public int CountFailure { get; init; }
             public int CountCancelled { get; init; }
+
+            public Eyy()
+            {
+                this.Status = string.Empty;
+            }
         }
 
         private void MetroAnimatedTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -387,9 +392,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.Name = name;
             }
 
-            public bool Equals(PatchListItemLogData other) => (other != null && string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase));
+            public bool Equals(PatchListItemLogData? other) => (other != null && string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase));
 
-            public override bool Equals(object obj) => (obj is PatchListItemLogData item && this.Equals(item));
+            public override bool Equals(object? obj) => (obj is PatchListItemLogData item && this.Equals(item));
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name);
         }

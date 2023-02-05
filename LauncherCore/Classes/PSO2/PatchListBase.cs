@@ -34,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected abstract IEnumerator<PatchListItem> CreateEnumerator();
 
-        public virtual bool TryGetByFilename(string filename, out PatchListItem value)
+        public virtual bool TryGetByFilename(string filename, [MaybeNullWhen(false)] out PatchListItem value)
         {
             if (filename.EndsWith(PatchListItem.AffixFilename))
             {
@@ -117,7 +117,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             else
             {
-                PatchRootInfo comparand = null;
+                PatchRootInfo? comparand = null;
                 var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < patchlists.Length; i++)
                 {

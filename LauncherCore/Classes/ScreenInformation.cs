@@ -134,7 +134,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lpRect, MonitorEnumProc callback, int dwData);
 
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode)]
-        private static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, [In, Out] DisplayOutputInformation lpDisplayDevice, uint dwFlags);
+        private static extern bool EnumDisplayDevices(string? lpDevice, uint iDevNum, [In, Out] DisplayOutputInformation lpDisplayDevice, uint dwFlags);
 
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode)]
         private static extern bool EnumDisplaySettings(string deviceName, uint modeNum, [In, Out] DeviceDisplayMode devMode);
@@ -182,7 +182,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             uint iDevice = 0;
             while (EnumDisplayDevices(adapterName, iDevice++, deviceObj, 0))
             {
-                yield return refDisplayDevice;
+                yield return deviceObj;
             }
         }
 
@@ -192,10 +192,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public static IEnumerable<DeviceDisplayMode> EnumDisplaySettings(string adapterName)
             => EnumDisplaySettings(adapterName, null);
 
-        public static IEnumerable<DeviceDisplayMode> EnumDisplaySettings(IDisplayAdapter adapter, DeviceDisplayMode refDeviceDisplayMode)
+        public static IEnumerable<DeviceDisplayMode> EnumDisplaySettings(IDisplayAdapter adapter, DeviceDisplayMode? refDeviceDisplayMode)
             => EnumDisplaySettings(adapter.DeviceName, refDeviceDisplayMode);
 
-        public static IEnumerable<DeviceDisplayMode> EnumDisplaySettings(string adapterName, DeviceDisplayMode refDeviceDisplayMode)
+        public static IEnumerable<DeviceDisplayMode> EnumDisplaySettings(string adapterName, DeviceDisplayMode? refDeviceDisplayMode)
         {
             if (refDeviceDisplayMode == null)
             {

@@ -117,7 +117,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            string dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
+            string? dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
                 dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
             dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
             dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
@@ -185,18 +185,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            GameClientUpdater.OperationCompletedHandler completed = null;
-            completed = (sender, gamedir, cancelled, patchlist, downloadResults) =>
+            void completed(GameClientUpdater sender, string pso2dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list)
             {
                 this.pso2Updater.OperationCompleted -= completed;
                 this.Dispatcher.TryInvoke(delegate
                 {
                     this.TabMainMenu.IsSelected = true;
                 });
-            };
+            }
             this.pso2Updater.OperationCompleted += completed;
 
-            CancellationTokenSource currentCancelSrc = null;
+            CancellationTokenSource? currentCancelSrc = null;
             try
             {
                 this.TabGameClientUpdateProgressBar.IsIndetermined = true;

@@ -252,7 +252,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 patchRootInfo = rootInfo;
             }
             Exception? netEx = null;
-            string str_PatchURL;
+            string? str_PatchURL;
             if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
             {
                 try
@@ -314,6 +314,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         public async Task<PatchListMemory> GetPatchListAllAsync(PatchRootInfo? rootInfo, CancellationToken cancellationToken)
         {
             // var t_all = InnerGetPatchListAsync(rootInfo, "patchlist_all.txt", null, cancellationToken);
+            if (rootInfo == null)
+            {
+                rootInfo = await this.GetPatchRootInfoAsync(cancellationToken);
+            }
             var t_classic = this.GetPatchListClassicAsync(rootInfo, cancellationToken).ConfigureAwait(false);
             var t_ngs = this.InnerGetPatchListAsync(rootInfo, "patchlist_reboot.txt", true, cancellationToken).ConfigureAwait(false);
 
@@ -412,7 +416,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 throw new ArgumentException(null, nameof(filename));
             }
 
-            HttpResponseMessage response = null;
+            HttpResponseMessage? response = null;
             try
             {
                 using (var request = new HttpRequestMessage(HttpMethod.Get, filename))
@@ -450,7 +454,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 patchRootInfo = rootInfo;
             }
             Exception? netEx = null;
-            string str_PatchURL;
+            string? str_PatchURL;
             if (patchRootInfo.TryGetPatchURL(out str_PatchURL))
             {
                 try
@@ -487,7 +491,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private static async Task<bool> InnerGetDownload_Verify(string entryName, JsonDocument header, Stream cacheContent, ValueTuple<PatchRootInfo, bool?, Uri, PSO2Version> arg, CancellationToken cancellationToken)
         {
             if (header.RootElement.TryGetProperty("source", out var prop_src) && prop_src.ValueKind == JsonValueKind.String
-                && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString(), out var localVer)
+                && header.RootElement.TryGetProperty("version", out var prop_ver) && prop_ver.ValueKind == JsonValueKind.String && PSO2Version.TryParse(prop_ver.GetString() ?? string.Empty, out var localVer)
                 && header.RootElement.TryGetProperty("sha1", out var prop_sha1) && prop_sha1.ValueKind == JsonValueKind.String)
             {
                 var src = prop_src.GetString();

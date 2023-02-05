@@ -51,7 +51,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string> files)
+        private void OnSelfUpdateFound(BackgroundSelfUpdateChecker sender, IReadOnlyList<string>? files)
         {
             sender.Stop();
             // var sb = new System.Text.StringBuilder()
@@ -72,7 +72,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            if (len == 0)
+            if (files == null || len == 0)
             {
                 this.Dispatcher.BeginInvoke(this.InternalShowUpdateNotificationOnUi, new object[] { ConsoleLogUpdateNotification });
             }

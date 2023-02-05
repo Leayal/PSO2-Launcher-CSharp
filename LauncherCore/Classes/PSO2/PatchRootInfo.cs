@@ -63,7 +63,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return ((IEnumerable)content).GetEnumerator();
         }
 
-        private bool TryGetStringValue(string key, out string value)
+        private bool TryGetStringValue(string key, [MaybeNullWhen(false)] out string value)
         {
             if (this.content.TryGetValue(key, out var info))
             {
@@ -74,13 +74,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             return false;
         }
 
-        public bool TryGetMasterURL(out string value) => this.TryGetStringValue("MasterURL", out value);
+        public bool TryGetMasterURL([MaybeNullWhen(false)] out string value) => this.TryGetStringValue("MasterURL", out value);
 
-        public bool TryGetPatchURL(out string value) => this.TryGetStringValue("PatchURL", out value);
+        public bool TryGetPatchURL([MaybeNullWhen(false)] out string value) => this.TryGetStringValue("PatchURL", out value);
 
-        public bool TryGetBackupMasterURL(out string value) => this.TryGetStringValue("BackupMasterURL", out value);
+        public bool TryGetBackupMasterURL([MaybeNullWhen(false)] out string value) => this.TryGetStringValue("BackupMasterURL", out value);
 
-        public bool TryGetBackupPatchURL(out string value) => this.TryGetStringValue("BackupPatchURL", out value);
+        public bool TryGetBackupPatchURL([MaybeNullWhen(false)] out string value) => this.TryGetStringValue("BackupPatchURL", out value);
 
         public bool TryGetMasterURL(out PatchRootInfoValue value) => this.TryGetValue("MasterURL", out value);
 

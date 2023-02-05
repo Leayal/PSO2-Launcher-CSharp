@@ -51,6 +51,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public GameClientUpdater(PSO2HttpClient httpHandler)
         {
+            this.t_operation = Task.CompletedTask;
             this.ConcurrentDownloadCount = 0;
             this.ThrottleFileCheckFactor = 0;
             // this.dir_pso2bin = Path.GetFullPath(whereIsThePSO2_BIN);

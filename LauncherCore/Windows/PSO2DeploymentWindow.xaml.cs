@@ -147,7 +147,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private readonly PSO2HttpClient httpclient;
         private readonly Dictionary<GameClientSelection, EnumComboBox.ValueDOM<GameClientSelection>> gameSelection_list;
         private readonly Dictionary<FileScanFlags, EnumComboBox.ValueDOM<FileScanFlags>> profileFlags_list, profileClassicFlags_list;
-        private CancellationTokenSource cancelSrc;
+        private CancellationTokenSource? cancelSrc;
         private bool closeformaftercancel;
         private readonly string directory_pso2conf, path_pso2conf;
 
@@ -349,6 +349,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public HelpA_00ahilgawg(ExtendedProgressBar progressbar)
             {
                 this.progressbar = progressbar;
+                this.Text = string.Empty;
             }
 
             public void Invoke()
@@ -466,7 +467,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         }
 
                                         var filename_tmp = filename + affix_download_tmp;
-                                        Directory.CreateDirectory(Path.GetDirectoryName(filename));
+
+                                        var parentOfFilename = Path.GetDirectoryName(filename);
+                                        if (parentOfFilename != null)
+                                        {
+                                            Directory.CreateDirectory(parentOfFilename);
+                                        }
 
                                         var len = response.Content.Headers.ContentLength;
                                         long leng = len.HasValue ? len.Value : 0;

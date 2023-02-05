@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
+using SQLite;
 
 namespace SymbolicLinkSupport
 {
@@ -170,7 +171,11 @@ namespace SymbolicLinkSupport
 
                 // set the link path to the parent directory, so that PathRelativePathToW returns a path that works
                 // for directory symlink traversal
-                linkPath = Path.GetDirectoryName(linkPath.TrimEnd(Path.DirectorySeparatorChar));
+                var tmp = Path.GetDirectoryName(linkPath.TrimEnd(Path.DirectorySeparatorChar));
+                if (!string.IsNullOrEmpty(tmp))
+                {
+                    linkPath = tmp;
+                }
             }
             
             StringBuilder relativePath = new StringBuilder(maxRelativePathLengthUnicodeChars);
@@ -194,7 +199,7 @@ namespace SymbolicLinkSupport
             {
                 return false;
             }
-            string target = GetTarget(path);
+            var target = GetTarget(path);
             return target != null;
         }
 
@@ -258,13 +263,13 @@ namespace SymbolicLinkSupport
         /// <param name="alloweddepth"></param>
         /// <returns>The path of the endpoint of symlink(s). Or null if the given path is not existed or not a symlink.</returns>
         /// <exception cref="IOException">Thrown when the symlinks travels deeper than the allowed depth.</exception>
-        public static string FollowTarget(string path, int alloweddepth = 256)
+        public static string? FollowTarget(string path, int alloweddepth = 256)
         {
             if (!Directory.Exists(path) && !File.Exists(path))
             {
                 return null;
             }
-            string target = GetTarget(path);
+            string? target = GetTarget(path);
             if (target == null)
             {
                 return null;
@@ -296,7 +301,7 @@ namespace SymbolicLinkSupport
                 fileFlagsForOpenReparsePointAndBackupSemantics, IntPtr.Zero);
         }
 
-        public static string GetTarget(string path)
+        public static string? GetTarget(string path)
         {
             SymbolicLinkReparseData reparseDataBuffer;
 
@@ -352,8 +357,12 @@ namespace SymbolicLinkSupport
 
             if ((reparseDataBuffer.Flags & symlinkReparsePointFlagRelative) == symlinkReparsePointFlagRelative)
             {
-                string basePath = Path.GetDirectoryName(path.TrimEnd(Path.DirectorySeparatorChar));
-                string combinedPath = Path.Combine(basePath, target);
+                var basePath = Path.GetDirectoryName(path.AsSpan().TrimEnd(Path.DirectorySeparatorChar).TrimEnd(Path.AltDirectorySeparatorChar));
+                var combinedPath = Path.Join(basePath, target);
+                if (combinedPath == null)
+                {
+                    return target;
+                }
                 target = Path.GetFullPath(combinedPath);
             }
 

@@ -26,7 +26,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.otp = otp;
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             this.computedLength = this.EncodeTo(stream);
             return Task.CompletedTask;

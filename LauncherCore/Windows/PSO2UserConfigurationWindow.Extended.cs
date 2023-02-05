@@ -96,6 +96,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+#nullable disable
         class KeyCommandGoTo : ICommand
         {
             public readonly static KeyCommandGoTo Default = new KeyCommandGoTo();
@@ -107,9 +108,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this._opended = new ConcurrentDictionary<PSO2UserConfigurationWindow, TextBoxGoToForm>();
             }
 
-#pragma warning disable CS0067
             public event EventHandler CanExecuteChanged;
-#pragma warning restore CS0067
 
             public bool CanExecute(object parameter) => (parameter is PSO2UserConfigurationWindow);
 
@@ -153,6 +152,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
+#nullable restore
 
         abstract class OptionDOM
         {

@@ -78,7 +78,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             list.Add(DisplayName_GenericHandler);
             foreach (var item in rssloader.GetRSSFeedHandlerSuggesstion(uri))
             {
-                if (item != T_DefaultRssFeedHandler && item != T_GenericRSSFeedHandler)
+                if (item != T_DefaultRssFeedHandler && item != T_GenericRSSFeedHandler && !string.IsNullOrEmpty(item.FullName))
                 {
                     list.Add(item.FullName);
                 }
@@ -99,7 +99,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             list.Add(DisplayName_DefaultHandler);
             foreach (var item in rssloader.GetDownloadHandlerSuggesstion(uri))
             {
-                list.Add(item.GetType().FullName);
+                var fullname = item.GetType().FullName;
+                if (!string.IsNullOrEmpty(fullname))
+                {
+                    list.Add(fullname);
+                }
             }
             arr = list.ToArray();
             string handler = conf.DownloadHandler ?? DisplayName_DefaultHandler;
@@ -117,7 +121,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             list.Add(DisplayName_DefaultHandler);
             foreach (var item in rssloader.GetParserHandlerSuggesstion(uri))
             {
-                list.Add(item.GetType().FullName);
+                var fullname = item.GetType().FullName;
+                if (!string.IsNullOrEmpty(fullname))
+                {
+                    list.Add(fullname);
+                }
             }
             arr = list.ToArray();
             this.ComboBox_ParserHandler.ItemsSource = arr;
@@ -135,7 +143,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             list.Add(DisplayName_DefaultHandler);
             foreach (var item in rssloader.GetItemCreatorHandlerSuggesstion(uri))
             {
-                list.Add(item.GetType().FullName);
+                var fullname = item.GetType().FullName;
+                if (!string.IsNullOrEmpty(fullname))
+                {
+                    list.Add(fullname);
+                }
             }
             arr = list.ToArray();
             this.ComboBox_FeedItemCreatorHandler.ItemsSource = arr;

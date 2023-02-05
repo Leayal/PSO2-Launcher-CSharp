@@ -348,7 +348,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
 #nullable disable
         class DialogCommandCopyText : ICommand
         {
+#pragma warning disable 0067
             public event EventHandler CanExecuteChanged;
+#pragma warning restore 0067
 
             public bool CanExecute(object parameter) => (parameter is Prompt_Generic);
 

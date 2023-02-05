@@ -45,7 +45,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         /// <returns>A task which will complete when cache verification or creation is finished.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is null or empty string.</exception>
         /// <exception cref="ArgumentException"><paramref name="entryName"/> is equal to '__.db', which was used to store cache headers.</exception>
-        public Task<Stream?> Fetch<TArg>(string entryName, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>> factory, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>> verifyCache, TArg args, CancellationToken cancellationToken)
+        public Task<Stream> Fetch<TArg>(string entryName, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>> factory, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>> verifyCache, TArg args, CancellationToken cancellationToken)
         {
             if (this._disposed) throw new ObjectDisposedException("PersistentCacheManager");
 
@@ -54,22 +54,22 @@ namespace Leayal.PSO2Launcher.Core.Classes
             
             var safe_lockObj = this.lockObjs.GetOrAdd(entryName, this.CreateNewSemaphore);
 
-            return Task.Factory.StartNew(Task_Fetch<TArg>.DoWork, new ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>(this, safe_lockObj.Value, entryName, factory, verifyCache, args, cancellationToken), cancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).Unwrap();
+            return Task.Factory.StartNew(Task_Fetch<TArg>.DoWork, new Tuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>(this, safe_lockObj.Value, entryName, factory, verifyCache, args, cancellationToken), cancellationToken, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).Unwrap();
         }
 
         private static class Task_Fetch<TArg>
         {
-            public static async Task<Stream?> DoWork(object? obj)
+            public static async Task<Stream> DoWork(object? obj)
             {
-                if (obj == null) return null;
-                var (myself, lockObj, entryName, factory, verifyCache, args, cancellationToken) = (ValueTuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>)obj;
+                if (obj == null) throw new Exception("Check this place via debugger.");
+                var (myself, lockObj, entryName, factory, verifyCache, args, cancellationToken) = (Tuple<PersistentCacheManager, SemaphoreSlimEx, string, Func<string, Utf8JsonWriter, TArg, Stream, CancellationToken, Task<bool>>, Func<string, JsonDocument, Stream, TArg, CancellationToken, Task<bool>>, TArg, CancellationToken>)obj;
 
                 try
                 {
                     await lockObj.WaitForIt(cancellationToken).ConfigureAwait(false);
                     bool isSuccess;
 
-                    Stream result;
+                    Stream? result;
 
                     var cachePath = Path.Combine(myself.CacheRootDirectory, entryName);
                     if (File.Exists(cachePath))
@@ -152,13 +152,13 @@ namespace Leayal.PSO2Launcher.Core.Classes
                             await myself.DeleteCacheHeader(entryName, cancellationToken).ConfigureAwait(false);
                         }
                     }
-                    if (isSuccess)
+                    if (result != null && isSuccess)
                     {
                         return result;
                     }
                     else
                     {
-                        return null;
+                        throw new Exception("Failed to create cache from factory.");
                     }
                 }
                 finally

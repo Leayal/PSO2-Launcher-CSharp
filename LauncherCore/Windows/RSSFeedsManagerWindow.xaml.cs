@@ -41,7 +41,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.FeedItemList.ItemsSource = this.collectionView;
         }
 
-        private void Doms_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void Doms_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
             {
