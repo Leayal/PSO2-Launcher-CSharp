@@ -187,7 +187,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 writer.Write("Welcome to PSO2 Launcher, which was made by ");
                 myself.ConsoleLogHelper_WriteHyperLink(writer, "Dramiel Leayal", StaticResources.Url_ShowAuthor, VisualLineLinkText_LinkClicked);
                 writer.Write(". The source code can be found on ");
-                myself.ConsoleLogHelper_WriteHyperLink(writer, "Github", StaticResources.Url_ShowLatestGithubRelease, VisualLineLinkText_LinkClicked);
+                myself.ConsoleLogHelper_WriteHyperLink(writer, "Github", StaticResources.Url_ShowSourceCodeGithub, VisualLineLinkText_LinkClicked);
                 writer.Write('.');
             }, this, false, false);
 
