@@ -1,6 +1,7 @@
 [Dd]ependencies/[Bb]uild/
 [Tt]est/
 [Bb]uild/
+[Dd]ist-prod/
 [Tt]ools/[Ss]dk/
 [Tt]ools/dotnet-sdk-6.0.100-win-x64.zip
 [Tt]ools/dotnet-sdk-6.0.100-win-x86.zip

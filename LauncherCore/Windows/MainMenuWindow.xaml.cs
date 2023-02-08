@@ -315,26 +315,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (App.Current.IsLightMode)
             {
                 this.BgImg.Source = lazybg_light.Value;
-                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Light Mode.");
+                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows" : "User changed")} theme setting: Light Mode.");
             }
             else
             {
                 this.BgImg.Source = lazybg_dark.Value;
-                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Dark Mode.");
+                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows" : "User changed")} theme setting: Dark Mode.");
             }
             this.ConsoleLog.TextArea.TextView.Redraw();
         }
 
         protected override async Task OnCleanupBeforeClosed()
         {
-            this.CreateNewLineInConsoleLog("System", "Stopping all operations and cleaning up resources before closing and exiting launcher.");
+            this.CreateNewLineInConsoleLog("System", (console, writer, absoluteOffsetOfCurrentLine, myself) =>
+            {
+                writer.Write("Stopping all operations and cleaning up resources before closing and exiting launcher. ");
+                var startOffset = writer.InsertionOffset;
+                writer.Write("The launcher will automatically terminate itself anyway if the cleanup process lasts longer than 10 seconds. Please just wait for it...");
+                var endOffset = writer.InsertionOffset;
+                myself.consolelog_textcolorizer.Add(new TextStaticTransformData(startOffset, endOffset - startOffset, myself.consolelog_boldTypeface, Brushes.Gold, Brushes.DarkGoldenrod));
+            }, this);
 
             var listOfOperations = new List<Task>();
 
             Task t_stopClientUpdater;
             if (this.pso2Updater.IsBusy)
             {
-                this.CreateNewLineInConsoleLog("System", "Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait...");
+                this.CreateNewWarnLineInConsoleLog("System", "Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait...");
 
                 var tsrc = new TaskCompletionSource();
                 t_stopClientUpdater = tsrc.Task;

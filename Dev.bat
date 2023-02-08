@@ -1,3 +1,5 @@
+SET "DOTNET_CLI_TELEMETRY_OPTOUT=1"
+
 @echo off
 cd /d %~dp0
 
