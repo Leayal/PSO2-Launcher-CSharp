@@ -36,13 +36,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.AvalonEdit
         /// <inheritdoc/>
         public override int GetFirstInterestedOffset(int startOffset)
         {
-            for (int i = this.Items.FindFirstIndexGreaterThanOrEqualTo(startOffset); i < this.Items.Count; i++)
+            var itemCount = this.Items.Count;
+            if (itemCount != 0)
             {
-                var interest = this.Items.Values[i];
-                var absoluteOffsetOfInterest = interest.AbsoluteOffset;
-                if (absoluteOffsetOfInterest >= startOffset)
+                for (int i = (startOffset == 0 ? 0 : this.Items.FindFirstIndexGreaterThanOrEqualTo(startOffset)); i < itemCount; i++)
                 {
-                    return absoluteOffsetOfInterest;
+                    var interest = this.Items.Values[i];
+                    var absoluteOffsetOfInterest = interest.AbsoluteOffset;
+                    if (absoluteOffsetOfInterest >= startOffset)
+                    {
+                        return absoluteOffsetOfInterest;
+                    }
                 }
             }
 
@@ -52,13 +56,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.AvalonEdit
         /// <inheritdoc/>
         public override VisualLineElement? ConstructElement(int offset)
         {
-            for (int i = this.Items.FindFirstIndexGreaterThanOrEqualTo(offset); i < this.Items.Count; i++)
+            var itemCount = this.Items.Count;
+            if (itemCount != 0)
             {
-                var elementData = this.Items.Values[i];
-                var absoluteOffsetOfInterest = elementData.AbsoluteOffset;
-                if (absoluteOffsetOfInterest == offset)
+                for (int i = (offset == 0 ? 0 : this.Items.FindFirstIndexGreaterThanOrEqualTo(offset)); i < itemCount; i++)
                 {
-                    return elementData.Construct(this.CurrentContext.VisualLine);
+                    var elementData = this.Items.Values[i];
+                    var absoluteOffsetOfInterest = elementData.AbsoluteOffset;
+                    if (absoluteOffsetOfInterest == offset)
+                    {
+                        return elementData.Construct(this.CurrentContext.VisualLine);
+                    }
                 }
             }
             return null;

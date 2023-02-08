@@ -236,10 +236,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ConsoleLogMenuItemClearAll_Click(object sender, RoutedEventArgs e)
         {
-            this.ConsoleLog.Clear();
-            this.ConsoleLog.Document.UndoStack.ClearAll();
             this.consolelog_hyperlinkparser.Clear();
             this.consolelog_textcolorizer.Clear();
+            this.ConsoleLog.Clear();
+            this.ConsoleLog.Document.UndoStack.ClearAll();
             this.dialogReferenceByUUID.Clear();
         }
 

@@ -28,16 +28,20 @@ namespace Leayal.PSO2Launcher.Core.Classes.AvalonEdit
 
         protected override void ColorizeLine(DocumentLine line)
         {
-            var startOffset = line.Offset;
-            var lineEndOffset = startOffset + line.Length;
-            for (int i = this.Items.FindFirstIndexGreaterThanOrEqualTo(startOffset); i < this.Items.Count; i++)
+            var itemCount = this.Items.Count;
+            if (itemCount != 0)
             {
-                var transformData = this.Items.Values[i];
-                var item_absoluteOffsetStart = transformData.InlinePlacement.AbsoluteOffset;
-                var item_absoluteOffsetEnd = item_absoluteOffsetStart + transformData.InlinePlacement.Length;
-                if (startOffset <= item_absoluteOffsetStart && item_absoluteOffsetEnd <= lineEndOffset)
+                var startOffset = line.Offset;
+                var lineEndOffset = startOffset + line.Length;
+                for (int i = (startOffset == 0 ? 0 : this.Items.FindFirstIndexGreaterThanOrEqualTo(startOffset)); i < itemCount; i++)
                 {
-                    this.ChangeLinePart(item_absoluteOffsetStart, item_absoluteOffsetEnd, transformData.ApplyChanges);
+                    var transformData = this.Items.Values[i];
+                    var item_absoluteOffsetStart = transformData.InlinePlacement.AbsoluteOffset;
+                    var item_absoluteOffsetEnd = item_absoluteOffsetStart + transformData.InlinePlacement.Length;
+                    if (startOffset <= item_absoluteOffsetStart && item_absoluteOffsetEnd <= lineEndOffset)
+                    {
+                        this.ChangeLinePart(item_absoluteOffsetStart, item_absoluteOffsetEnd, transformData.ApplyChanges);
+                    }
                 }
             }
         }
