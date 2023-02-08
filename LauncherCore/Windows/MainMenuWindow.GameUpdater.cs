@@ -215,7 +215,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 else
                 {
-                    this.CreateNewParagraphInLog("[GameUpdater] Checking for PSO2 game client updates...");
+                    this.CreateNewLineInConsoleLog("GameUpdater", "Checking for PSO2 game client updates...");
                     var version = await this.pso2Updater.GetRemoteVersionAsync(cancelToken);
                     ver = version;
                     newVer = await this.pso2Updater.CheckForPSO2Updates(dir_pso2bin, version, cancelToken);
@@ -258,15 +258,15 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             downloaderProfileClassic = FileScanFlags.Balanced;
                         }
 
-                        this.CreateNewParagraphInLog("[GameUpdater] Begin game client's files scanning and downloading...");
+                        this.CreateNewLineInConsoleLog("GameUpdater", "Begin game client's files scanning and downloading...");
                     }
                     else
                     {
-                        this.CreateNewParagraphInLog("[GameUpdater] Begin game client's updating progress...");
+                        this.CreateNewLineInConsoleLog("GameUpdater", "Begin game client's updating progress...");
                     }
                     if (!shouldScanForBackups)
                     {
-                        this.CreateNewParagraphInLog("[GameUpdater] Ignores all backups file (based on user's setting in Launcher's Behavior)...");
+                        this.CreateNewLineInConsoleLog("GameUpdater", "Ignores all backups file (based on user's setting in Launcher's Behavior)...");
                     }
                     await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
                 }
@@ -278,7 +278,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     this.TabMainMenu.IsSelected = true;
                     if (!fixMode)
                     {
-                        this.CreateNewParagraphInLog("[GameUpdater] PSO2 client is already up-to-date");
+                        this.CreateNewLineInConsoleLog("GameUpdater", "PSO2 client is already up-to-date");
                     }
                 }
             }
@@ -294,7 +294,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                     else
                     {
-                        this.CreateErrorLogInLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
+                        this.CreateNewErrorLineInConsoleLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
                         Prompt_Generic.ShowError(this, ex);
                         break;
                     }
@@ -306,12 +306,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             catch (EmptyPatchListException ex)
             {
-                this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
+                this.CreateNewErrorLineInConsoleLog("GameUpdater", string.Empty, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
             catch (Exception ex) when (!Debugger.IsAttached)
             {
-                this.CreateErrorLogInLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
+                this.CreateNewErrorLineInConsoleLog("GameUpdater", "An unknown error occured in operation. Error message: " + ex.Message, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
             finally
@@ -508,13 +508,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 switch (successCount)
                 {
                     case 0:
-                        logtext = $"[GameUpdater] User cancelled the updating progress. No files downloaded before cancelled.";
+                        logtext = $"User cancelled the updating progress. No files downloaded before cancelled.";
                         break;
                     case 1:
-                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.";
+                        logtext = $"User cancelled the updating progress. Downloaded 1 file ({totalsizedownloadedtext}) before cancelled.";
                         break;
                     default:
-                        logtext = $"[GameUpdater] User cancelled the updating progress. Downloaded {successCount} files ({totalsizedownloadedtext}) before cancelled.";
+                        logtext = $"User cancelled the updating progress. Downloaded {successCount} files ({totalsizedownloadedtext}) before cancelled.";
                         break;
                 }
             }
@@ -522,38 +522,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (requiredCount == 0)
                 {
-                    logtext = "[GameUpdater] PSO2 game client has all files updated. There are no files need to be downloaded.";
+                    logtext = "PSO2 game client has all files updated. There are no files need to be downloaded.";
                 }
                 else
                 {
                     switch (failureCount)
                     {
                         case 0:
-                            logtext = $"[GameUpdater] PSO2 game client has been updated successfully (All {successCount} files ({totalsizedownloadedtext}) downloaded)";
+                            logtext = $"PSO2 game client has been updated successfully (All {successCount} files ({totalsizedownloadedtext}) downloaded)";
                             break;
                         case 1:
-                            logtext = $"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded";
+                            logtext = $"PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are 1 file which couldn't be downloaded";
                             break;
                         default:
-                            logtext = $"[GameUpdater] PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are {failureCount} files which couldn't be downloaded";
+                            logtext = $"PSO2 game client has been updated (Downloaded {totalsizedownloadedtext}). However, there are {failureCount} files which couldn't be downloaded";
                             break;
                     }
                 }
             }
 
-            if (crafted != null)
+            this.CreateNewLineInConsoleLog("GameUpdater", (console, writer, absoluteOffsetOfCurrentLine, arg) =>
             {
-                const string showDetail = " (Show details)";
-                var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
+                var (myself, logtext, crafted) = arg;
+                writer.Write(logtext);
+                if (crafted != null)
                 {
-                    { new RelativeLogPlacement(logtext.Length + 1, showDetail.Length - 1), crafted }
-                };
-                this.CreateNewParagraphFormatHyperlinksInLog(logtext + showDetail, urldefines);
-            }
-            else
-            {
-                this.CreateNewParagraphInLog(logtext);
-            }
+                    writer.Write(' ');
+                    ConsoleLogHelper_WriteHyperLink(writer, "(Show details)", crafted, VisualLineLinkText_LinkClicked);
+                }
+            }, (this, logtext, crafted));
 
             var tab = this.TabGameClientUpdateProgressBar;
             if (tab.Dispatcher.CheckAccess())
@@ -592,21 +589,21 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             static bool AcceptRestoreBackupWithoutAsking(MainMenuWindow window)
             {
-                window.CreateNewParagraphInLog("[GameUpdater] Restoring backup files without asking user (based on user's setting in Launcher's Behavior)...");
+                window.CreateNewLineInConsoleLog("GameUpdater", "Restoring backup files without asking user (based on user's setting in Launcher's Behavior)...");
                 return false;
             }
 
             static bool? ShowPrompt(MainMenuWindow window, GameClientUpdater.BackupFileFoundEventArgs e)
             {
-                window.CreateNewParagraphInLog("[GameUpdater] Backup data file found.");
+                window.CreateNewLineInConsoleLog("GameUpdater", "Backup data file found.");
                 if (Prompt_PSO2DataBackupFound.Show(window, e, window.config_main) == MessageBoxResult.Yes)
                 {
-                    window.CreateNewParagraphInLog("[GameUpdater] User accepted to restore backup files.");
+                    window.CreateNewLineInConsoleLog("GameUpdater", "User accepted to restore backup files.");
                     return false;
                 }
                 else
                 {
-                    window.CreateNewParagraphInLog("[GameUpdater] User declined. Ignoring all backup files.");
+                    window.CreateNewLineInConsoleLog("GameUpdater", "User declined. Ignoring all backup files.");
                     return null;
                 }
             }
@@ -624,17 +621,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (e == null)
             {
-                this.CreateNewParagraphInLog("[GameUpdater] Launcher found no backup files to restore.");
+                this.CreateNewLineInConsoleLog("GameUpdater", "Launcher found no backup files to restore.");
             }
             else if (numberOfBackupFiles >= 0)
             {
                 if (numberOfBackupFiles == 0 || numberOfBackupFiles == 1)
                 {
-                    this.CreateNewParagraphInLog($"[GameUpdater] Restored {numberOfBackupFiles} backup file.");
+                    this.CreateNewLineInConsoleLog("GameUpdater", $"Restored {numberOfBackupFiles} backup file.");
                 }
                 else
                 {
-                    this.CreateNewParagraphInLog($"[GameUpdater] Restored {numberOfBackupFiles} backup files.");
+                    this.CreateNewLineInConsoleLog("GameUpdater", $"Restored {numberOfBackupFiles} backup files.");
                 }
             }
         }

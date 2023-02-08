@@ -74,6 +74,12 @@ namespace Leayal.PSO2Launcher.Updater
                 return;
             }
 
+            static DialogResult ShowMsgBox(Form? owner, string message, string title, MessageBoxButtons button, MessageBoxIcon icon)
+            {
+                return owner == null ? MessageBox.Show(message, title, button, icon)
+                : MessageBox.Show(owner, message, title, button, icon);
+            }
+
             StringBuilder? sb = null;
 
             // If we're compiling targeting .NET 6 and if .NET Desktop Runtime is lower than 6.0.2.
@@ -81,11 +87,7 @@ namespace Leayal.PSO2Launcher.Updater
             Version runtimeVersion = Environment.Version,
                 recommendedVersion = new Version(6, 0, 2);
 
-            if (runtimeVersion.Major < 6)
-            {
-                // WHAT!? Still .NET 5??? You can't be here. Impossible!!
-            }
-            else if (runtimeVersion <= recommendedVersion)
+            if (runtimeVersion <= recommendedVersion)
             {
                 // Upgrade your runtime is recommended. For security reasons.
                 sb = new StringBuilder(768);
@@ -116,8 +118,7 @@ namespace Leayal.PSO2Launcher.Updater
                 sb.AppendLine()
                     .Append("[Yes: Open download page and exit launcher; No: Continue using launcher; Cancel: Exit launcher]");
 
-                var informResult = this.bootstrapForm == null ? MessageBox.Show(sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation)
-                : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
+                var informResult = ShowMsgBox(this.bootstrapForm, sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
                 switch (informResult)
                 {
                     case DialogResult.Yes:
@@ -173,8 +174,7 @@ namespace Leayal.PSO2Launcher.Updater
                     .AppendLine()
                     .AppendLine()
                     .Append("Are you sure you want to continue anyway?");
-                var informResult = this.bootstrapForm == null ? MessageBox.Show(sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
-                    : MessageBox.Show(this.bootstrapForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var informResult = ShowMsgBox(this.bootstrapForm, sb.ToString(), "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (informResult != DialogResult.Yes)
                 {
                     YeeeetMyself(mainWindow);

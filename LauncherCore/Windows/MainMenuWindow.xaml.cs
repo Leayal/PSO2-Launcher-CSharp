@@ -23,6 +23,8 @@ using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
+using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -118,9 +120,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 DefaultProxyCredentials = null
             }, true);
             this.dialogReferenceByUUID = new Dictionary<Guid, ILogDialogHandler>();
-            this.consolelog_hyperlinkparser = new CustomHyperlinkElementGenerator();
-            this.consolelog_hyperlinkparser.LinkClicked += VisualLineLinkText_LinkClicked;
-            this.consolelog_errortextparser = new ErrorTextElementGenerator();
+            this.consolelog_hyperlinkparser = new CustomElementGenerator();
+            this.consolelog_textcolorizer = new CustomColorTextTransformer();
             this.RSSFeedPresenter = new RSSFeedPresenter(this.webclient);
             this.RSSFeedPresenter.SelectedFeedChanged += this.RSSFeedPresenter_SelectedFeedChanged;
             this.pso2HttpClient = new PSO2HttpClient(this.webclient, Path.GetFullPath(Path.Combine("data", "cache", "leapso2client"), RuntimeValues.RootDirectory));
@@ -152,9 +153,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.ConsoleLog.Options.HighlightCurrentLine = true;
             this.ConsoleLog.Options.RequireControlModifierForHyperlinkClick = false;
 
+            this.consolelog_boldTypeface = new Typeface(this.ConsoleLog.FontFamily, this.ConsoleLog.FontStyle, FontWeights.Bold, this.ConsoleLog.FontStretch);
+
             this.ConsoleLog.TextArea.TextView.ElementGenerators.Add(this.consolelog_hyperlinkparser);
-            this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_hyperlinkparser.Colorizer);
-            this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_errortextparser.Colorizer);
+            this.ConsoleLog.TextArea.TextView.LineTransformers.Add(this.consolelog_textcolorizer);
 
             this.RSSFeedPresenterBorder.Child = this.RSSFeedPresenter;
 
@@ -180,60 +182,40 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.ToggleBtn_PSO2News.IsChecked = true;
             }
 
-            const string StartingLine = "[Lea] Welcome to PSO2 Launcher, which was made by ",
-                i_am_lea = "Dramiel Leayal",
-                FollowingLline = ". The source code can be found on ",
-                i_am_here = "Github";
-            // StartingLine + i_am_lea + FollowingLline + i_am_here + '.';
-            this.CreateNewParagraphFormatHyperlinksInLog(string.Create<string>(StartingLine.Length + i_am_lea.Length + FollowingLline.Length + i_am_here.Length + 1, string.Empty, (c, _) =>
+            this.CreateNewLineInConsoleLog("Lea", (consoleLog, writer, absoluteOffsetOfDocumentLine, myself) =>
             {
-                var s = c;
-                StartingLine.CopyTo(s);
-                s = s.Slice(StartingLine.Length);
-                i_am_lea.CopyTo(s);
-                s = s.Slice(i_am_lea.Length);
-                FollowingLline.CopyTo(s);
-                s = s.Slice(FollowingLline.Length);
-                i_am_here.CopyTo(s);
-                s = s.Slice(i_am_here.Length);
-                // c[c.Length - 1] = '.';
-                s[0] = '.';
-            }), new Dictionary<RelativeLogPlacement, Uri>(2)
-            {
-                { new RelativeLogPlacement(StartingLine.Length, i_am_lea.Length), StaticResources.Url_ShowAuthor },
-                { new RelativeLogPlacement(StartingLine.Length + i_am_lea.Length + FollowingLline.Length, i_am_here.Length), StaticResources.Url_ShowSourceCodeGithub }
-            }, false);
+                writer.Write("Welcome to PSO2 Launcher, which was made by ");
+                myself.ConsoleLogHelper_WriteHyperLink(writer, "Dramiel Leayal", StaticResources.Url_ShowAuthor, VisualLineLinkText_LinkClicked);
+                writer.Write(". The source code can be found on ");
+                myself.ConsoleLogHelper_WriteHyperLink(writer, "Github", StaticResources.Url_ShowLatestGithubRelease, VisualLineLinkText_LinkClicked);
+                writer.Write('.');
+            }, this, false, false);
 
             if (MemoryExtensions.Equals(Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory().AsSpan()), Path.GetFullPath("dotnet", RuntimeValues.RootDirectory).AsSpan(), StringComparison.OrdinalIgnoreCase))
             {
-                this.CreateNewParagraphInLog($"[System] Launcher is running in standalone environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
+                this.CreateNewLineInConsoleLog("System", $"Launcher is running in standalone environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
             }
             else
             {
-                this.CreateNewParagraphInLog($"[System] Launcher is running in shared runtime environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
+                this.CreateNewLineInConsoleLog("System", $"Launcher is running in shared runtime environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
             }
 
-            if (StaticResources.IsCurrentProcessAdmin)
+            if (Leayal.Shared.UacHelper.IsCurrentProcessElevated)
             {
-                this.CreateNewParagraphInLog($"[System] Launcher is elevated as Administrator. Unless you want to use launcher's functions which requires Administrator, it is not recommended for the launcher to be elevated as Admin.");
+                this.CreateNewWarnLineInConsoleLog("System", "Launcher is elevated as Administrator. Unless you want to use launcher's functions which requires Administrator, it is not recommended for the launcher to be elevated as Admin.");
             }
 
             if (App.Current.BootstrapVersion < 6)
             {
-                const string BootstrapVersionReminder = "[Launcher Updater] You are using an older version of the Launcher's bootstrap. It is recommended to update it.",
-                    DowlodEtNow = "(Download it here)";
-                this.CreateNewParagraphFormatHyperlinksInLog(string.Create<string>(BootstrapVersionReminder.Length + DowlodEtNow.Length + 1, string.Empty, (c, _) =>
+                this.CreateNewLineInConsoleLog("Launcher Updater", (consoleLog, writer, absoluteOffsetOfDocumentLine, myself) =>
                 {
-                    var s = c;
-                    BootstrapVersionReminder.CopyTo(s);
-                    s = s.Slice(BootstrapVersionReminder.Length);
-                    s[0] = ' ';
-                    s = s.Slice(1);
-                    DowlodEtNow.CopyTo(s);
-                }), new Dictionary<RelativeLogPlacement, Uri>(1)
-                {
-                    { new RelativeLogPlacement(BootstrapVersionReminder.Length + 1, DowlodEtNow.Length), StaticResources.Url_ShowLatestGithubRelease },
-                });
+                    var absoluteOffsetOfItem = writer.InsertionOffset;
+                    var warn = "{WARN} You are using an older version of the Launcher's bootstrap. It is recommended to update it.";
+                    writer.Write(warn);
+                    myself.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetOfItem, warn.Length, Brushes.Gold, Brushes.DarkGoldenrod));
+                    writer.Write(' ');
+                    myself.ConsoleLogHelper_WriteHyperLink(writer, "(Download it here)", StaticResources.Url_ShowLatestGithubRelease, VisualLineLinkText_LinkClicked);
+                }, this);
             }
 
             this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
@@ -333,30 +315,26 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (App.Current.IsLightMode)
             {
                 this.BgImg.Source = lazybg_light.Value;
-                this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Light Mode.");
-                this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Blue;
-                this.consolelog_errortextparser.Colorizer.ForegroundBrush = Brushes.DarkRed;
+                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Light Mode.");
             }
             else
             {
                 this.BgImg.Source = lazybg_dark.Value;
-                this.CreateNewParagraphInLog($"[ThemeManager] {(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Dark Mode.");
-                this.consolelog_hyperlinkparser.Colorizer.ForegroundBrush = Brushes.Yellow;
-                this.consolelog_errortextparser.Colorizer.ForegroundBrush = Brushes.IndianRed;
+                this.CreateNewLineInConsoleLog("ThemeManager", $"{(this.config_main.SyncThemeWithOS ? "Detected Windows 10's" : "User changed")} theme setting: Dark Mode.");
             }
             this.ConsoleLog.TextArea.TextView.Redraw();
         }
 
         protected override async Task OnCleanupBeforeClosed()
         {
-            this.CreateNewParagraphInLog("[System] Stopping all operations and cleaning up resources before closing and exiting launcher.");
+            this.CreateNewLineInConsoleLog("System", "Stopping all operations and cleaning up resources before closing and exiting launcher.");
 
             var listOfOperations = new List<Task>();
 
             Task t_stopClientUpdater;
             if (this.pso2Updater.IsBusy)
             {
-                this.CreateNewParagraphInLog("[System] Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait...");
+                this.CreateNewLineInConsoleLog("System", "Detecting a time-consuming cleanup operation: Game client updating. This may take a while to gracefully stop and clean up. Please wait...");
 
                 var tsrc = new TaskCompletionSource();
                 t_stopClientUpdater = tsrc.Task;
@@ -365,7 +343,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 void onfinialize(GameClientUpdater sender, string pso2dir, bool isCancelled, IReadOnlyCollection<PatchListItem> patchlist, IReadOnlyDictionary<PatchListItem, bool?> download_result_list)
                 {
                     this.pso2Updater.OperationCompleted -= onfinialize;
-                    this.CreateNewParagraphInLog("[System] Game client updating has been stopped gracefully.");
+                    this.CreateNewLineInConsoleLog("System", "Game client updating has been stopped gracefully.");
                     tsrc.TrySetResult();
                 }
                 this.pso2Updater.OperationCompleted += onfinialize;
@@ -488,11 +466,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         this.isWebBrowserLoaded = true;
                         if (webview.IsUsingWebView2)
                         {
-                            this.CreateNewParagraphInLog($"[WebView] PSO2's launcher news has been loaded with WebView2 (Version: {webview.WebView2Version}).");
+                            this.CreateNewLineInConsoleLog("WebView", $"PSO2's launcher news has been loaded with WebView2 (Version: {webview.WebView2Version}).");
                         }
                         else
                         {
-                            this.CreateNewParagraphInLog("[WebView] PSO2's launcher news has been loaded with Internet Explorer component.");
+                            this.CreateNewLineInConsoleLog("WebView", "PSO2's launcher news has been loaded with Internet Explorer component.");
                         }
                     }
                     else
@@ -525,7 +503,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     new CommandHyperlink(new System.Windows.Documents.Run("create an issue report")) { NavigateUri = StaticResources.Url_ShowIssuesGithub },
                     new System.Windows.Documents.Run(" on Github."),
                 };
-                this.CreateErrorLogInLog("WebEngine", lines, "Error", ex);
+                this.CreateNewErrorLineInConsoleLog("WebEngine", lines, "Error", ex);
                 Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (COMException ex) when (((uint)ex.ErrorCode) == 0x80004005)
@@ -571,7 +549,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     lines.Add(new System.Windows.Documents.Run("If you already downloaded the PSO2 client, please find and run 'microsoftedgewebview2setup.exe' setup in the 'pso2_bin' directory of the game client to install WebView2 Runtime which this launcher can use."));
                     AAAAAAA(lines);
                 }
-                this.CreateErrorLogInLog("WebEngine", lines, "Error", ex);
+                this.CreateNewErrorLineInConsoleLog("WebEngine", lines, "Error", ex);
                 Prompt_Generic.ShowError(this, lines, "Error", ex, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
@@ -580,7 +558,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     btn.Click += this.LoadLauncherWebView_Click;
                 }
-                this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
+                this.CreateNewErrorLineInConsoleLog("GameUpdater", string.Empty, null, ex);
                 Prompt_Generic.ShowError(this, ex);
             }
         }

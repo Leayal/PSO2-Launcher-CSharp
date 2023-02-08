@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Leayal.Shared
 {
@@ -8,30 +9,51 @@ namespace Leayal.Shared
     {
         private static readonly string ExplorerExe = Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows));
 
-        public static void SelectPathInExplorer(string path)
+        /// <summary>Open the parent directory of the path and select the file/folder in the file explorer.</summary>
+        /// <param name="path">The path to the selected folder.</param>
+        /// <param name="waiting">Allow making runtime wait for this call to be finished before continue.</param>
+        public static void SelectPathInExplorer(string path, bool waiting = false)
         {
             using (var proc = Process.Start(ExplorerExe, $"/select,\"{path}\""))
             {
-                proc?.WaitForExit(500);
+                if (waiting)
+                {
+                    proc.WaitForExit(500);
+                }
             }
         }
 
-        public static void ShowPathInExplorer(string path)
+        /// <summary>Open the folder in the file explorer.</summary>
+        /// <param name="path">The path to the selected folder.</param>
+        /// <param name="waiting">Allow making runtime wait for this call to be finished before continue.</param>
+        public static void ShowPathInExplorer(string path, bool waiting = false)
         {
             using (var proc = Process.Start(ExplorerExe, $"\"{path}\""))
             {
-                proc?.WaitForExit(500);
+                if (waiting)
+                {
+                    proc.WaitForExit(500);
+                }
             }
         }
 
-        public static void OpenUrlWithDefaultBrowser(Uri url)
-            => OpenUrlWithDefaultBrowser(url.IsAbsoluteUri ? url.AbsoluteUri : url.ToString());
+        /// <summary>Open the given URL with user's default browser.</summary>
+        /// <param name="url">The URL for the default browser to open.</param>
+        /// <param name="waiting">Allow making runtime wait for this call to be finished before continue.</param>
+        public static void OpenUrlWithDefaultBrowser(Uri url, bool waiting = false)
+            => OpenUrlWithDefaultBrowser(url.IsAbsoluteUri ? url.AbsoluteUri : url.ToString(), waiting);
 
-        public static void OpenUrlWithDefaultBrowser(string url)
+        /// <summary>Open the given URL with user's default browser.</summary>
+        /// <param name="url">The URL for the default browser to open.</param>
+        /// <param name="waiting">Allow making runtime wait for this call to be finished before continue.</param>
+        public static void OpenUrlWithDefaultBrowser(string url, bool waiting = false)
         {
             using (var proc = Process.Start(ExplorerExe, $"\"{url}\""))
             {
-                proc?.WaitForExit(500);
+                if (waiting)
+                {
+                    proc.WaitForExit(500);
+                }
             }
         }
     }

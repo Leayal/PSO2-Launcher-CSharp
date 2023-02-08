@@ -25,7 +25,8 @@ namespace Leayal.PSO2Launcher.Core
 
         public static readonly Uri SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/");
 
-        public static readonly bool IsCurrentProcessAdmin;
+        /*
+        public static readonly bool IsCurrentProcessAdmin = Leayal.Shared.UacHelper.IsCurrentProcessElevated;
 
         static StaticResources()
         {
@@ -36,5 +37,6 @@ namespace Leayal.PSO2Launcher.Core
                 principal = null;
             }
         }
+        */
     }
 }

@@ -557,7 +557,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
         public void Save()
         {
             var dir = Path.GetDirectoryName(this.Filename);
-            Directory.CreateDirectory(dir);
+            if (dir != null)
+            {
+                Directory.CreateDirectory(dir);
+            }
             using (var fs = File.Create(this.Filename))
             {
                 this.SaveTo(fs);

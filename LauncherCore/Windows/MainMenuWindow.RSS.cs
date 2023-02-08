@@ -103,7 +103,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             if (!string.IsNullOrWhiteSpace(conf.FeedChannelUrl))
                             {
                                 var str = Path.GetRelativePath(rootdir, filename);
-                                myself.CreateNewParagraphInLog($"[RSS Feed Loader] Fail to load feed config for URL '{conf.FeedChannelUrl}'. Reason: The target RSS Handler '{ex.TargetHandlerName}' cannot be found");
+                                myself.CreateNewLineInConsoleLog("RSS Feed Loader", $"Fail to load feed config for URL '{conf.FeedChannelUrl}'. Reason: The target RSS Handler '{ex.TargetHandlerName}' cannot be found");
                             }
                         }
                         catch
@@ -111,7 +111,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             if (!string.IsNullOrWhiteSpace(conf.FeedChannelUrl))
                             {
                                 var str = Path.GetRelativePath(rootdir, filename);
-                                myself.CreateNewParagraphInLog($"[RSS Feed Loader] Fail to load feed config for URL '{conf.FeedChannelUrl}' from file '{str}'");
+                                myself.CreateNewLineInConsoleLog("RSS Feed Loader", $"Fail to load feed config for URL '{conf.FeedChannelUrl}' from file '{str}'");
                             }
                         }
                     }

@@ -7,8 +7,8 @@
                          xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                          xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                          xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-                         xmlns:staticresource="clr-namespace:Leayal.PSO2Launcher.Core"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
+                         xmlns:uachelper="clr-namespace:Leayal.Shared;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d"
                          WindowStartupLocation="CenterOwner" x:Name="thisSelf" ShowTitleBar="False" WindowButtonCommandsOverlayBehavior="Never"
                          ResizeMode="CanResize" Title="PSO2 Data Organizer" Height="600" Width="800"
@@ -58,7 +58,7 @@
                                     </Setter.Value>
                                 </Setter>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Source={x:Static staticresource:StaticResources.IsCurrentProcessAdmin},Mode=OneTime}" Value="False">
+                                    <DataTrigger Binding="{Binding Source={x:Static uachelper:UacHelper.IsCurrentProcessElevated},Mode=OneTime}" Value="False">
                                         <Setter Property="ToolTip">
                                             <Setter.Value>
                                                 <TextBlock Text="Creating symlink on Windows requires Administration privilege" />

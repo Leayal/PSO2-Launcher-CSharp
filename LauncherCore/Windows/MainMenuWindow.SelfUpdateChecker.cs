@@ -12,7 +12,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private const string ConsoleLogUpdateNotification = "[Launcher Updater] An update for this PSO2 Launcher has been found.";
+        private const string ConsoleLogUpdateSender = "Launcher Updater";
+        private const string ConsoleLogUpdateNotification = "An update for this PSO2 Launcher has been found.";
         private const string ConsoleLogUpdateNotificationWithFile = $"{ConsoleLogUpdateNotification} These files need to be updated: ";
         public static readonly DependencyProperty IsUpdateNotificationVisibleProperty = DependencyProperty.Register("IsUpdateNotificationVisible", typeof(bool), typeof(MainMenuWindow), new PropertyMetadata(false, (obj, e) =>
         {
@@ -40,9 +41,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             set => this.SetValue(IsUpdateNotificationVisibleProperty, value);
         }
 
-        private void InternalShowUpdateNotificationOnUi(string message)
+        private void InternalShowUpdateNotificationOnUi(string sender, string message)
         {
-            this.CreateNewParagraphInLog(message);
+            this.CreateNewLineInConsoleLog(sender, message);
             this.IsUpdateNotificationVisible = true;
             if (this.config_main.LauncherCheckForSelfUpdatesNotifyIfInTray && this.IsMinimizedToTray)
             {
@@ -74,11 +75,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             if (files == null || len == 0)
             {
-                this.Dispatcher.BeginInvoke(this.InternalShowUpdateNotificationOnUi, new object[] { ConsoleLogUpdateNotification });
+                this.Dispatcher.BeginInvoke(this.InternalShowUpdateNotificationOnUi, new object[] { ConsoleLogUpdateSender, ConsoleLogUpdateNotification });
             }
             else
             {
-                this.Dispatcher.BeginInvoke(this.InternalShowUpdateNotificationOnUi, new object[] { string.Create(ConsoleLogUpdateNotificationWithFile.Length + len, files, (c, list) =>
+                this.Dispatcher.BeginInvoke(this.InternalShowUpdateNotificationOnUi, new object[] { ConsoleLogUpdateSender, string.Create(ConsoleLogUpdateNotificationWithFile.Length + len, files, (c, list) =>
                 {
                     ConsoleLogUpdateNotificationWithFile.CopyTo(c);
                     var workset = c.Slice(ConsoleLogUpdateNotificationWithFile.Length);

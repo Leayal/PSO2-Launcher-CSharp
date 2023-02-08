@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Leayal.PSO2.UserConfig;
 using ControlzEx.Standard;
+using System.Printing;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -210,7 +211,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                     windowhandle = existingProcess.MainWindowHandle;
                                                     if (UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
                                                     {
-                                                        this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                        this.CreateNewWarnLineInConsoleLog("GameStart", "The game is already running. Giving the game's window focus...");
                                                     }
                                                 }
                                                 return;
@@ -218,9 +219,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         }
                                         catch (Exception ex)
                                         {
-                                            this.CreateErrorLogInLog("GameStart", "Cannot terminate the current PSO2 process.", "Error", ex);
+                                            this.CreateNewErrorLineInConsoleLog("GameStart", "Cannot terminate the current PSO2 process.", "Error", ex);
                                             // this.CreateNewParagraphInLog("[GameStart] Cannot terminate the current PSO2 process. Error message: " + ex.Message);
-                                            Prompt_Generic.ShowError(this, "Cannot terminate the current PSO2 process.\r\nError Message: " + ex.Message, "Error", ex);
+                                            Prompt_Generic.ShowError(this, $"Cannot terminate the current PSO2 process.{Environment.NewLine}Error Message: " + ex.Message, "Error", ex);
                                             return;
                                         }
                                     }
@@ -239,7 +240,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             {
                                                 if (!existingProcess.HasExited && UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
                                                 {
-                                                    this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                    this.CreateNewWarnLineInConsoleLog("GameStart", "The game is already running. Giving the game's window focus...");
                                                 }
                                             }
                                             catch { }
@@ -256,18 +257,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             var windowhandle = existingProcess.MainWindowHandle;
                                             if (windowhandle == IntPtr.Zero || !UnmanagedWindowsHelper.SetForegroundWindow(windowhandle))
                                             {
-                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                                Prompt_Generic.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                                this.CreateNewLineInConsoleLog("GameStart", "The game is already running.");
+                                                Prompt_Generic.Show(this, "The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                             }
                                             else
                                             {
-                                                this.CreateNewParagraphInLog($"[GameStart] The game is already running. Giving the game's window focus...");
+                                                this.CreateNewLineInConsoleLog("GameStart", "The game is already running. Giving the game's window focus...");
                                             }
                                         }
                                         catch
                                         {
-                                            this.CreateNewParagraphInLog($"[GameStart] The game is already running.");
-                                            Prompt_Generic.Show(this, $"The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            this.CreateNewLineInConsoleLog("GameStart", "The game is already running.");
+                                            Prompt_Generic.Show(this, "The game is already running.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                         }
                                         return;
                                     }
@@ -284,7 +285,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         var usernamePath = Path.Combine(configFolderPath, "SavedUsername.txt");
                         if (e.SelectedStyle == GameStartStyle.StartWithToken && !File.Exists(usernamePath))
                         {
-                            if (Prompt_Generic.Show(this, "If you don't trust this. Please do not use this, instead, start the game without login.\r\nDo you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                            if (Prompt_Generic.Show(this, $"If you don't trust this. Please do not use this, instead, start the game without login.{Environment.NewLine}Do you really trust this?", "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                             {
                                 return;
                             }
@@ -543,7 +544,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     */
                                 }
 
-                                this.CreateNewParagraphInLog("[GameStart] Quick check executable files...");
+                                this.CreateNewLineInConsoleLog("GameStart", "Quick check executable files...");
 
                                 // Select "Balanced" for safety reason.
                                 await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, FileScanFlags.CacheOnly, false, cancelToken);
@@ -605,7 +606,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                 shouldSave = false;
                                             }
 
-                                            this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been patched.");
+                                            this.CreateNewLineInConsoleLog("Compatibility", "PSO2 Tweaker's config has been patched.");
                                             try
                                             {
                                                 using (var proc = new Process())
@@ -615,7 +616,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                     proc.StartInfo.FileName = tweakerPath;
                                                     proc.StartInfo.Arguments = "-pso2jp";
                                                     proc.StartInfo.WorkingDirectory = Path.GetDirectoryName(tweakerPath);
-                                                    this.CreateNewParagraphInLog("[GameStart] Starting PSO2 Tweaker...");
+                                                    this.CreateNewLineInConsoleLog("GameStart", "Starting PSO2 Tweaker...");
                                                     proc.Start();
                                                     await proc.WaitForExitAsync(cancelToken);
                                                 }
@@ -654,7 +655,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                                 {
                                                     pso2tweakerconfig.Save();
                                                 }
-                                                this.CreateNewParagraphInLog("[Compatibility] PSO2 Tweaker's config has been restored.");
+                                                this.CreateNewLineInConsoleLog("Compatibility", "PSO2 Tweaker's config has been restored.");
                                                 this._isTweakerRunning = false;
                                                 this.TabMainMenu.IsSelected = true;
                                             }
@@ -675,7 +676,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             proc.StartInfo.ArgumentList.Add("-optimize");
                                             proc.StartInfo.WorkingDirectory = dir_pso2bin;
                                             proc.Start();
-                                            this.CreateNewParagraphInLog("[GameStart] Starting game...");
+                                            this.CreateNewLineInConsoleLog("GameStart", "Starting game...");
                                         }
                                     }
                                 }
@@ -690,29 +691,29 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 catch (PSO2LoginException loginEx)
                 {
                     var title = $"Network Error (Code: {loginEx.ErrorCode})";
-                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.", title, loginEx);
+                    this.CreateNewErrorLineInConsoleLog("GameStart", $"Fail to start game due to SEGA login issue. Error code: {loginEx.ErrorCode}.", title, loginEx);
                     Prompt_Generic.ShowError(this, "Failed to login to PSO2.", title, loginEx);
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
                     // Silent it as user press "No" themselves.
                     // Prompt_Generic.Show(this, ex.Message, "User cancelled", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    this.CreateNewParagraphInLog("[GameStart] User cancelled");
+                    this.CreateNewLineInConsoleLog("GameStart", "User cancelled");
                 }
                 catch (TaskCanceledException)
                 {
-                    this.CreateNewParagraphInLog("[GameStart] User cancelled");
+                    this.CreateNewLineInConsoleLog("GameStart", "User cancelled");
                 }
                 catch (EmptyPatchListException ex)
                 {
-                    this.CreateErrorLogInLog("GameUpdater", string.Empty, null, ex);
+                    this.CreateNewErrorLineInConsoleLog("GameUpdater", string.Empty, null, ex);
                     Prompt_Generic.ShowError(this, ex);
                 }
                 catch (System.Net.Http.HttpRequestException ex)
                 {
                     var errorCode = (ex.StatusCode.HasValue ? ex.StatusCode.Value.ToString() : "Unknown");
                     var title = "Network Error (Code: " + errorCode + ")";
-                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
+                    this.CreateNewErrorLineInConsoleLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
                     Prompt_Generic.ShowError(this, ex, title);
                 }
                 catch (System.Net.WebException ex)
@@ -727,17 +728,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         errorCode = ex.Status.ToString();
                     }
                     var title = "Network Error (Code: " + errorCode + ")";
-                    this.CreateErrorLogInLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
+                    this.CreateNewErrorLineInConsoleLog("GameStart", $"Fail to start game due to network problem. Error code: {errorCode}. Message: " + ex.Message, title, ex);
                     Prompt_Generic.ShowError(this, ex, title);
                 }
-                catch (DatabaseErrorException)
+                catch (DatabaseErrorException ex)
                 {
-                    this.CreateNewParagraphInLog("[GameUpdater] Error occured when opening file check cache database.");
+                    this.CreateNewErrorLineInConsoleLog("GameStart", "Error occured when opening file check cache database.", null, ex);
                     Prompt_Generic.Show(this, "Error occured when opening database. Maybe you're clicking too fast. Please try again but slower.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 catch (Exception ex) when (!Debugger.IsAttached)
                 {
-                    this.CreateErrorLogInLog("GameStart", "Fail to start game. Error message: " + ex.Message, null, ex);
+                    this.CreateNewErrorLineInConsoleLog("GameStart", "Fail to start game. Error message: " + ex.Message, null, ex);
                     Prompt_Generic.ShowError(this, ex);
                 }
                 finally

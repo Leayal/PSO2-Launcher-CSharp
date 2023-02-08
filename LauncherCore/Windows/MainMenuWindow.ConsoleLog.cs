@@ -1,4 +1,7 @@
-﻿using ICSharpCode.AvalonEdit.Rendering;
+﻿using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit.Rendering;
+using ICSharpCode.AvalonEdit.Utils;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
 using System;
 using System.Collections;
@@ -9,15 +12,19 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
-        private readonly CustomHyperlinkElementGenerator consolelog_hyperlinkparser;
-        private readonly ErrorTextElementGenerator consolelog_errortextparser;
+        private readonly CustomElementGenerator consolelog_hyperlinkparser;
+        private readonly CustomColorTextTransformer consolelog_textcolorizer;
         private readonly Dictionary<Guid, ILogDialogHandler> dialogReferenceByUUID;
+        private readonly Typeface consolelog_boldTypeface;
+
+        delegate void ConsoleLogWriter<TArg>(TextEditor consoleLog, DocumentTextWriter writer, int absoluteOffsetOfDocumentLine, TArg arg);
 
         public void ShowLogDialogFromGuid(in Guid guid)
         {
@@ -35,67 +42,83 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void CreateNewParagraphInLog(string textline, bool newline = true, bool followLastLine = true)
+        /// <summary>Only be here for convenient edits.</summary>
+        private void ConsoleLogHelper_WriteLogSender(DocumentTextWriter writer, string sender)
         {
-            if (this.ConsoleLog.CheckAccess())
-            {
-                var consolelog = this.ConsoleLog;
-                var doc = consolelog.Document;
-                var textlength = doc.TextLength;
-                bool isAlreadyInLastLineView = (followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
-                doc.BeginUpdate();
-                try
-                {
-                    using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(doc, textlength))
-                    {
-                        if (newline)
-                        {
-                            if (textlength != 0)
-                            {
-                                writer.WriteLine();
-                            }
-                        }
-                        writer.Write(textline);
-                        writer.Flush();
-                    }
-                }
-                finally
-                {
-                    doc.EndUpdate();
-                }
-                if (followLastLine)
-                {
-                    consolelog.ScrollToEnd();
-                }
-            }
-            else
-            {
-                this.ConsoleLog.Dispatcher.BeginInvoke(new Action<string, bool, bool>(this.CreateNewParagraphInLog),
-                    new object[] { textline, newline, followLastLine });
-            }
+            var absoluteOffsetOfItem = writer.InsertionOffset;
+            writer.Write('[');
+            writer.Write(sender);
+            writer.Write(']');
+            this.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetOfItem, sender.Length + 2, this.consolelog_boldTypeface, Brushes.LightGreen, Brushes.DarkGreen));
         }
 
-        private void CreateNewParagraphInLog(Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter> callback, bool newline = true, bool followLastLine = true)
+        /// <summary>Only be here for convenient edits.</summary>
+        private void ConsoleLogHelper_WriteHyperLink(DocumentTextWriter writer, string caption, Uri url, Action<HyperlinkVisualLineElementData>? linkClickedCallback)
         {
+            var absoluteOffsetOfItem = writer.InsertionOffset;
+            writer.Write(caption);
+
+            /*
+            var hyperlinkTextTransform = new TextCustomTransformData(absoluteOffsetOfItem, caption.Length, (transformData, element) =>
+            {
+                var props = element.TextRunProperties;
+                if (App.Current.IsLightMode)
+                {
+                    props.SetForegroundBrush(Brushes.DarkBlue);
+                }
+                else
+                {
+                    props.SetForegroundBrush(Brushes.LightBlue);
+                }
+                props.SetTextDecorations(TextDecorations.Underline);
+                if (transformData.Properties.TryGetValue("custom_typeface", out var val) && val is Typeface typeface)
+                {
+                    props.SetTypeface(typeface);
+                }
+            });
+            hyperlinkTextTransform.Properties.Add("custom_typeface", this.consolelog_boldTypeface);
+            */
+            // The whole thing above is the same as below, just longer and more customizable.
+            var hyperlinkTextTransform = new TextStaticTransformData(absoluteOffsetOfItem, caption.Length, this.consolelog_boldTypeface, Brushes.LightBlue, Brushes.DarkBlue)
+            {
+                TextDecoration = TextDecorations.Underline
+            };
+            this.consolelog_textcolorizer.Add(hyperlinkTextTransform);
+            var hyperlinkVisualLineElementData = new HyperlinkVisualLineElementData(absoluteOffsetOfItem, caption, url);
+            if (linkClickedCallback != null)
+            {
+                hyperlinkVisualLineElementData.LinkClicked += linkClickedCallback;
+            }
+            this.consolelog_hyperlinkparser.Add(hyperlinkVisualLineElementData);
+        }
+
+        private void CreateNewLineInConsoleLog<TArg>(string? sender, ConsoleLogWriter<TArg> callback, TArg arg, bool newline = true, bool followLastLine = true)
+        {
+            if (callback == null) throw new ArgumentNullException(nameof(callback));
+
             if (this.ConsoleLog.CheckAccess())
             {
                 var consolelog = this.ConsoleLog;
                 var doc = consolelog.Document;
+
+                doc.BeginUpdate();
                 var textlength = doc.TextLength;
                 bool isAlreadyInLastLineView = (followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
-                doc.BeginUpdate();
+                
                 try
                 {
-                    using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(doc, textlength))
+                    using (var writer = new DocumentTextWriter(doc, textlength))
                     {
-                        if (newline)
+                        if (newline && textlength != 0)
                         {
-                            if (textlength != 0)
-                            {
-                                writer.WriteLine();
-                            }
+                            writer.WriteLine();
                         }
-                        callback.Invoke(writer);
+                        if (!string.IsNullOrEmpty(sender))
+                        {
+                            ConsoleLogHelper_WriteLogSender(writer, sender);
+                            writer.Write(' ');
+                        }
+                        callback.Invoke(consolelog, writer, writer.InsertionOffset, arg);
                         writer.Flush();
                     }
                 }
@@ -110,150 +133,84 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.ConsoleLog.Dispatcher.BeginInvoke(new Action<Action<ICSharpCode.AvalonEdit.Document.DocumentTextWriter>, bool, bool>(this.CreateNewParagraphInLog),
-                     new object[] { callback, newline, followLastLine });
+                this.ConsoleLog.Dispatcher.BeginInvoke(new Action<string, ConsoleLogWriter<TArg>, TArg, bool, bool>(this.CreateNewLineInConsoleLog),
+                     new object?[] { sender, callback, arg, newline, followLastLine });
             }
         }
 
-        private void CreateErrorLogInLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        private void CreateNewLineInConsoleLog(string sender, string message, Brush? textColor_darkTheme = null, Brush? textColor_lightTheme = null, bool newline = true, bool followLastLine = true)
         {
-            if (this.ConsoleLog.CheckAccess())
+            this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
             {
-                var logtext = $"{{ERROR}} [{sender}] {(string.IsNullOrEmpty(message) ? exception.Message : message)}.";
-
-                var consolelog = this.ConsoleLog;
-                var doc = consolelog.Document;
-                var textlength = doc.TextLength;
-                bool isAlreadyInLastLineView = (followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
-                int writtenoffset;
-                doc.BeginUpdate();
-                try
+                var (myself, sender, message) = arg;
+                writer.Write(message);
+                if (message.AsSpan()[message.Length - 1] != '.')
                 {
-                    using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(doc, textlength))
-                    {
-                        if (newline)
-                        {
-                            if (textlength != 0)
-                            {
-                                writer.WriteLine();
-                            }
-                        }
-                        writtenoffset = writer.InsertionOffset;
-                        writer.Write(logtext);
-                        writer.Flush();
+                    writer.Write('.');
+                }
+            }, (this, sender, message), newline, followLastLine);
+        }
 
-                    }
-                    // var line = consolelog.Document.GetLineByOffset(writtenoffset);
-                    // var relativeoffset = (line.EndOffset - text.Length) - line.Offset;
-                    // var lineNumber = line.LineNumber;
-                    // var linecontext = consolelog.TextArea.TextView.GetOrConstructVisualLine(line);
-                }
-                finally
+        private void CreateNewErrorLineInConsoleLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        {
+            this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
+            {
+                var (myself, sender, message, title, exception) = arg;
+
+                var absoluteOffsetStart = writer.InsertionOffset;
+                const string Label_Error = "{ERROR}";
+                writer.Write(Label_Error);
+                writer.Write(' ');
+                var logtext = (string.IsNullOrEmpty(message) ? exception.Message : message);
+                writer.Write(logtext);
+                if (logtext.AsSpan()[logtext.Length - 1] != '.')
                 {
-                    doc.EndUpdate();
+                    writer.Write('.');
                 }
-                this.consolelog_errortextparser.Add(new Placements(in writtenoffset, logtext.Length));
+                var absoluteOffsetEnd = writer.InsertionOffset;
+                myself.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart, absoluteOffsetEnd - absoluteOffsetStart, myself.consolelog_boldTypeface, Brushes.DarkRed, Brushes.IndianRed));
 
                 var dialogguid = Guid.NewGuid();
                 if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))
                 {
-                    var factory = new ErrorLogDialogFactory(this, message, title, exception);
-                    this.dialogReferenceByUUID.Add(dialogguid, factory);
-
-                    const string showDetail = " (Show details)";
-                    var urldefines = new Dictionary<RelativeLogPlacement, Uri>(1)
-                    {
-                        { new RelativeLogPlacement(1, showDetail.Length - 1), crafted }
-                    };
-                    this.CreateNewParagraphFormatHyperlinksInLog(showDetail, urldefines, false, false);
+                    var factory = new ErrorLogDialogFactory(myself, message, title, exception);
+                    myself.dialogReferenceByUUID.Add(dialogguid, factory);
+                    writer.Write(' ');
+                    myself.ConsoleLogHelper_WriteHyperLink(writer, "(Show details)", crafted, VisualLineLinkText_LinkClicked);
                 }
-
-                if (isAlreadyInLastLineView && followLastLine)
-                {
-                    consolelog.ScrollToEnd();
-                }
-            }
-            else
-            {
-                this.ConsoleLog.Dispatcher.BeginInvoke(new Action<string, string, string?, Exception, bool, bool> (this.CreateErrorLogInLog),
-                     new object?[] { sender, message, title, exception, newline, followLastLine });
-            }
+            }, (this, sender, message, title, exception), newline, followLastLine);
         }
 
-        private void CreateErrorLogInLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
+        private void CreateNewWarnLineInConsoleLog(string sender, string message, bool newline = true, bool followLastLine = true)
+        {
+            this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
+            {
+                var (myself, sender, message) = arg;
+
+                var absoluteOffsetStart = writer.InsertionOffset;
+                writer.Write("{WARN} ");
+                writer.Write(message);
+                var absoluteOffsetEnd = writer.InsertionOffset;
+                myself.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart, absoluteOffsetEnd - absoluteOffsetStart, Brushes.Gold, Brushes.DarkGoldenrod)
+                {
+                    Typeface = this.consolelog_boldTypeface
+                });
+            }, (this, sender, message), newline, followLastLine);
+        }
+
+        private void CreateNewErrorLineInConsoleLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
         {
             if (lines == null || lines.Count == 0)
             {
-                this.CreateErrorLogInLog(sender, string.Empty, title, exception, newline, followLastLine);
+                this.CreateNewErrorLineInConsoleLog(sender, string.Empty, title, exception, newline, followLastLine);
                 return;
             }
 
             var firstLine = ((System.Windows.Documents.Run?)lines.FirstOrDefault(x => (x is System.Windows.Documents.Run run && !string.IsNullOrWhiteSpace(run.Text))))?.Text;
-            this.CreateErrorLogInLog(sender, string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine, title, exception, newline, followLastLine);
+            this.CreateNewErrorLineInConsoleLog(sender, string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine, title, exception, newline, followLastLine);
         }
 
-        private void CreateNewParagraphFormatHyperlinksInLog(string text, IReadOnlyDictionary<RelativeLogPlacement, Uri> urls, bool newline = true, bool followLastLine = true)
-        {
-            if (urls == null || urls.Count == 0)
-            {
-                this.CreateNewParagraphInLog(text, newline, followLastLine);
-            }
-            else
-            {
-                if (this.ConsoleLog.CheckAccess())
-                {
-                    var consolelog = this.ConsoleLog;
-                    var doc = consolelog.Document;
-                    var textlength = doc.TextLength;
-                    bool isAlreadyInLastLineView = (followLastLine ? ((consolelog.VerticalOffset + consolelog.ViewportHeight) >= (consolelog.ExtentHeight - 1d)) : false);
-                    int writtenoffset;
-                    doc.BeginUpdate();
-                    try
-                    {
-                        using (var writer = new ICSharpCode.AvalonEdit.Document.DocumentTextWriter(doc, textlength))
-                        {
-                            if (newline)
-                            {
-                                if (textlength != 0)
-                                {
-                                    writer.WriteLine();
-                                }
-                            }
-                            writtenoffset = writer.InsertionOffset;
-                            writer.Write(text);
-                            writer.Flush();
-                            
-                        }
-                        // var line = consolelog.Document.GetLineByOffset(writtenoffset);
-                        // var relativeoffset = (line.EndOffset - text.Length) - line.Offset;
-                        // var lineNumber = line.LineNumber;
-                        // var linecontext = consolelog.TextArea.TextView.GetOrConstructVisualLine(line);
-                    }
-                    finally
-                    {
-                        doc.EndUpdate();
-                    }
-                    foreach (var item in urls)
-                    {
-                        var relativePlacement = item.Key;
-                        this.consolelog_hyperlinkparser.Items.Add(
-                            new Placements(writtenoffset + relativePlacement.Offset, relativePlacement.Length),
-                            item.Value);
-                    }
-                    if (isAlreadyInLastLineView && followLastLine)
-                    {
-                        consolelog.ScrollToEnd();
-                    }
-                }
-                else
-                {
-                    this.ConsoleLog.Dispatcher.BeginInvoke(new Action<string, IReadOnlyDictionary<RelativeLogPlacement, Uri>, bool, bool>(this.CreateNewParagraphFormatHyperlinksInLog),
-                         new object[] { text, urls, newline, followLastLine });
-                }
-            }
-        }
-
-        private static void VisualLineLinkText_LinkClicked(CustomHyperlinkElementGenerator.VisualLineLinkTextEx element)
+        private static void VisualLineLinkText_LinkClicked(HyperlinkVisualLineElementData element)
         {
             var url = element.NavigateUri;
             if (url != null)
@@ -281,8 +238,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             this.ConsoleLog.Clear();
             this.ConsoleLog.Document.UndoStack.ClearAll();
-            this.consolelog_hyperlinkparser.Items.Clear();
-            this.consolelog_errortextparser.Clear();
+            this.consolelog_hyperlinkparser.Clear();
+            this.consolelog_textcolorizer.Clear();
             this.dialogReferenceByUUID.Clear();
         }
 

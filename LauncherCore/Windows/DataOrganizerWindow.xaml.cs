@@ -48,7 +48,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }));
         public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
         
-        public static readonly DataAction[] DataActions = (StaticResources.IsCurrentProcessAdmin ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy, DataAction.MoveAndSymlink }
+        public static readonly DataAction[] DataActions = (Leayal.Shared.UacHelper.IsCurrentProcessElevated ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy, DataAction.MoveAndSymlink }
                                                                                                                                         : new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy });
 
         public ICollectionView CustomizationFileList
@@ -319,7 +319,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonSelectMoveClassicCreateSymlinkPreset_Click(object sender, RoutedEventArgs e)
         {
-            if (StaticResources.IsCurrentProcessAdmin)
+            if (Leayal.Shared.UacHelper.IsCurrentProcessElevated)
             {
                 _ = this.lazy_PatchListAll.Value;
                 this.tabCustomizePresetContent.Children.Clear();
