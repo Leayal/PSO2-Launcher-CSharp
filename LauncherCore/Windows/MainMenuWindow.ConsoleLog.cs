@@ -158,9 +158,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 var (myself, sender, message, title, exception) = arg;
 
                 var absoluteOffsetStart = writer.InsertionOffset;
-                const string Label_Error = "{ERROR}";
-                writer.Write(Label_Error);
-                writer.Write(' ');
+                writer.Write("{ERROR} ");
                 var logtext = (string.IsNullOrEmpty(message) ? exception.Message : message);
                 writer.Write(logtext);
                 if (logtext.AsSpan()[logtext.Length - 1] != '.')
@@ -168,7 +166,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     writer.Write('.');
                 }
                 var absoluteOffsetEnd = writer.InsertionOffset;
-                myself.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart, absoluteOffsetEnd - absoluteOffsetStart, myself.consolelog_boldTypeface, Brushes.DarkRed, Brushes.IndianRed));
+                myself.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart, absoluteOffsetEnd - absoluteOffsetStart, myself.consolelog_boldTypeface, Brushes.IndianRed, Brushes.DarkRed));
 
                 var dialogguid = Guid.NewGuid();
                 if (Uri.TryCreate(StaticResources.Url_ShowLogDialogFromGuid, dialogguid.ToString(), out var crafted))

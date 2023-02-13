@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Reflection.PortableExecutable;
-using Leayal.Shared;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {

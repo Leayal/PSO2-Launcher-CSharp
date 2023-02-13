@@ -1,0 +1,43 @@
+﻿// FileSystem
+FindFirstFileEx
+GetFileAttributesEx
+GET_FILEEX_INFO_LEVELS
+FINDEX_SEARCH_OPS
+WIN32_FIND_DATA
+WIN32_FILE_ATTRIBUTE_DATA
+FINDEX_INFO_LEVELS
+PathFileExists
+GetFileInformationByHandleEx
+SetFileInformationByHandle
+FILE_BASIC_INFO
+
+// UnmanagedWindowsHelper
+SetForegroundWindow
+
+// SymbolicLink
+DeviceIoControl
+//PathRelativePathTo
+DeleteFile
+DeleteVolumeMountPoint
+CreateSymbolicLink
+
+// ScreenInformation
+EnumDisplayMonitors
+EnumDisplayDevices
+EnumDisplaySettings
+
+// DigitalSignatureHelper
+WinVerifyTrust
+WINTRUST_DATA
+WINTRUST_FILE_INFO
+
+// ProcessInfoHelper
+QueryFullProcessImageName
+GetProcessId
+
+// UAC Helper
+OpenProcess
+OpenProcessToken
+GetTokenInformation
+TOKEN_LINKED_TOKEN
+TOKEN_ELEVATION_TYPE

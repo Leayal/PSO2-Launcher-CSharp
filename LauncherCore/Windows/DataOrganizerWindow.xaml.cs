@@ -6,7 +6,6 @@ using System.Windows;
 using Leayal.Shared.Windows;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
-using Leayal.SharedInterfaces;
 using System.Windows.Documents;
 using System.Windows.Controls;
 using Leayal.PSO2Launcher.Core.Classes;
@@ -48,7 +47,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }));
         public static readonly DependencyProperty CustomizationFileListProperty = DependencyProperty.Register("CustomizationFileList", typeof(ICollectionView), typeof(DataOrganizerWindow));
         
-        public static readonly DataAction[] DataActions = (Leayal.Shared.UacHelper.IsCurrentProcessElevated ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy, DataAction.MoveAndSymlink }
+        public static readonly DataAction[] DataActions = (UacHelper.IsCurrentProcessElevated ? new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy, DataAction.MoveAndSymlink }
                                                                                                                                         : new DataAction[] { DataAction.DoNothing, DataAction.Delete, DataAction.Move, DataAction.Copy });
 
         public ICollectionView CustomizationFileList
@@ -319,7 +318,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private void ButtonSelectMoveClassicCreateSymlinkPreset_Click(object sender, RoutedEventArgs e)
         {
-            if (Leayal.Shared.UacHelper.IsCurrentProcessElevated)
+            if (UacHelper.IsCurrentProcessElevated)
             {
                 _ = this.lazy_PatchListAll.Value;
                 this.tabCustomizePresetContent.Children.Clear();

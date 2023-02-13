@@ -404,6 +404,29 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("launcher_checkselfupdates", value);
         }
 
+        public bool LauncherDisableInGameFileIntegrityCheck
+        {
+            get
+            {
+                if (this.TryGetRaw("launcher_disableingameintegritycheck", out var val))
+                {
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.True)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            set => this.Set("launcher_disableingameintegritycheck", value);
+        }
+
         public bool LauncherCheckForSelfUpdatesNotifyIfInTray
         {
             get

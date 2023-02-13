@@ -1,22 +1,21 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
-using SQLite;
+using MSWin32 = global::Windows.Win32;
+using PInvoke = global::Windows.Win32.PInvoke;
 
 namespace SymbolicLinkSupport
 {
     /// <remarks>
     /// https://github.com/michaelmelancon/symboliclinksupport
     /// </remarks>
-    internal static class SymbolicLink
+    public static class SymbolicLink
     {
         private const string LongPathIndicator = @"\\?\";
 
-        private const uint genericReadAccess = 0x80000000;
-
-        private const uint fileFlagsForOpenReparsePointAndBackupSemantics = 0x02200000;
         /// <summary>
         /// Flag to indicate that the reparse point is relative
         /// </summary>
@@ -28,17 +27,9 @@ namespace SymbolicLinkSupport
 
         private const int ioctlCommandGetReparsePoint = 0x000900A8;
 
-        private const uint openExisting = 0x3;
-
         private const uint pathNotAReparsePointError = 0x80071126;
 
-        private const uint shareModeAll = 0x7; // Read, Write, Delete
-
         private const uint symLinkTag = 0xA000000C;
-
-        private const int targetIsAFile = 0;
-
-        private const int targetIsADirectory = 1;
 
         /// <summary>
         /// The maximum number of characters for a relative path, using Unicode 2-byte characters.
@@ -54,49 +45,8 @@ namespace SymbolicLinkSupport
         /// </remarks>
         private const int maxRelativePathLengthUnicodeChars = 260;
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern SafeFileHandle CreateFile(
-            string lpFileName,
-            uint dwDesiredAccess,
-            uint dwShareMode,
-            IntPtr lpSecurityAttributes,
-            uint dwCreationDisposition,
-            uint dwFlagsAndAttributes,
-            IntPtr hTemplateFile);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool DeviceIoControl(
-            IntPtr hDevice,
-            uint dwIoControlCode,
-            IntPtr lpInBuffer,
-            int nInBufferSize,
-            IntPtr lpOutBuffer,
-            int nOutBufferSize,
-            out int lpBytesReturned,
-            IntPtr lpOverlapped);
-
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool PathRelativePathToW(
-            StringBuilder pszPath,
-            string pszFrom,
-            FileAttributes dwAttrFrom,
-            string pszTo,
-            FileAttributes dwAttrTo);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return:MarshalAs(UnmanagedType.Bool)]
-        static extern bool DeleteFileW(string lpPath);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool DeleteVolumeMountPointW(string lpPath);
-
-        // LPCWSTR
-        // DeleteVolumeMountPointW
-        // DeleteFileW
+        static extern bool PathRelativePathToW(StringBuilder pszPath, string pszFrom, FileAttributes dwAttrFrom, string pszTo, FileAttributes dwAttrTo);
 
         public static void CreateDirectoryLink(string linkPath, string targetPath)
         {
@@ -111,8 +61,8 @@ namespace SymbolicLinkSupport
             {
                 targetPath = GetTargetPathRelativeToLink(linkPath, targetPath, true);
             }
-
-            if (!CreateSymbolicLink(linkPath, targetPath, targetIsADirectory) || Marshal.GetLastWin32Error() != 0)
+            
+            if (!PInvoke.CreateSymbolicLink(linkPath, targetPath, MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_DIRECTORY | MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) || Marshal.GetLastWin32Error() != 0)
             {
                 try
                 {
@@ -146,7 +96,7 @@ namespace SymbolicLinkSupport
                 targetPath = GetTargetPathRelativeToLink(linkPath, targetPath);
             }
 
-            if (!CreateSymbolicLink(linkPath, targetPath, targetIsAFile))
+            if (!PInvoke.CreateSymbolicLink(linkPath, targetPath, MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))
             {
                 var hr = Marshal.GetHRForLastWin32Error();
                 if (hr == -2147024896)
@@ -228,7 +178,7 @@ namespace SymbolicLinkSupport
                 }
                 if (isLink.Value)
                 {
-                    return DeleteFileW(path);
+                    return PInvoke.DeleteFile(path);
                 }
                 else
                 {
@@ -243,7 +193,7 @@ namespace SymbolicLinkSupport
                 }
                 if (isLink.Value)
                 {
-                    return DeleteVolumeMountPointW(path);
+                    return PInvoke.DeleteVolumeMountPoint(path);
                 }
                 else
                 {
@@ -295,15 +245,11 @@ namespace SymbolicLinkSupport
             throw new IOException();
         }
 
-        private static SafeFileHandle GetFileHandle(string path)
-        {
-            return CreateFile(path, genericReadAccess, shareModeAll, IntPtr.Zero, openExisting,
-                fileFlagsForOpenReparsePointAndBackupSemantics, IntPtr.Zero);
-        }
+        private static SafeFileHandle GetFileHandle(string path) => File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         public static string? GetTarget(string path)
         {
-            SymbolicLinkReparseData reparseDataBuffer;
+            SymbolicLinkReparseData reparseDataBuffer = new SymbolicLinkReparseData();
 
             using (SafeFileHandle fileHandle = GetFileHandle(path))
             {
@@ -311,40 +257,22 @@ namespace SymbolicLinkSupport
                 {
                     Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
                 }
-#if NET35
-                int outBufferSize = Marshal.SizeOf(typeof(SymbolicLinkReparseData));
-#else
-                int outBufferSize = Marshal.SizeOf<SymbolicLinkReparseData>();
-#endif
-                IntPtr outBuffer = IntPtr.Zero;
-                try
+                int outBufferSize = Marshal.SizeOf(reparseDataBuffer);
+                bool success;
+                uint bytesReturned = 0;
+                unsafe
                 {
-                    outBuffer = Marshal.AllocHGlobal(outBufferSize);
-                    bool success = DeviceIoControl(
-                        fileHandle.DangerousGetHandle(), ioctlCommandGetReparsePoint, IntPtr.Zero, 0,
-                        outBuffer, outBufferSize, out int bytesReturned, IntPtr.Zero);
-
-                    fileHandle.Dispose();
-
-                    if (!success)
-                    {
-                        if (((uint)Marshal.GetHRForLastWin32Error()) == pathNotAReparsePointError)
-                        {
-                            return null;
-                        }
-                        Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                    }
-
-#if NET35
-                    reparseDataBuffer = (SymbolicLinkReparseData)Marshal.PtrToStructure(
-                        outBuffer, typeof(SymbolicLinkReparseData));
-#else
-                    reparseDataBuffer = Marshal.PtrToStructure<SymbolicLinkReparseData>(outBuffer);
-#endif
+                    ref var nullNativeOverlapped = ref Unsafe.NullRef<System.Threading.NativeOverlapped>();
+                    success = PInvoke.DeviceIoControl(fileHandle, ioctlCommandGetReparsePoint, IntPtr.Zero.ToPointer(), 0, Unsafe.AsPointer(ref reparseDataBuffer), Convert.ToUInt32(outBufferSize), (uint*)Unsafe.AsPointer(ref bytesReturned), (System.Threading.NativeOverlapped*)Unsafe.AsPointer(ref nullNativeOverlapped));
                 }
-                finally
+
+                if (!success)
                 {
-                    Marshal.FreeHGlobal(outBuffer);
+                    if (((uint)Marshal.GetHRForLastWin32Error()) == pathNotAReparsePointError)
+                    {
+                        return null;
+                    }
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
                 }
             }
             if (reparseDataBuffer.ReparseTag != symLinkTag)

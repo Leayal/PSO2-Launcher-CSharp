@@ -365,7 +365,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Need to be able to open stream (to download or handle resources from SEGA's server directly)
 
         private static bool IsTweakerDeletedFiles(PatchListItem item)
-            => (Array.BinarySearch<int>(_hardcodedWhichAreUsuallyDeletedOnes, PathStringComparer.Default.GetHashCode(item.GetSpanFilenameWithoutAffix())) >= 0);
+            => (Array.IndexOf<int>(_hardcodedWhichAreUsuallyDeletedOnes, PathStringComparer.Default.GetHashCode(item.GetSpanFilenameWithoutAffix())) != -1);
 
         public async Task<HttpResponseMessage> OpenForDownloadAsync(PatchListItem file, CancellationToken cancellationToken)
         {

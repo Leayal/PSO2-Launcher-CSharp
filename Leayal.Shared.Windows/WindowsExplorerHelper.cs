@@ -3,7 +3,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Leayal.Shared
+namespace Leayal.Shared.Windows
 {
     public static class WindowsExplorerHelper
     {

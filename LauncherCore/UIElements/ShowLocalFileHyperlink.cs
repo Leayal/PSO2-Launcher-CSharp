@@ -30,7 +30,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             if (this.NavigateUri != null && this.NavigateUri.IsFile)
             {
-                Leayal.Shared.WindowsExplorerHelper.SelectPathInExplorer(this.NavigateUri.LocalPath);
+                Leayal.Shared.Windows.WindowsExplorerHelper.SelectPathInExplorer(this.NavigateUri.LocalPath);
             }
         }
     }

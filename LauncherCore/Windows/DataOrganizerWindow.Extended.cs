@@ -34,28 +34,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             DateTime dt_creation = File.GetCreationTimeUtc(src), dt_access = File.GetLastAccessTimeUtc(src), dt_write = File.GetLastWriteTimeUtc(src);
             File.Move(src, dst, true);
-            File.SetCreationTimeUtc(src, dt_creation);
-            File.SetLastAccessTimeUtc(src, dt_access);
-            File.SetLastWriteTimeUtc(src, dt_write);
+            File.SetCreationTimeUtc(dst, dt_creation);
+            File.SetLastAccessTimeUtc(dst, dt_access);
+            File.SetLastWriteTimeUtc(dst, dt_write);
         }
 
-        private static void EnsureCopyOverwriteIgnoreReadonlyFlag(string src, string dst)
-        {
-            if (File.Exists(dst))
-            {
-                var attr = File.GetAttributes(dst);
-                if ((attr & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-                {
-                    File.SetAttributes(dst, attr & ~FileAttributes.ReadOnly);
-                }
-                // File.Delete(dst);
-            }
-            DateTime dt_creation = File.GetCreationTimeUtc(src), dt_access = File.GetLastAccessTimeUtc(src), dt_write = File.GetLastWriteTimeUtc(src);
-            File.Copy(src, dst, true);
-            File.SetCreationTimeUtc(src, dt_creation);
-            File.SetLastAccessTimeUtc(src, dt_access);
-            File.SetLastWriteTimeUtc(src, dt_write);
-        }
+        private static void EnsureCopyOverwriteIgnoreReadonlyFlag(string src, string dst) => Shared.Windows.FileSystem.CopyFile(src, dst, true);
 
         public enum DataAction
         {

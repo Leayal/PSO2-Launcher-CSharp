@@ -4,6 +4,7 @@ using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;
 using Leayal.SharedInterfaces;
 using Leayal.Shared;
+using Leayal.Shared.Windows;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -25,6 +26,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
 {
     partial class MainMenuWindow
     {
+        private static readonly Lazy<Tuple<string, long>> lazy_PSO2EmptyIntegrityTableFileDoubleCheckInfo = new Lazy<Tuple<string, long>>(() =>
+        {
+            using (var contentStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.empty_d4455ebc2bef618f29106da7692ebc1a"))
+            {
+                return contentStream == null ?
+                new Tuple<string, long>(string.Empty, 0) : new Tuple<string, long>(Helper.SHA1Hash.ComputeHashFromFile(contentStream), contentStream.Length);
+            }
+        });
         private bool _isTweakerRunning;
 #nullable enable
         private SecureString? ss_id, ss_pw;
@@ -109,6 +118,81 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }, fullpath);
         }
 #nullable restore
+
+        private static Task<bool> ReplaceInGameIntegrityTableFile(string dir_pso2bin)
+        {
+            return Task.Factory.StartNew((obj) =>
+            {
+                if (obj is string pso2bin)
+                {
+                    var fullpath = Path.GetFullPath(Path.Combine("data", "win32", "d4455ebc2bef618f29106da7692ebc1a"), pso2bin);
+                    var checksumFileExisted = File.Exists(fullpath);
+                    bool shouldReplace = false;
+                    if (checksumFileExisted)
+                    {
+                        using (var fs = new FileStream(fullpath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, false))
+                        {
+                            var checkInfo = lazy_PSO2EmptyIntegrityTableFileDoubleCheckInfo.Value;
+                            if (fs.Length == checkInfo.Item2)
+                            {
+                                if (!string.Equals(Helper.SHA1Hash.ComputeHashFromFile(fs), checkInfo.Item1, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    shouldReplace = true;
+                                }
+                            }
+                            else
+                            {
+                                shouldReplace = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        shouldReplace = true;
+                    }
+                    if (shouldReplace)
+                    {
+                        if (checksumFileExisted)
+                        {
+                            var dirName = Path.GetDirectoryName(fullpath.AsSpan());
+                            var backupDir = dirName.IsEmpty ? Path.GetFullPath(Path.Combine("data", "win32", "backup"), pso2bin) : Path.Join(dirName, "backup");
+                            if (!Directory.Exists(backupDir))
+                            {
+                                Directory.CreateDirectory(backupDir);
+                            }
+                            File.Move(fullpath, Path.Join(backupDir, Path.GetFileName(fullpath.AsSpan())), true);
+                        }
+                        using (var contentStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.empty_d4455ebc2bef618f29106da7692ebc1a"))
+                        {
+                            if (contentStream != null)
+                            {
+                                var len = contentStream.Length;
+                                using (var dstFileHandle = File.OpenHandle(fullpath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, FileOptions.None, len))
+                                using (var dstFileStream = new FileStream(dstFileHandle, FileAccess.Write, 0, dstFileHandle.IsAsync))
+                                {
+                                    var buffer = ArrayPool<byte>.Shared.Rent(Convert.ToInt32(len));
+                                    try
+                                    {
+                                        int read;
+                                        while ((read = contentStream.Read(buffer, 0, buffer.Length)) != 0)
+                                        {
+                                            dstFileStream.Write(buffer, 0, read);
+                                        }
+                                        dstFileStream.Flush();
+                                    }
+                                    finally
+                                    {
+                                        ArrayPool<byte>.Shared.Return(buffer);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return shouldReplace;
+                }
+                return false;
+            }, dir_pso2bin);
+        }
 
         private async void TabMainMenu_GameStartRequested(object sender, GameStartStyleEventArgs e)
         {
@@ -548,9 +632,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                 // Select "Balanced" for safety reason.
                                 await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, FileScanFlags.CacheOnly, false, cancelToken);
-
+                                
                                 if (!cancelToken.IsCancellationRequested)
                                 {
+                                    if (this.config_main.LauncherDisableInGameFileIntegrityCheck)
+                                    {
+                                        var replaced = await ReplaceInGameIntegrityTableFile(dir_pso2bin);
+                                        if (replaced)
+                                        {
+                                            // Sound cool a** but if SEGA does strict check or use another file to contains the integrity table, I guess this is busted.
+                                            this.CreateNewLineInConsoleLog("GameStart", "The integrity table file has been replaced with an empty table one. Client mods are now possible without error while loading modded files.");
+                                        }
+                                    }
+
                                     if (isLaunchWithTweaker)
                                     {
                                         var pso2tweakerconfig = new PSO2TweakerConfig();

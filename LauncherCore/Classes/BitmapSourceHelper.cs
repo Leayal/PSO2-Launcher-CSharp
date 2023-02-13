@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
 using System.Windows.Interop;
 using System.Windows;
@@ -21,7 +19,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
         {
             using (var stream = asm.GetManifestResourceStream(path))
             {
-                if (stream != null)
+                if (stream == null)
+                {
+                    throw new ResourceReferenceKeyNotFoundException();
+                }
+                else
                 {
                     var bm = new BitmapImage();
                     bm.BeginInit();
@@ -32,14 +34,10 @@ namespace Leayal.PSO2Launcher.Core.Classes
                     bm.Freeze();
                     return bm;
                 }
-                else
-                {
-                    return null;
-                }
             }
         }
 
-        public unsafe static WriteableBitmap CreateCopy(BitmapSource source)
+        public unsafe static WriteableBitmap CreateWritableBitmapFrom(BitmapSource source)
         {
             var bm = new WriteableBitmap(source);
             bm.Lock();

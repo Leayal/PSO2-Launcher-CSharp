@@ -47,7 +47,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
                         {
                             if (File.Exists(filepath))
                             {
-                                Shared.WindowsExplorerHelper.SelectPathInExplorer(filepath);
+                                Shared.Windows.WindowsExplorerHelper.SelectPathInExplorer(filepath);
                             }
                         }
                         catch { }

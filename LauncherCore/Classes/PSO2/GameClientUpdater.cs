@@ -22,7 +22,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // Progressive file hash cache. Which should reduce the risk of progress loss when application crash or computer shutdown due to any reasons (black out, BSOD).
         // Which also means the cancellation should follow along.
 
-        private const string Name_PatchRootInfo = "management_beta.txt";
+        private static readonly string Name_PatchRootInfo = "management_beta.txt";
 
         // private readonly string dir_pso2bin;
         // private readonly string? dir_classic_data, dir_reboot_data;

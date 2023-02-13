@@ -15,7 +15,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Controls.Primitives;
 using System.Net.Http;
-using Leayal.Shared;
 using System.Runtime;
 using Leayal.Shared.Windows;
 using System.Windows.Threading;
@@ -23,8 +22,6 @@ using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
-using ICSharpCode.AvalonEdit.Document;
-using ICSharpCode.AvalonEdit;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -200,7 +197,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.CreateNewLineInConsoleLog("System", $"Launcher is running in shared runtime environment (.NET Runtime version: {Environment.Version}). Launcher's bootstrap version: {System.Diagnostics.FileVersionInfo.GetVersionInfo(RuntimeValues.EntryExecutableFilename).FileVersion}.");
             }
 
-            if (Leayal.Shared.UacHelper.IsCurrentProcessElevated)
+            if (UacHelper.IsCurrentProcessElevated)
             {
                 this.CreateNewWarnLineInConsoleLog("System", "Launcher is elevated as Administrator. Unless you want to use launcher's functions which requires Administrator, it is not recommended for the launcher to be elevated as Admin.");
             }

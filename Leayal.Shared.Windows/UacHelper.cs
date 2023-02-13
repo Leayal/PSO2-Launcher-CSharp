@@ -5,78 +5,21 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using MSWin32 = global::Windows.Win32;
+using PInvoke = global::Windows.Win32.PInvoke;
 
-namespace Leayal.Shared
+namespace Leayal.Shared.Windows
 {
     /// <summary>A helper class providing convenient methods to read User Account Control (UAC)'s settings.</summary>
     public static class UacHelper
     {
         private const string uacRegistryKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System";
         private const string uacRegistryValue = "EnableLUA";
-
-        private static uint STANDARD_RIGHTS_READ = 0x00020000;
-        private static uint TOKEN_QUERY = 0x0008;
-        private static uint TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern SafeProcessHandle OpenProcess([In] uint dwDesiredAccess, [In] bool bInheritHandle, [In] int dwProcessId);
-
-        const uint QueryLimitedInformation = 0x1000;
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool OpenProcessToken([In] SafeProcessHandle ProcessHandle, [In] UInt32 DesiredAccess, [Out] out IntPtr TokenHandle);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool CloseHandle(IntPtr hObject);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        private static extern bool GetTokenInformation([In] IntPtr TokenHandle, [In] TOKEN_INFORMATION_CLASS TokenInformationClass, ref TOKEN_ELEVATION_TYPE TokenInformation, [In] uint TokenInformationLength, [Out] out uint ReturnLength);
-
-        private enum TOKEN_INFORMATION_CLASS
-        {
-            TokenUser = 1,
-            TokenGroups,
-            TokenPrivileges,
-            TokenOwner,
-            TokenPrimaryGroup,
-            TokenDefaultDacl,
-            TokenSource,
-            TokenType,
-            TokenImpersonationLevel,
-            TokenStatistics,
-            TokenRestrictedSids,
-            TokenSessionId,
-            TokenGroupsAndPrivileges,
-            TokenSessionReference,
-            TokenSandBoxInert,
-            TokenAuditPolicy,
-            TokenOrigin,
-            TokenElevationType,
-            TokenLinkedToken,
-            TokenElevation,
-            TokenHasRestrictions,
-            TokenAccessInformation,
-            TokenVirtualizationAllowed,
-            TokenVirtualizationEnabled,
-            TokenIntegrityLevel,
-            TokenUIAccess,
-            TokenMandatoryPolicy,
-            TokenLogonSid,
-            MaxTokenInfoClass
-        }
-
-        private enum TOKEN_ELEVATION_TYPE
-        {
-            TokenElevationTypeDefault = 1,
-            TokenElevationTypeFull,
-            TokenElevationTypeLimited
-        }
 
         /// <summary>Gets a boolean determining whether UAC is enabled or not.</summary>
         public static bool IsUacEnabled
@@ -98,22 +41,6 @@ namespace Leayal.Shared
             }
         }
 
-        /*
-        public static bool IsProcessElevatedEx(this IntPtr pHandle)
-        {
-            var token = IntPtr.Zero;
-            if (!OpenProcessToken(pHandle, TOKEN_READ, ref token))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcessToken failed");
-
-            WindowsIdentity identity = new WindowsIdentity(token);
-            WindowsPrincipal principal = new WindowsPrincipal(identity);
-            bool result = principal.IsInRole(WindowsBuiltInRole.Administrator)
-                       || principal.IsInRole(0x200); //Domain Administrator
-            CloseHandle(token);
-            return result;
-        }
-        */
-
         /// <summary>A boolean which determines whether the current running process is elevated.</summary>
         /// <remarks><see langword="true"/> if the current process is elevated. Otherwise, <see langword="false"/>.</remarks>
         public static readonly bool IsCurrentProcessElevated;
@@ -122,6 +49,7 @@ namespace Leayal.Shared
         {
             using (var proc = Process.GetCurrentProcess())
             {
+                
                 // Don't worry about Handle's access right for the current process. Full access right~
                 IsCurrentProcessElevated = IsProcessElevated(proc.SafeHandle);
             }
@@ -144,7 +72,13 @@ namespace Leayal.Shared
                 }
                 else
                 {
-                    hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                    var handle = PInvoke.OpenProcess(MSWin32.System.Threading.PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, Convert.ToUInt32(process.Id));
+                    if (handle.IsNull)
+                    {
+                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                    hProcess = new SafeProcessHandle(handle.Value, true);
+                    // hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
                     if (hProcess.IsInvalid)
                     {
                         throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -155,7 +89,12 @@ namespace Leayal.Shared
             catch (System.ComponentModel.Win32Exception ex) when (ex.HResult == -2147467259)
             {
                 // Should be access denied. So we open by our own with "QueryLimited" access right.
-                hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
+                var handle = PInvoke.OpenProcess(MSWin32.System.Threading.PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION, false, Convert.ToUInt32(process.Id));
+                if (handle.IsNull)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
+                hProcess = new SafeProcessHandle(handle.Value, true);
                 if (hProcess.IsInvalid)
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -185,25 +124,29 @@ namespace Leayal.Shared
         {
             if (processHandle == null) throw new ArgumentNullException(nameof(processHandle));
             if (processHandle.IsClosed || processHandle.IsInvalid) throw new ObjectDisposedException(nameof(processHandle));
-
             if (IsUacEnabled)
             {
-                if (!OpenProcessToken(processHandle, TOKEN_READ, out var tokenHandle))
+                if (!PInvoke.OpenProcessToken(processHandle, MSWin32.Security.TOKEN_ACCESS_MASK.TOKEN_READ, out var tokenHandle))
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                     // throw new ApplicationException("Could not get process token. Win32 Error Code: " + Marshal.GetLastWin32Error());
                 }
 
+                MSWin32.Security.TOKEN_ELEVATION_TYPE elevationResult = MSWin32.Security.TOKEN_ELEVATION_TYPE.TokenElevationTypeDefault;
+                const uint elevationResultSize = sizeof(MSWin32.Security.TOKEN_ELEVATION_TYPE);
                 try
                 {
-                    TOKEN_ELEVATION_TYPE elevationResult = TOKEN_ELEVATION_TYPE.TokenElevationTypeDefault;
-                    uint elevationResultSize = sizeof(TOKEN_ELEVATION_TYPE);
                     uint returnedSize = 0;
-                    bool success = GetTokenInformation(tokenHandle, TOKEN_INFORMATION_CLASS.TokenElevationType, ref elevationResult, elevationResultSize, out returnedSize);
+                    bool success;
+                    unsafe
+                    {  
+                        success = PInvoke.GetTokenInformation(tokenHandle, MSWin32.Security.TOKEN_INFORMATION_CLASS.TokenElevationType, Unsafe.AsPointer(ref elevationResult), elevationResultSize, out returnedSize);
+                    }
+                    
                     if (success)
                     {
                         // elevationResult = (TOKEN_ELEVATION_TYPE)Marshal.ReadInt32(elevationTypePtr);
-                        bool isProcessAdmin = elevationResult == TOKEN_ELEVATION_TYPE.TokenElevationTypeFull;
+                        bool isProcessAdmin = elevationResult == MSWin32.Security.TOKEN_ELEVATION_TYPE.TokenElevationTypeFull;
                         return isProcessAdmin;
                     }
                     else
@@ -213,8 +156,7 @@ namespace Leayal.Shared
                 }
                 finally
                 {
-                    if (tokenHandle != IntPtr.Zero)
-                        CloseHandle(tokenHandle);
+                    tokenHandle.Dispose();
                 }
             }
             else

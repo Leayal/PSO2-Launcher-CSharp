@@ -49,6 +49,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.checkbox_useclock.IsChecked = conf.LauncherUseClock;
             this.checkbox_checkpso2updatebeforegamestart.Unchecked += this.Checkbox_checkpso2updatebeforegamestart_Unchecked;
 
+            this.checkbox_disableingameintegritycheck.IsChecked = conf.LauncherDisableInGameFileIntegrityCheck;
+            this.checkbox_disableingameintegritycheck.Checked += this.Checkbox_disableingameintegritycheck_Checked;
+
             var defaultval_GameStartStyle = conf.DefaultGameStartStyle;
             var vals_GameStartStyle = Enum.GetValues<GameStartStyle>();
             var listOfGameStartStyles = new List<EnumComboBox.ValueDOM<GameStartStyle>>(vals_GameStartStyle.Length);
@@ -137,6 +140,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             conf.LauncherCheckForSelfUpdates = (this.checkbox_backgroundselfupdatechecker.IsChecked == true);
             conf.LauncherCheckForSelfUpdates_IntervalHour = Convert.ToInt32(this.numbericbox_backgroundselfupdatechecker_intervalhour.Value);
             conf.LauncherCheckForSelfUpdatesNotifyIfInTray = (this.checkbox_backgroundselfupdatechecker_traynotify.IsChecked == true);
+            conf.LauncherDisableInGameFileIntegrityCheck = (this.checkbox_disableingameintegritycheck.IsChecked == true);
 
             conf.UseWebView2IfAvailable = (this.checkbox_useusewebview2.IsChecked == true);
 
@@ -158,6 +162,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             conf.PSO2DataBackupBehavior = ((EnumComboBox.ValueDOM<PSO2DataBackupBehavior>)(this.combobox_pso2databackupbehavior.SelectedItem)).Value;
 
             conf.Save();
+
             this.CustomDialogResult = true;
             this.Close();
             // SystemCommands.CloseWindow(this);
@@ -242,9 +247,32 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 try
                 {
-                    Shared.WindowsExplorerHelper.OpenUrlWithDefaultBrowser(link.NavigateUri.AbsoluteUri);
+                    WindowsExplorerHelper.OpenUrlWithDefaultBrowser(link.NavigateUri.AbsoluteUri);
                 }
                 catch { }
+            }
+        }
+
+        private void Checkbox_disableingameintegritycheck_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox cb)
+            {
+                var lines = new List<Inline>()
+                {
+                    new Run("This launcher DOES NOT endorse nor oppose client modifications in any ways"),
+                    new LineBreak(),
+                    new Run("Please mind that using mods (or client modifications) is totally your decision, your responsibility and your own risk."),
+                    new LineBreak(),
+                    new Run("To revert this, you have to use file check to restore the modification."),
+                    new LineBreak(),
+                    new Run("This feature is only existed for those who wants it. Do you want to continue?")
+                };
+                lines[0].FontSize *= 1.2;
+                lines[2].FontSize *= 1.2;
+                if (Prompt_Generic.Show(this, lines, "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                {
+                    cb.IsChecked = false;
+                }
             }
         }
     }

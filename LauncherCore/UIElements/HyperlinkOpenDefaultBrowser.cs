@@ -28,7 +28,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (obj == null) return;
             try
             {
-                Shared.WindowsExplorerHelper.OpenUrlWithDefaultBrowser((Uri)obj);
+                Shared.Windows.WindowsExplorerHelper.OpenUrlWithDefaultBrowser((Uri)obj);
             }
             catch { }
         }

@@ -16,14 +16,34 @@ namespace Leayal.Shared
         {
             if (File.Exists(filepath))
             {
-                using (var fs = File.OpenRead(filepath))
-                {
-                    return (fs.Length == 0L);
-                }
+                return (GetFileSize(filepath) == 0L);
             }
             else
             {
                 return true;
+            }
+        }
+
+        /// <summary>Gets the size (in bytes) of a file from the path.</summary>
+        /// <param name="path">A relative or absolute path for the file.</param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"><paramref name="path" /> refers to a non-file device, such as <c>CON:</c>, <c>COM1:</c>, <c>LPT1:</c>, etc. in a non-NTFS environment.</exception>
+        /// <exception cref="FileNotFoundException">The file cannot be found, such as when <see cref="FileStreamOptions.Mode" /> is <see langword="FileMode.Truncate" /> or <see langword="FileMode.Open" />, and the file specified by <paramref name="path" /> does not exist. The file must already exist in these modes.</exception>
+        /// <exception cref="IOException">An I/O error, such as specifying <see langword="FileMode.CreateNew" /> when the file specified by <paramref name="path" /> already exists, occurred.
+        ///  -or-
+        ///  The stream has been closed.
+        ///  -or-
+        ///  The disk was full (when <see cref="FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).
+        ///  -or-
+        ///  The file was too large (when <see cref="FileStreamOptions.PreallocationSize" /> was provided and <paramref name="path" /> was pointing to a regular file).</exception>
+        /// <exception cref="System.Security.SecurityException">The caller does not have the required permission.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified path is invalid, such as being on an unmapped drive.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
+        public static long GetFileSize(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0))
+            {
+                return fs.Length;
             }
         }
 

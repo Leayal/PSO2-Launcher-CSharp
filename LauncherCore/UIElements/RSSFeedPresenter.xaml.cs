@@ -19,7 +19,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using Leayal.PSO2Launcher.Core.Windows;
 using Leayal.PSO2Launcher.RSS;
-using Leayal.Shared;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
