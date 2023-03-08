@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -7,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 using MSWin32 = global::Windows.Win32;
 using PInvoke = global::Windows.Win32.PInvoke;
 
-namespace SymbolicLinkSupport
+namespace Leayal.Shared.Windows
 {
     /// <remarks>
     /// https://github.com/michaelmelancon/symboliclinksupport
@@ -27,7 +28,7 @@ namespace SymbolicLinkSupport
 
         private const int ioctlCommandGetReparsePoint = 0x000900A8;
 
-        private const uint pathNotAReparsePointError = 0x80071126;
+        private const int pathNotAReparsePointError = unchecked((int)0x80071126);
 
         private const uint symLinkTag = 0xA000000C;
 
@@ -245,34 +246,75 @@ namespace SymbolicLinkSupport
             throw new IOException();
         }
 
-        private static SafeFileHandle GetFileHandle(string path) => File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        private static SafeFileHandle GetFileHandle(string path)
+        {
+            /* Oddly enough File.OpenHandle open accept path to file. If open a directory this way, it will throw UnauthorizedAccess.
+            var attr = File.GetAttributes(path); //.HasFlag(FileAttributes.Directory);
+            if ((attr & FileAttributes.Directory) == 0)
+            {
+                // Open only if it's not a directory.
+                return File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+            */
+            // Use Windows's API directory, which allows open a handle to a directory or a file regardless.
+            return PInvoke.CreateFile(path, MSWin32.Storage.FileSystem.FILE_ACCESS_FLAGS.FILE_GENERIC_READ, MSWin32.Storage.FileSystem.FILE_SHARE_MODE.FILE_SHARE_READ, null, MSWin32.Storage.FileSystem.FILE_CREATION_DISPOSITION.OPEN_EXISTING, MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_OPEN_REPARSE_POINT | MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_BACKUP_SEMANTICS, null);
+        }
 
         public static string? GetTarget(string path)
         {
-            SymbolicLinkReparseData reparseDataBuffer = new SymbolicLinkReparseData();
-
+            SymbolicLinkReparseData reparseDataBuffer;
             using (SafeFileHandle fileHandle = GetFileHandle(path))
             {
                 if (fileHandle.IsInvalid)
                 {
                     Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
                 }
-                int outBufferSize = Marshal.SizeOf(reparseDataBuffer);
-                bool success;
+                int outBufferSize = Marshal.SizeOf<SymbolicLinkReparseData>();
+                IntPtr hMem = Marshal.AllocHGlobal(outBufferSize);
+                bool success, dangerRefAdded = false;
                 uint bytesReturned = 0;
-                unsafe
+                fileHandle.DangerousAddRef(ref dangerRefAdded);
+                try
                 {
-                    ref var nullNativeOverlapped = ref Unsafe.NullRef<System.Threading.NativeOverlapped>();
-                    success = PInvoke.DeviceIoControl(fileHandle, ioctlCommandGetReparsePoint, IntPtr.Zero.ToPointer(), 0, Unsafe.AsPointer(ref reparseDataBuffer), Convert.ToUInt32(outBufferSize), (uint*)Unsafe.AsPointer(ref bytesReturned), (System.Threading.NativeOverlapped*)Unsafe.AsPointer(ref nullNativeOverlapped));
-                }
-
-                if (!success)
-                {
-                    if (((uint)Marshal.GetHRForLastWin32Error()) == pathNotAReparsePointError)
+                    unsafe
                     {
-                        return null;
+                        success = PInvoke.DeviceIoControl(hDevice: new MSWin32.Foundation.HANDLE(fileHandle.DangerousGetHandle()), ioctlCommandGetReparsePoint, nInBufferSize: 0, lpOutBuffer: hMem.ToPointer(), nOutBufferSize: Convert.ToUInt32(outBufferSize), lpBytesReturned: (uint*)Unsafe.AsPointer(ref bytesReturned));
                     }
-                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                    if (success)
+                    {
+                        reparseDataBuffer = Marshal.PtrToStructure<SymbolicLinkReparseData>(hMem);
+                    }
+                    else
+                    {
+                        var hrCode = Marshal.GetHRForLastWin32Error();
+                        if (hrCode == pathNotAReparsePointError)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            var ex = Marshal.GetExceptionForHR(hrCode);
+                            if (ex == null)
+                            {
+                                return null;
+                            }
+                            else
+                            {
+                                throw ex;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (hMem != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(hMem);
+                    }
+                    if (dangerRefAdded)
+                    {
+                        fileHandle.DangerousRelease();
+                    }
                 }
             }
             if (reparseDataBuffer.ReparseTag != symLinkTag)
@@ -293,7 +335,6 @@ namespace SymbolicLinkSupport
                 }
                 target = Path.GetFullPath(combinedPath);
             }
-
             return target;
         }
     }

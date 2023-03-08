@@ -1,6 +1,5 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.Shared;
-using SymbolicLinkSupport;
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -8,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {

@@ -1,7 +1,6 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Helper;
 using Leayal.SharedInterfaces;
-using SymbolicLinkSupport;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;

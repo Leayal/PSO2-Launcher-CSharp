@@ -1,6 +1,5 @@
 ﻿using Leayal.PSO2Launcher.Helper;
 using Leayal.Shared;
-using SymbolicLinkSupport;
 using System;
 using System.Collections.Concurrent;
 using System.IO;

@@ -6,6 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Authors>Dramiel Leayal</Authors>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

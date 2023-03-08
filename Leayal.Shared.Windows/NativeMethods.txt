@@ -20,6 +20,7 @@ DeviceIoControl
 DeleteFile
 DeleteVolumeMountPoint
 CreateSymbolicLink
+CreateFile
 
 // ScreenInformation
 EnumDisplayMonitors
