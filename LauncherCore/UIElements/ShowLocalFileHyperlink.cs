@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Leayal.Shared.Windows;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,7 +31,11 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         {
             if (this.NavigateUri != null && this.NavigateUri.IsFile)
             {
-                Leayal.Shared.Windows.WindowsExplorerHelper.SelectPathInExplorer(this.NavigateUri.LocalPath);
+                var path = this.NavigateUri.LocalPath;
+                if (FileSystem.PathExists(path))
+                {
+                    WindowsExplorerHelper.SelectPathInExplorer(path);
+                }
             }
         }
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-
 using MSWin32 = global::Windows.Win32;
 using MSFileSystem = global::Windows.Win32.Storage.FileSystem;
 using PInvoke = global::Windows.Win32.PInvoke;
@@ -16,7 +15,7 @@ namespace Leayal.Shared.Windows
             CopyBufferingSize = 1024 * 32;
         private readonly static string PrefixLongPath = @"\\?\";
 
-        const int MAX_PATH = 259;
+        const int MAX_PATH = 260;
         // dwAdditionalFlags:
         const int FIND_FIRST_EX_CASE_SENSITIVE = 1;
         const int FIND_FIRST_EX_LARGE_FETCH = 2;
@@ -182,36 +181,86 @@ namespace Leayal.Shared.Windows
             return DateTime.FromFileTimeUtc(fileTime);
         }
 
-        public static bool FileExists(string filename)
+        /// <summary>Check if the given path is actually existed on the filesystem.</summary>
+        /// <param name="path">The path to check existence.</param>
+        /// <returns><see langword="true"/> if the path is existed. Otherwise, <see langword="false"/>.</returns>
+        public static bool PathExists(string path)
         {
-            if (string.IsNullOrEmpty(filename)) return false;
+            if (string.IsNullOrEmpty(path)) return false;
 
-            if (filename.Length < MAX_PATH)
+            if (path.Length < MAX_PATH)
             {
-                if (!System.IO.Path.IsPathRooted(filename) || System.IO.Path.IsPathFullyQualified(filename))
+                if (!Path.IsPathRooted(path) || Path.IsPathFullyQualified(path))
                 {
-                    if (filename.StartsWith(PrefixLongPath))
+                    if (path.StartsWith(PrefixLongPath))
                     {
-                        filename = filename.Remove(0, PrefixLongPath.Length);
+                        path = path.Remove(0, PrefixLongPath.Length);
                     }
-                    return PInvoke.PathFileExists(filename);
+                    return PInvoke.PathFileExists(path);
                 }
             }
-            else if (!filename.StartsWith(PrefixLongPath))
+            else if (!Path.IsPathFullyQualified(path))
             {
-                filename = PrefixLongPath + filename;
+                path = Path.GetFullPath(path.StartsWith(PrefixLongPath) ? path.Remove(0, PrefixLongPath.Length) : path);
+            }
+            if (!path.StartsWith(PrefixLongPath))
+            {
+                path = PrefixLongPath + path;
             }
             var stuff = new MSFileSystem.WIN32_FILE_ATTRIBUTE_DATA();
             bool isSuccess;
             unsafe
             {
-                isSuccess = PInvoke.GetFileAttributesEx(filename, MSFileSystem.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, Unsafe.AsPointer(ref stuff));
+                isSuccess = PInvoke.GetFileAttributesEx(path, MSFileSystem.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, Unsafe.AsPointer(ref stuff));
+            }
+            return isSuccess;
+        }
+
+        /// <summary>Check if the given path is actually existed on the filesystem.</summary>
+        /// <param name="path">The path to check existence.</param>
+        /// <param name="isDirectory">A boolean determine if the path is pointing to a folder or not.</param>
+        /// <returns><see langword="true"/> if the path is existed. Otherwise, <see langword="false"/>.</returns>
+        public static bool PathExists(string path, out bool isDirectory)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                isDirectory = false;
+                return false;
+            }
+
+            if (path.Length < MAX_PATH)
+            {
+                if (!Path.IsPathRooted(path) || Path.IsPathFullyQualified(path))
+                {
+                    if (path.StartsWith(PrefixLongPath))
+                    {
+                        path = path.Remove(0, PrefixLongPath.Length);
+                    }
+                }
+            }
+            else if (!Path.IsPathFullyQualified(path))
+            {
+                path = Path.GetFullPath(path.StartsWith(PrefixLongPath) ? path.Remove(0, PrefixLongPath.Length) : path);
+            }
+            if (!path.StartsWith(PrefixLongPath))
+            {
+                path = PrefixLongPath + path;
+            }
+            var stuff = new MSFileSystem.WIN32_FILE_ATTRIBUTE_DATA();
+            bool isSuccess;
+            unsafe
+            {
+                isSuccess = PInvoke.GetFileAttributesEx(path, MSFileSystem.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, Unsafe.AsPointer(ref stuff));
             }
             if (isSuccess)
             {
-                return (stuff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY;
+                isDirectory = (stuff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY;
             }
-            return false;
+            else
+            {
+                isDirectory = false;
+            }
+            return isSuccess;
         }
     }
 }

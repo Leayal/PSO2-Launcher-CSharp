@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace Leayal.Shared
         private static readonly EncodeToUtf16? m_EncodeToUtf16;
         // private static readonly uint m_EncodeToUtf32_case;
 
-        private static readonly Lazy<char[]> hexChars = new Lazy<char[]>(() => new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' });
+        private static readonly char[] hexChars;
 
         static HashHelper()
         {
@@ -21,6 +22,11 @@ namespace Leayal.Shared
             {
                 // This will be likely a disaster
                 m_EncodeToUtf16 = methodInfo.CreateDelegate<EncodeToUtf16>();
+                hexChars = Array.Empty<char>();
+            }
+            else
+            {
+                hexChars = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
             }
         }
 
@@ -29,25 +35,36 @@ namespace Leayal.Shared
         public static bool IsFastMethodSupported => (m_EncodeToUtf16 != null);
 
         /// <summary>Encodes the hash from <paramref name="hash"/> into the back buffer of <paramref name="buffer"/> object.</summary>
-        /// <param name="buffer">The object to find the back buffer.</param>
+        /// <param name="buffer">The string object to find the back buffer.</param>
         /// <param name="hash">The computed hash to encode.</param>
-        /// <returns>A boolean. True if the back buffer has enough space to store the encoded hash. Otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the back buffer has enough space to store the encoded hash. Otherwise, <see langword="false"/>.</returns>
         public static bool TryWriteHashToHexString(string buffer, in ReadOnlySpan<byte> hash)
-            => TryWriteHashToHexString(buffer, in hash, out _);
+        {
+            if (string.IsNullOrEmpty(buffer)) return false;
+            return TryWriteHashToHexString(buffer, in hash, out _);
+        }
 
         /// <summary>Encodes the hash from <paramref name="hash"/> into the back buffer of <paramref name="buffer"/> object.</summary>
-        /// <param name="buffer">The object to find the back buffer.</param>
+        /// <param name="buffer">The string object to find the back buffer. Can be <see langword="null"/> or empty.</param>
         /// <param name="hash">The computed hash to encode.</param>
         /// <param name="writtenByteCount">The number of bytes written to the <paramref name="buffer"/></param>
-        /// <returns>A boolean. True if the back buffer has enough space to store the encoded hash. Otherwise, false.</returns>
-        public static bool TryWriteHashToHexString(string buffer, in ReadOnlySpan<byte> hash, out int writtenByteCount)
+        /// <returns><see langword="true"/> if the back buffer has enough space to store the encoded hash. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>In case <paramref name="buffer"/> is <see langword="null"/> or empty. The function will return <see langword="false"/> but still set the <paramref name="writtenByteCount"/> to let the user know the required buffer size.</remarks>
+        public static bool TryWriteHashToHexString(string? buffer, in ReadOnlySpan<byte> hash, out int writtenByteCount)
         {
-            unsafe
+            if (string.IsNullOrEmpty(buffer))
             {
-                fixed (char* c = buffer)
+                return TryWriteHashToHexString(Span<char>.Empty, in hash, out writtenByteCount);
+            }
+            else
+            {
+                unsafe
                 {
-                    var span = new Span<char>(c, buffer.Length);
-                    return TryWriteHashToHexString(in span, in hash, out writtenByteCount);
+                    fixed (char* c = buffer)
+                    {
+                        var span = new Span<char>(c, buffer.Length);
+                        return TryWriteHashToHexString(in span, in hash, out writtenByteCount);
+                    }
                 }
             }
         }
@@ -55,27 +72,42 @@ namespace Leayal.Shared
         /// <summary>Encodes the hash from <paramref name="hash"/> into the <paramref name="buffer"/> buffer.</summary>
         /// <param name="buffer">The buffer store the hex-encoded hash.</param>
         /// <param name="hash">The computed hash to encode.</param>
-        /// <returns>A boolean. True if the buffer has enough space to store the encoded hash. Otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the buffer has enough space to store the encoded hash. Otherwise, <see langword="false"/>.</returns>
         public static bool TryWriteHashToHexString(in Span<char> buffer, in ReadOnlySpan<byte> hash)
-            => TryWriteHashToHexString(in buffer, in hash, out _);
+        {
+            if (buffer == null || buffer.IsEmpty) return false;
+            return TryWriteHashToHexString(in buffer, in hash, out _);
+        }
 
         /// <summary>Encodes the hash from <paramref name="hash"/> into the <paramref name="buffer"/> buffer.</summary>
-        /// <param name="buffer">The buffer store the hex-encoded hash.</param>
+        /// <param name="buffer">The buffer store the hex-encoded hash. Can be <see langword="null"/> or empty.</param>
         /// <param name="hash">The computed hash to encode.</param>
-        /// <param name="writtenByteCount">The number of bytes written to the <paramref name="buffer"/></param>
-        /// <returns>A boolean. True if the buffer has enough space to store the encoded hash. Otherwise, false.</returns>
+        /// <param name="writtenByteCount">The number of bytes written to the <paramref name="buffer"/>. This is NOT the number of characters.</param>
+        /// <returns><see langword="true"/> if the buffer has enough space to store the encoded hash. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>In case <paramref name="buffer"/> is <see langword="null"/> or empty. The function will return <see langword="false"/> but still set the <paramref name="writtenByteCount"/> to let the user know the required buffer size.</remarks>
         public static bool TryWriteHashToHexString(in Span<char> buffer, in ReadOnlySpan<byte> hash, out int writtenByteCount)
         {
+            if (hash == null || hash.IsEmpty) throw new ArgumentNullException(nameof(hash));
+
             var lenInHex = hash.Length * 2;
-            if (buffer == null || buffer.Length < lenInHex)
+            if (buffer == null || buffer.IsEmpty)
+            {
+                writtenByteCount = (lenInHex * sizeof(char));
+                return false;
+            }
+            else if (buffer.Length < lenInHex)
             {
                 writtenByteCount = 0;
                 return false;
             }
+            else
+            {
+                writtenByteCount = (lenInHex * sizeof(char));
+            }
             
             if (m_EncodeToUtf16 == null)
             {
-                var arr = hexChars.Value;
+                var arr = hexChars;
                 for (int i = 0; i < hash.Length; i++)
                 {
                     ref readonly var b = ref hash[i];
@@ -89,7 +121,6 @@ namespace Leayal.Shared
                 m_EncodeToUtf16.Invoke(hash, buffer, 0u);
             }
 
-            writtenByteCount = (lenInHex * 2);
             return true;
         }
     }

@@ -217,7 +217,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     default:
                         if (items[0] is PatchListItemLogData item)
                         {
-                            Leayal.Shared.Windows.WindowsExplorerHelper.SelectPathInExplorer(Path.GetFullPath(item.Name, this._pso2dir));
+                            var fullpath = Path.GetFullPath(item.Name, this._pso2dir);
+                            if (FileSystem.PathExists(fullpath))
+                            {
+                                WindowsExplorerHelper.SelectPathInExplorer(fullpath);
+                            }
                         }
                         return;
                 }

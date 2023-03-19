@@ -53,20 +53,17 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             {
                                 localFilePath = file_info.FullName;
                             }
-                            // var localFilePath = Path.GetFullPath(localFilename, this.workingDirectory);
-                            // var tmpFilename = localFilename + ".dtmp";
                             var tmpFilePath = localFilePath + ".dtmp"; // Path.GetFullPath(tmpFilename, this.workingDirectory);
 
-                            // Check whether the launcher has the access right or able to create file at the destination
                             bool isSuccess = false;
 
+                            // Check whether the launcher has the access right or able to create file at the destination
                             var parentLocalFilePath = Path.GetDirectoryName(localFilePath);
                             if (parentLocalFilePath != null)
                             {
                                 Directory.CreateDirectory(parentLocalFilePath);
                             }
 
-                            // Reallocation file on the disk if the size if the size is finite.
                             using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
                             {
                                 if (response.IsSuccessStatusCode)
@@ -84,7 +81,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     }
 
                                     using (var remoteStream = response.Content.ReadAsStream())
-                                    using (var fileHandle = File.OpenHandle(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, remoteSizeInBytes > 0 ? remoteSizeInBytes : 0))
+                                    using (var fileHandle = File.OpenHandle(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous,
+                                        // Reallocation file on the disk if the size if the size is finite.
+                                        remoteSizeInBytes > 0 ? remoteSizeInBytes : 0))
                                     using (var localStream = new FileStream(fileHandle, FileAccess.Write, 4096 * 2, true))
                                     {
                                         if (localStream.Position != 0)
@@ -177,8 +176,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                             localStream.SetLength(bytesDownloaded);
                                         }
                                     }
-
-                                    
                                 }
                                 else
                                 {

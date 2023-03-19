@@ -49,7 +49,6 @@ namespace Leayal.Shared.Windows
         {
             using (var proc = Process.GetCurrentProcess())
             {
-                
                 // Don't worry about Handle's access right for the current process. Full access right~
                 IsCurrentProcessElevated = IsProcessElevated(proc.SafeHandle);
             }

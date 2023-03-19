@@ -21,6 +21,8 @@ using System.Windows;
 using Leayal.PSO2.UserConfig;
 using ControlzEx.Standard;
 using System.Printing;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -125,70 +127,90 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (obj is string pso2bin)
                 {
-                    var fullpath = Path.GetFullPath(Path.Combine("data", "win32", "d4455ebc2bef618f29106da7692ebc1a"), pso2bin);
-                    var checksumFileExisted = File.Exists(fullpath);
-                    bool shouldReplace = false;
-                    if (checksumFileExisted)
+                    byte[]? buffer = null;
+                    try
                     {
-                        using (var fs = new FileStream(fullpath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, false))
+                        var fullpath = Path.GetFullPath(Path.Combine("data", "win32", "d4455ebc2bef618f29106da7692ebc1a"), pso2bin);
+                        var checksumFileExisted = File.Exists(fullpath);
+                        bool shouldReplace = false;
+                        if (checksumFileExisted)
                         {
-                            var checkInfo = lazy_PSO2EmptyIntegrityTableFileDoubleCheckInfo.Value;
-                            if (fs.Length == checkInfo.Item2)
+                            using (var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1))
+                            using (var fs = new FileStream(fullpath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, false))
                             {
-                                if (!string.Equals(Helper.SHA1Hash.ComputeHashFromFile(fs), checkInfo.Item1, StringComparison.OrdinalIgnoreCase))
+                                var checkInfo = lazy_PSO2EmptyIntegrityTableFileDoubleCheckInfo.Value;
+                                var requiredNumberOfBytes = (int)checkInfo.Item2;
+                                if (buffer == null) buffer = ArrayPool<byte>.Shared.Rent(requiredNumberOfBytes + sha1.HashLengthInBytes + (sha1.HashLengthInBytes * sizeof(char) * 2) + 1);
+
+                                if (fs.Length == checkInfo.Item2)
+                                {
+                                    static bool AppendHashData(IncrementalHash sha1, byte[] buffer, in int requiredNumberOfBytes)
+                                    {
+                                        sha1.AppendData(buffer, 0, requiredNumberOfBytes);
+                                        return true;
+                                    }
+
+                                    if (fs.ReadEnsuredLength(buffer, 0, requiredNumberOfBytes) == requiredNumberOfBytes
+                                    && AppendHashData(sha1, buffer, in requiredNumberOfBytes) && sha1.TryGetCurrentHash(buffer.AsSpan(requiredNumberOfBytes), out var hashSizeInBytes)
+                                    && HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(buffer.AsSpan(requiredNumberOfBytes + hashSizeInBytes)), buffer.AsSpan(requiredNumberOfBytes, hashSizeInBytes), out var writtenCharactersInBytes)
+                                    && !MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(buffer.AsSpan(requiredNumberOfBytes + hashSizeInBytes, writtenCharactersInBytes)), checkInfo.Item1.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        shouldReplace = true;
+                                    }
+                                    // if (!string.Equals(Helper.SHA1Hash.ComputeHashFromFile(fs), checkInfo.Item1, StringComparison.OrdinalIgnoreCase)) shouldReplace = true;
+                                }
+                                else
                                 {
                                     shouldReplace = true;
                                 }
                             }
-                            else
-                            {
-                                shouldReplace = true;
-                            }
                         }
-                    }
-                    else
-                    {
-                        shouldReplace = true;
-                    }
-                    if (shouldReplace)
-                    {
-                        if (checksumFileExisted)
+                        else
                         {
-                            var dirName = Path.GetDirectoryName(fullpath.AsSpan());
-                            var backupDir = dirName.IsEmpty ? Path.GetFullPath(Path.Combine("data", "win32", "backup"), pso2bin) : Path.Join(dirName, "backup");
-                            if (!Directory.Exists(backupDir))
-                            {
-                                Directory.CreateDirectory(backupDir);
-                            }
-                            File.Move(fullpath, Path.Join(backupDir, Path.GetFileName(fullpath.AsSpan())), true);
+                            shouldReplace = true;
                         }
-                        using (var contentStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.empty_d4455ebc2bef618f29106da7692ebc1a"))
+                        if (shouldReplace)
                         {
-                            if (contentStream != null)
+                            using (var contentStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Leayal.PSO2Launcher.Core.Resources.empty_d4455ebc2bef618f29106da7692ebc1a"))
                             {
-                                var len = contentStream.Length;
-                                using (var dstFileHandle = File.OpenHandle(fullpath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, FileOptions.None, len))
-                                using (var dstFileStream = new FileStream(dstFileHandle, FileAccess.Write, 0, dstFileHandle.IsAsync))
+                                if (contentStream != null)
                                 {
-                                    var buffer = ArrayPool<byte>.Shared.Rent(Convert.ToInt32(len));
-                                    try
+                                    if (checksumFileExisted)
+                                    {
+                                        var dirName = Path.GetDirectoryName(fullpath.AsSpan());
+                                        var backupDir = dirName.IsEmpty ? Path.GetFullPath(Path.Combine("data", "win32", "backup"), pso2bin) : Path.Join(dirName, "backup");
+                                        if (!Directory.Exists(backupDir))
+                                        {
+                                            Directory.CreateDirectory(backupDir);
+                                        }
+                                        File.Move(fullpath, Path.Join(backupDir, Path.GetFileName(fullpath.AsSpan())), true);
+                                    }
+
+                                    var len = contentStream.Length;
+                                    using (var dstFileHandle = File.OpenHandle(fullpath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, FileOptions.None, len))
+                                    using (var dstFileStream = new FileStream(dstFileHandle, FileAccess.Write, 0, dstFileHandle.IsAsync))
                                     {
                                         int read;
+                                        if (buffer == null) buffer = ArrayPool<byte>.Shared.Rent((int)len);
                                         while ((read = contentStream.Read(buffer, 0, buffer.Length)) != 0)
                                         {
                                             dstFileStream.Write(buffer, 0, read);
                                         }
                                         dstFileStream.Flush();
                                     }
-                                    finally
-                                    {
-                                        ArrayPool<byte>.Shared.Return(buffer);
-                                    }
+
+                                    return true;
                                 }
                             }
                         }
                     }
-                    return shouldReplace;
+                    finally
+                    {
+                        if (buffer != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
+                    }
                 }
                 return false;
             }, dir_pso2bin);
