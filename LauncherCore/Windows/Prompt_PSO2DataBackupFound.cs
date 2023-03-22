@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {

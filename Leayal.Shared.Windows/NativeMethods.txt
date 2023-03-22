@@ -10,6 +10,7 @@ PathFileExists
 GetFileInformationByHandleEx
 SetFileInformationByHandle
 FILE_BASIC_INFO
+GetFileTime
 
 // UnmanagedWindowsHelper
 SetForegroundWindow
@@ -47,5 +48,3 @@ TOKEN_ELEVATION_TYPE
 FOLDERFLAGS
 FOLDERVIEWMODE
 FOLDERSETTINGS
-
-MAX_PATH

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Leayal.Shared;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -24,7 +25,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
         /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsRebootData;
 
-        private string? cachedRemoteFilename, cachedFilenameWithoutAffix;
+        private WeakLazy<string> cachedRemoteFilename, cachedFilenameWithoutAffix;
 
         public PatchListItem(PatchListBase? origin, ReadOnlyMemory<char> filename, in long size, ReadOnlyMemory<char> md5) : this(origin, filename, md5, in size, null) { }
 
@@ -37,28 +38,16 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             this.FileSize = size;
             this.PatchOrBase = m_or_p;
             this.IsRebootData = origin?.IsReboot;
-            this.cachedRemoteFilename = null;
-            this.cachedFilenameWithoutAffix = null;
+            this.cachedRemoteFilename = new WeakLazy<string>(GetStringFilename);
+            this.cachedFilenameWithoutAffix = new WeakLazy<string>(GetStringFilenameWithoutAffix);
         }
 
-        public string GetFilenameWithoutAffix()
-        {
-            if (this.cachedFilenameWithoutAffix == null)
-            {
-                this.cachedFilenameWithoutAffix = new string(GetSpanFilenameWithoutAffix());
-            }
-            return this.cachedFilenameWithoutAffix;
-            
-        }
+        private string GetStringFilenameWithoutAffix() => new string(GetSpanFilenameWithoutAffix());
+        private string GetStringFilename() => new string(this.RemoteFilename.Span);
 
-        public string GetFilename()
-        {
-            if (this.cachedRemoteFilename == null)
-            {
-                this.cachedRemoteFilename = new string(this.RemoteFilename.Span);
-            }
-            return this.cachedRemoteFilename;
-        }
+        public string GetFilenameWithoutAffix() => this.cachedFilenameWithoutAffix.Value;
+
+        public string GetFilename() => this.cachedRemoteFilename.Value;
 
         public ReadOnlySpan<char> GetSpanFilenameWithoutAffix() => GetFilenameWithoutAffix(this.RemoteFilename.Span);
 
@@ -99,8 +88,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
                 return filename;
             }
         }
-
-
 
         public Uri GetDownloadUrl(bool preferBackupServer = false)
         {

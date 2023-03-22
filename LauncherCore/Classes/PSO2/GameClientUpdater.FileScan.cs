@@ -392,7 +392,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
 
                         var flags = (patchItem.IsRebootData == false) ? fScanClassic : fScanReboot;
-
+                        // data/win32/2b486d03bca4c2578f9e204b234f389b
                         if (flags == FileScanFlags.MissingFilesOnly)
                         {
                             var localFilename = patchItem.GetFilenameWithoutAffix();
@@ -465,39 +465,33 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 var localFilename = patchItem.GetFilenameWithoutAffix();
                                 // string localFilePath = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data);
                                 var localFilePath = Path.GetFullPath(localFilename, dir_pso2bin);
-                                var isNotInCache = !duhB.TryGetPatchItem(localFilename, out var cachedHash);
+                                var isInCache = duhB.TryGetPatchItem(localFilename, out var cachedHash);
                                 // var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
 
                                 if (File.Exists(localFilePath))
                                 {
-                                    if (isNotInCache)
+                                    if (!isInCache)
                                     {
-                                        var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                                         using (var fs = OpenToScan(localFilePath))
                                         {
+                                            fs.GetFileLastWriteTimeUTC(out var localLastModifiedTimeUtc);
                                             scanBuffer = BorrowBufferCertainSize(scanBuffer, ScanBufferSize);
                                             var rawHashBuffer = await Md5ComputeHash(md5engi, fs, scanBuffer, cancellationToken);
-                                            var localMd5 = (HashHelper.TryWriteHashToHexString(hashBuffer, rawHashBuffer.Span) ? hashBuffer : Convert.ToHexString(rawHashBuffer.Span));
-                                            var newCacheItem = new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5.ToCharArray());
+                                            var localMd5 = (HashHelper.TryWriteHashToHexString(hashBuffer, rawHashBuffer.Span, out var hashBuffer_length) ? hashBuffer.ToCharArray(0, hashBuffer_length / sizeof(char)).AsMemory() : Convert.ToHexString(rawHashBuffer.Span).AsMemory());
+                                            var newCacheItem = new PatchListItem(null, patchItem.RemoteFilename, fs.Length, localMd5);
                                             cachedHash = duhB.SetPatchItem(newCacheItem, localLastModifiedTimeUtc);
                                             tweakerHashCache?.WriteString(newCacheItem.GetSpanFilenameWithoutAffix(), localMd5);
+                                            isInCache = true;
                                         }
                                     }
 
-                                    if (isNotInCache)
+                                    if (!MemoryExtensions.Equals(cachedHash.MD5, patchItem.MD5.Span, StringComparison.OrdinalIgnoreCase))
                                     {
                                         AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, cancellationToken);
                                     }
                                     else
                                     {
-                                        if (!MemoryExtensions.Equals(cachedHash.MD5, patchItem.MD5.Span, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, cancellationToken);
-                                        }
-                                        else
-                                        {
-                                            tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
-                                        }
+                                        tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
                                     }
                                 }
                                 else
@@ -527,6 +521,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(localFilePath);
                                     if (isInCache && localLastModifiedTimeUtc != cachedHash.LastModifiedTimeUTC)
                                     {
+                                        isInCache = false;
                                     }
                                     FileStream? fs = null;
                                     try
@@ -571,7 +566,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                                 }
                                                 else
                                                 {
-                                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), cachedHash.MD5);
+                                                    tweakerHashCache?.WriteString(patchItem.GetSpanFilenameWithoutAffix(), patchItem.MD5);
                                                 }
                                             }
                                         }

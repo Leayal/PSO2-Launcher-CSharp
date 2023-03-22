@@ -166,19 +166,267 @@ namespace Leayal.Shared.Windows
             return false;
         }
 
+        private unsafe static System.Runtime.InteropServices.ComTypes.FILETIME* AsPointer(ref System.Runtime.InteropServices.ComTypes.FILETIME data)
+                => (System.Runtime.InteropServices.ComTypes.FILETIME*)Unsafe.AsPointer(ref data);
+
+        /// <summary>Tries to get the file times from a handle to a file.</summary>
+        /// <param name="filehandle">The file handle to query time information.</param>
+        /// <param name="creationTime">The creation time (in local time) of the file.</param>
+        /// <param name="lastAccessTime">The last accessed time (in local time) of the file.</param>
+        /// <param name="lastWriteTime">The last written time (in local time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileTime(SafeFileHandle filehandle, out DateTime creationTime, out DateTime lastAccessTime, out DateTime lastWriteTime)
+        {
+            System.Runtime.InteropServices.ComTypes.FILETIME t_creationTime = new System.Runtime.InteropServices.ComTypes.FILETIME(),
+                t_lastAccessTime = new System.Runtime.InteropServices.ComTypes.FILETIME(),
+                t_lastWriteTime = new System.Runtime.InteropServices.ComTypes.FILETIME();
+
+            unsafe
+            {
+                if (PInvoke.GetFileTime(filehandle, AsPointer(ref t_creationTime), AsPointer(ref t_lastAccessTime), AsPointer(ref t_lastWriteTime)))
+                {
+                    creationTime = t_creationTime.ToDateTime();
+                    lastAccessTime = t_lastAccessTime.ToDateTime();
+                    lastWriteTime = t_lastWriteTime.ToDateTime();
+                    return true;
+                }
+                else
+                {
+                    creationTime = DateTime.MinValue;
+                    lastAccessTime = DateTime.MinValue;
+                    lastWriteTime = DateTime.MinValue;
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>Tries to get the file times from a file stream.</summary>
+        /// <param name="stream">The file stream to query time information.</param>
+        /// <param name="creationTime">The creation time (in UTC time) of the file.</param>
+        /// <param name="lastAccessTime">The last accessed time (in UTC time) of the file.</param>
+        /// <param name="lastWriteTime">The last written time (in UTC time) of the file.</param>
+        /// <returns><see langword="true"/> if the call succeeds. Otherwise, <see langword="false"/>.</returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileTimeUTC(this FileStream stream, out DateTime creationTime, out DateTime lastAccessTime, out DateTime lastWriteTime)
+            => GetFileTimeUTC(stream.SafeFileHandle, out creationTime, out lastAccessTime, out lastWriteTime);
+
+        /// <summary>Tries to get the file times from a handle to a file.</summary>
+        /// <param name="filehandle">The file handle to query time information.</param>
+        /// <param name="creationTime">The creation time (in UTC time) of the file.</param>
+        /// <param name="lastAccessTime">The last accessed time (in UTC time) of the file.</param>
+        /// <param name="lastWriteTime">The last written time (in UTC time) of the file.</param>
+        /// <returns><see langword="true"/> if the call succeeds. Otherwise, <see langword="false"/>.</returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileTimeUTC(SafeFileHandle filehandle, out DateTime creationTime, out DateTime lastAccessTime, out DateTime lastWriteTime)
+        {
+            System.Runtime.InteropServices.ComTypes.FILETIME t_creationTime = new System.Runtime.InteropServices.ComTypes.FILETIME(),
+                t_lastAccessTime = new System.Runtime.InteropServices.ComTypes.FILETIME(),
+                t_lastWriteTime = new System.Runtime.InteropServices.ComTypes.FILETIME();
+
+            unsafe
+            {
+                if (PInvoke.GetFileTime(filehandle, AsPointer(ref t_creationTime), AsPointer(ref t_lastAccessTime), AsPointer(ref t_lastWriteTime)))
+                {
+                    creationTime = t_creationTime.ToDateTimeUTC();
+                    lastAccessTime = t_lastAccessTime.ToDateTimeUTC();
+                    lastWriteTime = t_lastWriteTime.ToDateTimeUTC();
+                    return true;
+                }
+                else
+                {
+                    creationTime = DateTime.MinValue;
+                    lastAccessTime = DateTime.MinValue;
+                    lastWriteTime = DateTime.MinValue;
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>Tries to get the creation time of a file from a file stream.</summary>
+        /// <param name="stream">The file stream to fetch handle to query time information.</param>
+        /// <param name="creationTime">The creation time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileCreationTimeUTC(this FileStream stream, out DateTime creationTime)
+            => GetFileCreationTimeUTC(stream.SafeFileHandle, out creationTime);
+
+        /// <summary>Tries to get the creation time of a file from its handle.</summary>
+        /// <param name="filehandle">The file handle to query time information.</param>
+        /// <param name="creationTime">The creation time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileCreationTimeUTC(SafeFileHandle filehandle, out DateTime creationTime)
+        {
+            var t = new System.Runtime.InteropServices.ComTypes.FILETIME();
+
+            unsafe
+            { 
+                bool isRefAdded = false;
+                filehandle.DangerousAddRef(ref isRefAdded);
+                if (!isRefAdded)
+                {
+                    throw new ObjectDisposedException(nameof(filehandle));
+                }
+
+                try
+                {
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpCreationTime: AsPointer(ref t)))
+                    {
+                        creationTime = t.ToDateTimeUTC();
+                        return true;
+                    }
+                    else
+                    {
+                        creationTime = DateTime.MinValue;
+                        return false;
+                    }
+                }
+                finally
+                {
+                    filehandle.DangerousRelease();
+                }
+            }
+        }
+
+        /// <summary>Tries to get the creation time of a file from a file stream.</summary>
+        /// <param name="stream">The file stream to fetch handle to query time information.</param>
+        /// <param name="lastWriteTime">The last written time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileLastWriteTimeUTC(this FileStream stream, out DateTime lastWriteTime)
+            => GetFileLastWriteTimeUTC(stream.SafeFileHandle, out lastWriteTime);
+
+        /// <summary>Tries to get the creation time of a file from its handle.</summary>
+        /// <param name="filehandle">The file handle to query time information.</param>
+        /// <param name="lastWriteTime">The last written time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileLastWriteTimeUTC(SafeFileHandle filehandle, out DateTime lastWriteTime)
+        {
+            var t = new System.Runtime.InteropServices.ComTypes.FILETIME();
+
+            unsafe
+            {
+                bool isRefAdded = false;
+                filehandle.DangerousAddRef(ref isRefAdded);
+                if (!isRefAdded)
+                {
+                    throw new ObjectDisposedException(nameof(filehandle));
+                }
+
+                try
+                {
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastWriteTime: AsPointer(ref t)))
+                    {
+                        lastWriteTime = t.ToDateTimeUTC();
+                        return true;
+                    }
+                    else
+                    {
+                        lastWriteTime = DateTime.MinValue;
+                        return false;
+                    }
+                }
+                finally
+                {
+                    filehandle.DangerousRelease();
+                }
+            }
+        }
+
+        /// <summary>Tries to get the creation time of a file from a file stream.</summary>
+        /// <param name="stream">The file stream to fetch handle to query time information.</param>
+        /// <param name="lastAccessTime">The last accessed time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileLastAccessTimeUTC(this FileStream stream, out DateTime lastAccessTime)
+            => GetFileLastAccessTimeUTC(stream.SafeFileHandle, out lastAccessTime);
+
+        /// <summary>Tries to get the creation time of a file from its handle.</summary>
+        /// <param name="filehandle">The file handle to query time information.</param>
+        /// <param name="lastAccessTime">The last accessed time (in UTC time) of the file.</param>
+        /// <returns></returns>
+#if NET7_0_OR_GREATER
+        [Obsolete("You don't need this as .NET 7 already has similar standard API which accepts file handle.", false)]
+#endif
+        public static bool GetFileLastAccessTimeUTC(SafeFileHandle filehandle, out DateTime lastAccessTime)
+        {
+            var t = new System.Runtime.InteropServices.ComTypes.FILETIME();
+
+            unsafe
+            {
+                bool isRefAdded = false;
+                filehandle.DangerousAddRef(ref isRefAdded);
+                if (!isRefAdded)
+                {
+                    throw new ObjectDisposedException(nameof(filehandle));
+                }
+
+                try
+                {
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastAccessTime: AsPointer(ref t)))
+                    {
+                        lastAccessTime = t.ToDateTimeUTC();
+                        return true;
+                    }
+                    else
+                    {
+                        lastAccessTime = DateTime.MinValue;
+                        return false;
+                    }
+                }
+                finally
+                {
+                    filehandle.DangerousRelease();
+                }
+            }
+        }
+
         private static unsafe bool GetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
             => PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
 
         private static unsafe bool SetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
             => PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
 
-        public static DateTime ToDateTime(this System.Runtime.InteropServices.ComTypes.FILETIME time)
+        /// <summary>Converts the native file time to standard <seealso cref="DateTime"/> structure.</summary>
+        /// <param name="time">The native file time structure.</param>
+        /// <returns>A <seealso cref="DateTime"/> which is in UTC time format.</returns>
+        public static DateTime ToDateTimeUTC(this System.Runtime.InteropServices.ComTypes.FILETIME time)
         {
             ulong high = (ulong)time.dwHighDateTime;
             uint low = (uint)time.dwLowDateTime;
             long fileTime = (long)((high << 32) + low);
 
             return DateTime.FromFileTimeUtc(fileTime);
+        }
+
+        /// <summary>Converts the native file time to standard <seealso cref="DateTime"/> structure.</summary>
+        /// <param name="time">The native file time structure.</param>
+        /// <returns>A <seealso cref="DateTime"/> which is in local time format.</returns>
+        public static DateTime ToDateTime(this System.Runtime.InteropServices.ComTypes.FILETIME time)
+        {
+            ulong high = (ulong)time.dwHighDateTime;
+            uint low = (uint)time.dwLowDateTime;
+            long fileTime = (long)((high << 32) + low);
+
+            return DateTime.FromFileTime(fileTime);
         }
 
         /// <summary>Check if the given path is actually existed on the filesystem.</summary>

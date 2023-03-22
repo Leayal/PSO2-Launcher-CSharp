@@ -22,6 +22,7 @@ using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
+using Leayal.Shared;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
