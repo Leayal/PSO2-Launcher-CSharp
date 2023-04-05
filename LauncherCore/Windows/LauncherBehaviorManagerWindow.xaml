@@ -95,7 +95,7 @@
             <TextBlock Grid.Row="6" Text="Behavior when PSO2 data backups are found" VerticalAlignment="Center" />
             <localui:EnumComboBox Grid.Row="6" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_pso2databackupbehavior" />
 
-            <CheckBox Grid.Row="7" Content="Periodically for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
+            <CheckBox Grid.Row="8" Content="Periodically check for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
             <Grid Grid.Row="8" Grid.Column="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />

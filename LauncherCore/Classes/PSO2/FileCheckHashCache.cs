@@ -125,8 +125,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             };
         }
 
-        private Task PollingWrite() => this.PollingWrite(this.writebuffer);
-
         public void Load()
         {
             if (Interlocked.CompareExchange(ref this.state, 1, 0) == 0)
@@ -335,46 +333,51 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         IEnumerator IEnumerable.GetEnumerator() => this.buffering.GetEnumerator();
 
-        private async Task PollingWrite(BlockingCollection<PatchRecordItemValue> writebuffer)
+        private async Task PollingWrite()
         {
             var singular = new PatchRecordItem(); // Re-use this object to insert.
 
-            var conn = this.sqlConn;
-            while (!writebuffer.IsCompleted)
+            while (!this.writebuffer.IsCompleted)
             {
-                if (writebuffer.TryTake(out var item))
+                if (this.writebuffer.TryTake(out var item))
                 {
-                    conn.BeginTransaction();
+                    // Has to redeclare local var before use again as "ConfigureAwait(false)" discard machine state (which including the local vars before the switching thread context)
+                    // The old code has "conn" getting "NullReferenceException" at "conn.BeginTransaction()".
+                    var _conn = this.sqlConn;
+                    _conn.BeginTransaction();
                     try
                     {
                         singular.FileSize = item.FileSize;
                         singular.RemoteFilename = item.RemoteFilename;
                         singular.MD5 = item.MD5;
                         singular.LastModifiedTimeUTC = item.LastModifiedTimeUTC;
-                        conn.InsertOrReplace(singular);
-                        while (writebuffer.TryTake(out item))
+                        _conn.InsertOrReplace(singular);
+                        while (this.writebuffer.TryTake(out item))
                         {
                             singular.FileSize = item.FileSize;
                             singular.RemoteFilename = item.RemoteFilename;
                             singular.MD5 = item.MD5;
                             singular.LastModifiedTimeUTC = item.LastModifiedTimeUTC;
-                            conn.InsertOrReplace(singular);
+                            _conn.InsertOrReplace(singular);
                         }
-                        conn.Commit();
+                        _conn.Commit();
                     }
                     catch
                     {
-                        conn.Rollback();
+                        _conn.Rollback();
                     }
                 }
                 else
                 {
-                    if (!writebuffer.IsAddingCompleted)
+                    if (!this.writebuffer.IsAddingCompleted)
                     {
                         await Task.Delay(200).ConfigureAwait(false);
                     }
                 }
             }
+
+            // Has to redeclare local var before use again as "ConfigureAwait(false)" discard machine state (which including the local vars before the switching thread context)
+            var conn = this.sqlConn;
             var versionstring = Interlocked.Exchange<string>(ref this._bufferedPSO2ClientVersion, string.Empty);
             conn.BeginTransaction();
             try

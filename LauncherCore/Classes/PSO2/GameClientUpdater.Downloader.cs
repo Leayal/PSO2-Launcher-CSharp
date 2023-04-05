@@ -3,9 +3,11 @@ using Leayal.Shared;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xaml.Schema;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -64,123 +66,189 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 Directory.CreateDirectory(parentLocalFilePath);
                             }
 
-                            using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
+                            int retryCountLeft = 20;
+                            while ((retryCountLeft--) > 0)
                             {
-                                if (response.IsSuccessStatusCode)
+                                try
                                 {
-                                    // Check if the response has content-length header.
-                                    long remoteSizeInBytes = -1, bytesDownloaded = 0;
-                                    var header = response.Content.Headers.ContentLength;
-                                    if (header.HasValue)
+                                    using (var response = await this.webclient.OpenForDownloadAsync(downloadItem.PatchInfo, cancellationToken))
                                     {
-                                        remoteSizeInBytes = header.Value;
-                                    }
-                                    else
-                                    {
-                                        remoteSizeInBytes = downloadItem.PatchInfo.FileSize;
-                                    }
-
-                                    using (var remoteStream = response.Content.ReadAsStream())
-                                    using (var fileHandle = File.OpenHandle(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous,
-                                        // Reallocation file on the disk if the size if the size is finite.
-                                        remoteSizeInBytes > 0 ? remoteSizeInBytes : 0))
-                                    using (var localStream = new FileStream(fileHandle, FileAccess.Write, 4096 * 2, true))
-                                    {
-                                        if (localStream.Position != 0)
+                                        if (response.IsSuccessStatusCode)
                                         {
-                                            localStream.Position = 0;
-                                        }
-
-                                        this.OnProgressBegin(id, downloadItem.PatchInfo, in remoteSizeInBytes);
-                                        if (remoteSizeInBytes == -1)
-                                        {
-                                            // Download without knowing total size, until upstream get EOF.
-
-                                            // Still need async to support cancellation faster.
-                                            var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
-                                            while (byteRead > 0)
+                                            // Check if the response has content-length header.
+                                            long remoteSizeInBytes = -1, bytesDownloaded = 0;
+                                            var header = response.Content.Headers.ContentLength;
+                                            if (header.HasValue)
                                             {
-                                                if (cancellationToken.IsCancellationRequested)
+                                                remoteSizeInBytes = header.Value;
+                                            }
+                                            else
+                                            {
+                                                remoteSizeInBytes = downloadItem.PatchInfo.FileSize;
+                                            }
+
+                                            using (var remoteStream = response.Content.ReadAsStream())
+                                            using (var fileHandle = File.OpenHandle(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous,
+                                                // Reallocation file on the disk if the size if the size is finite.
+                                                remoteSizeInBytes > 0 ? remoteSizeInBytes : 0))
+                                            using (var localStream = new FileStream(fileHandle, FileAccess.Write, 4096 * 2, true))
+                                            {
+                                                if (localStream.Position != 0)
                                                 {
-                                                    break;
+                                                    localStream.Position = 0;
                                                 }
 
-                                                var t_write = localStream.WriteAsync(downloadbuffer, 0, byteRead, cancellationToken);
-                                                md5engine.AppendData(downloadbuffer, 0, byteRead);
-                                                bytesDownloaded += byteRead;
-                                                await t_write;
-
-                                                byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // Download while reporting the download progress, until upstream get EOF.
-                                            var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
-                                            while (byteRead > 0)
-                                            {
-                                                if (cancellationToken.IsCancellationRequested)
+                                                this.OnProgressBegin(id, downloadItem.PatchInfo, in remoteSizeInBytes);
+                                                if (remoteSizeInBytes == -1)
                                                 {
-                                                    break;
+                                                    // Download without knowing total size, until upstream get EOF.
+
+                                                    // Still need async to support cancellation faster.
+                                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
+                                                    while (byteRead > 0)
+                                                    {
+                                                        if (cancellationToken.IsCancellationRequested)
+                                                        {
+                                                            retryCountLeft = 0;
+                                                            break;
+                                                        }
+
+                                                        var t_write = localStream.WriteAsync(downloadbuffer, 0, byteRead, cancellationToken);
+                                                        md5engine.AppendData(downloadbuffer, 0, byteRead);
+                                                        bytesDownloaded += byteRead;
+                                                        await t_write;
+
+                                                        byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // Download while reporting the download progress, until upstream get EOF.
+                                                    var byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
+                                                    while (byteRead > 0)
+                                                    {
+                                                        if (cancellationToken.IsCancellationRequested)
+                                                        {
+                                                            retryCountLeft = 0;
+                                                            break;
+                                                        }
+
+                                                        var t_write = localStream.WriteAsync(downloadbuffer, 0, byteRead, cancellationToken);
+                                                        md5engine.AppendData(downloadbuffer, 0, byteRead);
+                                                        bytesDownloaded += byteRead;
+                                                        await t_write;
+
+                                                        // Report progress here
+                                                        this.OnProgressReport(id, downloadItem.PatchInfo, in bytesDownloaded);
+                                                        byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
+                                                    }
                                                 }
 
-                                                var t_write = localStream.WriteAsync(downloadbuffer, 0, byteRead, cancellationToken);
-                                                md5engine.AppendData(downloadbuffer, 0, byteRead);
-                                                bytesDownloaded += byteRead;
-                                                await t_write;
+                                                // Flush all the buffering data into the physical disk.
+                                                localStream.Flush();
 
-                                                // Report progress here
-                                                this.OnProgressReport(id, downloadItem.PatchInfo, in bytesDownloaded);
-                                                byteRead = await remoteStream.ReadAsync(downloadbuffer, 0, chunkCount, cancellationToken);
+                                                // Final check
+                                                ReadOnlyMemory<byte> rawhash;
+                                                Memory<byte> therest;
+                                                if (md5engine.TryGetHashAndReset(downloadbuffer, out var hashSize))
+                                                {
+                                                    rawhash = new ReadOnlyMemory<byte>(downloadbuffer, 0, hashSize);
+                                                    therest = new Memory<byte>(downloadbuffer, hashSize, downloadbuffer.Length - hashSize);
+
+                                                }
+                                                else
+                                                {
+                                                    rawhash = md5engine.GetHashAndReset();
+                                                    therest = new Memory<byte>(downloadbuffer);
+                                                }
+
+                                                if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(therest.Span), rawhash.Span, out var writtenBytes))
+                                                {
+                                                    if (MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(therest.Slice(0, writtenBytes).Span), downloadItem.PatchInfo.MD5.Span, StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        retryCountLeft = 0;
+                                                        isSuccess = true;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if (MemoryExtensions.Equals(downloadItem.PatchInfo.MD5.Span, Convert.ToHexString(rawhash.Span), StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        retryCountLeft = 0;
+                                                        isSuccess = true;
+                                                    }
+                                                }
+
+                                                // Only perform resize if the downloaded file is success.
+                                                // Because otherwise the file will be deleted anyway so no need to resize.
+                                                if (isSuccess && localStream.Length != bytesDownloaded)
+                                                {
+                                                    // If the pre-allocated size doesn't match with what we've downloaded
+                                                    localStream.SetLength(bytesDownloaded);
+                                                }
                                             }
-                                        }
-
-                                        // Flush all the buffering data into the physical disk.
-                                        localStream.Flush();
-
-                                        // Final check
-                                        ReadOnlyMemory<byte> rawhash;
-                                        Memory<byte> therest;
-                                        if (md5engine.TryGetHashAndReset(downloadbuffer, out var hashSize))
-                                        {
-                                            rawhash = new ReadOnlyMemory<byte>(downloadbuffer, 0, hashSize);
-                                            therest = new Memory<byte>(downloadbuffer, hashSize, downloadbuffer.Length - hashSize);
-
                                         }
                                         else
                                         {
-                                            rawhash = md5engine.GetHashAndReset();
-                                            therest = new Memory<byte>(downloadbuffer);
-                                        }
+                                            // Retry again for 10 times.
 
-                                        if (HashHelper.TryWriteHashToHexString(MemoryMarshal.Cast<byte, char>(therest.Span), rawhash.Span, out var writtenBytes))
-                                        {
-                                            if (MemoryExtensions.Equals(MemoryMarshal.Cast<byte, char>(therest.Slice(0, writtenBytes).Span), downloadItem.PatchInfo.MD5.Span, StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                isSuccess = true;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (MemoryExtensions.Equals(downloadItem.PatchInfo.MD5.Span, Convert.ToHexString(rawhash.Span), StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                isSuccess = true;
-                                            }
-                                        }
-
-                                        // Only perform resize if the downloaded file is success.
-                                        // Because otherwise the file will be deleted anyway so no need to resize.
-                                        if (isSuccess && localStream.Length != bytesDownloaded)
-                                        {
-                                            // If the pre-allocated size doesn't match with what we've downloaded
-                                            localStream.SetLength(bytesDownloaded);
+                                            // Otherwise report failure and continue to another file.
+                                            // isSuccess is already "false" so we do nothing here.
                                         }
                                     }
                                 }
-                                else
+                                catch (System.Net.Http.HttpRequestException ex)
                                 {
-                                    // Report failure and continue to another file.
-                                    // isSuccess is already "false" so we do nothing here.
+                                    isSuccess = false;
+                                    if (!ex.StatusCode.HasValue)
+                                    {
+                                        // shouldRetryDownloadAgain = false;
+                                        retryCountLeft = 0;
+                                        throw;
+                                    }
+
+                                    var codeAsNumber = (int)ex.StatusCode.Value;
+                                    if (codeAsNumber >= 500 && codeAsNumber < 600)
+                                    {
+                                        await Task.Delay(1000);
+                                    }
+                                    else if (codeAsNumber >= 400 && codeAsNumber < 500)
+                                    {
+                                        retryCountLeft = 0;
+                                        throw;
+                                    }
+                                }
+                                catch (System.Net.WebException ex)
+                                {
+                                    isSuccess = false;
+                                    if (ex.Status == System.Net.WebExceptionStatus.ConnectFailure
+                                        || ex.Status == System.Net.WebExceptionStatus.SendFailure
+                                        || ex.Status == System.Net.WebExceptionStatus.Timeout
+                                        || ex.Status == System.Net.WebExceptionStatus.ReceiveFailure
+                                        || ex.Status == System.Net.WebExceptionStatus.ConnectionClosed
+                                        || ex.Status == System.Net.WebExceptionStatus.PipelineFailure)
+                                    {
+                                        await Task.Delay(1000);
+                                    }
+                                    else
+                                    {
+                                        retryCountLeft = 0;
+                                        throw;
+                                    }
+                                }
+                                catch (System.Net.Sockets.SocketException ex)
+                                {
+                                    isSuccess = false;
+                                    if (ex.ErrorCode == 10054)
+                                    {
+                                        // Connection was forcibly closed by remote host.
+                                        await Task.Delay(500);
+                                    }
+                                    else
+                                    {
+                                        retryCountLeft = 0;
+                                        throw;
+                                    }
                                 }
                             }
 
