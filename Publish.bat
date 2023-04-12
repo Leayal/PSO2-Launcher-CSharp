@@ -4,7 +4,7 @@ SET "DOTNET_CLI_TELEMETRY_OPTOUT=1"
 
 REM This file is now served as a fall-back whenever MS messed up the SDK again.
 REM This batch script will force download the SDK v6.0.100.
-call Tools\SetupEnv.bat
+REM call Tools\SetupEnv.bat
 
 SETLOCAL
 SET "PublishRootDir=docs\publish\v6"

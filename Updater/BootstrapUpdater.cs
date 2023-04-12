@@ -82,6 +82,7 @@ namespace Leayal.PSO2Launcher.Updater
 
             StringBuilder? sb = null;
 
+            /*
             // If we're compiling targeting .NET 6 and if .NET Desktop Runtime is lower than 6.0.2.
 #if NET6_0
             Version runtimeVersion = Environment.Version,
@@ -137,6 +138,7 @@ namespace Leayal.PSO2Launcher.Updater
                 }
             }
 #endif
+            */
 
             // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
             this._osArch = RuntimeInformation.OSArchitecture;
