@@ -166,6 +166,12 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         this.OnOperationBegin(taskCount);
 
                         var t_patchlist = this.InnerGetFilelistToScan(selection, cancellationToken);
+
+                        // In case the folder is deleted after accepting the prompt but before the SQLite3 file is created (below).
+                        // Or in case the directory doesn't existed in the first place.
+                        // Create it to allow creating the SQLite3. Otherwise, "A part of the path to file doesn't exist" error may happen.
+                        Directory.CreateDirectory(dir_pso2bin);
+
                         duhB = new FileCheckHashCache(Path.GetFullPath("leapso2launcher.CheckCache.dat", dir_pso2bin), taskCount + 1);
                         duhB.Load();
 
