@@ -246,6 +246,9 @@ namespace Leayal.Shared.Windows
             throw new IOException();
         }
 
+        const uint FILE_GENERIC_READ = (uint)(MSWin32.Storage.FileSystem.FILE_ACCESS_RIGHTS.FILE_READ_ATTRIBUTES | MSWin32.Storage.FileSystem.FILE_ACCESS_RIGHTS.FILE_READ_DATA |
+                MSWin32.Storage.FileSystem.FILE_ACCESS_RIGHTS.FILE_READ_EA | MSWin32.Storage.FileSystem.FILE_ACCESS_RIGHTS.STANDARD_RIGHTS_READ | MSWin32.Storage.FileSystem.FILE_ACCESS_RIGHTS.SYNCHRONIZE);
+
         private static SafeFileHandle GetFileHandle(string path)
         {
             /* Oddly enough File.OpenHandle open accept path to file. If open a directory this way, it will throw UnauthorizedAccess.
@@ -257,9 +260,16 @@ namespace Leayal.Shared.Windows
             }
             */
             // Use Windows's API directory, which allows open a handle to a directory or a file regardless.
-            return PInvoke.CreateFile(path, MSWin32.Storage.FileSystem.FILE_ACCESS_FLAGS.FILE_GENERIC_READ, MSWin32.Storage.FileSystem.FILE_SHARE_MODE.FILE_SHARE_READ, null, MSWin32.Storage.FileSystem.FILE_CREATION_DISPOSITION.OPEN_EXISTING, MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_OPEN_REPARSE_POINT | MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_BACKUP_SEMANTICS, null);
+
+            // MSWin32.Storage.FileSystem.FILE_INFO_BY_HANDLE_CLASS.
+            // FILE_GENERIC_READ = FILE_READ_ATTRIBUTES | FILE_READ_DATA | FILE_READ_EA | STANDARD_RIGHTS_READ | SYNCHRONIZE
+            
+            return PInvoke.CreateFile(path, FILE_GENERIC_READ, MSWin32.Storage.FileSystem.FILE_SHARE_MODE.FILE_SHARE_READ, null, MSWin32.Storage.FileSystem.FILE_CREATION_DISPOSITION.OPEN_EXISTING, MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_OPEN_REPARSE_POINT | MSWin32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_BACKUP_SEMANTICS, null);
         }
 
+        /// <summary>Gets the path to symbolic's targeted file.</summary>
+        /// <param name="path">Path to the symbolic file.</param>
+        /// <returns>The relative or absolute path to the targeted file. If <paramref name="path"/> is not a symbolic link, return <see langword="null"/>.</returns>
         public static string? GetTarget(string path)
         {
             SymbolicLinkReparseData reparseDataBuffer;
@@ -270,10 +280,11 @@ namespace Leayal.Shared.Windows
                     Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
                 }
                 int outBufferSize = Marshal.SizeOf<SymbolicLinkReparseData>();
-                IntPtr hMem = Marshal.AllocHGlobal(outBufferSize);
                 bool success, dangerRefAdded = false;
                 uint bytesReturned = 0;
                 fileHandle.DangerousAddRef(ref dangerRefAdded);
+                if (!dangerRefAdded) throw new ObjectDisposedException(null, "The file handle couldn't be opened or unknown error occured.");
+                IntPtr hMem = Marshal.AllocHGlobal(outBufferSize);
                 try
                 {
                     unsafe

@@ -216,6 +216,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }, dir_pso2bin);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private async void TabMainMenu_GameStartRequested(object sender, GameStartStyleEventArgs e)
         {
             GameStartStyle requestedStyle;
@@ -650,14 +651,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     */
                                 }
 
-                                this.CreateNewLineInConsoleLog("GameStart", "Quick check executable files...");
-
-                                // Select "Balanced" for safety reason.
-                                await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, FileScanFlags.Balanced, FileScanFlags.CacheOnly, false, cancelToken);
-                                
                                 if (!cancelToken.IsCancellationRequested)
                                 {
-                                    if (this.config_main.LauncherDisableInGameFileIntegrityCheck)
+                                    var ___willReplaceHashTable = this.config_main.LauncherDisableInGameFileIntegrityCheck;
+                                    this.CreateNewLineInConsoleLog("GameStart", "Quick check executable files...");
+                                    // Select "Balanced" for safety reason.
+                                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                                    static FileScanFlags AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags flags, bool willReplaceHashTable) => (willReplaceHashTable ? (flags | FileScanFlags.IgnoreHashTableFile) : flags);
+
+                                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.Balanced, ___willReplaceHashTable), AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.CacheOnly, ___willReplaceHashTable), false, cancelToken);
+                                    if (___willReplaceHashTable)
                                     {
                                         var replaced = await ReplaceInGameIntegrityTableFile(dir_pso2bin);
                                         if (replaced)

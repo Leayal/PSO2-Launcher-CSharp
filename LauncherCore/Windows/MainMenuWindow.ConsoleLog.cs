@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         delegate void ConsoleLogWriter<TArg>(TextEditor consoleLog, DocumentTextWriter writer, int absoluteOffsetOfDocumentLine, TArg arg);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ShowLogDialogFromGuid(in Guid guid)
         {
             if (this.dialogReferenceByUUID.TryGetValue(guid, out var handler))
@@ -43,6 +45,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         /// <summary>Only be here for convenient edits.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConsoleLogHelper_WriteLogSender(DocumentTextWriter writer, string sender)
         {
             var absoluteOffsetOfItem = writer.InsertionOffset;
@@ -53,6 +56,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         /// <summary>Only be here for convenient edits.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConsoleLogHelper_WriteHyperLink(DocumentTextWriter writer, string caption, Uri url, Action<HyperlinkVisualLineElementData>? linkClickedCallback)
         {
             var absoluteOffsetOfItem = writer.InsertionOffset;
@@ -92,6 +96,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.consolelog_hyperlinkparser.Add(hyperlinkVisualLineElementData);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void CreateNewLineInConsoleLog<TArg>(string? sender, ConsoleLogWriter<TArg> callback, TArg arg, bool newline = true, bool followLastLine = true)
         {
             if (callback == null) throw new ArgumentNullException(nameof(callback));
@@ -138,6 +143,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewLineInConsoleLog(string sender, string message, Brush? textColor_darkTheme = null, Brush? textColor_lightTheme = null, bool newline = true, bool followLastLine = true)
         {
             this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
@@ -151,6 +157,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }, (this, sender, message), newline, followLastLine);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewErrorLineInConsoleLog(string sender, string message, string? title, Exception exception, bool newline = true, bool followLastLine = true)
         {
             this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
@@ -179,6 +186,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }, (this, sender, message, title, exception), newline, followLastLine);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewWarnLineInConsoleLog(string sender, string message, bool newline = true, bool followLastLine = true)
         {
             this.CreateNewLineInConsoleLog(sender, (console, writer, absoluteOffsetOfCurrentLine, arg) =>
@@ -196,6 +204,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }, (this, sender, message), newline, followLastLine);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void CreateNewErrorLineInConsoleLog(string sender, ICollection<System.Windows.Documents.Inline> lines, string? title, Exception exception, bool newline = true, bool followLastLine = true)
         {
             if (lines == null || lines.Count == 0)
@@ -208,6 +217,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.CreateNewErrorLineInConsoleLog(sender, string.IsNullOrEmpty(firstLine) ? exception.Message : firstLine, title, exception, newline, followLastLine);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static void VisualLineLinkText_LinkClicked(HyperlinkVisualLineElementData element)
         {
             var url = element.NavigateUri;

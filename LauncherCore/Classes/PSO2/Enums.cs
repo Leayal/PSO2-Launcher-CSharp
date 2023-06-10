@@ -46,6 +46,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         /// </remarks>
         CacheOnly = 1 << 4,
 
+        /// <summary>Excludes the hash table file from file check and download.</summary>
+        /// <remarks><para>Hash table file is <u>data/win32/d4455ebc2bef618f29106da7692ebc1a</u>.</para></remarks>
+        IgnoreHashTableFile = 1 << 5,
+
         // Preset below
 
         [EnumDisplayName("Prefer speed [Not recommended: Unreliable] (Check missing and compare the cached MD5-hash if the file is already existed)")]

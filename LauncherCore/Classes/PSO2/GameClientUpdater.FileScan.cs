@@ -8,15 +8,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using Leayal.Shared.Windows;
+using System.Runtime.CompilerServices;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
 #nullable enable
     partial class GameClientUpdater
     {
+        private static readonly string __Filename_HashTableRelativePath = "data/win32/d4455ebc2bef618f29106da7692ebc1a";
+
         const int ScanBufferSize = 1024 * 16; // 16KB buffer
         private async Task<PatchListMemory> InnerGetFilelistToScan(GameClientSelection selection, CancellationToken cancellationToken)
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void AddToPatchListTasks(Task<PatchListMemory> t, List<Task<PatchListMemory>> list)
             {
                 if (t.Status == TaskStatus.Created)
@@ -223,6 +227,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 // So optional, silent the error since it's okay even if it fails.
 
                 // Add "Directory.ResolveLinkTarget" so that in case the backup directory is actually a symlink. We will preserve it instead.
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static void TryDelEmptyBackupFolder(string path)
                 {
                     if (Directory.Exists(path) && Directory.ResolveLinkTarget(path, false) == null && !DirectoryHelper.IsDirectoryNotEmpty(path))
@@ -266,6 +271,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             if (fScanClassic == FileScanFlags.None)
@@ -319,6 +325,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             */
 
             int processedFiles = 0;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool IsHashTableFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath.AsSpan(11), StringComparison.OrdinalIgnoreCase));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data, CancellationToken cancellationToken)
             {
                 var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, out var isLink);
@@ -327,6 +338,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 callback.Invoke(in item);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static byte[] BorrowBufferCertainSize(byte[]? buffer, int size)
             {
                 if (buffer == null)
@@ -342,6 +354,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return buffer;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static async Task<ReadOnlyMemory<byte>> Md5ComputeHash(IncrementalHash engine, FileStream stream, byte[] workingbuffer, CancellationToken cancellationToken, bool retainPosition = false)
             {
                 long pos = -1;
@@ -374,6 +387,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 return new ReadOnlyMemory<byte>(workingbuffer, 0, hashlen);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static FileStream OpenToScan(string localFilePath) => new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, true);
 
             using (var throttleWaiter = (fileCheckThrottleFactor == 0 ? null : new PeriodicTimerWithoutException(TimeSpan.FromMilliseconds(fileCheckThrottleFactor))))
@@ -392,6 +406,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
 
                         var flags = (patchItem.IsRebootData == false) ? fScanClassic : fScanReboot;
+                        if ((flags & FileScanFlags.IgnoreHashTableFile) != 0 && IsHashTableFile(patchItem))
+                        {
+                            continue;
+                        }
                         // data/win32/2b486d03bca4c2578f9e204b234f389b
                         if (flags == FileScanFlags.MissingFilesOnly)
                         {

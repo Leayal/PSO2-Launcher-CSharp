@@ -11,6 +11,7 @@ GetFileInformationByHandleEx
 SetFileInformationByHandle
 FILE_BASIC_INFO
 GetFileTime
+FILE_ACCESS_RIGHTS
 
 // UnmanagedWindowsHelper
 SetForegroundWindow

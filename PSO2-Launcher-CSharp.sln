@@ -33,15 +33,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.Shared.Windows", "Le
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherCoreNew", "LauncherCoreNew\LauncherCoreNew.csproj", "{00BC2E6F-3C36-48F6-9798-1909EB89AE3F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminProcess", "AdminProcess\AdminProcess.csproj", "{6B564E9C-026E-4AC8-BED1-E8B3055B1859}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox", "LauncherToolbox\LauncherToolbox.csproj", "{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LauncherToolbox.Windows", "LauncherToolbox.Windows\LauncherToolbox.Windows.csproj", "{664516AC-3941-4801-B070-5E7864B0D70A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLite-net-sqlcipher", "SQLite-net-sqlcipher\SQLite-net-sqlcipher.csproj", "{7D5217FF-D9C8-4357-99D0-23695DAFC90E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Leayal.PSO2.Modding", "Leayal.PSO2.Modding\Leayal.PSO2.Modding.csproj", "{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Leayal.PSO2.Modding", "Leayal.PSO2.Modding\Leayal.PSO2.Modding.csproj", "{3F0C36DD-E9B3-4EE5-9AE8-A84588D365DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -140,12 +138,6 @@ Global
 		{00BC2E6F-3C36-48F6-9798-1909EB89AE3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{00BC2E6F-3C36-48F6-9798-1909EB89AE3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00BC2E6F-3C36-48F6-9798-1909EB89AE3F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Debug HTTP Requests|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Debug HTTP Requests|Any CPU.Build.0 = Debug|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B564E9C-026E-4AC8-BED1-E8B3055B1859}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Debug HTTP Requests|Any CPU.ActiveCfg = Debug|Any CPU
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Debug HTTP Requests|Any CPU.Build.0 = Debug|Any CPU
 		{4EF3A7E0-634B-4477-8BB7-8F61FD4F5A32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU

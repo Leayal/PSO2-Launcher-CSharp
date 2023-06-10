@@ -19,7 +19,7 @@ namespace Leayal.Shared.Windows
             bool success;
             unsafe
             {
-                success = PInvoke.EnumDisplayMonitors(null, null, new MONITORENUMPROC(counter.Callback), new MSWin32.Foundation.LPARAM(0));
+                success = PInvoke.EnumDisplayMonitors(new HDC(0), lpfnEnum: new MONITORENUMPROC(counter.Callback), dwData: new MSWin32.Foundation.LPARAM(0));
             }
             if (success)
             {
