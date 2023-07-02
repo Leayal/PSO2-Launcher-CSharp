@@ -26,9 +26,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         /// <summary>Normalize the path separator in the string to be all same.</summary>
         /// <param name="path">The string contains the path to normalize.</param>
-        /// <returns>The same string if there is no modification happens, or the new allocated string which has the normalized path.</returns>
+        /// <returns>Returns <see langword="null"/> if <paramref name="path"/> is <see langword="null"/>, or the same string if there is no modification happens, or the new allocated string which has the normalized path.</returns>
         /// <remarks>This also calls <seealso cref="Path.TrimEndingDirectorySeparator"/> internally so the returned path will not have the directory separator at the end.</remarks>
-        public static string NormalizePathSeparator(string path)
+        public static string? NormalizePathSeparator(string? path)
         {
             if (string.IsNullOrWhiteSpace(path)) return path;
 

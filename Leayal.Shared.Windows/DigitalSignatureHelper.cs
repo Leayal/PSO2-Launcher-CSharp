@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 namespace Leayal.Shared.Windows
 {
+    /// <summary>Low-level WinTrust APIs.</summary>
     public static class DigitalSignatureHelper
     {
         private static readonly IntPtr NegativeOne = new IntPtr(-1);

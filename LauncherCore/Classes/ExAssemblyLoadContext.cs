@@ -21,7 +21,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this.solver = new AssemblyDependencyResolver(entryPath);
         }
 
-        protected override Assembly Load(AssemblyName assemblyName)
+        protected override Assembly? Load(AssemblyName assemblyName)
         {
             if (AssemblyName.ReferenceMatchesDefinition(assemblyName, CurrentAsm.GetName())) return CurrentAsm;
             var path = this.solver.ResolveAssemblyToPath(assemblyName);

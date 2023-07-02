@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Leayal.PSO2.UserConfig
@@ -16,25 +17,34 @@ namespace Leayal.PSO2.UserConfig
         private readonly Lazy<StringBuilder> _sb;
         public string Name { get; }
 
-        public UserConfig(string name) : base()
+        /// <summary><para>Creates a new instance with the root section name to be <u>Ini</u>.</para></summary>
+        public UserConfig() : this("Ini") { }
+
+        /// <summary>Creates a new instance with the given name for root section name.</summary>
+        /// <remarks>PSO2 and NGS use "Ini" (without quotes).</remarks>
+        public UserConfig(string rootSectionName) : base()
         {
-            this.Name = name;
+            this.Name = rootSectionName;
             this._sb = new Lazy<StringBuilder>();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private StringBuilder ReuseStringBuilder() => this._sb.IsValueCreated ? this._sb.Value.Clear() : this._sb.Value;
+
         public void SaveAs(string filepath)
         {
-            StringBuilder sb;
-            if (this._sb.IsValueCreated)
-            {
-                sb = this._sb.Value.Clear();
-            }
-            else
-            {
-                sb = this._sb.Value;
-            }
+            var sb = this.ReuseStringBuilder();
             this.WriteValueTo(sb);
-            using (var sw = new StreamWriter(File.ResolveLinkTarget(filepath, true)?.FullName ?? filepath, false, Encoding.UTF8))
+
+            if (File.Exists(filepath))
+            {
+                var symlinkProp = File.ResolveLinkTarget(filepath, true);
+                if (symlinkProp != null)
+                {
+                    filepath = symlinkProp.FullName;
+                }
+            }
+            using (var sw = new StreamWriter(filepath, false, Encoding.UTF8))
             {
                 sw.WriteLine(sb.ToString());
                 sw.Flush();
@@ -45,15 +55,7 @@ namespace Leayal.PSO2.UserConfig
         /// <returns>A string which is the configuration data.</returns>
         public override string ToString()
         {
-            StringBuilder sb;
-            if (this._sb.IsValueCreated)
-            {
-                sb = this._sb.Value.Clear();
-            }
-            else
-            {
-                sb = this._sb.Value;
-            }
+            var sb = this.ReuseStringBuilder();
             this.WriteValueTo(sb);
             return sb.ToString();
         }

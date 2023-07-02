@@ -92,8 +92,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             {
                 throw new ArgumentException(nameof(patchlists));
             }
-
-            if (patchlists.Length == 1)
+            else if (patchlists.Length == 1)
             {
                 if (patchlists[0] is PatchListMemory mem)
                 {

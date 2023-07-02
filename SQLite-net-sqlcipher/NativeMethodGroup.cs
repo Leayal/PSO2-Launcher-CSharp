@@ -6,6 +6,7 @@ using SQLitePCL;
 using static SQLite.NativeDelegates;
 using static SQLite.NativeMethodGroup;
 
+#nullable enable
 namespace SQLite
 {
     /// <summary>Reinvent the wheel? Not actually, it's justa full copy with no-brain copypaste edits. Still an effort.</summary>
@@ -1203,3 +1204,5 @@ namespace SQLite
         public readonly d_sqlite3_keyword_name sqlite3_keyword_name;
     }
 }
+
+#nullable restore

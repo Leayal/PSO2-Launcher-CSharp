@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Leayal.Shared.Windows
 {
+    /// <summary>Low-level FileSystem APIs</summary>
     public static class FileSystem
     {
         const int FILE_ATTRIBUTE_DIRECTORY = 16,
@@ -399,10 +400,10 @@ namespace Leayal.Shared.Windows
             }
         }
 
-        private static unsafe bool GetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
+        internal static unsafe bool GetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
             => PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
 
-        private static unsafe bool SetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
+        internal static unsafe bool SetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
             => PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
 
         /// <summary>Converts the native file time to standard <seealso cref="DateTime"/> structure.</summary>

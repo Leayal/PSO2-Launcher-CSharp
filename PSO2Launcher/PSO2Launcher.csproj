@@ -10,7 +10,7 @@
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <ApplicationIcon>Resources\1.ico</ApplicationIcon>
     <Version>3.0.0</Version>
-	<FileVersion>3.2.6</FileVersion>
+	<FileVersion>3.2.7</FileVersion>
     <UseWPF>True</UseWPF>
     <Nullable>enable</Nullable>
     <Authors>Dramiel Leayal</Authors>

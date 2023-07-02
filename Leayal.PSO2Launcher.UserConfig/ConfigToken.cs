@@ -66,9 +66,9 @@ namespace Leayal.PSO2.UserConfig
 
         public bool RemoveProperty(in ReadOnlyMemory<char> propertyName) => this.values.Remove(propertyName);
 
-        public bool TryGetProperty(string propertyName, [NotNullWhen(true)] out object value) => this.TryGetProperty(propertyName.AsMemory(), out value);
+        public bool TryGetProperty(string propertyName, [NotNullWhen(true)] out object? value) => this.TryGetProperty(propertyName.AsMemory(), out value);
 
-        public bool TryGetProperty(in ReadOnlyMemory<char> propertyName, out object value) => this.values.TryGetValue(propertyName, out value);
+        public bool TryGetProperty(in ReadOnlyMemory<char> propertyName, [NotNullWhen(true)] out object? value) => this.values.TryGetValue(propertyName, out value);
 
         public void WriteValueTo(StringBuilder sb) => WriteValueTo(sb, 0);
 

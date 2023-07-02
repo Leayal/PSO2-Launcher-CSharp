@@ -11,6 +11,7 @@ using Leayal.Shared;
 
 namespace Leayal.Shared.Windows
 {
+    /// <summary>Convenient methods to interact with Files Explorer of Windows OS.</summary>
     public static class WindowsExplorerHelper
     {
         private static readonly string ExplorerExe = Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows));
@@ -298,7 +299,7 @@ namespace Leayal.Shared.Windows
         }
 
         [ComImport, Guid("BBCBDE60-C3FF-11CE-8350-444553540000"), TypeLibType((short)0x1040), DefaultMember("Title")]
-        public interface Folder
+        interface Folder
         {
             [DispId(0)]
             string Title { [return: MarshalAs(UnmanagedType.BStr)][MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId(0)] get; }
@@ -326,7 +327,7 @@ namespace Leayal.Shared.Windows
         }
 
         [ComImport, Guid("744129E0-CBE5-11CE-8350-444553540000"), TypeLibType((short)0x1040)]
-        public interface FolderItems
+        interface FolderItems
         {
             [DispId(0x60020000)]
             int Count { [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId(0x60020000)] get; }
@@ -340,7 +341,7 @@ namespace Leayal.Shared.Windows
         }
 
         [ComImport, Guid("FAC32C80-CBE4-11CE-8350-444553540000"), TypeLibType((short)0x1040), DefaultMember("Name")]
-        public interface FolderItem
+        interface FolderItem
         {
             [DispId(0x60020000)]
             object Application { [return: MarshalAs(UnmanagedType.IDispatch)][MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime), DispId(0x60020000)] get; }

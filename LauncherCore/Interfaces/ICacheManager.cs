@@ -10,7 +10,7 @@ namespace Leayal.PSO2Launcher.Core.Interfaces
     {
         ValueTask Load();
 
-        ValueTask<T> TryGet(string name);
+        ValueTask<T?> TryGet(string name);
 
         ValueTask<T> GetOrAdd(string name, Func<Task<T>> factoryIfNotFoundOrInvalidCache);
     }

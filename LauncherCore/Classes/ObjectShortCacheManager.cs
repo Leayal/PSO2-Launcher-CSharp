@@ -20,7 +20,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         public ValueTask Load() => ValueTask.CompletedTask;
 
-        public async ValueTask<T> TryGet(string name)
+        public async ValueTask<T?> TryGet(string name)
         {
             if (this.innerCache.TryGetValue(name, out var cached))
             {

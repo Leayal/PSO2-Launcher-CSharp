@@ -24,8 +24,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             {
                 throw new UnexpectedDataFormatException();
             }
-            this.UserId = prop_userId.GetString();
-            this.Token = prop_token.GetString();
+            var valTest = prop_userId.GetString();
+            if (string.IsNullOrEmpty(valTest)) throw new UnexpectedDataFormatException();
+            this.UserId = valTest;
+
+            valTest = prop_token.GetString();
+            if (string.IsNullOrEmpty(valTest)) throw new UnexpectedDataFormatException();
+            this.Token = valTest;
             if (prop_otpRequired.ValueKind == JsonValueKind.True || prop_otpRequired.ValueKind == JsonValueKind.False)
             {
                 this.RequireOTP = prop_otpRequired.GetBoolean();

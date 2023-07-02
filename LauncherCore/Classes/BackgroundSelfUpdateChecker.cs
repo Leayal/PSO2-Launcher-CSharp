@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Concurrent;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
@@ -14,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 {
     class BackgroundSelfUpdateChecker : IDisposable
     {
-        private CancellationTokenSource cancelSrc_BackgroundSelfUpdateChecker;
+        private CancellationTokenSource? cancelSrc_BackgroundSelfUpdateChecker;
         private DateTime lastchecktime;
         private readonly HttpClient webclient;
         private readonly static Architecture __arch = RuntimeInformation.ProcessArchitecture;
@@ -133,12 +130,16 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                     }
                                     if (value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
-                                        var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                                        if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                        var val_item_prop_sha1 = item_prop_sha1.GetString();
+                                        if (!string.IsNullOrWhiteSpace(val_item_prop_sha1))
                                         {
-                                            item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                            var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                                            if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                            {
+                                                item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                            }
+                                            dictionary.Add(item_name, val_item_prop_sha1);
                                         }
-                                        dictionary.Add(item_name, item_prop_sha1.GetString());
                                     }
                                 }
                             }
@@ -180,14 +181,18 @@ namespace Leayal.PSO2Launcher.Core.Classes
                                     }
                                     if (value.TryGetProperty("sha1", out var item_prop_sha1) && item_prop_sha1.ValueKind == JsonValueKind.String)
                                     {
-                                        var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                                        if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                        var val_item_prop_sha1 = item_prop_sha1.GetString();
+                                        if (!string.IsNullOrWhiteSpace(val_item_prop_sha1))
                                         {
-                                            item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                                        }
-                                        if (!dictionary.ContainsKey(item_name))
-                                        {
-                                            dictionary.Add(item_name, item_prop_sha1.GetString());
+                                            var item_name = item.Name.Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                                            if (item_name.IndexOf(Path.AltDirectorySeparatorChar) != -1)
+                                            {
+                                                item_name = item_name.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                            }
+                                            if (!dictionary.ContainsKey(item_name))
+                                            {
+                                                dictionary.Add(item_name, val_item_prop_sha1);
+                                            }
                                         }
                                     }
                                 }
@@ -212,7 +217,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             return result;
         }
 
-        public event Action<BackgroundSelfUpdateChecker, IReadOnlyList<string>> UpdateFound;
+        public event Action<BackgroundSelfUpdateChecker, IReadOnlyList<string>>? UpdateFound;
 
         public void Stop()
         {

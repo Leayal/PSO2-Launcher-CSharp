@@ -46,21 +46,26 @@ namespace Leayal.Shared.Windows
         /// </remarks>
         private const int maxRelativePathLengthUnicodeChars = 260;
 
-        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern bool PathRelativePathToW(StringBuilder pszPath, string pszFrom, FileAttributes dwAttrFrom, string pszTo, FileAttributes dwAttrTo);
-
-        public static void CreateDirectoryLink(string linkPath, string targetPath)
-        {
-            CreateDirectoryLink(linkPath, targetPath, false);
-        }
-
+        /// <summary>Creates a symbolic file at <paramref name="linkPath"/> which points to <paramref name="targetPath"/>.</summary>
+        /// <param name="linkPath">The path where the symbolic file is created.</param>
+        /// <param name="targetPath">The destination folder where the symbolic file will point to.</param>
         /// <exception cref="UnauthorizedAccessException"></exception>
         /// <exception cref="IOException"></exception>
-        public static void CreateDirectoryLink(string linkPath, string targetPath, bool makeTargetPathRelative)
+        public static void CreateDirectoryLink(string linkPath, string targetPath)
+            => CreateDirectoryLink(linkPath, targetPath, false);
+
+        /// <summary>Creates a symbolic file at <paramref name="linkPath"/> which points to <paramref name="targetPath"/>.</summary>
+        /// <param name="linkPath">The path where the symbolic file is created.</param>
+        /// <param name="targetPath">The destination folder where the symbolic file will point to.</param>
+        /// <param name="attemptRelativePathLink">Allows the function to try creating symbolic file using relative path pointing to <paramref name="targetPath"/>.</param>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        /// <exception cref="IOException"></exception>
+        public static void CreateDirectoryLink(string linkPath, string targetPath, bool attemptRelativePathLink)
         {
-            if (makeTargetPathRelative)
+            if (attemptRelativePathLink)
             {
-                targetPath = GetTargetPathRelativeToLink(linkPath, targetPath, true);
+                // Attempts to form a relative path. However, if relative path is not possible, fall back to full path
+                targetPath = MakeRelativePathForCreatingSymlink(linkPath, targetPath) ?? targetPath;
             }
             
             if (!PInvoke.CreateSymbolicLink(linkPath, targetPath, MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_DIRECTORY | MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE) || Marshal.GetLastWin32Error() != 0)
@@ -83,18 +88,26 @@ namespace Leayal.Shared.Windows
             }
         }
 
+        /// <summary>Creates a symbolic file at <paramref name="linkPath"/> which points to <paramref name="targetPath"/>.</summary>
+        /// <param name="linkPath">The path where the symbolic file is created.</param>
+        /// <param name="targetPath">The destination file where the symbolic file will point to.</param>
         /// <exception cref="UnauthorizedAccessException"></exception>
         public static void CreateFileLink(string linkPath, string targetPath)
         {
             CreateFileLink(linkPath, targetPath, false);
         }
 
+        /// <summary>Creates a symbolic file at <paramref name="linkPath"/> which points to <paramref name="targetPath"/>.</summary>
+        /// <param name="linkPath">The path where the symbolic file is created.</param>
+        /// <param name="targetPath">The destination file where the symbolic file will point to.</param>
+        /// <param name="attemptRelativePathLink">Allows the function to try creating symbolic file using relative path pointing to <paramref name="targetPath"/>.</param>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public static void CreateFileLink(string linkPath, string targetPath, bool makeTargetPathRelative)
+        public static void CreateFileLink(string linkPath, string targetPath, bool attemptRelativePathLink)
         {
-            if (makeTargetPathRelative)
+            if (attemptRelativePathLink)
             {
-                targetPath = GetTargetPathRelativeToLink(linkPath, targetPath);
+                // Attempts to form a relative path. However, if relative path is not possible, fall back to full path
+                targetPath = MakeRelativePathForCreatingSymlink(linkPath, targetPath) ?? targetPath;
             }
 
             if (!PInvoke.CreateSymbolicLink(linkPath, targetPath, MSWin32.Storage.FileSystem.SYMBOLIC_LINK_FLAGS.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE))
@@ -111,39 +124,34 @@ namespace Leayal.Shared.Windows
             }
         }
         
-        private static string GetTargetPathRelativeToLink(string linkPath, string targetPath, bool linkAndTargetAreDirectories = false)
+        /// <returns>If success, a string contains the relative path. Otherwise, <see langword="null"/>.</returns>
+        private unsafe static string? MakeRelativePathForCreatingSymlink(string pathFrom, string pathTo)
         {
-            string returnPath;
-
-            FileAttributes relativePathAttribute = 0;
-            if (linkAndTargetAreDirectories)
+            uint dummy_attr = 0;
+            var pInfo = new MSWin32.Storage.FileSystem.WIN32_FILE_ATTRIBUTE_DATA();
+            if (PInvoke.GetFileAttributesEx(pathTo, MSWin32.Storage.FileSystem.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, Unsafe.AsPointer(ref pInfo)))
             {
-                relativePathAttribute = FileAttributes.Directory;
-
-                // set the link path to the parent directory, so that PathRelativePathToW returns a path that works
-                // for directory symlink traversal
-                var tmp = Path.GetDirectoryName(linkPath.TrimEnd(Path.DirectorySeparatorChar));
-                if (!string.IsNullOrEmpty(tmp))
-                {
-                    linkPath = tmp;
-                }
-            }
-            
-            StringBuilder relativePath = new StringBuilder(maxRelativePathLengthUnicodeChars);
-            if (!PathRelativePathToW(relativePath, linkPath, relativePathAttribute, targetPath, relativePathAttribute))
-            {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                returnPath = targetPath;
+                dummy_attr = pInfo.dwFileAttributes;
             }
             else
             {
-                returnPath = relativePath.ToString();
+                dummy_attr = (uint)FileAttributes.Normal;
             }
-
-            return returnPath;
-
+            
+            char* relativePathBuffer = stackalloc char[maxRelativePathLengthUnicodeChars];
+            if (PInvoke.PathRelativePathTo(new MSWin32.Foundation.PWSTR(relativePathBuffer), pathFrom, dummy_attr, pathTo, dummy_attr))
+            {
+                return new string(relativePathBuffer);
+            }
+            else
+            {
+                return null;
+            }
         }
 
+        /// <summary>Determines whether the the file is a symlink file or not.</summary>
+        /// <param name="path">The path to the file to determine.</param>
+        /// <returns>Returns <see langword="true"/> if the file is a symbolic link. Otherwise, <see langword="false"/>.</returns>
         public static bool IsSymlink(string path)
         {
             if (!Directory.Exists(path) && !File.Exists(path))
@@ -154,9 +162,12 @@ namespace Leayal.Shared.Windows
             return target != null;
         }
 
+        /// <summary>Deletes the symbolic link file only if it's really a symbolic link file.</summary>
+        /// <param name="path">The path to the file to check for symbolic link for deletion.</param>
+        /// <returns>Returns <see langword="true"/> if the file is a symbolic link and has been deleted. Otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="PathTooLongException"></exception>
         public static bool DeleteSymlink(string path)
         {
-            bool? isLink = null;
             if (path.Length >= 248)
             {
                 if (Path.IsPathRooted(path))
@@ -173,11 +184,7 @@ namespace Leayal.Shared.Windows
             }
             if (File.Exists(path))
             {
-                if (!isLink.HasValue)
-                {
-                    isLink = (GetTarget(path) != null);
-                }
-                if (isLink.Value)
+                if (GetTarget(path) != null)
                 {
                     return PInvoke.DeleteFile(path);
                 }
@@ -188,11 +195,7 @@ namespace Leayal.Shared.Windows
             }
             else if (Directory.Exists(path))
             {
-                if (!isLink.HasValue)
-                {
-                    isLink = (GetTarget(path) != null);
-                }
-                if (isLink.Value)
+                if (GetTarget(path) != null)
                 {
                     return PInvoke.DeleteVolumeMountPoint(path);
                 }
