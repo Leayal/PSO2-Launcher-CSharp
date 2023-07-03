@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Forms;
 using System.Windows.Forms.Integration;
+using System.Windows.Input;
 
 namespace Leayal.WebViewCompat
 {
@@ -22,7 +24,7 @@ namespace Leayal.WebViewCompat
             base.Child = this.panel;
         }
 
-        public new System.Windows.Forms.Control Child
+        public new System.Windows.Forms.Control? Child
         {
             get
             {

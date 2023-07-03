@@ -1,5 +1,4 @@
-﻿using ControlzEx.Standard;
-using Leayal.PSO2Launcher.Core.Classes;
+﻿using Leayal.PSO2Launcher.Core.Classes;
 using Leayal.PSO2Launcher.Core.Classes.PSO2;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.UIElements;

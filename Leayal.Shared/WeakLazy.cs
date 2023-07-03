@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Leayal.Shared
 {
@@ -25,6 +26,20 @@ namespace Leayal.Shared
 
         /// <summary>Gets a value that indicates whether a value has been created for this instance.</summary>
         public bool IsValueCreated => this._reference.TryGetTarget(out var item) && item != null;
+
+        /// <summary>Attempts to get the referenced instance if it is still existed.</summary>
+        /// <param name="instance">The referenced instance.</param>
+        /// <returns><see langword="true"/> if the instance is still existed and be fetched. Otheriwse, <see langword="false"/>.</returns>
+        public bool TryGetInstance([NotNullWhen(true)] out T? instance)
+        {
+            if (this._reference.TryGetTarget(out var item) && item != null)
+            {
+                instance = item;
+                return true;
+            }
+            instance = null;
+            return false;
+        }
 
         /// <summary>Gets the lazily initialized value of the current instance.</summary>
         public T Value

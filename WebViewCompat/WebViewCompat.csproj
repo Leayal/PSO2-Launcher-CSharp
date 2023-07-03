@@ -10,6 +10,7 @@
     <StartupObject />
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <Authors>Dramiel Leayal</Authors>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Leayal.Shared.Windows\Leayal.Shared.Windows.csproj" />
     <ProjectReference Include="..\Leayal.SharedInterfaces\Leayal.SharedInterfaces.csproj" />
   </ItemGroup>
 

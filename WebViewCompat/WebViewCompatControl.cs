@@ -7,6 +7,10 @@ using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
 using Leayal.SharedInterfaces;
 using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Interop;
+using Leayal.Shared.Windows;
 
 namespace Leayal.WebViewCompat
 {
@@ -16,24 +20,25 @@ namespace Leayal.WebViewCompat
         private const int _Width = 825, _Height = 670;
         public static string DefaultUserAgent { get; set; } = string.Empty;
 
-        private WinForm.WebBrowser _fallbackControl;
-        private WebView2 _webView2;
+        private WinForm.WebBrowser? _fallbackControl;
+        private WebView2Ex? _webView2;
         private readonly string _userAgent;
         private readonly IntPtr loadedWebView2Core;
         private readonly string webview2version;
-
+        
         private bool isInit;
-        private EventHandler _browserInitialized;
+        private EventHandler? _browserInitialized;
         public event EventHandler BrowserInitialized
         {
             add
             {
+                if (value == null) return;
                 this._browserInitialized += value;
                 if (this.isInit)
                 {
                     if (this.Dispatcher.CheckAccess())
                     {
-                        value.Invoke(this, EventArgs.Empty);
+                        value?.Invoke(this, EventArgs.Empty);
                     }
                     else
                     {
@@ -145,7 +150,7 @@ namespace Leayal.WebViewCompat
             return wb;
         }
 
-        public Uri CurrentUrl
+        public Uri? CurrentUrl
         {
             get
             {
@@ -153,24 +158,28 @@ namespace Leayal.WebViewCompat
                 {
                     return this._webView2.Source;
                 }
-                else
+                else if (this._fallbackControl != null)
                 {
                     return this._fallbackControl.Url;
+                }
+                else
+                {
+                    return null;
                 }
             }
         }
 
         public event EventHandler<NavigationEventArgs> Navigated;
-        private void FallbackControl_DocumentCompleted(object sender, WinForm.WebBrowserDocumentCompletedEventArgs e)
+        private void FallbackControl_DocumentCompleted(object? sender, WinForm.WebBrowserDocumentCompletedEventArgs e)
         {
             var ev = new NavigationEventArgs(e.Url);
             this.Navigated?.Invoke(this, ev);
         }
         
         //*
-        private void Wv_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
+        private void Wv_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
-            NavigationEventArgs ev;
+            NavigationEventArgs? ev;
             if (sender is WebView2 wv)
             {
                 ev = new NavigationEventArgs(wv.Source);
@@ -193,7 +202,7 @@ namespace Leayal.WebViewCompat
         public event EventHandler<NavigatingEventArgs> Navigating;
         
         //*
-        private void Wv_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e)
+        private void Wv_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
         {
             var ev = new NavigatingEventArgs(new Uri(e.Uri));
             this.Navigating?.Invoke(this, ev);
@@ -203,25 +212,28 @@ namespace Leayal.WebViewCompat
         }
         //*/
 
-        private void FallbackControl_Navigating2(object sender, WinForm.WebBrowserNavigatingEventArgs e)
+        private void FallbackControl_Navigating2(object? sender, WinForm.WebBrowserNavigatingEventArgs e)
         {
             var ev = new NavigatingEventArgs(e.Url);
             this.Navigating?.Invoke(this, ev);
             e.Cancel = ev.Cancel;
         }
 
-        private void FallbackControl_Navigating(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+        private void FallbackControl_Navigating(object? sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
         {
             var ev = new NavigatingEventArgs(e.Uri);
             this.Navigating?.Invoke(this, ev);
             e.Cancel = ev.Cancel;
         }
 
-        private void FallbackControl_Initialized(object sender, EventArgs e)
+        private void FallbackControl_Initialized(object? sender, EventArgs e)
         {
-            this._fallbackControl.Width = _Width;
-            this._fallbackControl.Height = _Height;
-            this._fallbackControl.ScrollBarsEnabled = false;
+            if (this._fallbackControl != null)
+            {
+                this._fallbackControl.Width = _Width;
+                this._fallbackControl.Height = _Height;
+                this._fallbackControl.ScrollBarsEnabled = false;
+            }
             // this._fallbackControl.Dock = WinForm.DockStyle.Top;
             // this.OnInitialized(EventArgs.Empty);
             this._browserInitialized?.Invoke(this, EventArgs.Empty);
@@ -235,8 +247,8 @@ namespace Leayal.WebViewCompat
             // I can still see crashpad process running.
             try
             {
-                var env = await CoreWebView2Environment.CreateAsync(null, Path.GetFullPath(Path.Combine("data", "webview2"), RuntimeValues.RootDirectory), new CoreWebView2EnvironmentOptions("--disable-breakpad", null, this.webview2version, true));
-                await this._webView2.EnsureCoreWebView2Async(env);
+                if (this._webView2 == null) throw new InvalidOperationException();
+                await this._webView2.EnsureInitAsync();
                 var core = this._webView2.CoreWebView2;
                 var coresetting = core.Settings;
                 coresetting.UserAgent = this._userAgent;
@@ -244,7 +256,7 @@ namespace Leayal.WebViewCompat
                 coresetting.AreHostObjectsAllowed = false;
                 coresetting.IsGeneralAutofillEnabled = false;
                 coresetting.IsPasswordAutosaveEnabled = false;
-                coresetting.AreDefaultContextMenusEnabled = true;
+                coresetting.AreDefaultContextMenusEnabled = false;
                 coresetting.AreBrowserAcceleratorKeysEnabled = false;
                 // coresetting.AreDefaultScriptDialogsEnabled = false;
                 coresetting.IsBuiltInErrorPageEnabled = true;

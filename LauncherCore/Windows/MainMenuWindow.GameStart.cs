@@ -19,7 +19,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Leayal.PSO2.UserConfig;
-using ControlzEx.Standard;
 using System.Printing;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;

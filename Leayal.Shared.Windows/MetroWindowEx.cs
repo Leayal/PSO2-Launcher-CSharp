@@ -1,11 +1,13 @@
 ﻿using MahApps.Metro.Controls;
 using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace Leayal.Shared.Windows
 {
@@ -72,7 +74,7 @@ namespace Leayal.Shared.Windows
         }
 
         private bool _autoassignedIcon;
-        private Window _autoHideInTaskbarByOwnerIsVisibleAttached;
+        private Window? _autoHideInTaskbarByOwnerIsVisibleAttached;
 
         /// <summary>Applies required variables and property values to the implemented instance.</summary>
         public MetroWindowEx() : base() 
@@ -84,7 +86,54 @@ namespace Leayal.Shared.Windows
             this._autoHideInTaskbarByOwnerIsVisibleAttached = null;
             this._autoassignedIcon = false;
 
+            this.CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, MetroWindowEx_ExecutedRoutedEvent_CloseWindow));
+            this.CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand, MetroWindowEx_ExecutedRoutedEvent_MinimizeWindow));
+            this.CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, MetroWindowEx_ExecutedRoutedEvent_RestoreWindow));
+            this.CommandBindings.Add(new CommandBinding(SystemCommands.MaximizeWindowCommand, MetroWindowEx_ExecutedRoutedEvent_MaximizeWindow));
+
+            this.CommandBindings.Add(new CommandBinding(SystemCommands.ShowSystemMenuCommand, MetroWindowEx_ExecutedRoutedEvent_ShowSystemMenu));
+
             this.WindowTransitionCompleted += MetroWindowEx_WindowTransitionCompleted;
+        }
+
+        private static void MetroWindowEx_ExecutedRoutedEvent_CloseWindow(object? sender, ExecutedRoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                SystemCommands.CloseWindow(window);
+            }
+        }
+
+        private static void MetroWindowEx_ExecutedRoutedEvent_MinimizeWindow(object? sender, ExecutedRoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                SystemCommands.MinimizeWindow(window);
+            }
+        }
+
+        private static void MetroWindowEx_ExecutedRoutedEvent_RestoreWindow(object? sender, ExecutedRoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                SystemCommands.RestoreWindow(window);
+            }
+        }
+
+        private static void MetroWindowEx_ExecutedRoutedEvent_MaximizeWindow(object? sender, ExecutedRoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                SystemCommands.MaximizeWindow(window);
+            }
+        }
+
+        private static void MetroWindowEx_ExecutedRoutedEvent_ShowSystemMenu(object? sender, ExecutedRoutedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                SystemCommands.ShowSystemMenu(window, MouseHelper.GetMousePositionOnDesktop());
+            }
         }
 
         /// <inheritdoc/>
@@ -181,7 +230,7 @@ namespace Leayal.Shared.Windows
         }
 
         /// <summary>Occurs before the window is shown "visibly".</summary>
-        public event EventHandler BeforeShown;
+        public event EventHandler? BeforeShown;
 
         /// <summary>Raises the <seealso cref="BeforeShown"/> event.</summary>
         protected virtual void OnBeforeShown()
@@ -272,7 +321,7 @@ namespace Leayal.Shared.Windows
         }
 
         /// <summary>Occurs when the window's UI is ready to be manipulated.</summary>
-        public event EventHandler Ready;
+        public event EventHandler? Ready;
 
         /// <summary>Raises the <seealso cref="Ready"/> event.</summary>
         /// <param name="e">The event args. <seealso cref="EventArgs.Empty"/> should be used here.</param>
@@ -282,7 +331,7 @@ namespace Leayal.Shared.Windows
         }
 
         /// <summary>Occurs when the window is shown for the first time.</summary>
-        public event EventHandler FirstShown;
+        public event EventHandler? FirstShown;
 
         /// <summary>Raises the <seealso cref="FirstShown"/> event.</summary>
         /// <param name="e">The event args. <seealso cref="EventArgs.Empty"/> should be used here.</param>
@@ -308,7 +357,7 @@ namespace Leayal.Shared.Windows
         }
 
         /// <summary>Event is used for synchronous clean up operations. This event will be raised when the window is certainly going to be closed (after <seealso cref="OnClosing(CancelEventArgs)"/>. Thus, not cancellable).</summary>
-        public event EventHandler CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
+        public event EventHandler? CleanupBeforeClosed; // Not really used for cleanup ops, but rather notifying that it's cleaning up before closing.
 
         /// <summary>When overriden, provides logic to clean up all resources (including async operations)</summary>
         /// <returns>A <seealso cref="Task"/> that will complete when all resources have been disposed or cleaned up.</returns>

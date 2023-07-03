@@ -23,6 +23,8 @@ using System.Runtime.InteropServices;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
 using Leayal.Shared;
+using System.Windows.Input;
+using System.Runtime.CompilerServices;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -227,6 +229,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var removelen = binDir.Length + 1;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void AddToDictionary(Dictionary<string, string> d, string p, int o)
             {
                 if (Directory.Exists(p))
@@ -936,24 +939,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         #region | WindowsCommandButtons |
-        private void WindowsCommandButtons_Close_Click(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            SystemCommands.CloseWindow(this);
-        }
-
-        private void WindowsCommandButtons_Maximize_Click(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            SystemCommands.MaximizeWindow(this);
-        }
-
-        private void WindowsCommandButtons_Restore_Click(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            SystemCommands.RestoreWindow(this);
-        }
-
         private async void WindowsCommandButtons_InvokeGCFromUI_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn)
