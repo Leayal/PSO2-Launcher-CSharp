@@ -1,15 +1,10 @@
 ﻿using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
 using MSWin32 = global::Windows.Win32;
 using PInvoke = global::Windows.Win32.PInvoke;
 
@@ -28,15 +23,15 @@ namespace Leayal.Shared.Windows
             {
                 using (var uacKey = Registry.LocalMachine.OpenSubKey(uacRegistryKey, false))
                 {
-                    var obj = uacKey.GetValue(uacRegistryValue);
-                    if (obj is int i && i != 0)
+                    if (uacKey != null)
                     {
-                        return true;
+                        var obj = uacKey.GetValue(uacRegistryValue);
+                        if (obj is int i && i != 0)
+                        {
+                            return true;
+                        }
                     }
-                    else
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
         }

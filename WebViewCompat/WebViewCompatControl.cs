@@ -7,10 +7,6 @@ using System.Windows.Controls;
 using Microsoft.Web.WebView2.Core;
 using Leayal.SharedInterfaces;
 using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Interop;
-using Leayal.Shared.Windows;
 
 namespace Leayal.WebViewCompat
 {
@@ -85,12 +81,14 @@ namespace Leayal.WebViewCompat
                         this._webView2.NavigationCompleted += this.Wv_NavigationCompleted;
                         // this._webView2.HandleCreated += this.OnWebView2WPFControlLoaded;
                         host.Child = this._webView2;
+                        host.EnableWorkaround_MouseWheelFromRawInput();
                         this.OnWebView2CoreInit();
                         // if (!this._webView2.Created) this._webView2.CreateControl();
                         //*/
                     }
                     catch
                     {
+                        host.DisableWorkaround_MouseWheelFromRawInput();
                         host.Child = null;
                         if (this._webView2 != null)
                         {
@@ -142,7 +140,10 @@ namespace Leayal.WebViewCompat
             var wb = new WinForm.WebBrowser()
             {
                 Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Bottom,
-                Location = System.Drawing.Point.Empty
+                Location = System.Drawing.Point.Empty,
+                IsWebBrowserContextMenuEnabled = false,
+                AllowWebBrowserDrop = false,
+                WebBrowserShortcutsEnabled = false,
             };
             wb.HandleCreated += this.FallbackControl_Initialized;
             wb.Navigating += this.FallbackControl_Navigating2;
@@ -169,7 +170,7 @@ namespace Leayal.WebViewCompat
             }
         }
 
-        public event EventHandler<NavigationEventArgs> Navigated;
+        public event EventHandler<NavigationEventArgs>? Navigated;
         private void FallbackControl_DocumentCompleted(object? sender, WinForm.WebBrowserDocumentCompletedEventArgs e)
         {
             var ev = new NavigationEventArgs(e.Url);
@@ -199,7 +200,7 @@ namespace Leayal.WebViewCompat
         }
         //*/
 
-        public event EventHandler<NavigatingEventArgs> Navigating;
+        public event EventHandler<NavigatingEventArgs>? Navigating;
         
         //*
         private void Wv_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -263,6 +264,7 @@ namespace Leayal.WebViewCompat
                 coresetting.IsPinchZoomEnabled = false;
                 coresetting.IsStatusBarEnabled = false;
                 coresetting.IsSwipeNavigationEnabled = false;
+                coresetting.IsReputationCheckingRequired = false; // Disable SmartScreen.
 
                 this._browserInitialized?.Invoke(this, EventArgs.Empty);
                 this.isInit = true;
@@ -272,6 +274,7 @@ namespace Leayal.WebViewCompat
             {
                 if (this.Child is WindowsFormsHostEx2 host)
                 {
+                    host.DisableWorkaround_MouseWheelFromRawInput();
                     host.Child = null;
                     if (this._webView2 != null)
                     {
@@ -308,7 +311,7 @@ namespace Leayal.WebViewCompat
             }
             else
             {
-                this._fallbackControl.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
+                this._fallbackControl?.Navigate(url, null, null, "User-Agent: " + this._userAgent + "\r\n");
             }
         }
 

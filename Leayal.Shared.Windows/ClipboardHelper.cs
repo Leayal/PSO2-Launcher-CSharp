@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Threading;
-using System.Text;
 using System.Windows;
 
 namespace Leayal.Shared.Windows

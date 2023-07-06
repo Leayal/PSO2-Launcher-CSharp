@@ -1,7 +1,6 @@
 ﻿using MahApps.Metro.Controls;
 using System;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -132,7 +131,8 @@ namespace Leayal.Shared.Windows
         {
             if (sender is Window window)
             {
-                SystemCommands.ShowSystemMenu(window, MouseHelper.GetMousePositionOnDesktop());
+                var winFormPoint = System.Windows.Forms.Control.MousePosition;
+                SystemCommands.ShowSystemMenu(window, new Point(winFormPoint.X, winFormPoint.Y));
             }
         }
 

@@ -23,7 +23,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
 
         public readonly bool IsEmpty => (this.Width == 0 && this.Height == 0);
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ScreenResolution res)
             {

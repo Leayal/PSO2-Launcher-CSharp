@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using global::Windows.Win32.Graphics.Gdi;
+﻿using global::Windows.Win32.Graphics.Gdi;
 using MSWin32 = global::Windows.Win32;
 using PInvoke = global::Windows.Win32.PInvoke;
 

@@ -1,159 +1,125 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Input;
 using MSWin32 = global::Windows.Win32;
 using RawInput = global::Windows.Win32.UI.Input;
 using PInvoke = global::Windows.Win32.PInvoke;
-using System.Windows.Interop;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Buffers;
 
 namespace Leayal.Shared.Windows
 {
-    /// <summary>Convenient methods for mouse.</summary>
+    /// <summary>Convenient methods for dealing with low-level mouse.</summary>
     public static partial class MouseHelper
     {
-        private static readonly Func<Point>? mouseFunc_GetScreenPosition;
-        static MouseHelper()
+        /// <summary>Translates the hardware-based units to pixel-based units on screen.</summary>
+        /// <param name="hardwareX">The hardware-based X.</param>
+        /// <param name="hardwareY">The hardware-based Y.</param>
+        /// <param name="mousePosFlags">The mouse input flags.</param>
+        /// <returns>A pixel-based unit on screen.</returns>
+        public static Point TranslateRawInputCoordinate(int hardwareX, int hardwareY, RawMouseInputFlags mousePosFlags)
         {
-            // GetScreenPosition
+            bool isVirtualDesktop = (mousePosFlags & RawMouseInputFlags.MOUSE_VIRTUAL_DESKTOP) == RawMouseInputFlags.MOUSE_VIRTUAL_DESKTOP;
+            int width = Convert.ToInt32(isVirtualDesktop ? SystemParameters.VirtualScreenWidth : SystemParameters.PrimaryScreenWidth),
+                height = Convert.ToInt32(isVirtualDesktop ? SystemParameters.VirtualScreenHeight : SystemParameters.PrimaryScreenHeight);
 
-            var device = Mouse.PrimaryDevice;
-            var t = device.GetType();
-            var mouseMethod_GetScreenPosition = t.GetMethod("GetScreenPosition", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod, Array.Empty<Type>());
-            if (mouseMethod_GetScreenPosition != null)
-            {
-                var @delegate = Delegate.CreateDelegate(typeof(Func<Point>), device, mouseMethod_GetScreenPosition, false);
-                if (@delegate != null)
-                {
-                    mouseFunc_GetScreenPosition = (Func<Point>)@delegate;
-                }
-            }
+            double screenX = ((hardwareX / 65535.0f) * width),
+                screenY = ((hardwareY / 65535.0f) * height);
+
+            return new Point(screenX, screenY);
         }
 
-        /// <summary>Gets mouse position on desktop.</summary>
-        /// <returns>A <seealso cref="Point"/> represents the mouse's absolute coordination on desktop. (Not related to any windows)</returns>
-        public static Point GetMousePositionOnDesktop()
-        {
-            if (mouseFunc_GetScreenPosition != null)
-            {
-                return mouseFunc_GetScreenPosition.Invoke();
-            }
-            else
-            {
-                var wpfApp = Application.Current;
-                if (wpfApp != null && wpfApp.MainWindow != null)
-                {
-                    var window = wpfApp.MainWindow;
-                    return window.PointToScreen(Mouse.GetPosition(window));
-                }
-                else
-                {
-                    var pos = System.Windows.Forms.Control.MousePosition;
-                    return new Point(pos.X, pos.Y);
-                }
-            }
-        }
+        /// <summary>Delegate to define RawMouseInput message hook signature.</summary>
+        /// <param name="data">The mouse data received from WM_INPUT message.</param>
+        /// <param name="handled">Flag indicates whether the input was handled by one of the hooks.</param>
+        public delegate void RawMouseInputHook(in RawMouseInputData data, ref bool handled);
 
-        // Proof of concept. It works and can get over the issue where WebView2 shallows the WM_MOUSE* windows messages.
-        // However, Raw input doesn't have bound check or anything to check if the mouse is on an UI element.
-        // Will do more later.
-        public static void A()
+        /// <summary>Register RawInput windows messages to be sent to the WPF application's main window.</summary>
+        /// <returns>A <seealso cref="RegisteredRawMouseInput"/> if the registration is completed successfully. Otherwise, <see langword="null"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b><u>This method has poor performance on WinForms</u></b>. Considering using <seealso cref="HookRawMouseInputUnsafe"/>
+        /// along with <seealso cref="RegisteredRawMouseInput.TryGetRawMouseInputData(int, IntPtr, IntPtr, out RawMouseInputData)"/> in <seealso cref="System.Windows.Forms.Control.WndProc(ref System.Windows.Forms.Message)"/>.
+        /// </para>
+        /// <para>As of now, it's hardcoded to register with <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawinputdevice#members">RIDEV_EXINPUTSINK</see> flag.</para>
+        /// <para>- Despite of being sent to thread's message loop, it's still coming from a window associated with the thread.</para>
+        /// <para>- The message will come to whichever "window" (a Win32 control has a "window handle", too) Windows is focusing on.</para>
+        /// <para>- You MUST make sure to call <seealso cref="RegisteredRawMouseInput.Dispose()"/> method to avoid memory leaks when you no longer want to receive RawInput windows messages.</para>
+        /// </remarks>
+        public static RegisteredRawMouseInput? HookRawMouseInput()
         {
             if (Application.Current.MainWindow is MetroWindowEx window)
             {
-                Span<RawInput.RAWINPUTDEVICE> devices = new RawInput.RAWINPUTDEVICE[]
-                {
-                    new RawInput.RAWINPUTDEVICE()
-                    {
-                        dwFlags = RawInput.RAWINPUTDEVICE_FLAGS.RIDEV_EXINPUTSINK, // Can use 0, but exInputSink will let us handle Raw Mouse Input only when the foreground application(s) don't process it.
-                        usUsagePage = PInvoke.HID_USAGE_PAGE_GENERIC,
-                        usUsage = PInvoke.HID_USAGE_GENERIC_MOUSE,
-                        hwndTarget = new MSWin32.Foundation.HWND(window.Handle)
-                    }
-                };
-               
-                if (PInvoke.RegisterRawInputDevices(devices, (uint)(MemoryMarshal.AsBytes(devices).Length)))
-                {
-                    // ComponentDispatcher.ThreadFilterMessage += ComponentDispatcher_ThreadFilterMessage;
-
-                    var src = HwndSource.FromHwnd(window.Handle);
-                    src.AddHook(new HwndSourceHook(Hoooook));
-                }
+                return HookRawMouseInput(window.Handle);
             }
+            return null;
         }
 
-        const int WM_MOUSEWHEEL = 0x020A;
-
-        private static unsafe IntPtr Hoooook(IntPtr hwnd, int message, IntPtr wparam, IntPtr lParam, ref bool handled)
+        /// <summary>Register RawInput windows messages to be sent to the window which the <paramref name="windowHandle"/> points to.</summary>
+        /// <param name="windowHandle">The handle pointing to a window which will receive RawInput windows messages. Can be <seealso cref="IntPtr.Zero"/>, which results in same effect as using <seealso cref="HookRawMouseInput()"/>.</param>
+        /// <returns>A <seealso cref="RegisteredRawMouseInput"/> if the registration is completed successfully. Otherwise, <see langword="null"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// <b><u>This method has poor performance on WinForms</u></b>. Considering using <seealso cref="HookRawMouseInputUnsafe"/>
+        /// along with <seealso cref="RegisteredRawMouseInput.TryGetRawMouseInputData(int, IntPtr, IntPtr, out RawMouseInputData)"/> in <seealso cref="System.Windows.Forms.Control.WndProc(ref System.Windows.Forms.Message)"/>.
+        /// </para>
+        /// <para>As of now, it's hardcoded to register with <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawinputdevice#members">RIDEV_EXINPUTSINK</see> flag.</para>
+        /// <para>You can only register one window per process. As such, only one window will receive the RawInput windows messages at a time. If you call this method multiple times, only the <paramref name="windowHandle"/> from the last call will be used.</para>
+        /// <para>In case <paramref name="windowHandle"/> is <seealso cref="IntPtr.Zero"/>, you MUST make sure to call <seealso cref="RegisteredRawMouseInput.Dispose()"/> method to avoid memory leaks when you no longer want to receive RawInput windows messages.</para>
+        /// </remarks>
+        public static RegisteredRawMouseInput? HookRawMouseInput(IntPtr windowHandle)
         {
-            handled = false;
-            if (message == (int)PInvoke.WM_INPUT)
+            if (!RegisteredRawMouseInput.TryCreate(windowHandle, out var registration))
             {
-                handled = true;
-                uint dwSize = 0;
-                uint headerSize = (uint)sizeof(RawInput.RAWINPUTHEADER);
-                PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, pcbSize: &dwSize, cbSizeHeader: headerSize);
-
-                var borrowedBuffer = ArrayPool<byte>.Shared.Rent((int)dwSize);
-                try
-                {
-                    Span<byte> allocatedForMsg = borrowedBuffer;
-                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, Unsafe.AsPointer(ref allocatedForMsg.GetPinnableReference()), &dwSize, headerSize) > 0
-                        && MemoryMarshal.TryRead<RawInput.RAWINPUT>(allocatedForMsg, out var inputMsg))
-                    {
-                        if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
-                        {
-                            ref var mouseData = ref inputMsg.data.mouse;
-                            if (mouseData.Anonymous.Anonymous.usButtonFlags == (ushort)RawInputMouseFlags.RI_MOUSE_WHEEL)
-                            {
-                                var wheelCount = mouseData.Anonymous.Anonymous.usButtonData;
-
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(borrowedBuffer);
-                }
+                return null;
             }
-            return IntPtr.Zero;
+            if (HookRawMouseInputUnsafe(windowHandle))
+            {
+                return registration;
+            }
+            return null;
         }
 
-        private static unsafe void ComponentDispatcher_ThreadFilterMessage(ref MSG msg, ref bool handled)
+        /// <summary>Register RawInput windows messages to be sent to the window which the <paramref name="windowHandle"/> points to.</summary>
+        /// <param name="windowHandle">The handle pointing to a window which will receive RawInput windows messages. Can be <seealso cref="IntPtr.Zero"/>.</param>
+        /// <returns><see langword="true"/> if the registration is completed successfully. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>
+        /// <para>As of now, it's hardcoded to register with <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawinputdevice#members">RIDEV_EXINPUTSINK</see> flag.</para>
+        /// <para>You can only register one window per process. As such, only one window will receive the RawInput windows messages at a time. If you call this method multiple times, only the <paramref name="windowHandle"/> from the last call will be used.</para>
+        /// <para>You MUST make sure to call <seealso cref="UnhookRawMouseInputUnsafe"/> method to avoid memory leaks when you no longer want to receive RawInput windows messages.</para>
+        /// </remarks>
+        public static bool HookRawMouseInputUnsafe(IntPtr windowHandle)
         {
-            handled = false;
-            if (msg.message == PInvoke.WM_INPUT)
+            Span<RawInput.RAWINPUTDEVICE> devices = new RawInput.RAWINPUTDEVICE[]
             {
-                handled = true;
-                uint dwSize = 0;
-                uint headerSize = (uint)sizeof(RawInput.RAWINPUTHEADER);
-                PInvoke.GetRawInputData(new RawInput.HRAWINPUT(msg.lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, pcbSize: &dwSize, cbSizeHeader: headerSize);
+                new RawInput.RAWINPUTDEVICE()
+                {
+                    // Has to use "RIDEV_(EX)INPUTSINK" because WebView2 doesn't propagate messages.
+                    // MUST NOT use "RIDEV_NOLEGACY" flag because .NET uses legacy messages (WM_KEY* and WM_MOUSE*) to handle keyboard and mouse inputs.
+                    dwFlags = RawInput.RAWINPUTDEVICE_FLAGS.RIDEV_EXINPUTSINK,
+                    usUsagePage = PInvoke.HID_USAGE_PAGE_GENERIC,
+                    usUsage = PInvoke.HID_USAGE_GENERIC_MOUSE,
+                    hwndTarget = new MSWin32.Foundation.HWND(windowHandle)
+                }
+            };
 
-                var borrowedBuffer = ArrayPool<byte>.Shared.Rent((int)dwSize);
-                try
+            return PInvoke.RegisterRawInputDevices(devices, (uint)(MemoryMarshal.AsBytes(devices).Length));
+        }
+
+        /// <summary>Unregister all RawInput windows messages registrations associated with current process.</summary>
+        /// <returns><see langword="true"/> if the registration is completed successfully. Otherwise, <see langword="false"/>.</returns>
+        public static bool UnhookRawMouseInputUnsafe()
+        {
+            Span<RawInput.RAWINPUTDEVICE> devices = new RawInput.RAWINPUTDEVICE[]
+            {
+                new RawInput.RAWINPUTDEVICE()
                 {
-                    Span<byte> allocatedForMsg = borrowedBuffer;
-                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(msg.lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, Unsafe.AsPointer(ref allocatedForMsg.GetPinnableReference()), &dwSize, headerSize) > 0
-                        && MemoryMarshal.TryRead<RawInput.RAWINPUT>(allocatedForMsg, out var inputMsg))
-                    {
-                        if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
-                        {
-                            ref var mouseData = ref inputMsg.data.mouse;
-                            if (mouseData.Anonymous.Anonymous.usButtonFlags == (ushort)RawInputMouseFlags.RI_MOUSE_WHEEL)
-                            {
-                                var wheelCount = mouseData.Anonymous.Anonymous.usButtonData;
-                            }
-                        }
-                    }
+                    dwFlags = RawInput.RAWINPUTDEVICE_FLAGS.RIDEV_REMOVE,
+                    usUsagePage = PInvoke.HID_USAGE_PAGE_GENERIC,
+                    usUsage = PInvoke.HID_USAGE_GENERIC_MOUSE,
+                    hwndTarget = new MSWin32.Foundation.HWND(IntPtr.Zero)
                 }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(borrowedBuffer);
-                }
-            }
+            };
+
+            return (PInvoke.RegisterRawInputDevices(devices, (uint)(MemoryMarshal.AsBytes(devices).Length)));
         }
     }
 }

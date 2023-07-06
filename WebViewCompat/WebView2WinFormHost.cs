@@ -123,10 +123,7 @@ namespace Leayal.WebViewCompat
         }
 
         public EventHandler? WebView2ControllerCreated;
-        protected virtual void OnWebView2ControllerCreated(EventArgs e)
-        {
-            this.WebView2ControllerCreated?.Invoke(this, e);
-        }
+        protected virtual void OnWebView2ControllerCreated(EventArgs e) => this.WebView2ControllerCreated?.Invoke(this, e);
 
         public EventHandler? WebView2Ready;
         protected virtual void OnWebView2Ready(EventArgs e) => this.WebView2Ready?.Invoke(this, e);

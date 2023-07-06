@@ -218,7 +218,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }, this);
             }
 
-            this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
+            this.timer_unloadWebBrowser = new DispatcherTimer(TimeSpan.FromMinutes(5), DispatcherPriority.Normal, this.Timer_UnloadWebBrowserControl, this.Dispatcher) { IsEnabled = false };
         }
 
         private Task<BackgroundSelfUpdateChecker> SetupBackgroundSelfUpdateChecker() => Task.Run(this.SetupBackgroundSelfUpdateChecker2);
@@ -729,18 +729,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             {
                                 tab.GameStartWithPSO2TweakerEnabled = false;
                             }
-                            if (this.LauncherWebView.Child is IWebViewCompatControl webview)
-                            {
-                                if (this.config_main.UseWebView2IfAvailable != webview.IsUsingWebView2)
-                                {
-                                    this.LoadLauncherWebView_Click(null, null);
-                                    webview.Dispose();
-                                }
-                            }
                         }
                         else
                         {
                             tab.GameStartWithPSO2TweakerEnabled = false;
+                        }
+
+                        if (this.LauncherWebView.Child is IWebViewCompatControl webview)
+                        {
+                            if (this.config_main.UseWebView2IfAvailable != webview.IsUsingWebView2)
+                            {
+                                this.LoadLauncherWebView_Click(null, null);
+                                webview.Dispose();
+                            }
                         }
                     }
                 }

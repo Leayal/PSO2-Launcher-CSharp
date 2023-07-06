@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Buffers;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using MSWin32 = global::Windows.Win32;
 using PInvoke = global::Windows.Win32.PInvoke;
 using System.Runtime.CompilerServices;
-using System.Reflection.Metadata;
 
 #nullable enable
 namespace Leayal.Shared.Windows

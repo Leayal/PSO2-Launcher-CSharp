@@ -19,7 +19,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private static readonly byte[] b_3 = Encoding.UTF8.GetBytes("\"}");
 
         private readonly bool _keepSecureStringAlive;
-        private SecureString username, password;
+        private SecureString? username, password;
 
         private long? computedLength;
 
@@ -35,6 +35,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         // {"id":"","password":""}
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
+            if (this.username == null || this.password == null) throw new InvalidOperationException();
             stream.Write(b_1);
             this.username.EncodeTo(stream, out var b_id);
             stream.Write(b_2);
@@ -51,6 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected override bool TryComputeLength(out long length)
         {
+            if (this.username == null || this.password == null) throw new InvalidOperationException();
             if (!computedLength.HasValue)
             {
                 computedLength = Convert.ToInt64(b_1.Length + b_2.Length + b_3.Length + this.username.GetByteCount(Encoding.UTF8) + this.password.GetByteCount(Encoding.UTF8));

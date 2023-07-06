@@ -15,7 +15,6 @@ namespace Leayal.WebViewCompat
         private int _refCount;
         private readonly WeakLazy<Task<CoreWebView2Environment>> _lazytask_env;
         private Task<CoreWebView2Environment>? _keep_alive;
-        private bool disposedValue;
 
         public CoreWebView2EnvironmentManager()
         {
@@ -35,7 +34,7 @@ namespace Leayal.WebViewCompat
                 AdditionalBrowserArguments = "--disable-breakpad",
                 AllowSingleSignOnUsingOSPrimaryAccount = false, // We don't really need any accounts or anything but the Browser's user-agent to view SEGA's launcher site.
                 TargetCompatibleBrowserVersion = _webview2version, // For binary compatible with the given version in WebView2Loader.dll.
-                ExclusiveUserDataFolderAccess = true, // For now, we're only the one using the folder anyway.
+                ExclusiveUserDataFolderAccess = false,
                 IsCustomCrashReportingEnabled = true, // Enable custom reporting so that we stop WebView2's default reporting implementation from sending reports to MS server.
                 EnableTrackingPrevention = true // Obvious
             });

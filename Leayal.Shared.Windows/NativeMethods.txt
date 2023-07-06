@@ -16,6 +16,7 @@ PathRelativePathTo
 
 // UnmanagedWindowsHelper
 SetForegroundWindow
+WindowFromPoint
 
 // SymbolicLink
 DeviceIoControl
@@ -51,6 +52,9 @@ FOLDERFLAGS
 FOLDERVIEWMODE
 FOLDERSETTINGS
 
+// Mouses
+GetCursorPos
+
 // Raw Input
 GetRawInputData
 GetRawInputDeviceInfo
@@ -63,3 +67,4 @@ RID_DEVICE_INFO
 
 // Windows Messages
 WM_INPUT
+PostMessage
