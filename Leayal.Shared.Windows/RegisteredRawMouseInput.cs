@@ -107,24 +107,51 @@ namespace Leayal.Shared.Windows
                 uint dwSize = 0;
                 uint headerSize = (uint)sizeof(RawInput.RAWINPUTHEADER);
                 PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, pcbSize: &dwSize, cbSizeHeader: headerSize);
-
-                var borrowedBuffer = ArrayPool<byte>.Shared.Rent((int)dwSize);
-                try
+                
+                bool isSafeToDirectAccess = dwSize == (uint)sizeof(RawInput.RAWINPUT);
+                if (isSafeToDirectAccess)
                 {
-                    Span<byte> allocatedForMsg = borrowedBuffer;
-                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, Unsafe.AsPointer(ref allocatedForMsg.GetPinnableReference()), &dwSize, headerSize) > 0
-                        && MemoryMarshal.TryRead<RawInput.RAWINPUT>(allocatedForMsg, out var inputMsg))
+                    // It should reach here.
+                    var @struct = new RawInput.RAWINPUT();
+                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, &@struct, &dwSize, headerSize) > 0)
                     {
-                        if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
+                        if (@struct.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
                         {
-                            rawMouseData = new RawMouseInputData(in inputMsg.data.mouse);
+                            rawMouseData = new RawMouseInputData(in @struct.data.mouse);
                             return true;
                         }
                     }
                 }
-                finally
+                else
                 {
-                    ArrayPool<byte>.Shared.Return(borrowedBuffer);
+                    // Fall-back to unmanaged allocation instead.
+                    IntPtr allocatedForMsg = Marshal.AllocHGlobal((int)dwSize);
+                    try
+                    {
+                        if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, allocatedForMsg.ToPointer(), &dwSize, headerSize) > 0)
+                        {
+                            // Zero-copy
+                            // MemoryMarshal.TryRead<RawInput.RAWINPUT>(new ReadOnlySpan<byte>(allocatedForMsg.ToPointer(), (int)dwSize), out var inputMsg)
+                            
+                            // Copying via Marshal
+                            // var copiedStruct = Marshal.PtrToStructure<RawInput.RAWINPUT>(allocatedForMsg);
+                            if (MemoryMarshal.TryRead<RawInput.RAWINPUT>(new ReadOnlySpan<byte>(allocatedForMsg.ToPointer(), (int)dwSize), out var inputMsg))
+                            {
+                                if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
+                                {
+                                    rawMouseData = new RawMouseInputData(in inputMsg.data.mouse);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (allocatedForMsg != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(allocatedForMsg);
+                        }
+                    }
                 }
             }
             rawMouseData = default;

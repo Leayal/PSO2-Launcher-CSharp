@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.IO;
+using System.Windows.Controls;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -108,6 +109,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             this.checkbox_pso2_data_ngs.IsChecked = this._config.PSO2Enabled_Reboot;
             this.checkbox_pso2_classic.IsChecked = this._config.PSO2Enabled_Classic;
+            this.checkbox_disableingameintegritycheck.IsChecked = this._config.LauncherDisableInGameFileIntegrityCheck;
+            this.checkbox_allowDlssModding.IsChecked = this._config.AllowNvidiaDlssModding;
 
             var num_throttleFileCheck = this._config.DownloaderCheckThrottle;
             if (num_throttleFileCheck < this.numberbox_throttledownload.Minimum)
@@ -154,6 +157,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this._config.DownloaderCheckThrottle = 0;
             }
+
+            this._config.LauncherDisableInGameFileIntegrityCheck = (this.checkbox_disableingameintegritycheck.IsChecked == true);
+            this._config.AllowNvidiaDlssModding = (this.checkbox_allowDlssModding.IsChecked == true);
 
             this._config.Save();
 
@@ -247,6 +253,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
         }
+
+        private void TabControl_SelectionChanged_PreventSelectingNone(object sender, SelectionChangedEventArgs e)
+            => ConvenientEventHandlers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
 
         private void Combobox_downloadselection_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {

@@ -125,7 +125,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 // Check whether Tweaker is targeting the same pso2_bin this launcher is managing.
                                 if (string.Equals(pso2tweakerconfig_pso2bin, dir_pso2bin, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    pso2tweakerconfig.ResetFanPatchVersion();
+                                    pso2tweakerconfig.ResetFanPatchVersion(downloadMode);
                                     pso2tweakerconfig.PSO2JPRemoteVersion = versionStringRaw;
 
                                     if (tweakerhashcacheDump != null)

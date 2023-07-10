@@ -15,7 +15,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 #nullable enable
     partial class GameClientUpdater
     {
-        private static readonly string __Filename_HashTableRelativePath = "data/win32/d4455ebc2bef618f29106da7692ebc1a";
+        private static readonly string __Filename_HashTableRelativePath = "data/win32/d4455ebc2bef618f29106da7692ebc1a",
+            __Filename_DlssBinaryFileRelativePath = "nvngx_dlss.dll";
 
         const int ScanBufferSize = 1024 * 16; // 16KB buffer
         private async Task<PatchListMemory> InnerGetFilelistToScan(GameClientSelection selection, CancellationToken cancellationToken)
@@ -330,6 +331,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             static bool IsHashTableFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath.AsSpan(11), StringComparison.OrdinalIgnoreCase));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool IsDlssBinaryFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_DlssBinaryFileRelativePath, StringComparison.OrdinalIgnoreCase));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data, CancellationToken cancellationToken)
             {
                 var linkTo = DetermineWhere(patchItem, dir_pso2bin, dir_classic_data, out var isLink);
@@ -409,6 +413,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         if ((flags & FileScanFlags.IgnoreHashTableFile) != 0 && IsHashTableFile(patchItem))
                         {
                             continue;
+                        }
+                        if ((flags & FileScanFlags.DoNotRedownloadNvidiaDlssBin) != 0 && IsDlssBinaryFile(patchItem))
+                        {
+                            if (File.Exists(Path.Join(dir_pso2bin, patchItem.GetSpanFilenameWithoutAffix())))
+                                continue;
                         }
                         // data/win32/2b486d03bca4c2578f9e204b234f389b
                         if (flags == FileScanFlags.MissingFilesOnly)

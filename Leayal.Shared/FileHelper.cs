@@ -4,6 +4,7 @@ using System.Text;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Leayal.Shared
 {
@@ -189,6 +190,7 @@ namespace Leayal.Shared
             IEnumerator IEnumerable.GetEnumerator() => new TextBufferer(new StreamReader(this.filepath), this.buffersize, this.pool);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool HasReadOnlyFlag(this FileAttributes attributes) => ((attributes & FileAttributes.ReadOnly) != 0);
 
         private class TextBufferer : IEnumerator<ReadOnlyMemory<char>>
@@ -239,8 +241,11 @@ namespace Leayal.Shared
 
             private void Dispose(bool disposing)
             {
+                if (disposing)
+                {
+                    this.reader.Dispose();
+                }
                 this._pool?.Return(this.buffer);
-                this.reader.Dispose();
             }
 
             ~TextBufferer()

@@ -91,3 +91,13 @@ This project is just a hobby one.
 As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET desktop development` bundle. Specifically, the launcher was written with `C# 9.0` of `.NET6`.
 
 - Any IDEs supporting `.NET6 SDK` development should be usable to develop or compile this launcher.
+
+# Third-party libraries
+- [AvalonEdit](https://github.com/icsharpcode/AvalonEdit): WPF-based text editor.
+- [MahApps.Metro](https://github.com/MahApps/MahApps.Metro): Metro themes and styles for WPF controls.
+- [MahApps.Metro.IconPacks.FontAwesome](https://www.nuget.org/packages/MahApps.Metro.IconPacks.FontAwesome): It's a subset of [MahApps.Metro.IconPacks](https://github.com/MahApps/MahApps.Metro.IconPacks).
+- [WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2): WebBrowser embedding using [MSEdge's engine](https://learn.microsoft.com/en-us/microsoft-edge/webview2/).
+- [CsWin32](https://github.com/Microsoft/CsWin32): A source code generator which generates P/Invoke function "easily" (as sometimes you have to deal with pointers and aliased types).
+- [SQLitePCLRaw.core](https://www.nuget.org/packages/SQLitePCLRaw.core): Low-level bindings for SQLite3 native libraries.
+- [SQLitePCLRaw.lib.e_sqlcipher](https://www.nuget.org/packages/SQLitePCLRaw.lib.e_sqlcipher): Binary redistribution package for SQLite3 Cipher.
+- [System.Reflection.MetadataLoadContext](https://www.nuget.org/packages/System.Reflection.MetadataLoadContext): Allows read-only reflection on .NET assemblies (probing a .NET metadata without executing it).

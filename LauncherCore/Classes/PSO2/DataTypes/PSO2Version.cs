@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             // Or not
 
             // WTF I am doing
-            if (versionString.Length == 0 || versionString.IsWhiteSpace())
+            if (versionString.IsEmpty || versionString.IsWhiteSpace())
             {
                 value = default;
                 return false;
@@ -99,8 +100,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
                 }
                 else
                 {
-                    thisRC = TakeDigitOnly(in this.ReleaseCandidate);
-                    otherRC = TakeDigitOnly(in other.ReleaseCandidate);
+                    thisRC = TakeDigitOnly(this.ReleaseCandidate.AsSpan());
+                    otherRC = TakeDigitOnly(other.ReleaseCandidate.AsSpan());
                     return thisRC.CompareTo(otherRC);
                 }
             }
@@ -110,19 +111,50 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
             }
         }
 
-        private static int TakeDigitOnly(in string str)
+        private static int TakeDigitOnly(ReadOnlySpan<char> span)
         {
-            var span = str.AsSpan();
-            var sb = new StringBuilder(span.Length);
-            for (int i = 0; i < span.Length; i++)
+            if (span.IsEmpty) return int.Parse(span);
+            int i = 0, len = span.Length;
+            bool foundNonDigit = false;
+            for (i = 0; i < len; i++)
             {
-                if (char.IsDigit(span[i]))
+                if (!char.IsDigit(span[i]))
                 {
-                    sb.Append(span[i]);
+                    foundNonDigit = true;
+                    break;
                 }
             }
 
-            return int.Parse(sb.ToString());
+            if (foundNonDigit)
+            {
+                char[]? arr = len > 512 ? ArrayPool<char>.Shared.Rent(len) : null;
+                Span<char> buffer = arr == null ? stackalloc char[len] : arr;
+                try
+                {
+                    span.Slice(0, i).CopyTo(buffer);
+                    int dstIndex = i;
+                    for (; i < len; i++)
+                    {
+                        ref readonly var c = ref span[i];
+                        if (char.IsDigit(c))
+                        {
+                            buffer[dstIndex++] = c;
+                        }
+                    }
+                    return int.Parse(buffer.Slice(0, dstIndex));
+                }
+                finally
+                {
+                    if (arr != null)
+                    {
+                        ArrayPool<char>.Shared.Return(arr);
+                    }
+                }
+            }
+            else
+            {
+                return int.Parse(span);
+            }
         }
 
         public override readonly bool Equals(object? obj)

@@ -7,6 +7,13 @@ using Leayal.Shared.Windows;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.ComponentModel;
+using System.Windows.Data;
+using Leayal.PSO2Launcher.Core.UIElements;
+using Leayal.Shared;
+using System.Text.Json;
+using System.Windows.Documents;
+using System.Text.Encodings.Web;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -17,11 +24,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
     {
         private const string Text_StatusCancelled = "Operation cancelled", Text_StatusCompleted = "Operation completed";
         private readonly string _pso2dir;
+        private readonly DateTime updateCompleteTime;
 
         public Guid ResultGuid { get; }
 
-        public GameClientUpdateResultLogDialog(string pso2dir, in Guid id, in bool cancel, in int patchlist_count, IReadOnlyDictionary<PatchListItemLogData, bool?> datalist) : base()
+        public GameClientUpdateResultLogDialog(string pso2dir, in Guid id, in bool cancel, in int patchlist_count, IReadOnlyDictionary<PatchListItemLogData, bool?> datalist, in DateTime updateCompleteTime) : base()
         {
+            this.updateCompleteTime = updateCompleteTime;
             this._pso2dir = pso2dir;
             this.ResultGuid = id;
             InitializeComponent();
@@ -54,7 +63,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.ListOfSuccessItems.ItemsSource = obCollection_success;
+                this.ListOfSuccessItems.ItemsSource = CollectionViewSource.GetDefaultView(obCollection_success);
                 this.CreateCM(this.ListOfSuccessItems);
             }
             if (count_failure == 0)
@@ -63,7 +72,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.ListOfFailureItems.ItemsSource = obCollection_failure;
+                this.ListOfFailureItems.ItemsSource = CollectionViewSource.GetDefaultView(obCollection_failure);
                 this.CreateCM(this.ListOfFailureItems);
             }
             if (count_cancelled == 0)
@@ -72,7 +81,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             else
             {
-                this.ListOfCancelledItems.ItemsSource = obCollection_cancelled;
+                this.ListOfCancelledItems.ItemsSource = CollectionViewSource.GetDefaultView(obCollection_cancelled);
                 this.CreateCM(this.ListOfCancelledItems);
             }
 
@@ -369,23 +378,94 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             public Eyy()
             {
+                // Was to workaround the compiler's warning about can't leave non-nullable string type to be null.
                 this.Status = string.Empty;
             }
         }
 
         private void MetroAnimatedTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            => ConvenientEventHandlers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
+
+        private static readonly string CharLookout = "?#*[]";
+        private void TextBoxDelayedTextChange_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (e.AddedItems == null || e.AddedItems.Count == 0)
+            if (sender is TextBoxDelayedTextChange textbox && textbox.Tag is ICollectionView view)
             {
-                if (e.RemovedItems[0] is MetroTabItem tab)
+                var filterPattern = textbox.Text;
+                var filterPatternSpan = filterPattern.AsSpan();
+                if (filterPatternSpan.IsEmpty)
                 {
-                    e.Handled = true;
-                    tab.IsSelected = true;
+                    view.Filter = null;
+                }
+                else if (filterPatternSpan.IndexOfAny(CharLookout.AsSpan()) != -1)
+                {
+                    view.Filter = StringHelper.MakePredicate_MatchByPattern<PatchListItemLogData>(filterPattern, false);
+                }
+                else
+                {
+                    view.Filter = StringHelper.MakePredicate_ContainsLiteral<PatchListItemLogData>(filterPattern.AsMemory(), false);
                 }
             }
         }
 
-        public class PatchListItemLogData : IEquatable<PatchListItemLogData>
+        private void ButtonExportToJSON_Click(object sender, RoutedEventArgs e)
+        {
+            using (var sfd = new System.Windows.Forms.SaveFileDialog()
+            {
+                AddExtension = true,
+                CheckFileExists = false,
+                CheckPathExists = true,
+                AutoUpgradeEnabled = true,
+                CreatePrompt = false,
+                FileName = "PSO2UpdateResult_" + this.updateCompleteTime.ToString("yyyy-MM-dd_hh-mm-ss"),
+                Title = "Select export destination",
+                DereferenceLinks = true,
+                Filter = "JavaScript Object Notation With Comment|*.jsonc|JavaScript Object Notation|*.json",
+                OverwritePrompt = true,
+            })
+            {
+                if (sfd.ShowDialog(this) == System.Windows.Forms.DialogResult.OK)
+                {
+                    var dst = sfd.FileName;
+                    bool allowComment = sfd.FilterIndex == 1; // dst.EndsWith(".jsonc");
+                    using (var fs = File.Create(dst))
+                    using (var jsWriter = new Utf8JsonWriter(fs, new JsonWriterOptions() { Indented = true  }))
+                    {
+                        jsWriter.WriteStartObject();
+                        if (allowComment) jsWriter.WriteCommentValue("The FileTime (NOT system time) expressed in UTC, indicates when the update has been done regardless success or not");
+                        jsWriter.WriteNumber("completeAt", this.updateCompleteTime.ToFileTimeUtc());
+                        if (allowComment) jsWriter.WriteCommentValue("The path to the folder which contained PSO2 game client when this update happened");
+                        jsWriter.WriteString("path_pso2bin", this._pso2dir);
+
+                        static void WriteArray(Utf8JsonWriter jsWriter, ListBox listbox, string propertyName, string comment)
+                        {
+                            if (listbox.ItemsSource is ICollectionView view && view.SourceCollection is Collection<PatchListItemLogData> collection)
+                            {
+                                if (comment.Length != 0) jsWriter.WriteCommentValue(comment);
+                                jsWriter.WritePropertyName(propertyName);
+                                jsWriter.WriteStartArray();
+                                foreach (var item in collection)
+                                    jsWriter.WriteStringValue(item.Name);
+                                jsWriter.WriteEndArray();
+                            }
+                        }
+                        WriteArray(jsWriter, this.ListOfSuccessItems, "success", allowComment ? "List of successfully downloaded items" : string.Empty);
+                        WriteArray(jsWriter, this.ListOfFailureItems, "failed", allowComment ? "List of failed downloaded items" : string.Empty);
+                        WriteArray(jsWriter, this.ListOfCancelledItems, "cancelled", allowComment ? "List of items which hasn't even begin downloading" : string.Empty);
+                        jsWriter.WriteEndObject();
+                        jsWriter.Flush();
+                    }
+                    Prompt_Generic.Show(this, new Inline[]
+                    { 
+                        new Run("The result has been exported successfully."),
+                        new LineBreak(),
+                        new ShowLocalFileHyperlink(new Run("(Show the exported file in File Explorer)")) { NavigateUri = new Uri(dst) }
+                    }, "Export result", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
+
+        public class PatchListItemLogData : IEquatable<PatchListItemLogData>, StringHelper.IStringComparable
         {
             public string Size { get; }
             public string Name { get; }
@@ -401,6 +481,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             public override bool Equals(object? obj) => (obj is PatchListItemLogData item && this.Equals(item));
 
             public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name);
+
+            public ReadOnlyMemory<char> GetComparableStringRegion() => this.Name.AsMemory();
         }
     }
 }

@@ -50,6 +50,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         /// <remarks><para>Hash table file is <u>data/win32/d4455ebc2bef618f29106da7692ebc1a</u>.</para></remarks>
         IgnoreHashTableFile = 1 << 5,
 
+        /// <summary>Let the updater knows that it shouldn't re-download Nvidia DLSS binary file if the file is existed.</summary>
+        /// <remarks>
+        /// <para>However, this flag is meaningless if the file doesn't exist as it will be redownloaded to ensure the binary file isn't missing.</para>
+        /// <para>The DLSS binary file is <u>nvngx_dlss.dll</u>.</para>
+        /// </remarks>
+        DoNotRedownloadNvidiaDlssBin = 1 << 6,
+
         // Preset below
 
         [EnumDisplayName("Prefer speed [Not recommended: Unreliable] (Check missing and compare the cached MD5-hash if the file is already existed)")]

@@ -1,4 +1,5 @@
-﻿using Leayal.Shared;
+﻿using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using Leayal.Shared;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,10 +20,22 @@ namespace Leayal.PSO2Launcher.Core.Classes
             this.Filename = path;
         }
 
-        public void ResetFanPatchVersion()
+        public void ResetFanPatchVersion(GameClientSelection gameClientSelection)
         {
-            this.Set("LatestWin32FanPatchVersion", "0");
-            this.Set("LatestWin32RebootFanPatchVersion", "0");
+            switch (gameClientSelection)
+            {
+                case GameClientSelection.Classic_Only:
+                    this.Set("LatestWin32FanPatchVersion", "0");
+                    break;
+                case GameClientSelection.NGS_Only:
+                case GameClientSelection.NGS_Prologue_Only:
+                    this.Set("LatestWin32RebootFanPatchVersion", "0");
+                    break;
+                default:
+                    this.Set("LatestWin32FanPatchVersion", "0");
+                    this.Set("LatestWin32RebootFanPatchVersion", "0");
+                    break;
+            }
         }
 
         public string UpdateChecks

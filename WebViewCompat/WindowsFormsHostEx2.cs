@@ -220,34 +220,32 @@ namespace Leayal.WebViewCompat
         protected virtual void OnRawMouseInputMessage(in RawMouseInputData data, ref bool handled)
         {  
             var btnFlags = data.usButtonFlags;
-            switch (btnFlags)
+            bool isMouseWheel = ((btnFlags & RawMouseInputButtonFlags.RI_MOUSE_WHEEL) != 0),
+                isMouseHWheel = ((btnFlags & RawMouseInputButtonFlags.RI_MOUSE_HWHEEL) != 0);
+            
+            if (isMouseWheel || isMouseHWheel)
             {
-                case RawMouseInputButtonFlags.RI_MOUSE_WHEEL:
-                case RawMouseInputButtonFlags.RI_MOUSE_HWHEEL:
-                    var panel = base.Child;
-                    if (panel.IsHandleCreated && panel.Visible) // this.IsMouseOver doesn't work. May need to manual bound check via mouse coordinate and 
+                var panel = base.Child;
+                if (panel.IsHandleCreated && panel.Visible) // this.IsMouseOver doesn't work. May need to manual bound check via mouse coordinate and 
+                {
+                    var pos = Control.MousePosition;
+                    var selfDesktopLocation = this.PointToScreen(new Point());
+                    var sizeInside = panel.ClientSize;
+                    var selfDesktopSize = this.PointToScreen(new Point(Math.Min(this.ActualWidth, sizeInside.Width), Math.Min(this.ActualHeight, sizeInside.Height)));
+                    if (selfDesktopLocation.X < pos.X && pos.X < selfDesktopSize.X
+                        && selfDesktopLocation.Y < pos.Y && pos.Y < selfDesktopSize.Y)
                     {
-                        var pos = Control.MousePosition;
-                        var whwnd = UnmanagedWindowsHelper.WindowFromPoint(pos);
-                        var selfDesktopLocation = this.PointToScreen(new Point());
-                        var sizeInside = panel.ClientSize;
-                        var selfDesktopSize = this.PointToScreen(new Point(Math.Min(this.ActualWidth, sizeInside.Width), Math.Min(this.ActualHeight, sizeInside.Height)));
-                        if (selfDesktopLocation.X < pos.X && pos.X < selfDesktopSize.X
-                            && selfDesktopLocation.Y < pos.Y && pos.Y < selfDesktopSize.Y)
+                        if (WindowMessageProcedureHelper.PostWindowMessage(
+                            panel.Handle,
+                            isMouseHWheel ? WM_MOUSEHWHEEL : WM_MOUSEWHEEL,
+                            (WindowMessageProcedureHelper.PackUInt_LowHigh_Order(0, data.usButtonData)),
+                            WindowMessageProcedureHelper.PackInt_LowHigh_Order(pos.X, pos.Y)
+                        ))
                         {
-                            bool isHorizontal = (btnFlags & RawMouseInputButtonFlags.RI_MOUSE_HWHEEL) == RawMouseInputButtonFlags.RI_MOUSE_HWHEEL;
-                            if (WindowMessageProcedureHelper.PostWindowMessage(
-                                panel.Handle,
-                                isHorizontal ? WM_MOUSEHWHEEL : WM_MOUSEWHEEL,
-                                (WindowMessageProcedureHelper.PackUInt_LowHigh_Order(0, data.usButtonData)),
-                                WindowMessageProcedureHelper.PackInt_LowHigh_Order(pos.X, pos.Y)
-                            ))
-                            {
-                                handled = true;
-                            }
+                            handled = true;
                         }
                     }
-                    break;
+                }
             }
         }
 

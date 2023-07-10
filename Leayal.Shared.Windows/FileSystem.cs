@@ -6,32 +6,19 @@ using System.Runtime.CompilerServices;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using Windows.Win32.Storage.FileSystem;
+using System.Windows.Markup;
 
 namespace Leayal.Shared.Windows
 {
     /// <summary>Low-level FileSystem APIs</summary>
     public static class FileSystem
     {
-        const int FILE_ATTRIBUTE_DIRECTORY = 16,
+        const int FILE_ATTRIBUTE_DIRECTORY = (int)FileAttributes.Directory,
             CopyBufferingSize = 1024 * 32;
         private readonly static string PrefixLongPath = @"\\?\";
 
         const int MAX_PATH = 260;
-        // dwAdditionalFlags:
-        const int FIND_FIRST_EX_CASE_SENSITIVE = 1;
-        const int FIND_FIRST_EX_LARGE_FETCH = 2;
-
-        /*
-        enum FINDEX_SEARCH_OPS
-        {
-            FindExSearchNameMatch = 0,
-            FindExSearchLimitToDirectories = 1,
-            FindExSearchLimitToDevices = 2
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern IntPtr FindFirstFileExW([In, MarshalAs(UnmanagedType.LPWStr)] string lpFileName, [In] FINDEX_INFO_LEVELS fInfoLevelId, out WIN32_FIND_DATA lpFindFileData, [In] FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, [In] int dwAdditionalFlags);
-        */
 
         /// <summary>Copies a file (also copies attributes, including file times) to a destination.</summary>
         /// <param name="srcPath">The path to the source file to be copied.</param>
@@ -167,8 +154,31 @@ namespace Leayal.Shared.Windows
             return false;
         }
 
-        private unsafe static System.Runtime.InteropServices.ComTypes.FILETIME* AsPointer(ref System.Runtime.InteropServices.ComTypes.FILETIME data)
-                => (System.Runtime.InteropServices.ComTypes.FILETIME*)Unsafe.AsPointer(ref data);
+        /// <summary>Tries to set the file times from a handle to a file.</summary>
+        /// <param name="filehandle">The file handle to set the time information.</param>
+        /// <param name="creationTime">The creation time of the file.</param>
+        /// <param name="lastAccessTime">The last accessed time of the file.</param>
+        /// <param name="lastWriteTime">The last written time of the file.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">All three <paramref name="creationTime"/>, <paramref name="lastAccessTime"/>, <paramref name="lastWriteTime"/> are not set.</exception>
+        public static bool SetFileTime(SafeFileHandle filehandle, [Optional] DateTime creationTime, [Optional] DateTime lastAccessTime, [Optional] DateTime lastWriteTime)
+        {
+            DateTime emptyTime = default;
+            if (creationTime == emptyTime && lastAccessTime == emptyTime && lastWriteTime == emptyTime)
+                throw new ArgumentException("There must be at least one parameter have a valid DateTime. It would be meaningless otherwise and questionable to make a call to this method without any valid DateTime object.");
+
+            long t_creationTime = creationTime.ToFileTimeUtc(),
+                t_lastAccessTime = lastAccessTime.ToFileTimeUtc(),
+                t_lastWriteTime = lastWriteTime.ToFileTimeUtc();
+
+            unsafe
+            {
+                return PInvoke.SetFileTime(filehandle,
+                    Unsafe.AsRef<System.Runtime.InteropServices.ComTypes.FILETIME>(&t_creationTime),
+                    Unsafe.AsRef<System.Runtime.InteropServices.ComTypes.FILETIME>(&t_lastAccessTime),
+                    Unsafe.AsRef<System.Runtime.InteropServices.ComTypes.FILETIME>(&t_lastWriteTime));
+            }
+        }
 
         /// <summary>Tries to get the file times from a handle to a file.</summary>
         /// <param name="filehandle">The file handle to query time information.</param>
@@ -187,7 +197,7 @@ namespace Leayal.Shared.Windows
 
             unsafe
             {
-                if (PInvoke.GetFileTime(filehandle, AsPointer(ref t_creationTime), AsPointer(ref t_lastAccessTime), AsPointer(ref t_lastWriteTime)))
+                if (PInvoke.GetFileTime(filehandle, &t_creationTime, &t_lastAccessTime, &t_lastWriteTime))
                 {
                     creationTime = t_creationTime.ToDateTime();
                     lastAccessTime = t_lastAccessTime.ToDateTime();
@@ -233,7 +243,7 @@ namespace Leayal.Shared.Windows
 
             unsafe
             {
-                if (PInvoke.GetFileTime(filehandle, AsPointer(ref t_creationTime), AsPointer(ref t_lastAccessTime), AsPointer(ref t_lastWriteTime)))
+                if (PInvoke.GetFileTime(filehandle, &t_creationTime, &t_lastAccessTime, &t_lastWriteTime))
                 {
                     creationTime = t_creationTime.ToDateTimeUTC();
                     lastAccessTime = t_lastAccessTime.ToDateTimeUTC();
@@ -282,7 +292,7 @@ namespace Leayal.Shared.Windows
 
                 try
                 {
-                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpCreationTime: AsPointer(ref t)))
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpCreationTime: &t))
                     {
                         creationTime = t.ToDateTimeUTC();
                         return true;
@@ -332,7 +342,7 @@ namespace Leayal.Shared.Windows
 
                 try
                 {
-                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastWriteTime: AsPointer(ref t)))
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastWriteTime: &t))
                     {
                         lastWriteTime = t.ToDateTimeUTC();
                         return true;
@@ -382,7 +392,7 @@ namespace Leayal.Shared.Windows
 
                 try
                 {
-                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastAccessTime: AsPointer(ref t)))
+                    if (PInvoke.GetFileTime(new MSWin32.Foundation.HANDLE(filehandle.DangerousGetHandle()), lpLastAccessTime: &t))
                     {
                         lastAccessTime = t.ToDateTimeUTC();
                         return true;
@@ -401,34 +411,48 @@ namespace Leayal.Shared.Windows
         }
 
         internal static unsafe bool GetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
-            => PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
+            => PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), (uint)Marshal.SizeOf(pInfo));
 
         internal static unsafe bool SetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
-            => PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), Convert.ToUInt32(Marshal.SizeOf(pInfo)));
+            => PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), (uint)Marshal.SizeOf(pInfo));
+
+        /// <summary>Gets file information from a file handle.</summary>
+        /// <param name="hFile">The file handle to query time information.</param>
+        /// <param name="info">The information you want.</param>
+        /// <returns><see langword="true"/> if the call succeeds. Otherwise, <see langword="false"/>.</returns>
+        public static bool GetFileBasicInformationByHandle(SafeFileHandle hFile, out FileBasicInfo info)
+        {
+            var obj = new MSFileSystem.FILE_BASIC_INFO();
+            if (GetFileBasicInformationByHandle(hFile, ref obj))
+            {
+                info = new FileBasicInfo(in obj);
+                return true;
+            }
+            info = default;
+            return false;
+        }
+
+        /// <summary>Sets file information the file handle pointing to.</summary>
+        /// <param name="hFile">The file handle to query time information.</param>
+        /// <param name="info">The information you want.</param>
+        /// <returns><see langword="true"/> if the call succeeds. Otherwise, <see langword="false"/>.</returns>
+        public static bool SetFileBasicInformationByHandle(SafeFileHandle hFile, in FileBasicInfo info)
+        {
+            var obj = info.data;
+            return SetFileBasicInformationByHandle(hFile, ref obj);
+        }
 
         /// <summary>Converts the native file time to standard <seealso cref="DateTime"/> structure.</summary>
         /// <param name="time">The native file time structure.</param>
         /// <returns>A <seealso cref="DateTime"/> which is in UTC time format.</returns>
-        public static DateTime ToDateTimeUTC(this System.Runtime.InteropServices.ComTypes.FILETIME time)
-        {
-            ulong high = (ulong)time.dwHighDateTime;
-            uint low = (uint)time.dwLowDateTime;
-            long fileTime = (long)((high << 32) + low);
-
-            return DateTime.FromFileTimeUtc(fileTime);
-        }
+        public static unsafe DateTime ToDateTimeUTC(this System.Runtime.InteropServices.ComTypes.FILETIME time)
+            => DateTime.FromFileTimeUtc(Unsafe.AsRef<long>(&time));
 
         /// <summary>Converts the native file time to standard <seealso cref="DateTime"/> structure.</summary>
         /// <param name="time">The native file time structure.</param>
         /// <returns>A <seealso cref="DateTime"/> which is in local time format.</returns>
-        public static DateTime ToDateTime(this System.Runtime.InteropServices.ComTypes.FILETIME time)
-        {
-            ulong high = (ulong)time.dwHighDateTime;
-            uint low = (uint)time.dwLowDateTime;
-            long fileTime = (long)((high << 32) + low);
-
-            return DateTime.FromFileTime(fileTime);
-        }
+        public static unsafe DateTime ToDateTime(this System.Runtime.InteropServices.ComTypes.FILETIME time)
+            => DateTime.FromFileTime(Unsafe.Read<long>(&time));
 
         /// <summary>Check if the given path is actually existed on the filesystem.</summary>
         /// <param name="path">The path to check existence.</param>
@@ -511,5 +535,50 @@ namespace Leayal.Shared.Windows
             }
             return isSuccess;
         }
+
+        #region "| Structs |"
+        /// <summary>Contains metadata information about a directory or a file..</summary>
+        public readonly struct FileBasicInfo
+        {
+            // Can't use ref or pointer here, I feel like it would go haywire
+            // Since "FILE_BASIC_INFO" lives in a local stack of a function, the moment the function returns, "FILE_BASIC_INFO" will be "freed" and the pointer will point to "something unknown".
+            // Therefore, we need to create a copy of it.
+            internal readonly FILE_BASIC_INFO data;
+            internal FileBasicInfo(in FILE_BASIC_INFO data)
+            {
+                this.data = data;
+            }
+
+            /// <summary>Gets file creation time, expressed in file time.</summary>
+            public readonly long CreationTimeRaw => this.data.CreationTime;
+
+            /// <summary>Gets file creation time, expressed in system time.</summary>
+            public readonly DateTime CreationTime => DateTime.FromFileTimeUtc(this.data.CreationTime);
+
+            /// <summary>Gets file last asccess time, expressed in file time.</summary>
+            public readonly long LastAccessTimeRaw => this.data.LastAccessTime;
+
+            /// <summary>Gets file last access time, expressed in system time.</summary>
+            public readonly DateTime LastAccessTime => DateTime.FromFileTimeUtc(this.data.LastAccessTime);
+
+            /// <summary>Gets file last write time, expressed in file time.</summary>
+            public readonly long LastWriteTimeRaw => this.data.LastWriteTime;
+
+            /// <summary>Gets file last write time, expressed in system time.</summary>
+            public readonly DateTime LastWriteTime => DateTime.FromFileTimeUtc(this.data.LastWriteTime);
+
+            /// <summary>Gets metadata change time, expressed in file time.</summary>
+            public readonly long ChangeTimeRaw => this.data.ChangeTime;
+
+            /// <summary>Gets metadata change time, expressed in system time.</summary>
+            public readonly DateTime ChangeTime => DateTime.FromFileTimeUtc(this.data.ChangeTime);
+
+            /// <summary>Gets file attribute, expressed in unmanaged value.</summary>
+            public readonly uint FileAttributesRaw => this.data.FileAttributes;
+
+            /// <summary>Gets file attribute, expressed in .NET managed value.</summary>
+            public readonly FileAttributes FileAttributes => (FileAttributes)(this.data.FileAttributes);
+        }
+        #endregion
     }
 }

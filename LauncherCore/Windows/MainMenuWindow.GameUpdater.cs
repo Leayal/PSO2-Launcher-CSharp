@@ -125,6 +125,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var downloaderProfileClassic = this.config_main.DownloaderProfileClassic;
             var conf_DownloadType = this.config_main.DownloadSelection;
             bool shouldScanForBackups = (this.config_main.PSO2DataBackupBehavior != PSO2DataBackupBehavior.IgnoreAll);
+            bool isDlssModAllowed = this.config_main.AllowNvidiaDlssModding;
+
+            // if (!fixMode && this.config_main.AllowNvidiaDlssModding) downloaderProfile |= FileScanFlags.DoNotRedownloadNvidiaDlssBin;
+            if (isDlssModAllowed) downloaderProfile |= FileScanFlags.DoNotRedownloadNvidiaDlssBin;
+
             GameClientSelection downloadType;
             switch (selection)
             {
@@ -176,6 +181,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     sb.AppendLine();
                     sb.Append("(If the download profile is 'Cache Only', it will be treated as 'Balanced' profile instead to ensure the accuracy of file scan. Therefore, it may take longer time than an usual check for game client updates)");
+                }
+                if (isDlssModAllowed)
+                {
+                    sb.AppendLine();
+                    sb.Append("(You enabled \"Don't redownload Nvidia DLSS binary files if it's already existed\" option. Therefore, the Nvidia DLSS binary files will be excluded from the file scan)");
                 }
 
                 if (Prompt_Generic.Show(this, sb.ToString(), "Prompt", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
@@ -569,6 +579,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             private readonly bool _cancel;
             private readonly int list_count;
             private readonly string pso2dir;
+            private readonly DateTime updateCompleteTime;
 
             public GameClientUpdateResultLogDialogFactory(string _pso2dir, in Guid id, in bool iscancelled, in int patchlist_count, IReadOnlyDictionary<GameClientUpdateResultLogDialog.PatchListItemLogData, bool?> data)
             {
@@ -577,9 +588,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.list_count = patchlist_count;
                 this.items = data;
                 this.Id = id;
+                this.updateCompleteTime = DateTime.Now;
             }
 
-            public Window CreateNew() => new GameClientUpdateResultLogDialog(this.pso2dir, in this.Id, in this._cancel, in this.list_count, items);
+            public Window CreateNew() => new GameClientUpdateResultLogDialog(this.pso2dir, in this.Id, in this._cancel, in this.list_count, items, this.updateCompleteTime);
         }
 
         private async Task GameClientUpdater_BackupFileFound(GameClientUpdater sender, GameClientUpdater.BackupFileFoundEventArgs e)

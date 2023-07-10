@@ -1,4 +1,5 @@
 ﻿using Leayal.PSO2Launcher.Core.UIElements;
+using Leayal.Shared.Windows;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,11 +33,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
                 // File.Delete(dst);
             }
-            DateTime dt_creation = File.GetCreationTimeUtc(src), dt_access = File.GetLastAccessTimeUtc(src), dt_write = File.GetLastWriteTimeUtc(src);
+            FileSystem.FileBasicInfo info;
+            using (var handle = File.OpenHandle(src, mode: FileMode.Open, access: FileAccess.Read, share: FileShare.Read))
+            {
+                FileSystem.GetFileBasicInformationByHandle(handle, out info);
+            }
             File.Move(src, dst, true);
-            File.SetCreationTimeUtc(dst, dt_creation);
-            File.SetLastAccessTimeUtc(dst, dt_access);
-            File.SetLastWriteTimeUtc(dst, dt_write);
+            using (var handle = File.OpenHandle(dst, mode: FileMode.Open, access: FileAccess.ReadWrite, share: FileShare.Read))
+            {
+                FileSystem.SetFileBasicInformationByHandle(handle, in info);
+            }
         }
 
         private static void EnsureCopyOverwriteIgnoreReadonlyFlag(string src, string dst) => Shared.Windows.FileSystem.CopyFile(src, dst, true);
@@ -46,6 +52,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             DoNothing,
             Delete,
             Move,
+            /// <remarks>This is currently useless. SEGA updated NGS client at some point, making game client consider symlink files as non-existence files.</remarks>
             MoveAndSymlink,
             Copy
         }

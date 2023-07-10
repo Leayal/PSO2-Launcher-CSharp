@@ -11,6 +11,7 @@ GetFileInformationByHandleEx
 SetFileInformationByHandle
 FILE_BASIC_INFO
 GetFileTime
+SetFileTime
 FILE_ACCESS_RIGHTS
 PathRelativePathTo
 

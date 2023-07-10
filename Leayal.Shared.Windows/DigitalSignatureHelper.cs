@@ -88,7 +88,7 @@ namespace Leayal.Shared.Windows
                         pFile.hFile = new MSWin32.Foundation.HANDLE(safehandle.DangerousGetHandle());
                         pFile.cbStruct = Convert.ToUInt32(Marshal.SizeOf(pFile));
 
-                        data.Anonymous.pFile = (MSWin32.Security.WinTrust.WINTRUST_FILE_INFO*)Unsafe.AsPointer(ref pFile);
+                        data.Anonymous.pFile = &pFile;
 
                         var size = Marshal.SizeOf(data);
                         data.cbStruct = Convert.ToUInt32(size);
@@ -96,7 +96,7 @@ namespace Leayal.Shared.Windows
                         try
                         {
                             var theguid = WINTRUST_ACTION_GENERIC_VERIFY_V2;
-                            return (PInvoke.WinVerifyTrust(new MSWin32.Foundation.HWND(NegativeOne), ref theguid, Unsafe.AsPointer(ref data)) == 0);
+                            return (PInvoke.WinVerifyTrust(new MSWin32.Foundation.HWND(NegativeOne), ref theguid, &data) == 0);
                             // return (WinVerifyTrust(new IntPtr(-1), WINTRUST_ACTION_GENERIC_VERIFY_V2, ref data) == 0);
                         }
                         finally

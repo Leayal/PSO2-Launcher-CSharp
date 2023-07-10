@@ -4,6 +4,7 @@ using MSWin32 = global::Windows.Win32;
 using RawInput = global::Windows.Win32.UI.Input;
 using PInvoke = global::Windows.Win32.PInvoke;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace Leayal.Shared.Windows
 {

@@ -77,6 +77,12 @@
                         <Run Text="This launcher DOES NOT endorse nor oppose client modifications in any ways." />
                         <LineBreak />
                         <Run Text="Please mind that using mods (or client modifications) is totally your decision, your responsibility and your own risk." />
+                        <LineBreak /> 
+                        <Run Text="This option is now a shortcut/alias to the actual option in" />
+                        <Run Text="Advanced Options" TextDecorations="Underline" />
+                        <Run Text="tab of the" />
+                        <Run Text="PSO2 Data Manager" TextDecorations="Underline" />
+                        <Run Text="option dialog." />
                     </TextBlock>
                 </CheckBox.ToolTip>
                 <Grid>

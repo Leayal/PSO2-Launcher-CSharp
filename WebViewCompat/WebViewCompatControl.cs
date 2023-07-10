@@ -72,6 +72,7 @@ namespace Leayal.WebViewCompat
                         //*
                         this._webView2 = new WebView2Ex()
                         {
+                            AllowExternalDrop = false,
                             Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Bottom,
                             Location = System.Drawing.Point.Empty,
                             Width = _Width,
@@ -140,11 +141,13 @@ namespace Leayal.WebViewCompat
             var wb = new WinForm.WebBrowser()
             {
                 Anchor = WinForm.AnchorStyles.Top | WinForm.AnchorStyles.Bottom,
-                Location = System.Drawing.Point.Empty,
-                IsWebBrowserContextMenuEnabled = false,
-                AllowWebBrowserDrop = false,
-                WebBrowserShortcutsEnabled = false,
+                Location = System.Drawing.Point.Empty
             };
+            // For whatever reasons, setting this property outside of init will raise COMException.
+            // But setting it inside init will make the COM object silently failed to init.
+            // By then we can't tell the web browser to navigate or anything.
+            // The "HandleCreated" event didn't even get raised.
+            // wb.AllowWebBrowserDrop = false;
             wb.HandleCreated += this.FallbackControl_Initialized;
             wb.Navigating += this.FallbackControl_Navigating2;
             wb.DocumentCompleted += this.FallbackControl_DocumentCompleted;
@@ -229,11 +232,16 @@ namespace Leayal.WebViewCompat
 
         private void FallbackControl_Initialized(object? sender, EventArgs e)
         {
-            if (this._fallbackControl != null)
+            if (sender is WinForm.WebBrowser browser)
             {
-                this._fallbackControl.Width = _Width;
-                this._fallbackControl.Height = _Height;
-                this._fallbackControl.ScrollBarsEnabled = false;
+                browser.Size = new System.Drawing.Size(_Width, _Height);
+                // Width = _Width;
+                // Height = _Height;
+                // Only set these properties after the browser's COM object is created, as well as the browser's handle.
+                // May get corrupted state otherwise?
+                browser.IsWebBrowserContextMenuEnabled = false;
+                browser.WebBrowserShortcutsEnabled = false;
+                browser.ScrollBarsEnabled = false;
             }
             // this._fallbackControl.Dock = WinForm.DockStyle.Top;
             // this.OnInitialized(EventArgs.Empty);
