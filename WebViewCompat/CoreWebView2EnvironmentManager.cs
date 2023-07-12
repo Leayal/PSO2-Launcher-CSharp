@@ -25,7 +25,7 @@ namespace Leayal.WebViewCompat
 
         private Task<CoreWebView2Environment> CreateTask()
         {
-            if (!WebViewCompat.TryGetWebview2Runtime(out var _webview2version))
+            if (!WebViewCompatUtils.TryGetWebview2Runtime(out var _webview2version))
             {
                 _webview2version = null;
             }

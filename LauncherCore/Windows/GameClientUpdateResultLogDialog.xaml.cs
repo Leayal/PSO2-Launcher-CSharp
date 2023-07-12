@@ -384,7 +384,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         private void MetroAnimatedTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-            => ConvenientEventHandlers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
+            => ConvenientMembers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
 
         private static readonly string CharLookout = "?#*[]";
         private void TextBoxDelayedTextChange_TextChanged(object sender, TextChangedEventArgs e)

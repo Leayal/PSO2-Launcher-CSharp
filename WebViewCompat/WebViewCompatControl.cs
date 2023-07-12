@@ -61,7 +61,7 @@ namespace Leayal.WebViewCompat
 
             if (useWebView2IfPossible && NativeLibrary.TryLoad(Path.GetFullPath(Path.Combine("bin", Environment.Is64BitProcess ? "native-x64" : "native-x86", "WebView2Loader.dll"), RuntimeValues.RootDirectory), out var loaded))
             {
-                if (WebViewCompat.TryGetWebview2Runtime(out var _webview2version))
+                if (WebViewCompatUtils.TryGetWebview2Runtime(out var _webview2version))
                 {
                     this.webview2version = _webview2version;
                     var host = new WindowsFormsHostEx2();

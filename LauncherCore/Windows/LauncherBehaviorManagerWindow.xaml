@@ -1,18 +1,18 @@
 ﻿<leawindow:MetroWindowEx  x:Class="Leayal.PSO2Launcher.Core.Windows.LauncherBehaviorManagerWindow"
-                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                      xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
-                      xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
-                      xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                      xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                          xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                          xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
+                          xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                          xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows" xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                           mc:Ignorable="d" x:Name="thisSelf"
-                      TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
-                      ResizeMode="NoResize"
-                      Loaded="ThisSelf_Loaded"
-                      SizeToContent="Height"
-                      Title="Launcher Behavior Manager" Height="450" Width="800" WindowStartupLocation="CenterOwner">
+                          TitleCharacterCasing="Normal" ShowTitleBar="False" ShowMinButton="False" ShowMaxRestoreButton="False"
+                          ResizeMode="NoResize"
+                          Loaded="ThisSelf_Loaded"
+                          SizeToContent="Height"
+                          Title="Launcher Behavior Manager" Height="450" Width="800" WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -47,7 +47,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="5" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition />
+                <RowDefinition MinHeight="100"/>
             </Grid.RowDefinitions>
 
             <CheckBox Grid.Row="0" Grid.ColumnSpan="2" Content="Load the launcher website at startup" Margin="1" x:Name="checkbox_loadweblauncher" />
@@ -91,7 +91,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Allow launcher to disable in-game file integrity validation (which allows client mods)" VerticalAlignment="Center" />
-                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" /> 
+                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" /> 
                 </Grid>
             </CheckBox>
 
@@ -134,8 +134,34 @@
                     </TextBlock>
                 </CheckBox.ToolTip>
             </CheckBox>
-            
-            <CheckBox Grid.Row="13" Grid.ColumnSpan="2" Content="Launch this launcher as Admin by default (Not recommended)" Margin="1" x:Name="checkbox_lauchlauncherasadmin" />
+
+            <CheckBox Grid.Row="13" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_lauchlauncherasadmin" ToolTipService.InitialShowDelay="0">
+                <CheckBox.ToolTip>
+                    <TextBlock>
+                        <Run Text="Do NOT enable this feature unless you know what this is." TextDecorations="Underline" />
+                        <LineBreak />
+                        <Run Text="All features of this launcher are operational without administrator privileges unless your PC has abnormal or special circumstance." />
+                        <LineBreak />
+                        <Run Text="This feature will force the launcher to require Adminstration Access, which grants a lot of privileges that can modify your Admin-only settings or files, regardless whether you do &quot;Run as administrator&quot; or not." />
+                        <LineBreak />
+                        <Run Text="You can run the launcher as Admin by yourself without this feature by right-click on the launcher's icon and select &quot;Run as administrator&quot;." />
+                        <LineBreak />
+                        <Run Text="This feature is only helpful when you installed your PSO2 game client in Admin-only locations or questionable locations." />
+                        <LineBreak />
+                        <Run Text="In those cases, it is likely that you get" />
+                        <Run Text="UnauthorizedAccessException" TextDecorations="Underline" />
+                        <Run Text="error while updating PSO2 game client, you can try running this launcher as administrator to see if it can fix this error." />
+                    </TextBlock>
+                </CheckBox.ToolTip>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Launch this launcher as Admin by default (Not recommended)" VerticalAlignment="Center" />
+                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationTriangleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
+                </Grid>
+            </CheckBox>
         </Grid>
 
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="1">

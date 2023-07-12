@@ -255,7 +255,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         private void TabControl_SelectionChanged_PreventSelectingNone(object sender, SelectionChangedEventArgs e)
-            => ConvenientEventHandlers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
+            => ConvenientMembers.TabControl_SelectionChanged_PreventSelectingNothing(sender, e);
 
         private void Combobox_downloadselection_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {

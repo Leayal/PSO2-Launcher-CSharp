@@ -1,6 +1,7 @@
 ﻿using System;
 using RawInput = global::Windows.Win32.UI.Input;
 using PInvoke = global::Windows.Win32.PInvoke;
+using Win32Foundation = global::Windows.Win32.Foundation;
 using System.Windows.Interop;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,11 +15,12 @@ namespace Leayal.Shared.Windows
     /// <summary>Managing raw mouse input registration.</summary>
     public sealed class RegisteredRawMouseInput : IDisposable
     {
+        const int WM_INPUT = unchecked((int)PInvoke.WM_INPUT);
         internal static bool TryCreate(IntPtr windowHandle, [NotNullWhen(true)] out RegisteredRawMouseInput? registration)
         {
             if (windowHandle == IntPtr.Zero)
             {
-                registration = new RegisteredRawMouseInput(System.Windows.Forms.Application.MessageLoop);
+                registration = new RegisteredRawMouseInput(Application.MessageLoop);
                 return true;
             }
             else
@@ -27,7 +29,7 @@ namespace Leayal.Shared.Windows
                 var hwndSrc = HwndSource.FromHwnd(windowHandle);
                 if (hwndSrc == null)
                 {
-                    registration = new RegisteredRawMouseInput(System.Windows.Forms.Application.MessageLoop);
+                    registration = new RegisteredRawMouseInput(Application.MessageLoop);
                 }
                 else
                 {
@@ -61,7 +63,7 @@ namespace Leayal.Shared.Windows
             if (trueForWinForm_FalseForWPF)
             {
                 this.msgFilter = new RawInputMessageFilter(this);
-                System.Windows.Forms.Application.AddMessageFilter(this.msgFilter);
+                Application.AddMessageFilter(this.msgFilter);
                 this.Unregister = this.Unregister_MsgFilter;
             }
             else
@@ -87,90 +89,85 @@ namespace Leayal.Shared.Windows
         private void Unregister_MsgFilter()
         {
             var filter = this.msgFilter;
-            if (filter != null) System.Windows.Forms.Application.RemoveMessageFilter(filter);
+            if (filter != null) Application.RemoveMessageFilter(filter);
         }
         private void Unregister_ThreadFilterMsg() => ComponentDispatcher.ThreadFilterMessage -= this.ComponentDispatcher_ThreadFilterMessage;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="msg"></param>
-        /// <param name="wParam"></param>
-        /// <param name="lParam"></param>
-        /// <param name="rawMouseData"></param>
-        /// <returns></returns>
+        /// <summary>Try to parse the windows procedure message and return RawMouseInput data.</summary>
+        /// <param name="msg">The message ID of the window procedure.</param>
+        /// <param name="lParam">The additional information or data about the message.</param>
+        /// <param name="rawMouseData">If the method returns <see langword="true"/>, this parameter output a <seealso cref="RawMouseInputData"/> containing raw mouse input data.</param>
+        /// <returns><see langword="true"/> if the message came from a HID-compliant mouse, and has been parsed. Otherwise, <see langword="false"/>.</returns>
+        /// <remarks>You must ensure to call this function when the message is WM_INPUT or you will get corrupted data. To check whether the window message is WM_INPUT or not, use <seealso cref="MouseHelper.IsRawInputWindowMessage"/>.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool TryGetRawMouseInputData(int msg, IntPtr wParam, IntPtr lParam, out RawMouseInputData rawMouseData)
+        public static unsafe bool TryGetRawMouseInputData(IntPtr lParam, out RawMouseInputData rawMouseData)
         {
-            if (msg == (int)PInvoke.WM_INPUT)
+            uint dwSize = 0;
+            uint headerSize = (uint)sizeof(RawInput.RAWINPUTHEADER);
+            PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, pcbSize: &dwSize, cbSizeHeader: headerSize);
+
+            bool isSafeToDirectAccess = dwSize == (uint)sizeof(RawInput.RAWINPUT);
+            if (isSafeToDirectAccess)
             {
-                uint dwSize = 0;
-                uint headerSize = (uint)sizeof(RawInput.RAWINPUTHEADER);
-                PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, pcbSize: &dwSize, cbSizeHeader: headerSize);
-                
-                bool isSafeToDirectAccess = dwSize == (uint)sizeof(RawInput.RAWINPUT);
-                if (isSafeToDirectAccess)
+                // It should reach here.
+                var @struct = new RawInput.RAWINPUT();
+                if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, &@struct, &dwSize, headerSize) > 0)
                 {
-                    // It should reach here.
-                    var @struct = new RawInput.RAWINPUT();
-                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, &@struct, &dwSize, headerSize) > 0)
+                    if (@struct.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
                     {
-                        if (@struct.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
-                        {
-                            rawMouseData = new RawMouseInputData(in @struct.data.mouse);
-                            return true;
-                        }
+                        rawMouseData = new RawMouseInputData(in @struct.data.mouse);
+                        return true;
                     }
                 }
-                else
+            }
+            else
+            {
+                var managedSize = unchecked((int)dwSize);
+                // Fall-back to unmanaged allocation instead.
+                var borrowedBuffer = ArrayPool<byte>.Shared.Rent(managedSize < 4096 ? 4096 : managedSize);
+                try
                 {
-                    // Fall-back to unmanaged allocation instead.
-                    IntPtr allocatedForMsg = Marshal.AllocHGlobal((int)dwSize);
-                    try
+                    var span = borrowedBuffer.AsSpan(0, managedSize);
+                    if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, Unsafe.AsPointer(ref span.GetPinnableReference()), &dwSize, headerSize) > 0)
                     {
-                        if (PInvoke.GetRawInputData(new RawInput.HRAWINPUT(lParam), RawInput.RAW_INPUT_DATA_COMMAND_FLAGS.RID_INPUT, allocatedForMsg.ToPointer(), &dwSize, headerSize) > 0)
+                        // Zero-copy
+                        // MemoryMarshal.TryRead<RawInput.RAWINPUT>(new ReadOnlySpan<byte>(allocatedForMsg.ToPointer(), (int)dwSize), out var inputMsg)
+
+                        // Copying via Marshal
+                        // var copiedStruct = Marshal.PtrToStructure<RawInput.RAWINPUT>(allocatedForMsg);
+                        if (MemoryMarshal.TryRead<RawInput.RAWINPUT>(span, out var inputMsg))
                         {
-                            // Zero-copy
-                            // MemoryMarshal.TryRead<RawInput.RAWINPUT>(new ReadOnlySpan<byte>(allocatedForMsg.ToPointer(), (int)dwSize), out var inputMsg)
-                            
-                            // Copying via Marshal
-                            // var copiedStruct = Marshal.PtrToStructure<RawInput.RAWINPUT>(allocatedForMsg);
-                            if (MemoryMarshal.TryRead<RawInput.RAWINPUT>(new ReadOnlySpan<byte>(allocatedForMsg.ToPointer(), (int)dwSize), out var inputMsg))
+                            if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
                             {
-                                if (inputMsg.header.dwType == (uint)RawInput.RID_DEVICE_INFO_TYPE.RIM_TYPEMOUSE)
-                                {
-                                    rawMouseData = new RawMouseInputData(in inputMsg.data.mouse);
-                                    return true;
-                                }
+                                rawMouseData = new RawMouseInputData(in inputMsg.data.mouse);
+                                return true;
                             }
                         }
                     }
-                    finally
-                    {
-                        if (allocatedForMsg != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(allocatedForMsg);
-                        }
-                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(borrowedBuffer);
                 }
             }
             rawMouseData = default;
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private void ComponentDispatcher_ThreadFilterMessage(ref MSG msg, ref bool handled)
         {
             this.HookForWM_INPUT(msg.hwnd, msg.message, msg.wParam, msg.lParam, ref handled);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private unsafe IntPtr HookForWM_INPUT(IntPtr hwnd, int message, IntPtr wparam, IntPtr lParam, ref bool handled)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        private IntPtr HookForWM_INPUT(IntPtr hwnd, int message, IntPtr wparam, IntPtr lParam, ref bool handled)
         {
-            if (TryGetRawMouseInputData(message, wparam, lParam, out var mouseData))
+            if (MouseHelper.IsRawInputWindowMessage(message))
             {
-                bool isHandled = false;
-                this.MessageHook?.Invoke(in mouseData, ref isHandled);
+                if (TryGetRawMouseInputData(lParam, out var mouseData))
+                    this.MessageHook?.Invoke(in mouseData, ref handled);
+                return MouseHelper.CleanUpRawInputMessage(hwnd, message, wparam, lParam);
             }
             return IntPtr.Zero;
         }

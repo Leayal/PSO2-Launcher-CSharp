@@ -187,10 +187,11 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="2" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Allow launcher to disable in-game file integrity validation (which allows client mods)" VerticalAlignment="Center" />
-                            <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" />
+                            <iconPacks:PackIconFontAwesome Grid.Column="2" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
                     <CheckBox Grid.Row="1" Margin="1" x:Name="checkbox_allowDlssModding" ToolTipService.InitialShowDelay="0" >
@@ -212,8 +213,8 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Don't redownload Nvidia DLSS binary files if it's already existed" VerticalAlignment="Center" />
-                            <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" />
+                            <TextBlock Text="Don't redownload Nvidia DLSS binary files if it's already existed (which allows DLSS version override) " VerticalAlignment="Center" />
+                            <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
                 </Grid>

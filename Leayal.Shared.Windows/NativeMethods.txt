@@ -15,10 +15,6 @@ SetFileTime
 FILE_ACCESS_RIGHTS
 PathRelativePathTo
 
-// UnmanagedWindowsHelper
-SetForegroundWindow
-WindowFromPoint
-
 // SymbolicLink
 DeviceIoControl
 //PathRelativePathTo
@@ -68,4 +64,8 @@ RID_DEVICE_INFO
 
 // Windows Messages
 WM_INPUT
-PostMessage
+
+// UnmanagedWindowsHelper
+DefWindowProc
+SetForegroundWindow
+WindowFromPoint

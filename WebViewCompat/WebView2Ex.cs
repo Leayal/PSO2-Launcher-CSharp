@@ -52,6 +52,7 @@ namespace Leayal.WebViewCompat
 
         public WebView2Ex() : base()
         {
+            this.DoubleBuffered = false;
             this.isCustomWV2Environement = false;
             this.CoreWebView2InitializationCompleted += WebView2Ex_CoreWebView2InitializationCompleted;
         }

@@ -39,8 +39,11 @@ namespace Leayal.Shared.Windows
 		/// <para><see href="https://docs.microsoft.com/windows/win32/api/winuser/nf-winuser-postmessagew#">Read more on docs.microsoft.com</see>.</para>
 		/// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool PostWindowMessage(IntPtr hwnd, int msg, nuint wParam, nint lParam)
-            => PInvoke.PostMessage(new HWND(hwnd), Convert.ToUInt32(msg), new WPARAM(wParam), new LPARAM(lParam));
+        private static bool PostWindowMessage(IntPtr hwnd, int msg, nuint wParam, nint lParam)
+		{
+			return false;
+            // PInvoke.PostMessage(new HWND(hwnd), Convert.ToUInt32(msg), new WPARAM(wParam), new LPARAM(lParam));
+        }
 
         /// <summary>Packs two 16-bit values (2 <seealso cref="ushort"/>s) into one 32-bit value (1 <seealso cref="uint"/>).</summary>
         /// <param name="low">The low-order word value.</param>

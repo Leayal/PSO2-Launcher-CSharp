@@ -7,6 +7,11 @@ namespace Leayal.Shared.Windows
     /// <summary>Containing data of Raw Mouse Input.</summary>
     public readonly unsafe struct RawMouseInputData
     {
+        /// <remarks>
+        /// Has to make a local copy because
+        /// when <seealso cref="RegisteredRawMouseInput.TryGetRawMouseInputData"/> returns, the local struct <seealso cref="RAWMOUSE"/> is cleaned up
+        /// which will make any kinds of references/pointers useless.
+        /// </remarks>
         private readonly RAWMOUSE mouseData;
 
         internal RawMouseInputData(in RAWMOUSE data)

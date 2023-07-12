@@ -43,19 +43,6 @@ namespace Leayal.WebViewCompat
             // this.ChildChanged += WindowsFormsHostEx2_ChildChanged;
         }
 
-        // Mainly to relay IsVisible status to WinForms control.
-        private void WindowsFormsHostEx2_ChildChanged(object? sender, ChildChangedEventArgs e)
-        {
-            if (sender is WindowsFormsHostEx2 host)
-            {
-                var child = host.Child;
-                if (child != null)
-                {
-                    child.Visible = this.IsVisible;
-                }
-            }
-        }
-
         private static void WindowsFormsHostEx2_Loaded(object sender, RoutedEventArgs e)
         {
             var element = (WindowsFormsHostEx2)sender;
@@ -218,14 +205,14 @@ namespace Leayal.WebViewCompat
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         protected virtual void OnRawMouseInputMessage(in RawMouseInputData data, ref bool handled)
-        {  
+        {
             var btnFlags = data.usButtonFlags;
             bool isMouseWheel = ((btnFlags & RawMouseInputButtonFlags.RI_MOUSE_WHEEL) != 0),
                 isMouseHWheel = ((btnFlags & RawMouseInputButtonFlags.RI_MOUSE_HWHEEL) != 0);
-            
+
             if (isMouseWheel || isMouseHWheel)
             {
-                var panel = base.Child;
+                var panel = this.panel;
                 if (panel.IsHandleCreated && panel.Visible) // this.IsMouseOver doesn't work. May need to manual bound check via mouse coordinate and 
                 {
                     var pos = Control.MousePosition;
@@ -235,15 +222,26 @@ namespace Leayal.WebViewCompat
                     if (selfDesktopLocation.X < pos.X && pos.X < selfDesktopSize.X
                         && selfDesktopLocation.Y < pos.Y && pos.Y < selfDesktopSize.Y)
                     {
+                        var msg = new Message()
+                        {
+                            HWnd = panel.Handle,
+                            Msg = isMouseHWheel ? WM_MOUSEHWHEEL : WM_MOUSEWHEEL,
+                            WParam = new IntPtr(unchecked((int)WindowMessageProcedureHelper.PackUInt_LowHigh_Order(0, data.usButtonData))),
+                            LParam = new IntPtr(WindowMessageProcedureHelper.PackInt_LowHigh_Order(pos.X, pos.Y))
+                        };
+                        panel.InternallyInvokeDotNetWndProc_WithoutPostMessageWinApi(ref msg);
+                        handled = true;
+                        /*
                         if (WindowMessageProcedureHelper.PostWindowMessage(
                             panel.Handle,
                             isMouseHWheel ? WM_MOUSEHWHEEL : WM_MOUSEWHEEL,
-                            (WindowMessageProcedureHelper.PackUInt_LowHigh_Order(0, data.usButtonData)),
+                            WindowMessageProcedureHelper.PackUInt_LowHigh_Order(0, data.usButtonData),
                             WindowMessageProcedureHelper.PackInt_LowHigh_Order(pos.X, pos.Y)
                         ))
                         {
                             handled = true;
                         }
+                        */
                     }
                 }
             }
@@ -252,9 +250,17 @@ namespace Leayal.WebViewCompat
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         protected override IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (RegisteredRawMouseInput.TryGetRawMouseInputData(msg, wParam, lParam, out var mouseData))
+            if (MouseHelper.IsRawInputWindowMessage(msg))
             {
-                this.OnRawMouseInputMessage(in mouseData, ref handled);
+                if (RegisteredRawMouseInput.TryGetRawMouseInputData(lParam, out var mouseData))
+                {
+                    this.OnRawMouseInputMessage(in mouseData, ref handled);
+                }
+                // Set to be handled regardless, I don't think .NET controls will use this message.
+                handled = true;
+                // I don't know if the runtime will call DefWindowProc WinAPI for us, but better safe than sorry.
+                // For WM_INPUT, DefWindowProc will cleanup resources associated with the event.
+                return MouseHelper.CleanUpRawInputMessage(hwnd, msg, wParam, lParam);
             }
             return base.WndProc(hwnd, msg, wParam, lParam, ref handled);
         }
@@ -315,6 +321,14 @@ namespace Leayal.WebViewCompat
                 this.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
                 this.RowStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
                 this.DoubleBuffered = false;
+            }
+
+            // Long method name but self-explained.
+            // As .NET's controls implements their window message prcoessing in WndProc method.
+            // Call this function is enough, no need to use WinAPI.
+            internal void InternallyInvokeDotNetWndProc_WithoutPostMessageWinApi(ref Message m)
+            {
+                this.WndProc(ref m);
             }
         }
     }

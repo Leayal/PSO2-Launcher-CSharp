@@ -5,7 +5,7 @@
                          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                          xmlns:local="clr-namespace:Leayal.PSO2Launcher.Core.Windows"
                          xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
-                         xmlns:leacontrols="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
+                         xmlns:localui="clr-namespace:Leayal.PSO2Launcher.Core.UIElements"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="thisSelf"
                          ShowTitleBar="False" TitleCharacterCasing="Normal" ShowMaxRestoreButton="False" ShowMinButton="False" WindowStartupLocation="CenterOwner"
@@ -93,7 +93,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter by name matching pattern" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}" VerticalAlignment="Center" />
-                    <leacontrols:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfSuccessItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
+                    <localui:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfSuccessItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
                                                           mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}" />
                     <ListBox Margin="0,1,0,0" Grid.ColumnSpan="2" Grid.Row="1" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
                               mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfSuccessItemsLabel,Path=IsVisible,Mode=OneWay}" SelectionMode="Extended"
@@ -139,7 +139,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter by name matching pattern" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}" VerticalAlignment="Center" />
-                    <leacontrols:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfFailureItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
+                    <localui:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfFailureItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
                                                           mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}" />
                     <ListBox Margin="0,1,0,0" Grid.ColumnSpan="2" Grid.Row="1" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
                               mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfFailureItemsLabel,Path=IsVisible,Mode=OneWay}"  SelectionMode="Extended"
@@ -185,7 +185,7 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <TextBlock Text="Filter by name matching pattern" mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}" VerticalAlignment="Center" />
-                    <leacontrols:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfCancelledItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
+                    <localui:TextBoxDelayedTextChange Grid.Column="1" TextChanged="TextBoxDelayedTextChange_TextChanged" Tag="{Binding ElementName=ListOfCancelledItems,BindsDirectlyToSource=True,Path=ItemsSource, Mode=OneWay}"
                                                           mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}" />
                     <ListBox Margin="0,1,0,0" Grid.ColumnSpan="2" Grid.Row="1" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="3" VirtualizingPanel.ScrollUnit="Item"
                               mah:VisibilityHelper.IsCollapsed="{Binding ElementName=ListOfCancelledItemsLabel,Path=IsVisible,Mode=OneWay}"  SelectionMode="Extended"

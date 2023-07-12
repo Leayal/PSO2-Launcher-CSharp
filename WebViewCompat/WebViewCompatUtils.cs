@@ -5,7 +5,7 @@ using Microsoft.Win32;
 
 namespace Leayal.WebViewCompat
 {
-    public static class WebViewCompat
+    public static class WebViewCompatUtils
     {
         public static bool TryGetWebview2Runtime(out string version)
         {

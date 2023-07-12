@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using MSWin32 = global::Windows.Win32;
+using Win32Foundation = global::Windows.Win32.Foundation;
 using RawInput = global::Windows.Win32.UI.Input;
 using PInvoke = global::Windows.Win32.PInvoke;
 using System.Runtime.InteropServices;
@@ -11,6 +12,7 @@ namespace Leayal.Shared.Windows
     /// <summary>Convenient methods for dealing with low-level mouse.</summary>
     public static partial class MouseHelper
     {
+        const int WM_INPUT = unchecked((int)PInvoke.WM_INPUT);
         /// <summary>Translates the hardware-based units to pixel-based units on screen.</summary>
         /// <param name="hardwareX">The hardware-based X.</param>
         /// <param name="hardwareY">The hardware-based Y.</param>
@@ -60,8 +62,23 @@ namespace Leayal.Shared.Windows
         /// <remarks>
         /// <para>
         /// <b><u>This method has poor performance on WinForms</u></b>. Considering using <seealso cref="HookRawMouseInputUnsafe"/>
-        /// along with <seealso cref="RegisteredRawMouseInput.TryGetRawMouseInputData(int, IntPtr, IntPtr, out RawMouseInputData)"/> in <seealso cref="System.Windows.Forms.Control.WndProc(ref System.Windows.Forms.Message)"/>.
+        /// along with <seealso cref="RegisteredRawMouseInput.TryGetRawMouseInputData(IntPtr, out RawMouseInputData)"/> in <seealso cref="System.Windows.Forms.Control.WndProc(ref System.Windows.Forms.Message)"/>.
+        /// As well as performing message cleanup by yourself by calling <seealso cref="CleanUpRawInputMessage(IntPtr, int, IntPtr, IntPtr)"/>. Sample below:
         /// </para>
+        /// <code>
+        /// WndProc(ref Message m)
+        /// protected override void WndProc(ref Message m)
+        /// {
+        ///  if (MouseHelper.IsRawInputWindowMessage(msg))
+        ///  {
+        ///   if (RegisteredRawMouseInput.TryGetRawMouseInputData(lParam, out var mouseData))
+        ///   {
+        ///    // Use mouseData
+        ///   }
+        ///   m.Result = MouseHelper.CleanUpRawInputMessage(m.HWnd, m.Msg, m.WParam, m.LParam);
+        ///  }
+        /// }
+        /// </code>
         /// <para>As of now, it's hardcoded to register with <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawinputdevice#members">RIDEV_EXINPUTSINK</see> flag.</para>
         /// <para>You can only register one window per process. As such, only one window will receive the RawInput windows messages at a time. If you call this method multiple times, only the <paramref name="windowHandle"/> from the last call will be used.</para>
         /// <para>In case <paramref name="windowHandle"/> is <seealso cref="IntPtr.Zero"/>, you MUST make sure to call <seealso cref="RegisteredRawMouseInput.Dispose()"/> method to avoid memory leaks when you no longer want to receive RawInput windows messages.</para>
@@ -122,5 +139,21 @@ namespace Leayal.Shared.Windows
 
             return (PInvoke.RegisterRawInputDevices(devices, (uint)(MemoryMarshal.AsBytes(devices).Length)));
         }
+
+        /// <summary>Checks whether the message ID is RawInput message (aka <see href="https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-input">WM_INPUT</see>).</summary>
+        /// <param name="messageId">The message ID.</param>
+        /// <returns><see langword="true"/> if <paramref name="messageId"/> is WM_INPUT. Otherwise, <see langword="false"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsRawInputWindowMessage(int messageId) => (messageId == WM_INPUT);
+
+        /// <summary>Let operating system perform any necessary cleanups for data associated with the WM_INPUT message.</summary>
+        /// <param name="hwnd">Pass-through the value received from Window Procedure params</param>
+        /// <param name="message">Pass-through the value received from Window Procedure params</param>
+        /// <param name="wParam">Pass-through the value received from Window Procedure params</param>
+        /// <param name="lParam">Pass-through the value received from Window Procedure params</param>
+        /// <returns>A <seealso cref="IntPtr"/> which should be the return value for WM_INPUT(?).</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe IntPtr CleanUpRawInputMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam)
+            => PInvoke.DefWindowProc(new Win32Foundation.HWND(hwnd), unchecked((uint)message), new Win32Foundation.WPARAM(new UIntPtr(wParam.ToPointer())), new Win32Foundation.LPARAM(lParam)).Value;
     }
 }
