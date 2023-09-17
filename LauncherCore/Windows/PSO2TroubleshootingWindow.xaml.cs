@@ -243,7 +243,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
             list.Add(paragraph);
 
-            var url_article_vcredist = new Uri("https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0");
+            var url_article_vcredist = new Uri("https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022");
             paragraph = new Paragraph(new Bold(new Run("> Visual C++ 2015~2022 (x64): ")));
             switch (vc14_x64)
             {
@@ -254,7 +254,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
-                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
+                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/17/release/vc_redist.x64.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));
@@ -272,7 +272,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
-                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x64.exe") };
+                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/17/release/vc_redist.x64.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));
@@ -290,7 +290,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
-                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x86.exe") };
+                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/17/release/vc_redist.x86.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));
@@ -308,7 +308,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(" or "));
-                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/16/release/vc_redist.x86.exe") };
+                    link = new Hyperlink(new Run("Direct download link")) { NavigateUri = new Uri("https://aka.ms/vs/17/release/vc_redist.x86.exe") };
                     paragraph.Inlines.Add(link);
                     link.Click += Hyperlink_Clicked;
                     paragraph.Inlines.Add(new Run(")"));

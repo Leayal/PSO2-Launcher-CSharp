@@ -8,6 +8,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using Windows.Win32.Storage.FileSystem;
 using System.Windows.Markup;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Leayal.Shared.Windows
 {
@@ -18,7 +19,9 @@ namespace Leayal.Shared.Windows
             CopyBufferingSize = 1024 * 32;
         private readonly static string PrefixLongPath = @"\\?\";
 
-        const int MAX_PATH = 260;
+        const int MAX_PATH = 260, // Including null character which terminate the string
+            MAX_PATH_NO_TERMINATION = MAX_PATH - 1;
+
 
         /// <summary>Copies a file (also copies attributes, including file times) to a destination.</summary>
         /// <param name="srcPath">The path to the source file to be copied.</param>
@@ -457,7 +460,7 @@ namespace Leayal.Shared.Windows
         /// <summary>Check if the given path is actually existed on the filesystem.</summary>
         /// <param name="path">The path to check existence.</param>
         /// <returns><see langword="true"/> if the path is existed. Otherwise, <see langword="false"/>.</returns>
-        public static bool PathExists(string path)
+        public static bool PathExists([NotNullWhen(true)] string? path)
         {
             if (string.IsNullOrEmpty(path)) return false;
 
@@ -467,9 +470,21 @@ namespace Leayal.Shared.Windows
                 {
                     if (path.StartsWith(PrefixLongPath))
                     {
-                        path = path.Remove(0, PrefixLongPath.Length);
+                        // Don't use this, it will alloc another char buffer
+                        // path = path.Remove(0, PrefixLongPath.Length);
+                        unsafe
+                        {
+                            // Back buffer of the string instance of .NET already has null-terminated.
+                            fixed (char* pts = path)
+                            {
+                                return PInvoke.PathFileExists(new MSWin32.Foundation.PCWSTR((char*)(IntPtr.Add(new IntPtr(pts), PrefixLongPath.Length).ToPointer())));
+                            }
+                        }
                     }
-                    return PInvoke.PathFileExists(path);
+                    else
+                    {
+                        return PInvoke.PathFileExists(path);
+                    }
                 }
             }
             else if (!Path.IsPathFullyQualified(path))
@@ -513,6 +528,9 @@ namespace Leayal.Shared.Windows
             }
             else if (!Path.IsPathFullyQualified(path))
             {
+                // We can't be here unless the input argument string is crafted wrongly, which is the caller's fault.
+                // The prefix \\?\ for long path must be on already-qualified path.
+                // So if we reach here, we will just torture the caller with more allocations.
                 path = Path.GetFullPath(path.StartsWith(PrefixLongPath) ? path.Remove(0, PrefixLongPath.Length) : path);
             }
             if (!path.StartsWith(PrefixLongPath))

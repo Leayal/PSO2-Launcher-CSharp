@@ -14,7 +14,21 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
     {
         void Load();
         bool TryGetPatchItem(string filename, [CA.NotNullWhen(true)] out PatchRecordItemValue? item);
+        HashCacheRecordQuery TryGetPatchItem(string filename) => (this.TryGetPatchItem(filename, out var item) ? new HashCacheRecordQuery(item) : new HashCacheRecordQuery(null));
         PatchRecordItemValue SetPatchItem(PatchListItem item, in DateTime lastModifiedTimeUTC);
+    }
+
+    public readonly struct HashCacheRecordQuery
+    {
+        [CA.MemberNotNullWhen(true, nameof(CachedHash))]
+        public readonly bool Success { get; }
+        public readonly PatchRecordItemValue? CachedHash;
+
+        public HashCacheRecordQuery(PatchRecordItemValue? cachedHash)
+        {
+            this.Success = cachedHash != null;
+            this.CachedHash = cachedHash;
+        }
     }
 
     public class DatabaseErrorException : Exception { }

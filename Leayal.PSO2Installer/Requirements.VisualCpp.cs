@@ -22,11 +22,11 @@ namespace Leayal.PSO2.Installer
         {
             using (var hive = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, x64 ? RegistryView.Registry64 : RegistryView.Registry32))
             {
-                return GetVC14RedistVersion(hive, x64);
+                return GetVC14RedistVersion(hive, in x64);
             }
         }
 
-        private static VCRedistVersion GetVC14RedistVersion(RegistryKey key, bool is_x64)
+        private static VCRedistVersion GetVC14RedistVersion(RegistryKey key, in bool is_x64)
         {
             using (var subkey = key.OpenSubKey(Path.Combine("SOFTWARE", "Microsoft", "VisualStudio", "14.0", "VC", "Runtimes", is_x64 ? "X64" : "X86"), false))
             {
