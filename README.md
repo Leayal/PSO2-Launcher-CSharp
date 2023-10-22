@@ -100,4 +100,5 @@ As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel
 - [CsWin32](https://github.com/Microsoft/CsWin32): A source code generator which generates P/Invoke function "easily" (as sometimes you have to deal with pointers and aliased types).
 - [SQLitePCLRaw.core](https://www.nuget.org/packages/SQLitePCLRaw.core): Low-level bindings for SQLite3 native libraries.
 - [SQLitePCLRaw.lib.e_sqlcipher](https://www.nuget.org/packages/SQLitePCLRaw.lib.e_sqlcipher): Binary redistribution package for SQLite3 Cipher.
+- [sqlite-net](https://github.com/praeclarum/sqlite-net): For API interfaces and high-level bindings for SQLite3.
 - [System.Reflection.MetadataLoadContext](https://www.nuget.org/packages/System.Reflection.MetadataLoadContext): Allows read-only reflection on .NET assemblies (probing a .NET metadata without executing it).
