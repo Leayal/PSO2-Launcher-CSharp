@@ -124,6 +124,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var downloaderProfile = this.config_main.DownloaderProfile;
             var downloaderProfileClassic = this.config_main.DownloaderProfileClassic;
             var conf_DownloadType = this.config_main.DownloadSelection;
+            var conf_FileScannerConcurrentLevel = Math.Clamp(this.config_main.FileScannerConcurrentCount, 1, 16);
             bool shouldScanForBackups = (this.config_main.PSO2DataBackupBehavior != PSO2DataBackupBehavior.IgnoreAll);
             bool isDlssModAllowed = this.config_main.AllowNvidiaDlssModding;
 
@@ -277,7 +278,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.CreateNewLineInConsoleLog("GameUpdater", "Ignores all backups file (based on user's setting in Launcher's Behavior)...");
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, conf_FileScannerConcurrentLevel, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
                 }
                 else
                 {

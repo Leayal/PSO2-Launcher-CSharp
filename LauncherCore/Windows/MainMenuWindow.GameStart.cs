@@ -658,7 +658,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                                     static FileScanFlags AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags flags, bool willReplaceHashTable) => (willReplaceHashTable ? (flags | FileScanFlags.IgnoreHashTableFile) : flags);
 
-                                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, GameClientSelection.Always_Only, AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.Balanced, ___willReplaceHashTable), AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.CacheOnly, ___willReplaceHashTable), false, cancelToken);
+                                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, 1, GameClientSelection.Always_Only, AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.Balanced, ___willReplaceHashTable), AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.CacheOnly, ___willReplaceHashTable), false, cancelToken);
                                     if (___willReplaceHashTable)
                                     {
                                         var replaced = await ReplaceInGameIntegrityTableFile(dir_pso2bin);

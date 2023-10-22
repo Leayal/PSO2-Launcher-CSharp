@@ -274,7 +274,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, PatchListBase headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, UglyWrapper_Obj_ScannerProgress scannerProgress, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, IReadOnlyCollection<PatchListItem> headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             if (fScanClassic == FileScanFlags.None)
             {
@@ -296,37 +296,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
 
             // var t_alwaysList = this.webclient.GetPatchListAlwaysAsync(patchInfoRoot, cancellationToken);
-            var tasksOfLists = new List<Task<PatchListMemory>>(4);
-            // Begin file check
-
-            /*
-            static long GetFileSize(ref FileStream fs, string filename)
-            {
-                if (fs == null)
-                {
-                    fs = OpenToScan(filename);
-                }
-                return fs.Length;
-            }
-
-            static Task<string> GetFileMD5(ref FileStream fs, MD5 hashal, string filename, in CancellationToken cancellationToken)
-            {
-                if (fs == null)
-                {
-                    fs = OpenToScan(filename);
-                }
-                hashal.Initialize();
-                return ___GetFileMD5(fs, hashal, cancellationToken);
-            }
-
-            static async Task<string> ___GetFileMD5(FileStream fs, MD5 hashal, CancellationToken cancellationToken)
-            {
-                var buffer = await hashal.ComputeHashAsync(fs, cancellationToken);
-                return Convert.ToHexString(buffer);
-            }
-            */
-
-            int processedFiles = 0;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool IsHashTableFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath.AsSpan(11), StringComparison.OrdinalIgnoreCase));
@@ -401,7 +370,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 string hashBuffer = new string(char.MinValue, 32);
                 try
                 {
-                    foreach (var patchItem in headacheMatterAgain)
+                    foreach (var patchItem in ((headacheMatterAgain is BlockingCollection<PatchListItem> syncCollection) ? syncCollection.GetConsumingEnumerable() : headacheMatterAgain))
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -479,7 +448,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         }
                                     }
                                 }
-                                this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+
+                                scannerProgress.IncreaseProgressByOne();
+                                // this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
 
                                 if (throttleWaiter != null)
                                 {
@@ -525,7 +496,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     AddItemToQueue(pendingFiles, onDownloadQueueAdd, patchItem, localFilePath, dir_pso2bin, dir_classic_data, cancellationToken);
                                 }
 
-                                this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+                                scannerProgress.IncreaseProgressByOne();
+                                // this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
 
                                 if (throttleWaiter != null)
                                 {
@@ -633,7 +605,9 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                         fs?.Dispose();
                                     }
                                 }
-                                this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
+
+                                scannerProgress.IncreaseProgressByOne();
+                                // this.OnFileCheckReport(Interlocked.Increment(ref processedFiles));
 
                                 if (throttleWaiter != null)
                                 {

@@ -2,24 +2,63 @@
 using Leayal.Shared;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xaml.Schema;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     partial class GameClientUpdater
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="collections"></param>
+        /// <param name="item">A <seealso cref="DownloadItem"/> if an item is taken from any collection, otherwise <see langword="null"/></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns><see langword="true"/> if any of the <paramref name="collections"/> are still not completed, or <see langword="false"/> if all the collections are completed and will never be able to yield any items.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool TryTakeFromAnyBlockingCollection(BlockingCollection<DownloadItem>[] collections, out DownloadItem? item, CancellationToken cancellationToken)
+        {
+            // Because BlockingCollection<T>.TryTakeFromAny is still not clear enough for me.
+            int completedCount = 0, collectionCount = collections.Length;
+            for (int i = 0; i < collectionCount; i++)
+            {
+                var current = collections[i];
+                if (current == null)
+                {
+                    completedCount++;
+                }
+                else
+                {
+                    var isItemTaken = current.TryTake(out item, 0, cancellationToken);
+                    if (isItemTaken)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        item = null;
+                        if (current.IsCompleted) completedCount++;
+                    }
+                }
+            }
+
+            item = null;
+            return (completedCount != collectionCount);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private async Task InnerDownloadSingleFile(int id, BlockingCollection<DownloadItem> pendingFiles, IFileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
+        private async Task InnerDownloadSingleFile(int id, BlockingCollection<DownloadItem>[] pendingFiles, IFileCheckHashCache duhB, DownloadFinishCallback onFinished, CancellationToken cancellationToken)
         {
             // var downloadbuffer = new byte[4096];
             // var downloadbuffer = new byte[1024 * 1024]; // Increase buffer size to 1MB due to async's overhead.
             byte[] downloadbuffer;
-            var amISnail = this.SnailMode;
+            // var amISnail = this.SnailMode;
+            const bool amISnail = false; // For not, let's not doing anything of this.
             int chunkCount;
             if (amISnail)
             {
@@ -38,12 +77,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
             try
             {
+
                 using (var md5engine = System.Security.Cryptography.IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.MD5))
                 {
-                    // GetConsumingEnumerable() blocks the thread. No good now.
-                    while (!pendingFiles.IsCompleted && !cancellationToken.IsCancellationRequested)
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        if (pendingFiles.TryTake(out var downloadItem))
+                        // GetConsumingEnumerable() blocks the thread. No good now.
+                        var isAllCompleted = !TryTakeFromAnyBlockingCollection(pendingFiles, out var downloadItem, cancellationToken);
+                        if (downloadItem != null)
                         {
                             if (cancellationToken.IsCancellationRequested)
                             {
@@ -306,7 +347,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                         else
                         {
-                            if (pendingFiles.IsAddingCompleted)
+                            if (isAllCompleted)
                             {
                                 // Exit loop because the collection is marked as completed adding (can no longer add item into the queue).
                                 // So if we can't dequeue an item, that means there's no more work to do **for this Downloader Task**, hence stop the loop and complete this Task.

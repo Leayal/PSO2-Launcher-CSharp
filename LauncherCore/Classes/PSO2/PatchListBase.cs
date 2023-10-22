@@ -34,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         protected abstract IEnumerator<PatchListItem> CreateEnumerator();
 
-        public virtual bool TryGetByFilename(string filename, [MaybeNullWhen(false)] out PatchListItem value)
+        public virtual bool TryGetByFilename(string filename, [NotNullWhen(true)] out PatchListItem? value)
         {
             if (filename.EndsWith(PatchListItem.AffixFilename))
             {
@@ -76,7 +76,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             this.Dispose(false);
         }
 
-        public abstract bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem value);
+        public abstract bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem? value);
 
         protected abstract void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy);
 
@@ -173,6 +173,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         }
                     }
                 }
+                if (comparand== null) throw new ArgumentException(nameof(patchlists));
+
                 return new PatchListMemory(comparand, null, items);
             }
         }

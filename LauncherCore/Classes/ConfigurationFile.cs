@@ -192,6 +192,20 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("pso2_downloaderconcurrentcount", value);
         }
 
+        /// <summary>The number of threads used for file scanning, </summary>
+        public int FileScannerConcurrentCount
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2_filescanconcurrentlevel", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    return Math.Clamp((int)val.Value, 1, 16);
+                }
+                return 1;
+            }
+            set => this.Set("pso2_filescanconcurrentlevel", value);
+        }
+
         /// <summary>
         /// Simple throttle (file per second) way. Inaccurate timer but it works close enough and the off-value ain't much.
         /// </summary>

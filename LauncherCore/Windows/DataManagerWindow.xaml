@@ -114,6 +114,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
 
@@ -132,12 +133,47 @@
                     <TextBlock Grid.Row="2" Grid.Column="1" Text="PSO2 Classic Downloader Profile:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=combobox_downloadpresetclassic,Path=Visibility,Mode=OneWay}" />
                     <localui:EnumComboBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_downloadpresetclassic" Margin="1" />
 
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="PSO2 Downloader Concurrent Thread Count:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
-                    <localui:EnumComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_thradcount" Margin="1" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="PSO2 Downloader Concurrent Thread Count:" Margin="1" TextAlignment="Right" VerticalAlignment="Center"  ToolTipService.InitialShowDelay="0">
+                        <TextBlock.ToolTip>
+                            <TextBlock TextAlignment="Left" Text="The number of parallelization of file downloader. Usually this setting should be between 2 and 8 for optimal download performance." />
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <localui:EnumComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" x:Name="combobox_threadcount" Margin="1"  ToolTipService.InitialShowDelay="0">
+                        <localui:EnumComboBox.ToolTip>
+                            <TextBlock TextAlignment="Left" Text="The number of parallelization of file downloader. Usually this setting should be between 2 and 8 for optimal download performance." />
+                        </localui:EnumComboBox.ToolTip>
+                    </localui:EnumComboBox>
 
-                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Throttle File Check (per-second):" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
-                    <mah:NumericUpDown Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_throttledownload" Margin="1,1,1,0" Maximum="1000" Minimum="0" PreviewTextInput="Numberbox_throttledownload_PreviewTextInput" />
-                    <Label Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="2" Margin="1,0,1,1">
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Concurrent Level of File Scanning:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" ToolTipService.InitialShowDelay="0">
+                        <TextBlock.ToolTip>
+                            <TextBlock TextAlignment="Left">
+                                <Run Text="The number of parallelization of file scanner. The value must be between 1 and 16." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a HDD drive or USB drive, you should leave this setting value to be at 1, there is no speed benefit and the performance may be worsen as HDD disk will spin unnecessarily more." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a SATA SSD drive, value of 1 should also be okay, but you can set it at 2 or 4, too." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a PCIe storage device, value or 2 or higher should give speed benefit, and recommended value for these PCIe devices is 8 or higher." />
+                            </TextBlock>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <mah:NumericUpDown Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_concurrentlevelFileScan" Margin="1,1,1,0" Maximum="16" Minimum="1" PreviewTextInput="Numberbox_AcceptOnlyNumberic_PreviewTextInput"  ToolTipService.InitialShowDelay="0">
+                        <mah:NumericUpDown.ToolTip>
+                            <TextBlock TextAlignment="Left">
+                                <Run Text="The number of parallelization of file scanner. The value must be between 1 and 16." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a HDD drive or USB drive, you should leave this setting value to be at 1, there is no speed benefit and the performance may be worsen as HDD disk will spin unnecessarily more." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a SATA SSD drive, value of 1 should also be okay, but you can set it at 2 or 4, too." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a PCIe storage device, value or 2 or higher should give speed benefit, and recommended value for these PCIe devices is 8 or higher." />
+                            </TextBlock>
+                        </mah:NumericUpDown.ToolTip>
+                    </mah:NumericUpDown>
+
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="Throttle File Check (per-second):" Margin="1" TextAlignment="Right" VerticalAlignment="Center" />
+                    <mah:NumericUpDown Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="2" x:Name="numberbox_throttledownload" Margin="1,1,1,0" Maximum="1000" Minimum="0" PreviewTextInput="Numberbox_AcceptOnlyNumberic_PreviewTextInput" />
+                    <Label Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2" Margin="1,0,1,1">
                         <Label.Style>
                             <Style TargetType="Label" BasedOn="{StaticResource MahApps.Styles.Label}">
                                 <Setter Property="Content">

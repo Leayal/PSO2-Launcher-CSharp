@@ -74,7 +74,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 ints[i] = new EnumComboBox.ValueDOMNumber(i.ToString(), i);
             }
-            this.combobox_thradcount.ItemsSource = ints;
+            this.combobox_threadcount.ItemsSource = ints;
 
             var num_concurrentCount = this._config.DownloaderConcurrentCount;
             if (num_concurrentCount > logicalCount)
@@ -85,7 +85,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 num_concurrentCount = 0;
             }
-            this.combobox_thradcount.SelectedItem = ints[num_concurrentCount];
+            this.numberbox_concurrentlevelFileScan.Value = this._config.FileScannerConcurrentCount;
+            this.combobox_threadcount.SelectedItem = ints[num_concurrentCount];
 
             var str_pso2bin = this._config.PSO2_BIN;
             if (!string.IsNullOrEmpty(str_pso2bin))
@@ -141,13 +142,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.DownloadSelection = gameClientSelection;
             this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
             this._config.DownloaderProfileClassic = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpresetclassic.SelectedItem).Value;
-            this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_thradcount.SelectedItem).Value;
+            this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_threadcount.SelectedItem).Value;
 
             // this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
             this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
             this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
             this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
-
+            this._config.FileScannerConcurrentCount = Math.Clamp(Convert.ToInt32(this.numberbox_concurrentlevelFileScan.Value), 1, 16);
             var val_numberbox_throttledownload = this.numberbox_throttledownload.Value;
             if (val_numberbox_throttledownload.HasValue)
             {
@@ -241,7 +242,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        private void Numberbox_throttledownload_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void Numberbox_AcceptOnlyNumberic_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             var span = e.Text.AsSpan();
             for (int i = 0; i < span.Length; i++)

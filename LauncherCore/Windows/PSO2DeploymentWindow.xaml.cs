@@ -16,6 +16,7 @@ using System.Windows.Documents;
 using Leayal.Shared.Windows;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using System.Windows.Input;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -178,9 +179,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.GameClientDownloadSelection = GameClientSelection.NGS_Only;
             this.DownloaderProfileSelection = FileScanFlags.Balanced;
             this.ComboBox_downloaderprofileclassic.SelectedItem = this.profileClassicFlags_list[FileScanFlags.None];
+            this.numberbox_concurrentlevelFileScan.Value = 1;
 
             // this.GameClientDownloadSelection = ((EnumComboBox.ValueDOM<GameClientSelection>)this.combobox_downloadselection.SelectedItem).Value;
         }
+
+        // Too lazy to do proper property
+        public int ConcurrentLevelFileScan => Math.Clamp(Convert.ToInt32(this.numberbox_concurrentlevelFileScan.Value), 1, 16);
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -895,6 +900,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
             catch (ObjectDisposedException)
             {
 
+            }
+        }
+
+        private void Numberbox_AcceptOnlyNumberic_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            var span = e.Text.AsSpan();
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsDigit(span[i]))
+                {
+                    e.Handled = true;
+                    return;
+                }
             }
         }
 

@@ -85,6 +85,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="10" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -93,18 +94,45 @@
                     <localui:EnumComboBox Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloadselection" SelectionChanged="ComboBox_downloadselection_SelectionChanged" />
 
                     <TextBlock Grid.Row="1" Text="PSO2 NGS Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" />
-                    <localui:EnumComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofile" SelectionChanged="ComboBox_downloaderprofile_SelectionChanged" />
+                    <localui:EnumComboBox Grid.Row="1" Grid.Column="1" x:Name="ComboBox_downloaderprofile" SelectionChanged="ComboBox_downloaderprofile_SelectionChanged" />
 
                     <TextBlock Grid.Row="2" Text="PSO2 Classic Downloader Profile: " TextAlignment="Right" VerticalAlignment="Center" Visibility="{Binding ElementName=ComboBox_downloaderprofileclassic,Path=Visibility,Mode=OneWay}" />
-                    <localui:EnumComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ComboBox_downloaderprofileclassic" SelectionChanged="ComboBox_downloaderprofileclassic_SelectionChanged" />
+                    <localui:EnumComboBox Grid.Row="2" Grid.Column="1" x:Name="ComboBox_downloaderprofileclassic" SelectionChanged="ComboBox_downloaderprofileclassic_SelectionChanged" />
 
-                    <TextBlock Grid.Row="4" TextAlignment="Right">
+                    <TextBlock Grid.Row="3" Text="Concurrent Level of File Scanning:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" ToolTipService.InitialShowDelay="0">
+                        <TextBlock.ToolTip>
+                            <TextBlock TextAlignment="Left">
+                                <Run Text="The number of parallelization of file scanner. The value must be between 1 and 16." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a HDD drive or USB drive, you should leave this setting value to be at 1, there is no speed benefit and the performance may be worsen as HDD disk will spin unnecessarily more." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a SATA SSD drive, value of 1 should also be okay, but you can set it at 2 or 4, too." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a PCIe storage device, value or 2 or higher should give speed benefit, and recommended value for these PCIe devices is 8 or higher." />
+                            </TextBlock>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <mah:NumericUpDown Grid.Row="3" Grid.Column="1" x:Name="numberbox_concurrentlevelFileScan" Margin="1,1,1,0" Maximum="16" Minimum="1" PreviewTextInput="Numberbox_AcceptOnlyNumberic_PreviewTextInput"  ToolTipService.InitialShowDelay="0">
+                        <mah:NumericUpDown.ToolTip>
+                            <TextBlock TextAlignment="Left">
+                                <Run Text="The number of parallelization of file scanner. The value must be between 1 and 16." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a HDD drive or USB drive, you should leave this setting value to be at 1, there is no speed benefit and the performance may be worsen as HDD disk will spin unnecessarily more." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a SATA SSD drive, value of 1 should also be okay, but you can set it at 2 or 4, too." />
+                                <LineBreak />
+                                <Run Text="- If your game is located on a PCIe storage device, value or 2 or higher should give speed benefit, and recommended value for these PCIe devices is 8 or higher." />
+                            </TextBlock>
+                        </mah:NumericUpDown.ToolTip>
+                    </mah:NumericUpDown>
+
+                    <TextBlock Grid.Row="5" TextAlignment="Right">
                         <Run Text="Install" />
                         <localui:HyperlinkOpenDefaultBrowser NavigateUri="https://docs.microsoft.com/en-us/microsoft-edge/webview2/">
                             WebView2 Evergreen Runtime
                         </localui:HyperlinkOpenDefaultBrowser>
                     </TextBlock>
-                    <CheckBox Grid.Row="4" Grid.Column="1" IsChecked="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=TwoWay}">
+                    <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=TwoWay}">
                         <TextBlock>
                             <Run Text="[ Optional, but recommended." />
                             <Hyperlink>
@@ -130,10 +158,10 @@
                             <Run Text="]" />
                         </TextBlock>
                     </CheckBox>
-                    <TextBlock Grid.Row="5" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=OneWay}">
-                        <Run Text="At the end of deploying PSO2, there may be an UAC prompt popup ask for permission to run 'Microsoft Edge Update'." />
+                    <TextBlock Grid.Row="6" Grid.Column="1" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Path=IsInstallingWebview2Runtime,Mode=OneWay}" TextWrapping="Wrap">
+                        <Run Text="At the end of PSO2 deployment, there may be an UAC prompt popup ask for administration permission to run 'Microsoft Edge Update'." />
                         <LineBreak />
-                        <Run Text="That 'Microsoft Edge Update' is the WebView2 runtime installation." />
+                        <Run Text="That 'Microsoft Edge Update' is the WebView2 runtime installation and you should grant the permission for it to install." />
                     </TextBlock>
                 </Grid>
             </mah:MetroTabItem>
@@ -156,7 +184,7 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.ColumnSpan="2" Text="Overview details" TextAlignment="Center" FontSize="16" />
-                        
+
                         <TextBlock Grid.Row="1" Text="PSO2 game client deployment path: " TextAlignment="Right" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=thisSelf,Mode=OneWay,Path=PSO2DeploymentDirectory}" />
 
@@ -243,7 +271,7 @@
                             <localui:LibraryModMetadataPrensenter Grid.Row="2" x:Name="LibraryModMetadataPrensenter" mah:VisibilityHelper.IsVisible="{Binding ElementName=thisSelf,Mode=OneWay,Path=IsDeploymentSuccessfulWithLibraryModWarning}" />
                         </Grid>
                     </Grid>
-                    
+
                     <Button Grid.Row="1" Grid.Column="1" Click="ButtonFinish_Click" Margin="2">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Flat}">
