@@ -1,12 +1,7 @@
 ﻿using Leayal.PSO2Launcher.Core.Interfaces;
 using Leayal.SharedInterfaces;
-using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     public sealed partial class ConfigurationFile : ConfigurationFileBase
@@ -356,6 +351,27 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 return GameStartStyle.StartWithoutToken;
             }
             set => this.Set("pso2_defaultgamestartstyle", (int)value);
+        }
+
+        public GameStartWithAntiCheatProgram AntiCheatProgramSelection
+        {
+            get
+            {
+                if (this.TryGetRaw("pso2_anticheatselect", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                {
+                    var num = (int)val.Value;
+                    var vals = Enum.GetValues<GameStartWithAntiCheatProgram>();
+                    for (int i = 0; i < vals.Length; i++)
+                    {
+                        if (((int)vals[i]) == num)
+                        {
+                            return vals[i];
+                        }
+                    }
+                }
+                return GameStartWithAntiCheatProgram.nProtect_GameGuard;
+            }
+            set => this.Set("pso2_anticheatselect", (int)value);
         }
 
         public LoginPasswordRememberStyle DefaultLoginPasswordRemember

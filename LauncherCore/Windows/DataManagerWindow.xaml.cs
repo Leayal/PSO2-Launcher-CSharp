@@ -126,6 +126,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.numberbox_throttledownload.Value = num_throttleFileCheck;
             }
+
+            var defaultval_AntiCheatProgramSelection = this._config.AntiCheatProgramSelection;
+            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>();
+            this.combobox_anti_cheat_select.ItemsSource = dict_AntiCheatProgramSelection.Values;
+            if (dict_AntiCheatProgramSelection.TryGetValue(defaultval_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
+            {
+                this.combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
+            }
+            else
+            {
+                this.combobox_anti_cheat_select.SelectedIndex = 0;
+            }
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
@@ -143,6 +155,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this._config.DownloaderProfile = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpreset.SelectedItem).Value;
             this._config.DownloaderProfileClassic = ((EnumComboBox.ValueDOM<FileScanFlags>)this.combobox_downloadpresetclassic.SelectedItem).Value;
             this._config.DownloaderConcurrentCount = ((EnumComboBox.ValueDOMNumber)this.combobox_threadcount.SelectedItem).Value;
+            if (this.combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection)
+                this._config.AntiCheatProgramSelection = dom_AntiCheatProgramSelection.Value;
 
             // this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
             this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;

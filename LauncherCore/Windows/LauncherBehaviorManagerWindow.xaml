@@ -38,9 +38,10 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="5" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -78,7 +79,7 @@
                         <LineBreak />
                         <Run Text="Please mind that using mods (or client modifications) is totally your decision, your responsibility and your own risk." />
                         <LineBreak /> 
-                        <Run Text="This option is now a shortcut/alias to the actual option in" />
+                        <Run Text="This option is a shortcut/alias to the actual option in" />
                         <Run Text="Advanced Options" TextDecorations="Underline" />
                         <Run Text="tab of the" />
                         <Run Text="PSO2 Data Manager" TextDecorations="Underline" />
@@ -95,14 +96,27 @@
                 </Grid>
             </CheckBox>
 
-            <TextBlock Grid.Row="5" Text="Default GameStart Method" VerticalAlignment="Center" />
-            <localui:EnumComboBox Grid.Row="5" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
+            <TextBlock Grid.Row="6" Text="Select anti-cheat program" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="6" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_anti_cheat_select">
+                 <localui:EnumComboBox.ToolTip>
+                     <TextBlock>
+                         <Run Text="This option is a shortcut/alias to the actual option in" />
+                         <Run Text="Advanced Options" TextDecorations="Underline" />
+                         <Run Text="tab of the" />
+                         <Run Text="PSO2 Data Manager" TextDecorations="Underline" />
+                         <Run Text="option dialog." />
+                     </TextBlock>
+                 </localui:EnumComboBox.ToolTip>
+            </localui:EnumComboBox>
 
-            <TextBlock Grid.Row="6" Text="Behavior when PSO2 data backups are found" VerticalAlignment="Center" />
-            <localui:EnumComboBox Grid.Row="6" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_pso2databackupbehavior" />
+            <TextBlock Grid.Row="7" Text="Default GameStart Method" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="7" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_defaultgamestartstyle" />
 
-            <CheckBox Grid.Row="8" Content="Periodically check for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
-            <Grid Grid.Row="8" Grid.Column="1">
+            <TextBlock Grid.Row="8" Text="Behavior when PSO2 data backups are found" VerticalAlignment="Center" />
+            <localui:EnumComboBox Grid.Row="8" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_pso2databackupbehavior" />
+
+            <CheckBox Grid.Row="9" Content="Periodically check for launcher's update" Margin="1" x:Name="checkbox_backgroundselfupdatechecker" ToolTip="The launcher will check for self's update(s) in background while the launcher is running for a fixed interval." />
+            <Grid Grid.Row="9" Grid.Column="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
@@ -110,11 +124,11 @@
                 <mah:NumericUpDown IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Mode=OneWay,Path=IsChecked}" Minimum="1" x:Name="numbericbox_backgroundselfupdatechecker_intervalhour" PreviewTextInput="Numbericbox_backgroundselfupdatechecker_intervalhour_PreviewTextInput" />
                 <TextBlock Margin="1,0,0,0" Grid.Column="1" Text="hour(s) interval" VerticalAlignment="Center" TextAlignment="Left" />
             </Grid>
-            <CheckBox Grid.Row="9" Grid.Column="1" Content="Allow desktop notification for self-update if launcher is minimized to tray" Margin="1" x:Name="checkbox_backgroundselfupdatechecker_traynotify" ToolTip="Allow launcher to show desktop notification if launcher found an self-update while being minimized to tray."
+            <CheckBox Grid.Row="10" Grid.Column="1" Content="Allow desktop notification for self-update if launcher is minimized to tray" Margin="1" x:Name="checkbox_backgroundselfupdatechecker_traynotify" ToolTip="Allow launcher to show desktop notification if launcher found an self-update while being minimized to tray."
                       IsEnabled="{Binding ElementName=checkbox_backgroundselfupdatechecker,Path=IsChecked,Mode=OneWay}" />
 
-            <CheckBox Grid.Row="10" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
-            <CheckBox Grid.Row="11" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
+            <CheckBox Grid.Row="11" Grid.ColumnSpan="2" Content="Enable Japan's time clock" Margin="1" x:Name="checkbox_useclock" />
+            <CheckBox Grid.Row="12" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_useusewebview2">
                 <CheckBox.Content>
                     <TextBlock>
                         <Run Text="Allow using" />
@@ -135,7 +149,7 @@
                 </CheckBox.ToolTip>
             </CheckBox>
 
-            <CheckBox Grid.Row="13" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_lauchlauncherasadmin" ToolTipService.InitialShowDelay="0">
+            <CheckBox Grid.Row="14" Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_lauchlauncherasadmin" ToolTipService.InitialShowDelay="0">
                 <CheckBox.ToolTip>
                     <TextBlock>
                         <Run Text="Do NOT enable this feature unless you know what this is." TextDecorations="Underline" />

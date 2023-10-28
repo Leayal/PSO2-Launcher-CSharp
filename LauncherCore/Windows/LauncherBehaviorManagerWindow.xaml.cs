@@ -116,6 +116,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.combobox_pso2databackupbehavior.SelectedIndex = 0;
             }
+
+            var defaultval_AntiCheatProgramSelection = conf.AntiCheatProgramSelection;
+            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>();
+            this.combobox_anti_cheat_select.ItemsSource = dict_AntiCheatProgramSelection.Values;
+            if (dict_AntiCheatProgramSelection.TryGetValue(defaultval_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
+            {
+                this.combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
+            }
+            else
+            {
+                this.combobox_anti_cheat_select.SelectedIndex = 0;
+            }
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
@@ -159,7 +171,10 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            conf.PSO2DataBackupBehavior = ((EnumComboBox.ValueDOM<PSO2DataBackupBehavior>)(this.combobox_pso2databackupbehavior.SelectedItem)).Value;
+            if (this.combobox_pso2databackupbehavior.SelectedItem is EnumComboBox.ValueDOM<PSO2DataBackupBehavior> dom_PSO2DataBackupBehavior)
+                conf.PSO2DataBackupBehavior = dom_PSO2DataBackupBehavior.Value;
+            if (this.combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection)
+                conf.AntiCheatProgramSelection = dom_AntiCheatProgramSelection.Value;
 
             conf.Save();
 

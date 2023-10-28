@@ -1,11 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Leayal.PSO2Launcher.Core.Classes
+﻿namespace Leayal.PSO2Launcher.Core.Classes
 {
+    public enum GameStartWithAntiCheatProgram
+    {
+        [EnumDisplayName("Use nProtect's GameGuard (Default)")]
+        nProtect_GameGuard = 0,
+
+        // Only allowing selecting gameguard for now, until SEGA publish the anticheat update out.
+        [EnumDisplayName("Use Wellbia's stuff (maybe XignCode?)"), EnumVisibleInOption(false)]
+        Wellbia_XignCode
+    }
+
     public enum GameStartStyle
     {
         [EnumVisibleInOption(false)]

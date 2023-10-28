@@ -210,9 +210,14 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="90" />
                     </Grid.RowDefinitions>
-                    <CheckBox Margin="1" x:Name="checkbox_disableingameintegritycheck" ToolTipService.InitialShowDelay="0" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Margin="1" Grid.ColumnSpan="2" x:Name="checkbox_disableingameintegritycheck" ToolTipService.InitialShowDelay="0" >
                         <CheckBox.ToolTip>
                             <TextBlock>
                                 <Run Text="This launcher DOES NOT endorse nor oppose client modifications in any ways." />
@@ -230,7 +235,7 @@
                             <iconPacks:PackIconFontAwesome Grid.Column="2" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
-                    <CheckBox Grid.Row="1" Margin="1" x:Name="checkbox_allowDlssModding" ToolTipService.InitialShowDelay="0" >
+                    <CheckBox Grid.Row="1"  Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_allowDlssModding" ToolTipService.InitialShowDelay="0" >
                         <CheckBox.ToolTip>
                             <TextBlock IsHitTestVisible="False">
                                 <Run Text="This option will make the launcher only download the Nvidia DLSS binaries when the files are not existed." />
@@ -253,6 +258,8 @@
                             <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
+                    <TextBlock Grid.Row="2" Text="Select anti-cheat program" VerticalAlignment="Center" />
+                    <localui:EnumComboBox Grid.Row="2" Grid.Column="1" Margin="1" HorizontalAlignment="Stretch" x:Name="combobox_anti_cheat_select" />
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroAnimatedTabControl>
