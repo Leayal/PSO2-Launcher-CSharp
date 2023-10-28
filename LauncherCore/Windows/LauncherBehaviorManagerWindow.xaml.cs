@@ -9,6 +9,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Documents;
+using System.ComponentModel;
+using System.Windows.Data;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -117,10 +119,38 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.combobox_pso2databackupbehavior.SelectedIndex = 0;
             }
 
-            var defaultval_AntiCheatProgramSelection = conf.AntiCheatProgramSelection;
-            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>();
-            this.combobox_anti_cheat_select.ItemsSource = dict_AntiCheatProgramSelection.Values;
-            if (dict_AntiCheatProgramSelection.TryGetValue(defaultval_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
+            var val_AntiCheatProgramSelection = this._config.AntiCheatProgramSelection;
+            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(true);
+            const GameStartWithAntiCheatProgram defaultValue_AntiCheatProgramSelection =
+#if NO_SELECT_WELLBIA_AC
+                GameStartWithAntiCheatProgram.nProtect_GameGuard;
+#else
+                GameStartWithAntiCheatProgram.Unspecified;
+#endif
+            this.combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
+            SelectionChangedEventHandler? _SelectionChangedEventHandler = null;
+            _SelectionChangedEventHandler = new SelectionChangedEventHandler((sender, ev) =>
+            {
+                if (sender is EnumComboBox cb)
+                {
+                    if (ev.AddedItems != null && ev.AddedItems.Count != 0)
+                    {
+                        if (ev.AddedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection && dom_AntiCheatProgramSelection.Value != defaultValue_AntiCheatProgramSelection)
+                        {
+                            cb.SelectionChanged -= _SelectionChangedEventHandler;
+                            _SelectionChangedEventHandler = null;
+                            dict_AntiCheatProgramSelection.Remove(defaultValue_AntiCheatProgramSelection);
+                            if (cb.ItemsSource is ICollectionView cvs)
+                            {
+                                cvs.Refresh();
+                            }
+                        }
+                    }
+                }
+            });
+            this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection)
+               || dict_AntiCheatProgramSelection.TryGetValue(defaultValue_AntiCheatProgramSelection, out dom_AntiCheatProgramSelection))
             {
                 this.combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
             }

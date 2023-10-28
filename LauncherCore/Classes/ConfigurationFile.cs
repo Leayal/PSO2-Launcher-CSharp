@@ -369,7 +369,11 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         }
                     }
                 }
+#if NO_SELECT_WELLBIA_AC
                 return GameStartWithAntiCheatProgram.nProtect_GameGuard;
+#else
+                return GameStartWithAntiCheatProgram.Unspecified;
+#endif
             }
             set => this.Set("pso2_anticheatselect", (int)value);
         }

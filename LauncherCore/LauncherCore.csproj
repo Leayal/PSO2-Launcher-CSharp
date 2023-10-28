@@ -11,10 +11,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Authors>Dramiel Leayal</Authors>
     <Nullable>enable</Nullable>
+	<!--NO_SELECT_WELLBIA_AC-->
+	<DefineConstants>$(DefineConstants);NO_SELECT_WELLBIA_AC</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
-    <DefineConstants>DEBUGHTTPREQUEST</DefineConstants>
+    <DefineConstants>$(DefineConstants);DEBUGHTTPREQUEST</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

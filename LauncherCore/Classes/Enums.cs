@@ -1,14 +1,27 @@
 ﻿namespace Leayal.PSO2Launcher.Core.Classes
 {
+#if NO_SELECT_WELLBIA_AC
     public enum GameStartWithAntiCheatProgram
     {
         [EnumDisplayName("Use nProtect's GameGuard (Default)")]
+        nProtect_GameGuard = -1 // Use the same value as upcoming "Unspecified".
+    }
+#else
+    public enum GameStartWithAntiCheatProgram
+    {
+        /// <summary>No selection yet.</summary>
+        /// <remarks>This is a special value one, to be used as a flag for triggering dialog warning user about selecting the anti-cheat.</remarks>
+        [EnumDisplayName("Unspecified anti-cheat (Please select one)"), EnumVisibleInOption(false)]
+        Unspecified = -1,
+
+        [EnumDisplayName("Use nProtect's GameGuard")]
         nProtect_GameGuard = 0,
 
         // Only allowing selecting gameguard for now, until SEGA publish the anticheat update out.
-        [EnumDisplayName("Use Wellbia's stuff (maybe XignCode?)"), EnumVisibleInOption(false)]
+        [EnumDisplayName("Use Wellbia's stuff (maybe XignCode?)")]
         Wellbia_XignCode
     }
+#endif
 
     public enum GameStartStyle
     {

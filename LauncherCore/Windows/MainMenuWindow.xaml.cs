@@ -776,17 +776,36 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonManageGameDataClicked -= this.TabMainMenu_ButtonManageGameDataClick;
                 try
                 {
-                    var dialog = new DataManagerWindow(this.config_main);
-                    if (dialog.ShowCustomDialog(this) == true)
-                    {
-                        this.RefreshGameUpdaterOptions();
-                    }
+                    this.ShowDataManagerWindowDialog();
                 }
                 finally
                 {
                     tab.ButtonManageGameDataClicked += this.TabMainMenu_ButtonManageGameDataClick;
                 }
             }
+        }
+
+        private bool ShowDataManagerWindowDialog(Action<DataManagerWindow>? callbackOnBeforeShown = null)
+        {
+            var dialog = new DataManagerWindow(this.config_main);
+            if (callbackOnBeforeShown != null)
+            {
+                EventHandler? ev = null;
+                ev = (sender, e) =>
+                {
+                    dialog.FirstShown -= ev;
+                    callbackOnBeforeShown.Invoke(dialog);
+
+                };
+                dialog.FirstShown += ev;
+            }
+            
+            if (dialog.ShowCustomDialog(this) == true)
+            {
+                this.RefreshGameUpdaterOptions();
+                return true;
+            }
+            return false;
         }
 
         private void ConsoleLog_ContextMenuOpening(object sender, RoutedEventArgs e)

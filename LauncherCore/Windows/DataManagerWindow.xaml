@@ -200,7 +200,7 @@
                     </Label>
                 </Grid>
             </mah:MetroTabItem>
-            <mah:MetroTabItem>
+            <mah:MetroTabItem x:Name="ThirdTab">
                 <mah:MetroTabItem.Header>
                     <ToggleButton IsChecked="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorLevel=1,AncestorType={x:Type mah:MetroTabItem}},Mode=TwoWay,Path=IsSelected}">
                         <TextBlock Text="Advanced Options" FontSize="13" />

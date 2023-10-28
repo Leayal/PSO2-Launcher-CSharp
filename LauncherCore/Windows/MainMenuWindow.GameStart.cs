@@ -271,6 +271,31 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             return;
                         }
 
+#if !NO_SELECT_WELLBIA_AC
+                        var val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
+                        if (val_AntiCheatProgramSelection == GameStartWithAntiCheatProgram.Unspecified)
+                        {
+                            if (Prompt_Generic.Show(this, "You haven't selected which Anti-cheat program to be used yet."
+                                + Environment.NewLine + "Do you want to select now?"
+                                + Environment.NewLine + "If you select 'No', the launcher will abort launching game."
+                                + Environment.NewLine + "You must select before this launcher can start the game. THIS IS IMPORTANT CHANGES.", "Important setting", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                            {
+                                if (this.ShowDataManagerWindowDialog(dialog => dialog.ShowFocusAnticheatSelection()))
+                                {
+                                    val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
+                                }
+                                else
+                                {
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        }
+#endif
+
                         bool isLaunchWithTweaker = (e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker);
                         string tweakerPath = this.config_main.PSO2Tweaker_Bin_Path;
                         if (isLaunchWithTweaker)
