@@ -62,6 +62,12 @@ namespace Leayal.Shared
             }
         }
 
+        public static DateTime CreateJstTime(int year, int month, int day, int hour, int minute, int seconds)
+        {
+            var thetime = new DateTime(year, month, day, hour, minute, seconds, DateTimeKind.Unspecified);
+            return (JapanTimeZone == null ? thetime : TimeZoneInfo.ConvertTimeToUtc(thetime, JapanTimeZone));
+        }
+
         /// <summary>Adjust the <seealso cref="DateTime"/> according to the PSO2 game's daily reset.</summary>
         /// <remarks>This just simply push the date back to previous day if the time is still before 4AM.</remarks>
         /// <param name="datetime">The time to adjust. This <seealso cref="DateTime"/> must be in JST or it will definitely yield wrong result.</param>

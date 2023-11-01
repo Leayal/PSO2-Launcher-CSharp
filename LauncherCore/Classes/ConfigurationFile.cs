@@ -1,7 +1,10 @@
 ﻿using Leayal.PSO2Launcher.Core.Interfaces;
+using Leayal.PSO2Launcher.Core.Windows;
 using Leayal.SharedInterfaces;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
+
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     public sealed partial class ConfigurationFile : ConfigurationFileBase
@@ -360,20 +363,19 @@ namespace Leayal.PSO2Launcher.Core.Classes
                 if (this.TryGetRaw("pso2_anticheatselect", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
                     var num = (int)val.Value;
-                    var vals = Enum.GetValues<GameStartWithAntiCheatProgram>();
+                    ReadOnlySpan<GameStartWithAntiCheatProgram> vals = Enum.GetValues<GameStartWithAntiCheatProgram>();
                     for (int i = 0; i < vals.Length; i++)
                     {
-                        if (((int)vals[i]) == num)
+                        ref readonly var currentValue = ref vals[i];
+                        if (((int)currentValue) == num)
                         {
-                            return vals[i];
+                            if (currentValue == GameStartWithAntiCheatProgram.Wellbia_XignCode && !DataManagerWindow.IsWellbiaXignCodeAllowed())
+                                return GameStartWithAntiCheatProgram.Unspecified;
+                            return currentValue;
                         }
                     }
                 }
-#if NO_SELECT_WELLBIA_AC
-                return GameStartWithAntiCheatProgram.nProtect_GameGuard;
-#else
                 return GameStartWithAntiCheatProgram.Unspecified;
-#endif
             }
             set => this.Set("pso2_anticheatselect", (int)value);
         }

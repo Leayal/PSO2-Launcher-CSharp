@@ -1910,7 +1910,7 @@ namespace SQLite
 					throw NotNullConstraintViolationException.New (ex, map, obj);
 				}
 
-				throw ex;
+				throw;
 			}
 
 			if (rowsAffected > 0)

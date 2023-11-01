@@ -9,6 +9,8 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.ComponentModel;
+using Leayal.Shared;
+using System.Runtime.CompilerServices;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -130,12 +132,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
             var val_AntiCheatProgramSelection = this._config.AntiCheatProgramSelection;
             var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(true);
-            const GameStartWithAntiCheatProgram defaultValue_AntiCheatProgramSelection =
-#if NO_SELECT_WELLBIA_AC
-                GameStartWithAntiCheatProgram.nProtect_GameGuard;
-#else
-                GameStartWithAntiCheatProgram.Unspecified;
-#endif
+            const GameStartWithAntiCheatProgram defaultValue_AntiCheatProgramSelection = GameStartWithAntiCheatProgram.Unspecified;
             this.combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
             SelectionChangedEventHandler? _SelectionChangedEventHandler = null;
             _SelectionChangedEventHandler = new SelectionChangedEventHandler((sender, ev) =>
@@ -157,7 +154,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             });
-            this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            if (IsWellbiaXignCodeAllowed())
+            {
+                this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            }
+            else
+            {
+                this.combobox_anti_cheat_select.SelectionChanged += this.Combobox_anti_cheat_select_SelectionChanged;
+            }
             if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection)
                || dict_AntiCheatProgramSelection.TryGetValue(defaultValue_AntiCheatProgramSelection, out dom_AntiCheatProgramSelection))
             {
@@ -166,6 +170,53 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 this.combobox_anti_cheat_select.SelectedIndex = 0;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsWellbiaXignCodeAllowed() => (TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now) >= TimeZoneHelper.CreateJstTime(2023, 11, 8, 11, 0, 0));
+
+        internal static bool IsWellbiaXignCodeSelected(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is EnumComboBox combobox_anti_cheat_select
+                && combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection
+                && dom_AntiCheatProgramSelection.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode
+                && !IsWellbiaXignCodeAllowed())
+            {
+                if (e.RemovedItems != null && e.RemovedItems.Count != 0)
+                {
+                    combobox_anti_cheat_select.SelectedItem = e.RemovedItems[0];
+                }
+                else if (combobox_anti_cheat_select.ItemsSource is ICollectionView view)
+                {
+                    bool found = false;
+                    foreach (var item in view.SourceCollection)
+                    {
+                        if (item is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom && dom.Value == GameStartWithAntiCheatProgram.Unspecified)
+                        {
+                            combobox_anti_cheat_select.SelectedItem = dom;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        combobox_anti_cheat_select.SelectedIndex = 0;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private void Combobox_anti_cheat_select_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsWellbiaXignCodeSelected(sender, e))
+            {
+                Prompt_Generic.Show(this, "You should only select Wellbia XignCode anti-cheat only after SEGA publicly launched it." + Environment.NewLine + "The XignCode update will be launched on 8th November 2023 (JST time).", "Not supported yet", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

@@ -14,14 +14,11 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Leayal.PSO2.UserConfig;
-using System.Printing;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -264,23 +261,17 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             Prompt_Generic.Show(this, "The 'pso2_bin' directory doesn't exist.\r\nPath: " + dir_pso2bin, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
-                        var filename = Path.GetFullPath("pso2.exe", dir_pso2bin);
-                        if (!File.Exists(filename))
-                        {
-                            Prompt_Generic.Show(this, "The file 'pso2.exe' doesn't exist. Please download game's data files if you haven't done it.\r\nPath: " + filename, "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
 
-#if !NO_SELECT_WELLBIA_AC
                         var val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
-                        if (val_AntiCheatProgramSelection == GameStartWithAntiCheatProgram.Unspecified)
+                        if (DataManagerWindow.IsWellbiaXignCodeAllowed())
                         {
-                            if (Prompt_Generic.Show(this, "You haven't selected which Anti-cheat program to be used yet."
-                                + Environment.NewLine + "Do you want to select now?"
-                                + Environment.NewLine + "If you select 'No', the launcher will abort launching game."
-                                + Environment.NewLine + "You must select before this launcher can start the game. THIS IS IMPORTANT CHANGES.", "Important setting", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                            if (val_AntiCheatProgramSelection == GameStartWithAntiCheatProgram.Unspecified)
                             {
-                                if (this.ShowDataManagerWindowDialog(dialog => dialog.ShowFocusAnticheatSelection()))
+                                if (Prompt_Generic.Show(this, "You haven't selected which Anti-cheat program to be used yet."
+                                    + Environment.NewLine + "Do you want to select now?"
+                                    + Environment.NewLine + "If you select 'No', the launcher will abort launching game."
+                                    + Environment.NewLine + "You must select before this launcher can start the game. THIS IS IMPORTANT CHANGES.", "Important setting", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
+                                    && this.ShowDataManagerWindowDialog(dialog => dialog.ShowFocusAnticheatSelection()))
                                 {
                                     val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
                                 }
@@ -289,12 +280,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     return;
                                 }
                             }
-                            else
-                            {
-                                return;
-                            }
                         }
-#endif
+                        var filename = Path.GetFullPath(val_AntiCheatProgramSelection switch
+                        {
+                            GameStartWithAntiCheatProgram.Wellbia_XignCode => Path.Join("sub", "pso2.exe"),
+                            _ => "pso2.exe"
+                        }, dir_pso2bin);
+                        if (!File.Exists(filename))
+                        {
+                            Prompt_Generic.Show(this, string.Concat("The file ", val_AntiCheatProgramSelection switch
+                            {
+                                GameStartWithAntiCheatProgram.nProtect_GameGuard => "'pso2.exe' for nProtect GameGuard",
+                                GameStartWithAntiCheatProgram.Wellbia_XignCode => "'pso2.exe' for Wellbia's XignCode",
+                                _ => "pso2.exe"
+                            }, " doesn't exist. Please download game's data files if you haven't done it, or switch to another anti-cheat program to see if it helps.", Environment.NewLine, "Path: ", filename), "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
 
                         bool isLaunchWithTweaker = (e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker);
                         string tweakerPath = this.config_main.PSO2Tweaker_Bin_Path;
@@ -819,7 +820,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             proc.StartInfo.ArgumentList.Add("-optimize");
                                             proc.StartInfo.WorkingDirectory = dir_pso2bin;
                                             proc.Start();
-                                            this.CreateNewLineInConsoleLog("GameStart", "Starting game...");
+                                            this.CreateNewLineInConsoleLog("GameStart", val_AntiCheatProgramSelection switch
+                                            {
+                                                GameStartWithAntiCheatProgram.nProtect_GameGuard => "Starting game with nProtect GameGuard...",
+                                                GameStartWithAntiCheatProgram.Wellbia_XignCode => "Starting game with Wellbia Whatever...",
+                                                _ => "Starting game..."
+                                            });
                                         }
                                     }
                                 }
