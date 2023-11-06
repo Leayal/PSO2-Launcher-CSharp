@@ -37,6 +37,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
         public static readonly RoutedEvent ButtonManageLauncherThemingClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageLauncherThemingClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonManageGameLauncherCompatibilityClickedEvent = EventManager.RegisterRoutedEvent("ButtonManageGameLauncherCompatibilityClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
         public static readonly RoutedEvent ButtonPSO2DataOrganizerClickedEvent = EventManager.RegisterRoutedEvent("ButtonPSO2DataOrganizerClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
+        public static readonly RoutedEvent ButtonRemoveWellbiaACClickedEvent = EventManager.RegisterRoutedEvent("ButtonRemoveWellbiaACClicked", RoutingStrategy.Direct, typeof(RoutedEventHandler), typeof(TabMainMenu));
 
         public static readonly DependencyProperty GameStartEnabledProperty = DependencyProperty.Register("GameStartEnabled", typeof(bool), typeof(TabMainMenu), new PropertyMetadata(true, (obj, e) =>
         {
@@ -234,6 +235,12 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             }
         }
 
+        public event RoutedEventHandler ButtonRemoveWellbiaACClicked
+        {
+            add => this.AddHandler(ButtonRemoveWellbiaACClickedEvent, value);
+            remove => this.RemoveHandler(ButtonRemoveWellbiaACClickedEvent, value);
+        }
+        private void MenuItemRemoveWellbiaAC_Click(object sender, RoutedEventArgs e) => this.RaiseEvent(new RoutedEventArgs(ButtonRemoveWellbiaACClickedEvent));
         public event RoutedEventHandler ButtonCheckForPSO2UpdateClicked
         {
             add => this.AddHandler(ButtonCheckForPSO2UpdateClickedEvent, value);

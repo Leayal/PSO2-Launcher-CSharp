@@ -107,6 +107,11 @@
                             <iconPacks:PackIconFontAwesome Kind="HammerSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
+                    <MenuItem Header="Remove Wellbia XignCode anti-cheat program from your system" Click="MenuItemRemoveWellbiaAC_Click">
+                        <MenuItem.Icon>
+                            <iconPacks:PackIconFontAwesome Kind="UnlinkSolid" />
+                        </MenuItem.Icon>
+                    </MenuItem>
                 </ContextMenu>
             </local:WeirdButton.ContextMenu>
         </local:WeirdButton>
