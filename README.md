@@ -56,7 +56,9 @@ This project is just a hobby one.
   - **It is disabled by default**. To enable, please press `Launcher Options` and then select `Manage launcher's compatibility` in the dropdown.
   - Update Tweaker's hash cache (which is used to speed up game client updating progress) when updating the game client with this launcher. However, you should **NOT** using both to update the game at the same time.
   - Allow user to launch the game via PSO2 Tweaker instead of launching the game client directly. This also allows Tweaker to manage Patches and perform its workaround magics. But you shouldn't exit this launcher before Tweaker is closed in order to avoid corrupting Tweaker's config. To enable this launching game method, you can the setting in Launcher's behavior or in the GameStart's dropdown menu.
-- Purging Wellbia's `XignCode` out of your system. (The XignCode boot loader will reinstall the next time you start PSO2:NGS with Wellbia anti-cheat, aka backing to the square one, so select nProtect GameGuard before starting game is advised)
+- Purging Wellbia's `XignCode` out of your system:
+  - Can be found in `Troubleshooting` menu on the main window.
+  - The XignCode boot loader will reinstall the next time you start PSO2:NGS with Wellbia anti-cheat, aka backing to the square one, so select nProtect GameGuard before starting game is advised.
 
 ### Launcher arguments:
 
