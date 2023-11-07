@@ -36,14 +36,18 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 tab.ButtonRemoveWellbiaACClicked -= this.TabMainMenu_ButtonRemoveWellbiaACClicked;
 
-                var lines = new System.Collections.Generic.List<Inline>(UacHelper.IsCurrentProcessElevated ? 8 : 12)
+                var lines = new System.Collections.Generic.List<Inline>(UacHelper.IsCurrentProcessElevated ? 12 : 16)
                 {
                     new Run("Are you sure you want to \"purge clean\" Wellbia's anti-cheat from your system?"),
                     new LineBreak(),
-                    new Run("(The anti-cheat will be reinstalled again if you start the game with Wellbia anti-cheat next time)"),
+                    new Run("*Please DO NOT use this function while there are any other games using XignCode or Wellbia's stuffs, it may lead to unexpected behaviors such as false-positive bans on those other games.") { FontSize = SystemFonts.MessageFontSize + 3 },
+                    new LineBreak(),
+                    new Run("Only use this function when you made sure no games using Wellbia's stuffs is running, if you're unsure about this, please abort by pressing 'No'.*") { FontSize = SystemFonts.MessageFontSize + 3 },
                     new LineBreak(),
                     new LineBreak(),
                     new Run("Notes:"),
+                    new LineBreak(),
+                    new Run("- The anti-cheat will be reinstalled again if you start the game with Wellbia anti-cheat next time."),
                     new LineBreak(),
                     new Run("- Please press 'OK' button on the XignCode uninstaller's dialog showing a successful uninstallation message.")
                 };
