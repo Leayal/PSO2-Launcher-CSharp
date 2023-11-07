@@ -243,14 +243,24 @@ namespace Leayal.PSO2Launcher.Core.Windows
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static void ConsoleLog_SelectLocalPathLinkInExplorer(HyperlinkVisualLineElementData element)
+        private void ConsoleLog_SelectLocalPathLinkInExplorer(HyperlinkVisualLineElementData element)
         {
             var url = element.NavigateUri;
             if (url != null && url.IsFile)
             {
+                var path = url.LocalPath;
                 try
                 {
-                    WindowsExplorerHelper.SelectPathInExplorer(url.LocalPath);
+                    _ = System.IO.File.GetAttributes(path);
+                }
+                catch (Exception ex)  when (ex is System.IO.DirectoryNotFoundException || ex is System.IO.FileNotFoundException)
+                {
+                    Prompt_Generic.Show(this, "The file is no longer existed.", "You're too late");
+                    return;
+                }
+                try
+                {
+                    WindowsExplorerHelper.SelectPathInExplorer(path);
                 }
                 catch { }
             }

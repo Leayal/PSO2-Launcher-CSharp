@@ -120,7 +120,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                             this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
                                                 var (mainmenu, filename_xignCodeUninstaller) = arg;
                                                 writer.Write("Writing downloaded file to ");
-                                                mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                                mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), mainmenu.ConsoleLog_SelectLocalPathLinkInExplorer);
                                                 writer.Write(".");
                                             }, (this, filename_xignCodeUninstaller));
 
@@ -154,7 +154,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
                                     var (mainmenu, filename_xignCodeUninstaller) = arg;
                                     writer.Write("Launching ");
-                                    mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                    mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), mainmenu.ConsoleLog_SelectLocalPathLinkInExplorer);
                                     writer.Write(" to uninstall XignCode anti-cheat from your system. ");
 
                                     var absoluteOffsetStart = writer.InsertionOffset;
@@ -173,11 +173,62 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 InvokeProcess("sc", "delete", "xhunter1");
                                 try
                                 {
-                                    File.Delete(Path.GetFullPath("xhunter1.sys", Environment.GetFolderPath(Environment.SpecialFolder.Windows)));
-                                    File.Delete(Path.GetFullPath("xhunters.log", Environment.GetFolderPath(Environment.SpecialFolder.Windows)));
+                                    var windir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                                    File.Delete(Path.GetFullPath("xhunter1.sys", windir));
+                                    File.Delete(Path.GetFullPath("xhunters.log", windir));
 
-                                    Directory.Delete(Path.GetFullPath("WELLBIA", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)), true);
-                                    Directory.Delete(Path.GetFullPath("Wellbia.com", Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)), true);
+                                    static void AttemptDeleteAPath(string path)
+                                    {
+                                        try
+                                        {
+                                            var dir_attr = File.GetAttributes(path);
+                                            if ((dir_attr & FileAttributes.ReadOnly) != 0)
+                                            {
+                                                // Shouldn't be here anyway
+                                                File.SetAttributes(path, dir_attr & ~FileAttributes.ReadOnly);
+                                            }
+                                            Directory.Delete(path, true);
+                                        }
+                                        catch (FileNotFoundException) { /* Do nothing */ }
+                                        catch (DirectoryNotFoundException) { /* Do nothing */ }
+                                        catch (PathTooLongException) { /* Do nothing */ }
+                                        catch (IOException)
+                                        {
+                                            if (File.Exists(path))
+                                            {
+                                                // It's a file.
+                                                var attr = File.GetAttributes(path);
+                                                if ((attr & FileAttributes.ReadOnly) != 0)
+                                                {
+                                                    File.SetAttributes(path, attr & ~FileAttributes.ReadOnly);
+                                                }
+                                                File.Delete(path);
+                                            }
+                                            else
+                                            {
+                                                // There's at least one file has "Read-Only" attribute within the directory.
+                                                foreach (var filesysteminfo in Directory.EnumerateFileSystemEntries(path, "*", new EnumerationOptions()
+                                                {
+                                                    RecurseSubdirectories = true,
+                                                    MaxRecursionDepth = 10,
+                                                    ReturnSpecialDirectories = false
+                                                }))
+                                                {
+                                                    var attr = File.GetAttributes(filesysteminfo);
+                                                    if ((attr & FileAttributes.ReadOnly) != 0)
+                                                    {
+                                                        File.SetAttributes(filesysteminfo, attr & ~FileAttributes.ReadOnly);
+                                                    }
+                                                }
+
+                                                // Attempt to delete again, but will throw error if it fails, for this time.
+                                                Directory.Delete(path, true);
+                                            }
+                                        }
+                                    }
+
+                                    AttemptDeleteAPath(Path.GetFullPath("WELLBIA", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
+                                    AttemptDeleteAPath(Path.GetFullPath("Wellbia.com", Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)));
 
                                     this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Cleaned up left-over files of XignCode.");
                                 }
@@ -197,13 +248,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                             else
                             {
+                                var windir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                                 // 'Runas' the command prompt and executing cmd-line.
                                 string batch_script_content = "@start \"XignCode Uninstaller\" /WAIT /B \"" + filename_xignCodeUninstaller + "\"" + Environment.NewLine
                                 + "@sc delete ucldr_PSO2_JP" + Environment.NewLine
                                 + "@sc delete xhunter1" + Environment.NewLine
                                 + "@reg delete \"" + Path.Join("HKLM", "SYSTEM", "ControlSet001", "Services", "ucldr_PSO2_JP") + "\" /va /f"+ Environment.NewLine
-                                + "@del /F /Q \"" + Path.GetFullPath("xhunter1.sys", Environment.GetFolderPath(Environment.SpecialFolder.Windows)) + "\"" + Environment.NewLine
-                                + "@del /F /Q \"" + Path.GetFullPath("xhunters.log", Environment.GetFolderPath(Environment.SpecialFolder.Windows)) + "\"" + Environment.NewLine
+                                + "@del /F /Q \"" + Path.GetFullPath("xhunter1.sys", windir) + "\"" + Environment.NewLine
+                                + "@del /F /Q \"" + Path.GetFullPath("xhunters.log", windir) + "\"" + Environment.NewLine
                                 + "@rmdir /S /Q \"" + Path.GetFullPath("WELLBIA", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) + "\"" + Environment.NewLine
                                 + "@rmdir /S /Q \"" + Path.GetFullPath("Wellbia.com", Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)) + "\"" + Environment.NewLine;
 
@@ -213,7 +265,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
                                         var (mainmenu, batchFilename) = arg;
                                         writer.Write("Writing cleanup script ");
-                                        mainmenu.ConsoleLogHelper_WriteHyperLink(writer, Path.GetFileName(batchFilename), new Uri(batchFilename), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                        mainmenu.ConsoleLogHelper_WriteHyperLink(writer, Path.GetFileName(batchFilename), new Uri(batchFilename), mainmenu.ConsoleLog_SelectLocalPathLinkInExplorer);
                                         writer.Write(" for Command-Prompt to execute...");
                                     }, (this, batchFilename));
                                     File.WriteAllText(batchFilename, batch_script_content, System.Text.Encoding.ASCII);
