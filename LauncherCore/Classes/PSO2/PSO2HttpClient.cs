@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using Leayal.Shared;
 using Leayal.SharedInterfaces;
+using System.Buffers;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -48,12 +49,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         }
 
         private readonly HttpClient client;
-        private const string UA_AQUA_HTTP = "AQUA_HTTP",
+        internal const string UA_AQUA_HTTP = "AQUA_HTTP",
             // PSO2Launcher = "PSO2Launcher",
             UA_PSO2_Launcher = "PSO2 Launcher",
             UA_pso2launcher = "pso2launcher",
             UA_WellbiaSite = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0",
-            Uri_WellbiaUninstaller = "https://wellbia.com/xuninstaller.zip";
+            Url_WellbiaUninstaller = "https://wellbia.com/xuninstaller.zip";
+        internal static readonly Uri Uri_WellbiaUninstaller = new Uri(Url_WellbiaUninstaller);
         private readonly PersistentCacheManager? dataCache;
 
         // Need to add snail mode (for when internet is extremely unreliable).
@@ -220,7 +222,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public async Task<Stream> DownloadWellbiaUninstaller(CancellationToken cancellationToken)
         {
-            var url = new Uri(Uri_WellbiaUninstaller);
+            var url = Uri_WellbiaUninstaller;
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
                 request.Headers.Host = url.Host;
@@ -234,7 +236,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     var contentLen = response.Content.Headers.ContentLength;
                     if (contentLen.HasValue && contentLen.Value < (1024 * 1024 * 5))
                     {
-                        var buffer = new byte[contentLen.Value];
+                        var buffer = ArrayPool<byte>.Shared.Rent((int)contentLen.Value);
                         int totalread = 0;
                         using (var repContent = await response.Content.ReadAsStreamAsync(cancellationToken))
                         {
@@ -246,11 +248,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                             }
                             while (read != 0 && totalread < buffer.Length);
                         }
-                        return new MemoryStream(buffer, 0, totalread, false, true) { Position = 0 };
+                        return new MemoryStreamPooledBackBuffer(buffer, 0, totalread, true);
                     }
                     else
                     {
-                        var filename = Path.GetFullPath(string.Concat("xuninstaller.".AsSpan(), DateTimeOffset.UtcNow.ToFileTime().ToString(System.Globalization.NumberFormatInfo.InvariantInfo).AsSpan(), Path.GetExtension(Uri_WellbiaUninstaller.AsSpan())), RuntimeValues.RootDirectory);
+                        var filename = Path.GetFullPath(string.Concat("xuninstaller.".AsSpan(), DateTimeOffset.UtcNow.ToFileTime().ToString(System.Globalization.NumberFormatInfo.InvariantInfo).AsSpan(), Path.GetExtension(url.AbsolutePath.AsSpan())), RuntimeValues.RootDirectory);
                         var local_fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
                         using (var repContent = await response.Content.ReadAsStreamAsync(cancellationToken))
                         {

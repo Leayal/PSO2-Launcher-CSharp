@@ -11,6 +11,10 @@ using Leayal.SharedInterfaces;
 using System.Diagnostics;
 using Microsoft.Win32;
 using System.ComponentModel;
+using Leayal.PSO2Launcher.Core.Classes.PSO2;
+using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
+using System.Windows.Media;
+using System.Windows.Documents;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -27,18 +31,40 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async void TabMainMenu_ButtonRemoveWellbiaACClicked(object sender, RoutedEventArgs e)
         {
+            const string WellbiaUninstallerSender = "Wellbia Anti-cheat uninstaller";
             if (sender is TabMainMenu tab)
             {
                 tab.ButtonRemoveWellbiaACClicked -= this.TabMainMenu_ButtonRemoveWellbiaACClicked;
 
-                string theQuestion = "Are you sure you want to \"purge clean\" Wellbia's anti-cheat from your system?" + Environment.NewLine
-                    + "(The anti-cheat will be reinstalled again if you start the game with Wellbia anti-cheat next time)";
-                if (Prompt_Generic.Show(this, UacHelper.IsCurrentProcessElevated ?
-                   theQuestion + Environment.NewLine + Environment.NewLine
-                   + "(Please press 'OK' button on the XignCode uninstaller's dialog showing a successful uninstallation message)"
-                    : theQuestion + Environment.NewLine + "(If you agree, the launcher will launch Command-Prompt as Administration to clean Wellbia's stuffs up, please allow Command-Prompt to be launched as Admin)" + Environment.NewLine + Environment.NewLine
-                    + "(PLEASE DO NOT CLOSE THE COMMAND-PROMPT WINDOW. ONLY PRESS 'OK' button on the XignCode uninstaller's dialog showing a successful uninstallation message)", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                var lines = new System.Collections.Generic.List<Inline>(UacHelper.IsCurrentProcessElevated ? 8 : 12)
                 {
+                    new Run("Are you sure you want to \"purge clean\" Wellbia's anti-cheat from your system?"),
+                    new LineBreak(),
+                    new Run("(The anti-cheat will be reinstalled again if you start the game with Wellbia anti-cheat next time)"),
+                    new LineBreak(),
+                    new LineBreak(),
+                    new Run("Notes:"),
+                    new LineBreak(),
+                    new Run("- Please press 'OK' button on the XignCode uninstaller's dialog showing a successful uninstallation message.")
+                };
+
+                if (!UacHelper.IsCurrentProcessElevated)
+                {
+                    lines.Add(new LineBreak());
+                    lines.Add(new Run("- "));
+                    lines.Add(new Run("This uninstallation process requires Administration privileges:") { FontSize = SystemFonts.MessageFontSize + 3 });
+                    lines.Add(new Run(" If you proceed, the launcher will launch Command-Prompt as Administration to execute a script which will clean Wellbia's stuffs up, please allow Command-Prompt to be run as Admin if Windows shows a dialog asks you allow or not."));
+                    lines.Add(new LineBreak());
+                    lines.Add(new Run("  + Alternatively, you can launch this launcher as Admin and use this function again for more verbose uninstallation messages."));
+                    lines.Add(new LineBreak());
+                    lines.Add(new Run("- "));
+                    lines.Add(new Run("PLEASE DO NOT CLOSE THE COMMAND-PROMPT WINDOW:") { FontSize = SystemFonts.MessageFontSize + 3 });
+                    lines.Add(new Run(" The window will automatically close itself once the uninstallation process is complete."));
+                }
+
+                if (Prompt_Generic.Show(this, lines, "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                {
+                    tab.ButtonRemoveWellbiaACClicked += this.TabMainMenu_ButtonRemoveWellbiaACClicked;
                     return;
                 }
 
@@ -57,7 +83,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     isOverlapping = true;
                     newCancelSrc.Dispose();
                 }
-
+                
                 try
                 {
                   
@@ -70,6 +96,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         string filename_xignCodeUninstaller = string.Empty;
                         try
                         {
+                            this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, mainmenu) => {
+                                writer.Write("Downloading Wellbia XignCode Uninstaller from ");
+                                mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "Wellbia's FAQ site", StaticResources.WellbiaFAQWebsite, ConsoleLog_OpenLinkWithDefaultBrowser);
+                                writer.Write("...");
+                            }, this);
                             using (var contentStream = await this.pso2HttpClient.DownloadWellbiaUninstaller(cancel_token))
                             {
                                 if (cancel_token.IsCancellationRequested) return;
@@ -81,6 +112,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         if (entry != null && entry.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                                         {
                                             filename_xignCodeUninstaller = Path.GetFullPath(entry.Name, RuntimeValues.RootDirectory);
+
+                                            this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
+                                                var (mainmenu, filename_xignCodeUninstaller) = arg;
+                                                writer.Write("Writing downloaded file to ");
+                                                mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                                writer.Write(".");
+                                            }, (this, filename_xignCodeUninstaller));
+
                                             entry.ExtractToFile(filename_xignCodeUninstaller, true);
                                             break;
                                         }
@@ -108,8 +147,25 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         proc.WaitForExit();
                                     }
                                 }
+                                this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
+                                    var (mainmenu, filename_xignCodeUninstaller) = arg;
+                                    writer.Write("Launching ");
+                                    mainmenu.ConsoleLogHelper_WriteHyperLink(writer, "xuninstaller.exe", new Uri(filename_xignCodeUninstaller), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                    writer.Write(" to uninstall XignCode anti-cheat from your system. ");
+
+                                    var absoluteOffsetStart = writer.InsertionOffset;
+                                    writer.Write("Please press 'OK' when the uninstaller shows a dialog saying that XignCode is successfully uninstalled or the launcher will wait forever for it.");
+                                    var absoluteOffsetEnd = writer.InsertionOffset;
+                                    mainmenu.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart, absoluteOffsetEnd - absoluteOffsetStart, Brushes.Gold, Brushes.DarkGoldenrod)
+                                    {
+                                        Typeface = mainmenu.consolelog_boldTypeface
+                                    });
+                                }, (this, filename_xignCodeUninstaller));
                                 InvokeProcess(filename_xignCodeUninstaller);
+
+                                this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Attempting deleting 'ucldr_PSO2_JP' service of XignCode if it still remains...");
                                 InvokeProcess("sc", "delete", "ucldr_PSO2_JP");
+                                this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Attempting deleting 'xhunter1' service of XignCode if it still remains...");
                                 InvokeProcess("sc", "delete", "xhunter1");
                                 try
                                 {
@@ -118,9 +174,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                     Directory.Delete(Path.GetFullPath("WELLBIA", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)), true);
                                     Directory.Delete(Path.GetFullPath("Wellbia.com", Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)), true);
+
+                                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Cleaned up left-over files of XignCode.");
                                 }
-                                catch { }
-                                Registry.LocalMachine.DeleteSubKeyTree(Path.Join("SYSTEM", "ControlSet001", "Services", "ucldr_PSO2_JP"), false);
+                                catch (Exception ex)
+                                {
+                                    this.CreateNewErrorLineInConsoleLog(WellbiaUninstallerSender, "Failed to clean up left-over files of XignCode.", "Error while cleaning up XignCode files", ex);
+                                }
+                                try
+                                {
+                                    Registry.LocalMachine.DeleteSubKeyTree(Path.Join("SYSTEM", "ControlSet001", "Services", "ucldr_PSO2_JP"), false);
+                                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Cleaned up registry of XignCode.");
+                                }
+                                catch (Exception ex)
+                                {
+                                    this.CreateNewErrorLineInConsoleLog(WellbiaUninstallerSender, "Failed to clean up registry entries of XignCode.", "Error while cleaning up XignCode registry entries", ex);
+                                }
                             }
                             else
                             {
@@ -137,6 +206,12 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 var batchFilename = Path.ChangeExtension(filename_xignCodeUninstaller, "bat");
                                 try
                                 {
+                                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, arg) => {
+                                        var (mainmenu, batchFilename) = arg;
+                                        writer.Write("Writing cleanup script ");
+                                        mainmenu.ConsoleLogHelper_WriteHyperLink(writer, Path.GetFileName(batchFilename), new Uri(batchFilename), ConsoleLog_SelectLocalPathLinkInExplorer);
+                                        writer.Write(" for Command-Prompt to execute...");
+                                    }, (this, batchFilename));
                                     File.WriteAllText(batchFilename, batch_script_content, System.Text.Encoding.ASCII);
                                     using (var proc = new Process())
                                     {
@@ -144,6 +219,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                         proc.StartInfo.UseShellExecute = true;
                                         proc.StartInfo.Verb = "runas";
                                         proc.StartInfo.Arguments = @$"/C ""call ""{batchFilename}""""";
+                                        this.CreateNewWarnLineInConsoleLog(WellbiaUninstallerSender, "Please DO NOT close the Command-Prompt's window while it's executing. And please press 'OK' when the uninstaller shows a dialog saying that XignCode is successfully uninstalled or the launcher will wait forever for it.");
+                                        this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, (console, writer, offset, mainmenu) => {
+                                            var absoluteOffsetStart1 = writer.InsertionOffset;
+                                            writer.Write("Please allow Command-Prompt (or Windows Command Processor) to be run as Admin.");
+                                            var absoluteOffsetEnd1 = writer.InsertionOffset;
+                                            mainmenu.consolelog_textcolorizer.Add(new TextStaticTransformData(absoluteOffsetStart1, absoluteOffsetEnd1 - absoluteOffsetStart1, Brushes.Gold, Brushes.DarkGoldenrod)
+                                            {
+                                                Typeface = this.consolelog_boldTypeface
+                                            });
+                                        }, this);
                                         proc.Start();
                                         proc.WaitForExit();
                                     }
@@ -159,13 +244,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             if (!string.IsNullOrEmpty(filename_xignCodeUninstaller)) File.Delete(filename_xignCodeUninstaller);
                         }
                     });
+                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Wellbia XignCode uninstallation process is completed.");
                 }
                 catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
                 {
-                    // User cancelled UAC prompt, just go ahead like nothing happened.
+                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "User cancelled the uninstallation process by disallowing Command-Prompt to be run as Admin.");
+                }
+                catch (Exception ex)
+                {
+                    this.CreateNewErrorLineInConsoleLog(WellbiaUninstallerSender, "Wellbia XignCode uninstallation process is completed with error(s).", "Error while uninstalling Wellbia XignCode", ex);
                 }
                 finally
                 {
+                    this.CreateNewLineInConsoleLog(WellbiaUninstallerSender, "Cleaned up uninstaller's files.");
                     tab.ButtonRemoveWellbiaACClicked += this.TabMainMenu_ButtonRemoveWellbiaACClicked;
                     if (!isOverlapping)
                     {

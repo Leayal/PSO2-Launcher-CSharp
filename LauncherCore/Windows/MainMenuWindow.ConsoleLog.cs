@@ -3,6 +3,7 @@ using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Rendering;
 using ICSharpCode.AvalonEdit.Utils;
 using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
+using Leayal.Shared.Windows;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -224,6 +225,34 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (url != null)
             {
                 App.Current?.ExecuteCommandUrl(url);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private static void ConsoleLog_OpenLinkWithDefaultBrowser(HyperlinkVisualLineElementData element)
+        {
+            var url = element.NavigateUri;
+            if (url != null)
+            {
+                try
+                {
+                    WindowsExplorerHelper.OpenUrlWithDefaultBrowser(url);
+                }
+                catch { }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private static void ConsoleLog_SelectLocalPathLinkInExplorer(HyperlinkVisualLineElementData element)
+        {
+            var url = element.NavigateUri;
+            if (url != null && url.IsFile)
+            {
+                try
+                {
+                    WindowsExplorerHelper.SelectPathInExplorer(url.LocalPath);
+                }
+                catch { }
             }
         }
 
