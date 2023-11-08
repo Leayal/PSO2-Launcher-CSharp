@@ -120,8 +120,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
 
             var val_AntiCheatProgramSelection = this._config.AntiCheatProgramSelection;
-            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(true);
             const GameStartWithAntiCheatProgram defaultValue_AntiCheatProgramSelection = GameStartWithAntiCheatProgram.Unspecified;
+            bool isStillUnspecific = (val_AntiCheatProgramSelection == defaultValue_AntiCheatProgramSelection);
+            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(isStillUnspecific);
             this.combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
             SelectionChangedEventHandler? _SelectionChangedEventHandler = null;
             _SelectionChangedEventHandler = new SelectionChangedEventHandler((sender, ev) =>
@@ -145,9 +146,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             });
-            this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
-            if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection)
-               || dict_AntiCheatProgramSelection.TryGetValue(defaultValue_AntiCheatProgramSelection, out dom_AntiCheatProgramSelection))
+            if (isStillUnspecific)
+                this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
             {
                 this.combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
             }
@@ -155,6 +156,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 this.combobox_anti_cheat_select.SelectedIndex = 0;
             }
+            if (!isStillUnspecific)
+                this.combobox_anti_cheat_select.SelectionChanged += (s, e) => DataManagerWindow.IsWellbiaXignCodeConfirmed(this, (EnumComboBox)s, e);
         }
 
         public void ButtonSave_Click(object sender, RoutedEventArgs e)
