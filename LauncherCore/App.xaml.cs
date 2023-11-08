@@ -16,6 +16,8 @@ using Leayal.PSO2Launcher.Toolbox.Windows;
 using Leayal.PSO2Launcher.Toolbox;
 using SQLite;
 using Leayal.PSO2.Modding.Cache;
+using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
+using System.Runtime.CompilerServices;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core

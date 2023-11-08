@@ -369,8 +369,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         ref readonly var currentValue = ref vals[i];
                         if (((int)currentValue) == num)
                         {
-                            if (currentValue == GameStartWithAntiCheatProgram.Wellbia_XignCode && !DataManagerWindow.IsWellbiaXignCodeAllowed())
-                                return GameStartWithAntiCheatProgram.Unspecified;
                             return currentValue;
                         }
                     }

@@ -139,11 +139,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 if (sender is EnumComboBox cb)
                 {
+                    if (!IsWellbiaXignCodeConfirmed(this, cb, ev)) return;
                     if (ev.AddedItems != null && ev.AddedItems.Count != 0)
                     {
                         if (ev.AddedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection && dom_AntiCheatProgramSelection.Value != defaultValue_AntiCheatProgramSelection)
                         {
                             cb.SelectionChanged -= _SelectionChangedEventHandler;
+                            cb.SelectionChanged += (s, e) => IsWellbiaXignCodeConfirmed(this, (EnumComboBox)s, e);
                             _SelectionChangedEventHandler = null;
                             dict_AntiCheatProgramSelection.Remove(defaultValue_AntiCheatProgramSelection);
                             if (cb.ItemsSource is ICollectionView cvs)
@@ -154,14 +156,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             });
-            if (IsWellbiaXignCodeAllowed())
-            {
-                this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
-            }
-            else
-            {
-                this.combobox_anti_cheat_select.SelectionChanged += this.Combobox_anti_cheat_select_SelectionChanged;
-            }
+            this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
             if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection)
                || dict_AntiCheatProgramSelection.TryGetValue(defaultValue_AntiCheatProgramSelection, out dom_AntiCheatProgramSelection))
             {
@@ -173,15 +168,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsWellbiaXignCodeAllowed() => (TimeZoneHelper.ConvertTimeToLocalJST(DateTime.Now) >= TimeZoneHelper.CreateJstTime(2023, 11, 8, 11, 0, 0));
-
-        internal static bool IsWellbiaXignCodeSelected(object sender, SelectionChangedEventArgs e)
+        internal static bool IsWellbiaXignCodeConfirmed(Window window, EnumComboBox combobox_anti_cheat_select, SelectionChangedEventArgs e)
         {
-            if (sender is EnumComboBox combobox_anti_cheat_select
-                && combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection
+            if (combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection
                 && dom_AntiCheatProgramSelection.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode
-                && !IsWellbiaXignCodeAllowed())
+                && (Prompt_Generic.Show(window, "Are you sure you want to use the new anti-cheat?" + Environment.NewLine + "This launcher only partially supports the new anti-cheat.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes))
             {
                 if (e.RemovedItems != null && e.RemovedItems.Count != 0)
                 {
@@ -204,19 +195,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         combobox_anti_cheat_select.SelectedIndex = 0;
                     }
                 }
-                return true;
+                return false;
             }
             else
             {
-                return false;
-            }
-        }
-
-        private void Combobox_anti_cheat_select_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (IsWellbiaXignCodeSelected(sender, e))
-            {
-                Prompt_Generic.Show(this, "You should only select Wellbia XignCode anti-cheat only after SEGA publicly launched it." + Environment.NewLine + "The XignCode update will be launched on 8th November 2023 (JST time).", "Not supported yet", MessageBoxButton.OK, MessageBoxImage.Information);
+                return true;
             }
         }
 

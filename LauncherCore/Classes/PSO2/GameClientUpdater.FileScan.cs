@@ -301,7 +301,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             static bool IsHashTableFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath, StringComparison.OrdinalIgnoreCase) || MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_HashTableRelativePath.AsSpan(11), StringComparison.OrdinalIgnoreCase));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool IsDlssBinaryFile(PatchListItem item) => (MemoryExtensions.Equals(item.GetSpanFilenameWithoutAffix(), __Filename_DlssBinaryFileRelativePath, StringComparison.OrdinalIgnoreCase));
+            static bool IsDlssBinaryFile(PatchListItem item)
+            {
+                var nameSpan = item.GetSpanFilenameWithoutAffix();
+                return (MemoryExtensions.Equals(nameSpan, __Filename_DlssBinaryFileRelativePath, StringComparison.OrdinalIgnoreCase)
+                    || (MemoryExtensions.Equals(nameSpan.Slice(0, 3), "sub", StringComparison.OrdinalIgnoreCase)
+                       && (nameSpan[3] == Path.DirectorySeparatorChar || nameSpan[3] == Path.AltDirectorySeparatorChar)
+                       && MemoryExtensions.Equals(nameSpan.Slice(4), __Filename_DlssBinaryFileRelativePath, StringComparison.OrdinalIgnoreCase)));
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void AddItemToQueue(BlockingCollection<DownloadItem> queue, InnerDownloadQueueAddCallback callback, PatchListItem patchItem, string localFilePath, string dir_pso2bin, string? dir_classic_data, CancellationToken cancellationToken)
