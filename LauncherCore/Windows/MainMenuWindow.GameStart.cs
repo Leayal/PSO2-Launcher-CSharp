@@ -644,7 +644,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                                     // For now, only adjust the "DataDownload" property in the config file.
                                     // Leave FirstDownloadCheck alone.
-                                    if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode))
+                                    if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, downloadMode, this.config_main.AntiCheatProgramSelection))
                                     {
                                         conf.SaveAs(path_pso2conf);
                                     }

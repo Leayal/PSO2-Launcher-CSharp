@@ -11,6 +11,8 @@ using System.Windows.Input;
 using System.Windows.Documents;
 using System.ComponentModel;
 using System.Windows.Data;
+using Leayal.PSO2.UserConfig;
+using System.IO;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -207,6 +209,27 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 conf.AntiCheatProgramSelection = dom_AntiCheatProgramSelection.Value;
 
             conf.Save();
+
+            var path_pso2conf = Path.GetFullPath(Path.Combine("SEGA", "PHANTASYSTARONLINE2", "user.pso2"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            UserConfig pso2officialconf;
+            if (!File.Exists(path_pso2conf))
+            {
+                var folder = Path.GetDirectoryName(path_pso2conf);
+                if (folder != null)
+                {
+                    Directory.CreateDirectory(folder);
+                }
+                pso2officialconf = new UserConfig("Ini");
+            }
+            else
+            {
+                pso2officialconf = UserConfig.FromFile(path_pso2conf);
+            }
+
+            if (PSO2DeploymentWindow.AdjustPSO2UserConfig(pso2officialconf, conf.DownloadSelection, conf.AntiCheatProgramSelection))
+            {
+                pso2officialconf.SaveAs(path_pso2conf);
+            }
 
             this.CustomDialogResult = true;
             this.Close();

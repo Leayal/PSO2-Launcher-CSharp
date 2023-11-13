@@ -17,6 +17,7 @@ using Leayal.Shared.Windows;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using Leayal.PSO2Launcher.Core.Classes;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -692,18 +693,19 @@ namespace Leayal.PSO2Launcher.Core.Windows
             }
         }
 
-        /// <summary>Adjust the configuration file according to <paramref name="gameClientSelection"/> value.</summary>
+        /// <summary>Adjust the configuration file according to launcher's configuration from <paramref name="gameClientSelection"/>.</summary>
         /// <param name="conf"></param>
         /// <param name="gameClientSelection"></param>
         /// <returns>True if the file has changed. False when the value is already same and no modification happened.</returns>
-        internal static bool AdjustPSO2UserConfig(PSO2.UserConfig.UserConfig conf, GameClientSelection gameClientSelection)
+        internal static bool AdjustPSO2UserConfig(PSO2.UserConfig.UserConfig conf, GameClientSelection gameClientSelection, GameStartWithAntiCheatProgram? antiCheatProgramSelection = null)
         {
+            bool hasChanges = false;
             if (gameClientSelection == GameClientSelection.NGS_AND_CLASSIC || gameClientSelection == GameClientSelection.Classic_Only)
             {
                 if (!conf.TryGetProperty("DataDownload", out var val_DataDownload) || val_DataDownload is not int num || num != 1)
                 {
                     conf["DataDownload"] = 1; // NGS and classic
-                    return true;
+                    hasChanges = true;
                 }
             }
             else
@@ -715,10 +717,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 if (!conf.TryGetProperty("DataDownload", out var val_DataDownload) || val_DataDownload is not int num || num != 0)
                 {
                     conf["DataDownload"] = 0; // NGS Only
-                    return true;
+                    hasChanges= true;
                 }
             }
-            return false;
+
+            if (antiCheatProgramSelection.HasValue)
+            {
+                if (antiCheatProgramSelection.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode)
+                {
+                    if (conf.TryGetProperty("Config", out var val_Config) && val_Config is PSO2.UserConfig.ConfigToken configToken_Config
+                        && configToken_Config.TryGetProperty("CompatibleUse", out var val_CompatibleUse)
+                        && val_CompatibleUse is bool b && b)
+                    {
+                        configToken_Config["CompatibleUse"] = false;
+                        hasChanges = true;
+                    }
+                }
+                else
+                {
+                    if (!(conf.TryGetProperty("Config", out var val_Config) && val_Config is PSO2.UserConfig.ConfigToken configToken_Config)
+                       || !configToken_Config.TryGetProperty("CompatibleUse", out var val_CompatibleUse)
+                       || val_CompatibleUse is not bool b || !b)
+                    {
+                        conf.CreateOrSelect("Config")["CompatibleUse"] = true;
+                        hasChanges = true;
+                    }
+                }
+            }
+            
+            return hasChanges;
         }
 
         private void WarnUserAboutPSO2UserConfigFailureAfterDeployment()

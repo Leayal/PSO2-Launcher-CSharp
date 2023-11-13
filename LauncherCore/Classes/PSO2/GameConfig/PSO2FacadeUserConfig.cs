@@ -19,6 +19,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
             this.conf = conf;
         }
 
+        // private static string BoolToString(in bool value) => (value ? "true" : "false");
+
         #region | Screen |
         [Category("Screen"), EnumDisplayName("Default display monitor")]
         public MonitorCountWrapper DisplayNo
@@ -522,6 +524,27 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
                 this.conf.CreateOrSelect("ConfigR")["ConfigId_103"] = (long)value;
             }
         }
+        #endregion
+
+        #region "| Others |"
+        /*
+        [Category("Other"), EnumDisplayName("Use GameGuard anti-cheat for compatibility")]
+        public bool CompatibleAntiCheat
+        {
+            get
+            {
+                if (this.conf["Config"] is ConfigToken token && token["CompatibleUse"] is bool b)
+                {
+                    return b;
+                }
+                return false;
+            }
+            set
+            {
+                this.conf.CreateOrSelect("Config")["CompatibleUse"] = value;
+            }
+        }
+        */
         #endregion
 
         public void SaveAs(string filepath) => this.conf.SaveAs(filepath);

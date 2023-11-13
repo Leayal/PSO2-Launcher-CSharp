@@ -75,8 +75,8 @@ namespace Leayal.PSO2.UserConfig
         protected virtual void WriteValueTo(StringBuilder sb, int depth)
         {
             const string s_equal = " = ";
-            sb.Append('{');
-            sb.AppendLine();
+            const char /* string */ newLine = '\n' /* "\r\n" */;
+            sb.Append('{').Append(newLine);
             object val;
             foreach (var item in this.values)
             {
@@ -90,7 +90,7 @@ namespace Leayal.PSO2.UserConfig
                             PrintIndent(sb, depth);
                             sb.Append(item.Key).Append(s_equal);
                             token.WriteValueTo(sb, depth + 1);
-                            sb.Append(',').AppendLine();
+                            sb.Append(',').Append(newLine);
                         }
                     }
                     else
@@ -100,7 +100,7 @@ namespace Leayal.PSO2.UserConfig
                         {
                             // Hardcode for boolean. This is better than trying to write val.ToString().ToLower() as it will alloc another 2 strings.
                             sb.Append(item.Key).Append(s_equal);
-                            (b ? sb.Append("true,") : sb.Append("false,")).AppendLine();
+                            (b ? sb.Append("true,") : sb.Append("false,")).Append(newLine);
                             /*
                             if (b)
                             {
@@ -110,38 +110,38 @@ namespace Leayal.PSO2.UserConfig
                             {
                                 sb.Append($"false,");
                             }
-                            sb.AppendLine();
+                            sb.Append(newLine);
                             */
                         }
                         else if (val is double d)
                         {
                             sb.Append(item.Key).Append(s_equal);
-                            (IsLong(in d) ? sb.Append(Convert.ToInt64(d)) : sb.Append(d)).Append(',').AppendLine();
+                            (IsLong(in d) ? sb.Append(Convert.ToInt64(d)) : sb.Append(d)).Append(',').Append(newLine);
                             /*
                             if (IsLong(in d))
                             {
-                                sb.AppendLine($"{item.Key} = {Convert.ToInt64(d)},");
+                                sb.Append($"{item.Key} = {Convert.ToInt64(d)},").Append(newLine);
                             }
                             else
                             {
-                                sb.AppendLine($"{item.Key} = {d},");
+                                sb.Append($"{item.Key} = {d},").Append(newLine);
                             }
                             */
                         }
                         else if (val is string wstr)
                         {
-                            sb.Append(item.Key).Append(s_equal).Append('"').Append(wstr).AppendLine("\",");
-                            // sb.AppendLine($"{item.Key} = \"{wstr}\",");
+                            sb.Append(item.Key).Append(s_equal).Append('"').Append(wstr).Append("\",").Append(newLine);
+                            // sb.Append($"{item.Key} = \"{wstr}\",").Append(newLine);
                         }
                         else if (val is ReadOnlyMemory<char> c)
                         {
-                            sb.Append(item.Key).Append(s_equal).Append(c).Append(',').AppendLine();
-                            // sb.Append($"{item.Key} = ").Append(c).Append(',').AppendLine();
+                            sb.Append(item.Key).Append(s_equal).Append(c).Append(',').Append(newLine);
+                            // sb.Append($"{item.Key} = ").Append(c).Append(',').Append(newLine);
                         }
                         else
                         {
-                            sb.Append(item.Key).Append(s_equal).Append(val).Append(',').AppendLine();
-                            // sb.AppendLine($"{item.Key} = {val},");
+                            sb.Append(item.Key).Append(s_equal).Append(val).Append(',').Append(newLine);
+                            // sb.Append($"{item.Key} = {val},").Append(newLine);
                         }
                     }
                 }
@@ -199,17 +199,17 @@ namespace Leayal.PSO2.UserConfig
             {
                 if (obj.Length == 0) return 0;
                 var span = obj.Span;
-                int hashcode = span[0].GetHashCode();
                 if (obj.Length == 1)
                 {
-                    return hashcode;
+                    return span[0].GetHashCode();
                 }
 
-                for (int i = 1; i < span.Length; i++)
+                var hc = new HashCode();
+                for (int i = 0; i < span.Length; i++)
                 {
-                    hashcode ^= span[i].GetHashCode();
+                    hc.Add(span[i]);
                 }
-                return hashcode;
+                return hc.ToHashCode();
             }
         }
     }

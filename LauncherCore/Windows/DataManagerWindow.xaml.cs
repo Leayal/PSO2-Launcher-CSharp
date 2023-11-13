@@ -175,7 +175,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         {
             if (combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection
                 && dom_AntiCheatProgramSelection.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode
-                && (Prompt_Generic.Show(window, "Are you sure you want to use the new anti-cheat?" + Environment.NewLine + "This launcher only partially supports the new anti-cheat.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes))
+                && (Prompt_Generic.Show(window, "Are you sure you want to use the new anti-cheat?" + Environment.NewLine + "The new anti-cheat MAY cause issues such as game freeze/hang or performance-related issues.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes))
             {
                 if (e.RemovedItems != null && e.RemovedItems.Count != 0)
                 {
@@ -257,7 +257,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (File.Exists(path_pso2conf))
             {
                 conf = PSO2.UserConfig.UserConfig.FromFile(path_pso2conf);
-                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection))
+                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection, this._config.AntiCheatProgramSelection))
                 {
                     conf.SaveAs(path_pso2conf);
                 }
@@ -265,7 +265,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
             else
             {
                 conf = new PSO2.UserConfig.UserConfig("Ini");
-                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection))
+                if (PSO2DeploymentWindow.AdjustPSO2UserConfig(conf, gameClientSelection, this._config.AntiCheatProgramSelection))
                 {
                     var directory_pso2conf = Path.GetDirectoryName(path_pso2conf);
                     if (directory_pso2conf != null && !Directory.Exists(directory_pso2conf)) // Should be safe for symlink 

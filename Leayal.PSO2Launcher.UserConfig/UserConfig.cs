@@ -46,7 +46,8 @@ namespace Leayal.PSO2.UserConfig
             }
             using (var sw = new StreamWriter(filepath, false, Encoding.UTF8))
             {
-                sw.WriteLine(sb.ToString());
+                sw.Write(sb);
+                sw.Write('\n');
                 sw.Flush();
             }
         }
@@ -62,7 +63,7 @@ namespace Leayal.PSO2.UserConfig
 
         protected override void WriteValueTo(StringBuilder sb, int depth)
         {
-            sb.Append($"{this.Name} = ");
+            sb.Append(this.Name).Append(" = ");
             base.WriteValueTo(sb, 1);
         }
 
