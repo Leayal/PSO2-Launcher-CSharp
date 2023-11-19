@@ -3,20 +3,32 @@ cd /d %~dp0
 SET "DOTNET_CLI_TELEMETRY_OPTOUT=1"
 
 REM This file is now served as a fall-back whenever MS messed up the SDK again.
-REM This batch script will force download the SDK v6.0.100.
+REM This batch script will force download the SDK v8.0.100.
 REM call Tools\SetupEnv.bat
 
 SETLOCAL
-SET "PublishRootDir=docs\publish\v6"
+
+IF "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+ SET SHA1Tool=Tools\SHA1Maker-x64.exe
+) ELSE (
+ IF "%PROCESSOR_ARCHITECTURE%"=="x86" (
+  SET SHA1Tool=Tools\SHA1Maker-x86.exe
+ ) ELSE (
+  echo Not supported on this platform.
+  goto TO_RETURN
+ )
+)
+
+SET "PublishRootDir=docs\publish\v8"
 SET "MSBUILDDISABLENODEREUSE=1"
 if not exist %PublishRootDir% (
  mkdir "%PublishRootDir%"
 )
 
-IF EXIST "%~dp0Tools\sdk\6.0.100\dotnet.exe" (
+IF EXIST "%~dp0Tools\sdk\8.0.100\dotnet.exe" (
  REM Use the specific SDK.
- SET "PATH=%~dp0Tools\sdk\6.0.100;%PATH%"
- REM I need to targeting this SDK because there's no way to directly target the specific 6.0.0 runtime (so that all assembly files are compatible with all .NET6 versions).
+ SET "PATH=%~dp0Tools\sdk\8.0.100;%PATH%"
+ REM I need to targeting this SDK because there's no way to directly target the specific 8.0.0 runtime (so that all assembly files are compatible with all .NET8 versions).
 )
 
 dotnet build -c Release -o "Build\LauncherCore-natives" "LauncherCore\LauncherCore.csproj"
@@ -54,17 +66,14 @@ REM del /F /Q "%PublishRootDir%\files\WebView2Loader.dll"
 del /F /Q "%PublishRootDir%\files\PSO2LeaLauncher.dll"
 
 IF "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
- SET SHA1Tool=Tools\SHA1Maker-x64.exe
  echo Using x64 SHA1Maker.
 ) ELSE (
  IF "%PROCESSOR_ARCHITECTURE%"=="x86" (
-  SET SHA1Tool=Tools\SHA1Maker-x86.exe
   echo Using x86 SHA1Maker.
- ) ELSE (
-  SET SHA1Tool=Tools\SHA1Maker.exe
-  echo Using framework-dependent SHA1Maker.
  )
 )
 
-%SHA1Tool% "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/"
+%SHA1Tool% "%PublishRootDir%" "%PublishRootDir%\update.json" "https://leayal.github.io/PSO2-Launcher-CSharp/publish/v8/"
+
+:TO_RETURN
 ENDLOCAL

@@ -1,42 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Leayal.PSO2Launcher</RootNamespace>
     <AssemblyName>PSO2LeaLauncher</AssemblyName>
     <StartupObject />
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <ApplicationIcon>Resources\1.ico</ApplicationIcon>
-    <Version>3.0.0</Version>
-	<FileVersion>3.2.11</FileVersion>
+    <Version>4.0.0</Version>
+    <FileVersion>4.0.0</FileVersion>
     <UseWPF>True</UseWPF>
     <Nullable>enable</Nullable>
     <Authors>Dramiel Leayal</Authors>
     <Description>PSO2 Launcher for PSO2: NGS JP</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<SelfContained>false</SelfContained>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath></OutputPath>
+    <OutputPath />
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
     <OutputPath />
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebuggerSupport>false</DebuggerSupport>
-	<StartupHookSupport>false</StartupHookSupport>
-	<TieredPGO>true</TieredPGO>
+    <StartupHookSupport>false</StartupHookSupport>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; ( copy /B /L /Y &quot;$(OutDir)\*&quot; &quot;$(SolutionDir)Test\&quot; )" />
   </Target>
-
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -44,12 +38,10 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
 </Project>

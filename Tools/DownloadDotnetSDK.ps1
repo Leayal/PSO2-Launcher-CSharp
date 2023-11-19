@@ -1,5 +1,5 @@
 [string]$myrootpath = Split-Path $MyInvocation.MyCommand.Path -Parent
-[string]$SDKDir = [System.IO.Path]::Combine($myrootpath, "sdk\6.0.100")
+[string]$SDKDir = [System.IO.Path]::Combine($myrootpath, "sdk\8.0.100")
 
 #Write-Host itself does the same but...I'm not entirely sure.
 #Hence, the existence of this func.
@@ -18,20 +18,22 @@ function Print-OneLine {
 function Download-SDK-Zip {
     [OutputType([string])]
     param ([string]$OutDir)
-    Print-OneLine (".NET6 SDK doesn't exist locally at: ",$SDKDir)
+    Print-OneLine (".NET8 SDK doesn't exist locally at: ",$SDKDir)
     Write-Host "Begin to download the SDK."
     if ([Environment]::Is64BitOperatingSystem) {
-        [string]$OutFile = [System.IO.Path]::Combine($OutDir, "dotnet-sdk-6.0.100-win-x64.zip")
-        Print-OneLine ("Downloading .NET6 SDK archive (x64) to: ",$OutFile)
-        Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/ca65b248-9750-4c2d-89e6-ef27073d5e95/05c682ca5498bfabc95985a4c72ac635/dotnet-sdk-6.0.100-win-x64.zip
+        [string]$OutFile = [System.IO.Path]::Combine($OutDir, "dotnet-sdk-8.0.100-win-x64.zip")
+        Print-OneLine ("Downloading .NET8 SDK archive (x64) to: ",$OutFile)
+        Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/2b2d6133-c4f9-46dd-9ab6-86443a7f5783/340054e2ac7de2bff9eea73ec9d4995a/dotnet-sdk-8.0.100-win-x64.zip
+
 " -OutFile $OutFile -UseBasicParsing
-        return "dotnet-sdk-6.0.100-win-x64.zip"
+        return "dotnet-sdk-8.0.100-win-x64.zip"
     } else {
-        [string]$OutFile = [System.IO.Path]::Combine($OutDir, "dotnet-sdk-6.0.100-win-x86.zip")
-        Print-OneLine ("Downloading .NET6 SDK archive (x86) to: ",$OutFile)
-        Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/c91c6641-580a-4b7d-a89a-5ed0e15bc318/f35ebceebbb06374734d1c238036e504/dotnet-sdk-6.0.100-win-x86.zip
+        [string]$OutFile = [System.IO.Path]::Combine($OutDir, "dotnet-sdk-8.0.100-win-x86.zip")
+        Print-OneLine ("Downloading .NET8 SDK archive (x86) to: ",$OutFile)
+        Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/210579cb-610d-4040-9052-e024a42bcd9c/e260700ae965a0f7d3bf38e8d8f0778c/dotnet-sdk-8.0.100-win-x86.zip
+
 " -OutFile $OutFile -UseBasicParsing
-        return "dotnet-sdk-6.0.100-win-x86.zip"
+        return "dotnet-sdk-8.0.100-win-x86.zip"
     }
     
 }
@@ -46,14 +48,14 @@ if(![System.IO.File]::Exists([System.IO.Path]::Combine($SDKDir, "dotnet.exe"))) 
         Expand-Archive -Path $localpath -DestinationPath $SDKDir
     } else {
         # Polyfill it with .NET's function
-        Add-Type -assembly “System.IO.Compression.FileSystem”
+        Add-Type -assembly “System.IO.Compression.FileSystem E
         [System.IO.Compression.ZipFile]::ExtractToDirectory($localpath, $SDKDir)
     }
     Remove-Item $localpath -Force -Confirm:$false
     
-    Print-OneLine (".NET6 SDK has been downloaded to local directory at: ",$SDKDir)
+    Print-OneLine (".NET8 SDK has been downloaded to local directory at: ",$SDKDir)
     Write-Output $SDKDir
 } else {
-    Print-OneLine (".NET6 SDK found locally at: ",$SDKDir)
+    Print-OneLine (".NET8 SDK found locally at: ",$SDKDir)
     Write-Output $SDKDir
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         {
             private readonly PatchListBase parent;
             private readonly TextReader tr;
-            private PatchListItem currentItem;
+            private PatchListItem currentItem = PatchListItem.Empty;
 
             public PatchListItemWalker(PatchListDeferred parent)
             {
@@ -43,13 +44,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
             public PatchListItem Current => this.currentItem;
 
-            object IEnumerator.Current => this.currentItem;
+            object? IEnumerator.Current => this.currentItem;
 
             public void Dispose()
             {
-                this.currentItem = null;
+                this.currentItem = PatchListItem.Empty;
             }
 
+            [MemberNotNullWhen(true, nameof(currentItem))]
             public bool MoveNext()
             {
                 var currentLine = this.tr.ReadLine();
@@ -78,7 +80,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             throw new NotSupportedException();
         }
 
-        protected override void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy)
+        protected override void CopyTo(IDictionary<string, PatchListItem> items, bool clearBeforeCopy)
         {
             if (clearBeforeCopy)
             {

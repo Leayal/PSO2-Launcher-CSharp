@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <ApplicationIcon />
     <StartupObject />
@@ -12,20 +11,16 @@
     <Authors>Dramiel Leayal</Authors>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug HTTP Requests|AnyCPU'">
     <DefineConstants>$(DefineConstants);DEBUGHTTPREQUEST</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <NoWarn>1701;1702</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Classes\PersistentObjectCacheManager.cs" />
     <Compile Remove="Classes\SQLiteAsync.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="Classes\BackgroundSelfUpdateChecker.cs~RFf5c6b3.TMP" />
     <None Remove="Resources\empty_d4455ebc2bef618f29106da7692ebc1a" />
@@ -36,7 +31,6 @@
     <None Remove="Resources\_bgimg_dark.png" />
     <None Remove="Resources\_bgimg_light.png" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="Resources\empty_d4455ebc2bef618f29106da7692ebc1a" />
     <EmbeddedResource Include="Resources\ico-item-AlphaReactor.png" />
@@ -45,13 +39,11 @@
     <EmbeddedResource Include="Resources\_bgimg_dark.png" />
     <EmbeddedResource Include="Resources\_bgimg_light.png" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />
     <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="4.11.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\LauncherRSS\LauncherRSS.csproj" />
     <ProjectReference Include="..\LauncherToolbox.Windows\LauncherToolbox.Windows.csproj" />
@@ -72,7 +64,6 @@
       <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Update="Windows\LauncherCompatibilityWindow.xaml.cs">
       <SubType>Code</SubType>
@@ -87,7 +78,6 @@
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <Page Update="Windows\LauncherCompatibilityWindow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
@@ -106,10 +96,7 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
-  
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="setlocal EnableDelayedExpansion&#xD;&#xA;&#xD;&#xA;SET &quot;localvar_buildconfigname=$(ConfigurationName)&quot;&#xD;&#xA;SET &quot;localvar_solutiondir=$(SolutionDir)&quot;&#xD;&#xA;SET &quot;localvar_targetpath=$(TargetPath)&quot;&#xD;&#xA;SET &quot;localvar_outdir=$(OutDir)&quot;&#xD;&#xA;&#xD;&#xA;if &quot;%25localvar_buildconfigname:~0,5%25&quot;==&quot;Debug&quot; ( &#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!*.dll&quot; &quot;!localvar_solutiondir!Test\bin\&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!*.pdb&quot; &quot;!localvar_solutiondir!Test\bin\&quot;&#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin\native-x64&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!runtimes\win-x64\native\*&quot; &quot;!localvar_solutiondir!Test\bin\native-x64\&quot;&#xD;&#xA;mkdir &quot;!localvar_solutiondir!Test\bin\native-x86&quot;&#xD;&#xA;copy /B /L /Y &quot;!localvar_outdir!runtimes\win-x86\native\*&quot; &quot;!localvar_solutiondir!Test\bin\native-x86\&quot;&#xD;&#xA;del /F /Q &quot;!localvar_solutiondir!Test\bin\Microsoft.Web.WebView2.Wpf.dll&quot;&#xD;&#xA;)&#xD;&#xA;endlocal" />
   </Target>
-
 </Project>

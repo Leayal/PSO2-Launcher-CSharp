@@ -100,7 +100,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private void CreateNewLineInConsoleLog<TArg>(string? sender, ConsoleLogWriter<TArg> callback, TArg arg, bool newline = true, bool followLastLine = true)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             if (this.ConsoleLog.CheckAccess())
             {

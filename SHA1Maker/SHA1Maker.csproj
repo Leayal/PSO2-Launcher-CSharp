@@ -1,14 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <Configurations>Debug;Release</Configurations>
     <Authors>Dramiel Leayal</Authors>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
-
-  <PropertyGroup Condition="$(TargetFramework)=='net7.0'">
-	<PublishAot>true</PublishAot>
-  </PropertyGroup>
-
 </Project>

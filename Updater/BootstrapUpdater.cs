@@ -82,50 +82,34 @@ namespace Leayal.PSO2Launcher.Updater
 
             StringBuilder? sb = null;
 
-            /*
-            // If we're compiling targeting .NET 6 and if .NET Desktop Runtime is lower than 6.0.2.
-#if NET6_0
+            // If we're compiling targeting .NET Desktop Runtime older than 8.
+#if !NET8_0_OR_GREATER
             Version runtimeVersion = Environment.Version,
-                recommendedVersion = new Version(6, 0, 2);
+                recommendedVersion = new Version(8, 0, 0);
 
-            if (runtimeVersion <= recommendedVersion)
+            if (runtimeVersion < recommendedVersion)
             {
                 // Upgrade your runtime is recommended. For security reasons.
                 sb = new StringBuilder(768);
                 sb.Append("You're still using .NET Desktop Runtime v").Append(runtimeVersion).Append('.')
                     .AppendLine()
-                    .Append("It is recommended to update .NET6 Desktop Runtime to the latest version or any versions which are newer than ").Append(recommendedVersion).Append('.')
+                    .Append("It is recommended to redownload the launcher bootstrap to use .NET8 Desktop Runtime (v").Append(recommendedVersion).Append(" or newer).")
                     .AppendLine()
                     .AppendLine()
-                    .Append("The versions before ").Append(recommendedVersion).Append(" has security issues and should be resolved ASAP by updating the runtime.")
+                    .Append("The launcher has abandoned supporting any runtimes before version ").Append(recommendedVersion).Append('.')
                     .AppendLine()
-                    .Append("The launcher will soon abandon supporting any runtimes before version ").Append(recommendedVersion).Append('.')
+                    .Append("While you can still use the launcher without updating, you may miss out future bugfixes and improvements from launcher development.")
                     .AppendLine()
-                    .Append("When this happens, it is impossible to run the updated launcher on abandoned runtimes. However, all old launcher versions, which were working on abandoned runtimes, still continue to work as-is.");
-
-                var isStandalone = MemoryExtensions.Equals(Path.TrimEndingDirectorySeparator(RuntimeEnvironment.GetRuntimeDirectory().AsSpan()), Path.GetFullPath("dotnet", RuntimeValues.RootDirectory).AsSpan(), StringComparison.OrdinalIgnoreCase);
-
-                sb.AppendLine()
-                    .AppendLine();
-                if (isStandalone)
-                {
-                    sb.AppendLine("Please go to the launcher's release page on Github and download the new standalone package to update the bundled runtime.");
-                }
-                else
-                {
-                    sb.AppendLine("Please go to microsoft .NET download page and download the latest |.NET Desktop Runtime| to install.")
-                        .AppendLine("You DO NOT need the SDKs if you just want to run .NET apps.");
-                }
-                sb.AppendLine()
+                    .AppendLine()
+                    .AppendLine("Please go to the launcher's release page on Github and download the latest release package to update the launcher bootstrap which will target the newer .NET Desktop Runtime v8.")
+                    .AppendLine()
                     .Append("[Yes: Open download page and exit launcher; No: Continue using launcher; Cancel: Exit launcher]");
 
                 var informResult = ShowMsgBox(this.bootstrapForm, sb.ToString(), "Critical Information", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation);
                 switch (informResult)
                 {
                     case DialogResult.Yes:
-                        var url = new Uri(isStandalone ?
-                            "https://leayal.github.io/PSO2-Launcher-CSharp/?page=downloads"
-                            : "https://dotnet.microsoft.com/en-us/download/dotnet/6.0");
+                        var url = new Uri("https://leayal.github.io/PSO2-Launcher-CSharp/?page=downloads");
                         using (var proc = Process.Start(Path.GetFullPath("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Windows)), $"\"{url.AbsoluteUri}\""))
                         {
                             proc?.WaitForExit(1000);
@@ -138,7 +122,6 @@ namespace Leayal.PSO2Launcher.Updater
                 }
             }
 #endif
-            */
 
             // In case the user uses `framework-dependent` type which follows the framework that is available on non-AMD64 OS.
             this._osArch = RuntimeInformation.OSArchitecture;
@@ -239,9 +222,9 @@ namespace Leayal.PSO2Launcher.Updater
                 try
                 {
 #if DEBUG
-                    jsonData = File.ReadAllText(Path.Combine(rootDirectory, @"..\docs\publish\v6\update.json"));
+                    jsonData = File.ReadAllText(Path.Combine(rootDirectory, @"..\docs\publish\v8\update.json"));
 #else
-                    jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json");
+                    jsonData = await this.wc.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v8/update.json");
 #endif
                 }
                 catch

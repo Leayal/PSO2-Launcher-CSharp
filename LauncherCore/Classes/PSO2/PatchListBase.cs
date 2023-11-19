@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
@@ -78,7 +77,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
         public abstract bool TryGetByFilenameExact(string filename, [NotNullWhen(true)] out PatchListItem? value);
 
-        protected abstract void CopyTo(Dictionary<string, PatchListItem> items, bool clearBeforeCopy);
+        protected abstract void CopyTo(IDictionary<string, PatchListItem> items, bool clearBeforeCopy);
 
         /// <summary>Merge all the patchlists into one and return the merged patchlist.</summary>
         /// <returns>Return a patchlist which has all the items from given <paramref name="patchlists"/>.</returns>

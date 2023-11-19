@@ -17,10 +17,9 @@ if not exist %PublishRootDir% (
  mkdir "%PublishRootDir%"
 )
 
-IF EXIST "%~dp0Tools\sdk\6.0.100\dotnet.exe" (
+IF EXIST "%~dp0Tools\sdk\8.0.100\dotnet.exe" (
  REM Use the specific SDK.
- SET "PATH=%PATH%;%~dp0Tools\sdk\6.0.100"
- REM I need to targeting this SDK because there's no way to directly target the specific 6.0.0 runtime (so that all assembly files are compatible with all .NET6 versions).
+ SET "PATH=%PATH%;%~dp0Tools\sdk\8.0.100"
 )
 
 IF EXIST "dist-prod" (

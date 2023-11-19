@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>Leayal.PSO2Launcher.RSS</RootNamespace>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <Authors>Dramiel Leayal</Authors>
