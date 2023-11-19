@@ -32,6 +32,9 @@
     <None Remove="Resources\_bgimg_light.png" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Updater\SharedCode.cs" Link="SharedCode.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Resources\empty_d4455ebc2bef618f29106da7692ebc1a" />
     <EmbeddedResource Include="Resources\ico-item-AlphaReactor.png" />
     <EmbeddedResource Include="Resources\SyntaxHighlightRuleDarkTheme.xml" />

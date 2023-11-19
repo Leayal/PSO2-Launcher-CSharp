@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Collections.Frozen;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
@@ -36,9 +37,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        private readonly IReadOnlyDictionary<string, string> files;
+        private readonly FrozenDictionary<string, string> files;
 
-        public BackgroundSelfUpdateChecker(in CancellationToken cancellationToken, HttpClient client, Dictionary<string, string> filelist)
+        public BackgroundSelfUpdateChecker(in CancellationToken cancellationToken, HttpClient client, FrozenDictionary<string, string> filelist)
         {
             this.appExit = cancellationToken;
             this.files = filelist;
@@ -89,7 +90,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
 
         private async Task<IReadOnlyDictionary<string, string>> GetFileList()
         {
-            var data = await this.webclient.GetStringAsync("https://leayal.github.io/PSO2-Launcher-CSharp/publish/v6/update.json").ConfigureAwait(false);
+            var data = await this.webclient.GetStringAsync(Updater.SharedCode.LauncherUpdateManifest).ConfigureAwait(false);
             var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             using (var document = JsonDocument.Parse(data))

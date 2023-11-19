@@ -25,6 +25,7 @@ using Leayal.PSO2Launcher.Core.Classes.AvalonEdit;
 using Leayal.Shared;
 using System.Windows.Input;
 using System.Runtime.CompilerServices;
+using System.Collections.Frozen;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -253,8 +254,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 AddToDictionary(dictionary, Path.Combine(binDir, "native-x86"), removelen);
             }
 
-            dictionary.TrimExcess();
-            var selfupdatecheck = new BackgroundSelfUpdateChecker(this.cancelAllOperation.Token, this.webclient, dictionary);
+            // dictionary.TrimExcess();
+            var selfupdatecheck = new BackgroundSelfUpdateChecker(this.cancelAllOperation.Token, this.webclient, dictionary.Count == 0 ? FrozenDictionary<string, string>.Empty : dictionary.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase));
             selfupdatecheck.UpdateFound += this.OnSelfUpdateFound;
             return selfupdatecheck;
         }

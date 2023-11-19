@@ -1,5 +1,4 @@
 using Leayal.SharedInterfaces;
-using Microsoft.Win32.SafeHandles;
 using Leayal.SharedInterfaces.Communication;
 using System;
 using System.Threading;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Principal;
 
 namespace Leayal.PSO2Launcher.Core
 {
