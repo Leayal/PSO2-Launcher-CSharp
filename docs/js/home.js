@@ -1,11 +1,7 @@
-import { Octokit } from "https://cdn.skypack.dev/@octokit/rest";
+import { Octokit } from "https://esm.sh/@octokit/rest";
 
 (function (w, d) {
-    DarkReader.auto({
-        brightness: 100,
-        contrast: 90,
-        sepia: 10
-    });
+    DarkReader.auto(true);
 
     const targetRepo = {
         owner: "Leayal",

@@ -1,6 +1,6 @@
 # PSO2-Launcher-CSharp
 
-An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET6).
+An alternative game launcher for Phantasy Star Online 2: New Genesis (JP) written in C# (.NET8).
 
 The launcher only targets PSO2 Japan. It may not work for other regions without modifications.
 
@@ -91,7 +91,7 @@ This project is just a hobby one.
 
 # Development
 
-As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET desktop development` bundle. Specifically, the launcher was written with `C# 9.0` of `.NET6`.
+As of writing this `README.md`, I am using: `Visual Studio 2022` (stable channel) with `.NET desktop development` bundle. Specifically, the launcher was written with `C# 10.0`.
 
 - Any IDEs supporting `.NET6 SDK` development should be usable to develop or compile this launcher.
 
