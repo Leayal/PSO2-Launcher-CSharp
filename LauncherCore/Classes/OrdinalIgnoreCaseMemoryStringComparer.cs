@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class OrdinalIgnoreCaseMemoryStringComparer : IEqualityComparer<ReadOnlyMemory<char>>
+    sealed class OrdinalIgnoreCaseMemoryStringComparer : IEqualityComparer<ReadOnlyMemory<char>>
     {
         public readonly static OrdinalIgnoreCaseMemoryStringComparer Default = new OrdinalIgnoreCaseMemoryStringComparer();
 

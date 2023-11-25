@@ -44,7 +44,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("UpdateChecks", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                       new string(mem.Span)
+                       : val.GetValue<string>();
                 }
                 return string.Empty;
             }
@@ -57,7 +59,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("PSO2JPRemoteVersion", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                       new string(mem.Span)
+                       : val.GetValue<string>();
                 }
                 return string.Empty;
             }
@@ -70,7 +74,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("PSO2JPBinFolder", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                       new string(mem.Span)
+                       : val.GetValue<string>();
                 }
                 return string.Empty;
             }

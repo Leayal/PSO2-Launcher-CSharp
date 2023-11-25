@@ -22,7 +22,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_bin", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                       new string(mem.Span)
+                       : val.GetValue<string>();
                 }
                 return string.Empty;
             }
@@ -36,7 +38,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_data_reboot", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                     return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                        new string(mem.Span)
+                        : val.GetValue<string>();
                 }
                 return string.Empty;
             }
@@ -63,7 +67,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_data_classic", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                       new string(mem.Span)
+                       : val.GetValue<string>();
                 }
                 return string.Empty;
             }
@@ -89,7 +95,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloadselection", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<PSO2.GameClientSelection>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -113,7 +119,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_databackup_behavior", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<PSO2DataBackupBehavior>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -137,7 +143,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloaderprofile", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<PSO2.FileScanFlags>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -158,7 +164,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2classic_downloaderprofile", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<PSO2.FileScanFlags>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -182,7 +188,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloaderconcurrentcount", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    return (int)val.Value;
+                    return val.GetValue<int>();
                 }
                 return 0;
                 // return Math.Min(Environment.ProcessorCount, 4);
@@ -197,7 +203,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_filescanconcurrentlevel", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    return Math.Clamp((int)val.Value, 1, 16);
+                    return Math.Clamp(val.GetValue<int>(), 1, 16);
                 }
                 return 1;
             }
@@ -213,7 +219,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_downloaderthrottledelay", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    return (int)val.Value;
+                    return val.GetValue<int>();
                 }
                 return 0;
             }
@@ -341,7 +347,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_defaultgamestartstyle", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<GameStartStyle>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -362,7 +368,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_anticheatselect", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     ReadOnlySpan<GameStartWithAntiCheatProgram> vals = Enum.GetValues<GameStartWithAntiCheatProgram>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -384,7 +390,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2_defaultloginpasswordrememberstyle", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
                 {
-                    var num = (int)val.Value;
+                    var num = val.GetValue<int>();
                     var vals = Enum.GetValues<LoginPasswordRememberStyle>();
                     for (int i = 0; i < vals.Length; i++)
                     {
@@ -536,7 +542,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("launcher_checkselfupdates_intervalhour", out var val))
                 {
-                    if (val.ValueKind == System.Text.Json.JsonValueKind.Number && val.Value is int num)
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.Number && val.TryGetValue(out int num))
                     {
                         return Math.Clamp(num, 1, int.MaxValue);
                     }
@@ -605,7 +611,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("launcher_manualselectedthemeindex", out var val))
                 {
-                    if (val.ValueKind == System.Text.Json.JsonValueKind.Number && val.Value is int num)
+                    if (val.ValueKind == System.Text.Json.JsonValueKind.Number && val.TryGetValue(out int num))
                     {
                         return Math.Clamp(num, 0, 1);
                     }

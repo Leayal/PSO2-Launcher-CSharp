@@ -43,7 +43,9 @@ namespace Leayal.PSO2Launcher.Core.Classes
             {
                 if (this.TryGetRaw("pso2tweaker_bin", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
-                    return (string)val.Value;
+                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
+                        new string(mem.Span)
+                        : val.GetValue<string>();
                 }
                 return string.Empty;
             }

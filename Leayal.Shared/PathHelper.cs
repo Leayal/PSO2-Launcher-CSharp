@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Buffers;
 
 namespace Leayal.Shared
 {
     public static class PathHelper
     {
-        private static readonly char[] seperators = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
-                                       _invalid_filename = Path.GetInvalidFileNameChars(),
-                                       _invalid_path = Path.GetInvalidPathChars();
+        private static readonly char[] seperators = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+        private static readonly SearchValues<char> _invalid_filename = SearchValues.Create(Path.GetInvalidFileNameChars()),
+                                       _invalid_path = SearchValues.Create(Path.GetInvalidPathChars());
 
         public static IEnumerable<ReadOnlyMemory<char>> Walk(string path) => Walk(path.AsMemory());
 

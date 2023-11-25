@@ -18,7 +18,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 tab.ButtonInstallPSO2Clicked -= this.TabMainMenu_ButtonInstallPSO2_Clicked;
                 try
                 {
-                    var dialog = new PSO2DeploymentWindow(this.pso2HttpClient);
+                    var dialog = new PSO2DeploymentWindow(this.config_main, this.pso2HttpClient);
                     var installation_result = dialog.ShowCustomDialog(this);
                     if (installation_result.HasValue)
                     {

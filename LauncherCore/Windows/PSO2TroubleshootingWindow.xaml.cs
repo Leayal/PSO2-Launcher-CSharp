@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -167,7 +168,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
             var pso2bin = this._config.PSO2_BIN;
             if (!string.IsNullOrWhiteSpace(pso2bin) && Directory.Exists(pso2bin))
             {
-                var metadatas = await CheckGraphicMods(pso2bin);
+                var metadatas = await CheckGraphicMods(this._config.AntiCheatProgramSelection switch
+                {
+                     GameStartWithAntiCheatProgram.Wellbia_XignCode => Path.Join(pso2bin, "sub"),
+                     _ => pso2bin
+                });
 
                 if (metadatas != null && metadatas.Count != 0)
                 {
@@ -189,7 +194,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         internal static Task<ObservableCollection<CustomLibraryModMetadata>> CheckGraphicMods(string pso2bin)
         {
-            static void TryAddMetadata(List<CustomLibraryModMetadata> list, in string bin, in string filename)
+            static void TryAddMetadata(List<CustomLibraryModMetadata> list, string bin, string filename)
             {
                 var path = Path.Combine(bin, filename);
                 if (File.Exists(path))
@@ -198,9 +203,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            return Task.Run<ObservableCollection<CustomLibraryModMetadata>>(() =>
+            return Task.Factory.StartNew<ObservableCollection<CustomLibraryModMetadata>>((obj) =>
             {
-                var localvar_pso2bin = pso2bin;
+                var localvar_pso2bin = Unsafe.As<string>(obj);
 
                 var directXfiles = new string[] { "dxgi.dll", "d3d11.dll", "d3dx11.dll" };
                 var vcredistfiles = new string[] { "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vccorlib140.dll", "vcruntime140.dll", "msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vcruntime140_1.dll" };
@@ -208,16 +213,16 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 var result = new List<CustomLibraryModMetadata>(directXfiles.Length + vcredistfiles.Length);
                 foreach (var name in directXfiles)
                 {
-                    TryAddMetadata(result, in localvar_pso2bin, in name);
+                    TryAddMetadata(result, localvar_pso2bin, name);
                 }
 
                 foreach (var name in vcredistfiles)
                 {
-                    TryAddMetadata(result, in localvar_pso2bin, in name);
+                    TryAddMetadata(result, localvar_pso2bin, name);
                 }
 
                 return new ObservableCollection<CustomLibraryModMetadata>(result);
-            });
+            }, pso2bin);
         }
 
         internal static List<Paragraph> GetRtfOfRequirements(bool hasDirectX, VCRedistVersion vc14_x64, VCRedistVersion vc14_x86, bool show_advice_lastline, bool isInInstallation)

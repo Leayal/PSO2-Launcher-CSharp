@@ -114,21 +114,21 @@ namespace Leayal.Shared
         {
             public int GetHashCode([DisallowNull] KeyValuePair<ReadOnlyMemory<char>, ReadOnlyMemory<char>> obj)
             {
-                int hashcode = 0;
+                var hc = new HashCode();
                 var span = obj.Key.Span;
                 for (int i = 0; i < span.Length; i++)
                 {
                     ref readonly char c = ref span[i];
-                    hashcode ^= c.GetHashCode();
+                    hc.Add(c);
                 }
 
                 span = obj.Value.Span;
                 for (int i = 0; i < span.Length; i++)
                 {
                     ref readonly char c = ref span[i];
-                    hashcode ^= c.GetHashCode();
+                    hc.Add(c);
                 }
-                return hashcode;
+                return hc.ToHashCode();
             }
 
             bool IEqualityComparer<KeyValuePair<ReadOnlyMemory<char>, ReadOnlyMemory<char>>>.Equals(KeyValuePair<ReadOnlyMemory<char>, ReadOnlyMemory<char>> x, KeyValuePair<ReadOnlyMemory<char>, ReadOnlyMemory<char>> y)

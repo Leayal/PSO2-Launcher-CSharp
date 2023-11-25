@@ -152,9 +152,11 @@ namespace Leayal.PSO2Launcher.Core.Windows
         private CancellationTokenSource? cancelSrc;
         private bool closeformaftercancel;
         private readonly string directory_pso2conf, path_pso2conf;
+        private readonly ConfigurationFile launcherConf;
 
-        public PSO2DeploymentWindow(PSO2HttpClient webclient)
+        public PSO2DeploymentWindow(ConfigurationFile launcherConf, PSO2HttpClient webclient)
         {
+            this.launcherConf = launcherConf;
             this.closeformaftercancel = false;
             this.httpclient = webclient;
             this.gameSelection_list = EnumComboBox.EnumToDictionary<GameClientSelection>();
@@ -266,10 +268,14 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                             var deploymentsuccess = await Task.Run(async () => await this.BeginDeployProgress(dir_deployment, dir_pso2_bin, gameClientSelection, isinstallwebview2, canceltoken), canceltoken);
 
-                            // Useless if but it's safe
+                            // Useless if, but it's safe
                             if (Directory.Exists(dir_pso2_bin))
                             {
-                                var mods = await PSO2TroubleshootingWindow.CheckGraphicMods(dir_pso2_bin);
+                                var mods = await PSO2TroubleshootingWindow.CheckGraphicMods(this.launcherConf.AntiCheatProgramSelection switch
+                                {
+                                    GameStartWithAntiCheatProgram.Wellbia_XignCode => Path.Join(dir_pso2_bin, "sub"),
+                                    _ => dir_pso2_bin
+                                });
                                 if (mods != null && mods.Count != 0)
                                 {
                                     this.LibraryModMetadataPrensenter.MetadataSource = mods;
@@ -665,7 +671,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         if (File.Exists(this.path_pso2conf))
                         {
                             conf = PSO2.UserConfig.UserConfig.FromFile(this.path_pso2conf);
-                            if (AdjustPSO2UserConfig(conf, gameClientSelection))
+                            if (AdjustPSO2UserConfig(conf, gameClientSelection, this.launcherConf.AntiCheatProgramSelection))
                             {
                                 conf.SaveAs(this.path_pso2conf);
                             }
@@ -673,7 +679,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         else
                         {
                             conf = new PSO2.UserConfig.UserConfig("Ini");
-                            if (AdjustPSO2UserConfig(conf, gameClientSelection))
+                            if (AdjustPSO2UserConfig(conf, gameClientSelection, this.launcherConf.AntiCheatProgramSelection))
                             {
                                 if (!Directory.Exists(this.directory_pso2conf)) // Should be safe for symlink 
                                 {
