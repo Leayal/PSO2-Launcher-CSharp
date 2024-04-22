@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -12,7 +10,7 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     /// <summary>This class is sh**.</summary>
-    class PSO2LoginContent : HttpContent
+    sealed class PSO2LoginContent : HttpContent
     {
         private static readonly byte[] b_1 = Encoding.UTF8.GetBytes("{\"id\":\"");
         private static readonly byte[] b_2 = Encoding.UTF8.GetBytes("\",\"password\":\"");

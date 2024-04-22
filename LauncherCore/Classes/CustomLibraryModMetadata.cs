@@ -8,7 +8,7 @@ using Leayal.Shared.Windows;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class CustomLibraryModMetadata
+    sealed class CustomLibraryModMetadata
     {
         const string Text_Unknown = "<Unknown>", Text_NotGiven = "<None>", Text_Ignored = "<Ignored>";
 

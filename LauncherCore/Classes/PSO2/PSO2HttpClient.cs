@@ -294,13 +294,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             // Don't use 443, server doesn't listen that port.
 
             PatchRootInfo patchRootInfo;
-            if (rootInfo == null)
+            if (!rootInfo.HasValue)
             {
                 patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                patchRootInfo = rootInfo;
+                patchRootInfo = rootInfo.Value;
             }
             Exception? netEx = null;
             string? str_PatchURL;
@@ -496,13 +496,13 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         private async Task<PatchListMemory> InnerGetPatchListAsync(PatchRootInfo? rootInfo, string filelistFilename, bool? isReboot, CancellationToken cancellationToken)
         {
             PatchRootInfo patchRootInfo;
-            if (rootInfo == null)
+            if (!rootInfo.HasValue)
             {
                 patchRootInfo = await this.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                patchRootInfo = rootInfo;
+                patchRootInfo = rootInfo.Value;
             }
             Exception? netEx = null;
             string? str_PatchURL;

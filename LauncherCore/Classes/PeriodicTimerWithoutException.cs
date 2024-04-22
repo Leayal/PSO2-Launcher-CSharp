@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     /// <summary>Provides a periodic timer that enables waiting asynchronously for timer ticks.</summary>
-    class PeriodicTimerWithoutException : IDisposable
+    sealed class PeriodicTimerWithoutException : IDisposable
     {
         private readonly PeriodicTimer timer;
 

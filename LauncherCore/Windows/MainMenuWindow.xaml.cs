@@ -959,6 +959,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             window.ShowDialog();
         }
 
+        public void OpenModsOrganizerWindow()
+        {
+            var window = new ModsOrganizerWindow(this.config_main, this.pso2HttpClient, cancelAllOperation.Token);
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
         #region | WindowsCommandButtons |
         private async void WindowsCommandButtons_InvokeGCFromUI_Click(object sender, RoutedEventArgs e)
         {

@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class PSO2TweakerHashCache : SharedInterfaces.ConfigurationFileBase
+    sealed class PSO2TweakerHashCache : SharedInterfaces.ConfigurationFileBase
     {
         public readonly string CachePath;
 

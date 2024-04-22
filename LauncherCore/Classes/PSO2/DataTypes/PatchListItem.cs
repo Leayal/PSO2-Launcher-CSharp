@@ -6,7 +6,7 @@ using System.IO;
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes
 {
     // Another madness's gonna be here.
-    public class PatchListItem : IEquatable<PatchListItem>
+    public sealed class PatchListItem : IEquatable<PatchListItem>
     {
         internal static readonly PatchListItem Empty = new PatchListItem(null, ReadOnlyMemory<char>.Empty, ReadOnlyMemory<char>.Empty, 0, null);
 

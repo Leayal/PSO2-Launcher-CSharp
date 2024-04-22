@@ -10,6 +10,9 @@ using System.Security.Cryptography;
 using Leayal.Shared.Windows;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.Collections;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -273,8 +276,49 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
+        sealed class FileScanItemSyncArray
+        {
+            public static FileScanItemSyncArray From(FrozenSet<PatchListItem> source) => new FileScanItemSyncArray(source.Items);
+
+            public readonly ImmutableArray<PatchListItem> _array;
+            private int _index;
+
+            public FileScanItemSyncArray(in ImmutableArray<PatchListItem> source)
+            {
+                this._array = source;
+                this.Reset();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Next([NotNullWhen(true)] out PatchListItem? item)
+            {
+                int index = Interlocked.Increment(ref this._index),
+                    count = this._array.Length;
+
+                while (index < count)
+                {
+                    ref readonly var result = ref this._array.ItemRef(index);
+                    if (Unsafe.IsNullRef(in result) || result == null)
+                    {
+                        index = Interlocked.Increment(ref this._index);
+                        continue;
+                    }
+                    else
+                    {
+                        item = result;
+                        return true;
+                    }
+                }
+                item = null;
+                return false;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Reset() => Interlocked.Exchange(ref this._index, -1);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, UglyWrapper_Obj_ScannerProgress scannerProgress, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, IReadOnlyCollection<PatchListItem> headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
+        private async Task InnerScanForFilesNeedToDownload(BlockingCollection<DownloadItem> pendingFiles, UglyWrapper_Obj_ScannerProgress scannerProgress, string dir_pso2bin, string? dir_classic_data, PSO2TweakerHashCache? tweakerHashCache, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IFileCheckHashCache duhB, FileScanItemSyncArray headacheMatterAgain, InnerDownloadQueueAddCallback onDownloadQueueAdd, CancellationToken cancellationToken)
         {
             if (fScanClassic == FileScanFlags.None)
             {
@@ -377,7 +421,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 string hashBuffer = new string(char.MinValue, 32);
                 try
                 {
-                    foreach (var patchItem in ((headacheMatterAgain is BlockingCollection<PatchListItem> syncCollection) ? syncCollection.GetConsumingEnumerable() : headacheMatterAgain))
+                    while (headacheMatterAgain.Next(out var patchItem))
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -478,7 +522,8 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                     {
                                         using (var fs = OpenToScan(localFilePath))
                                         {
-                                            fs.GetFileLastWriteTimeUTC(out var localLastModifiedTimeUtc);
+                                            var localLastModifiedTimeUtc = File.GetLastWriteTimeUtc(fs.SafeFileHandle);
+                                            // fs.GetFileLastWriteTimeUTC(out var localLastModifiedTimeUtc);
                                             BorrowBufferCertainSize(ref scanBuffer, ScanBufferSize);
                                             var rawHashBuffer = await Md5ComputeHash(md5engi, fs, scanBuffer, cancellationToken);
                                             var localMd5 = (HashHelper.TryWriteHashToHexString(hashBuffer, rawHashBuffer.Span, out var hashBuffer_length) ? hashBuffer.ToCharArray(0, hashBuffer_length / sizeof(char)).AsMemory() : Convert.ToHexString(rawHashBuffer.Span).AsMemory());

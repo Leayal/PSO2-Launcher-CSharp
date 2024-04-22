@@ -5,13 +5,12 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security;
-using System.Text;
 using System.Threading.Tasks;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class PSO2OtpAuthContent : HttpContent
+    sealed class PSO2OtpAuthContent : HttpContent
     {
         private readonly PSO2LoginToken loginToken;
         private readonly SecureString otp;

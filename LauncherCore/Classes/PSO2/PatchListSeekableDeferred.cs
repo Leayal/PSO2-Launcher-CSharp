@@ -11,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
     /// <summary>Provides instance for parsing patchlist file from a cached memory/buffer.</summary>
     /// <remarks>For seeking, <seealso cref="MemoryStream"/> must has its internal buffer visible.</remarks>
-    public class PatchListSeekableDeferred : PatchListDeferred
+    public sealed class PatchListSeekableDeferred : PatchListDeferred
     {
         private readonly MemoryStream mem;
         private readonly bool keepOpen;

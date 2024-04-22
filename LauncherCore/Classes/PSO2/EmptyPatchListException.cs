@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
-    class EmptyPatchListException : Exception
+    sealed class EmptyPatchListException : Exception
     {
         public EmptyPatchListException() : base("Failed to update the game client due to the patchlist info is empty. Please check if your Internet connectivity behaves normally") { }
     }

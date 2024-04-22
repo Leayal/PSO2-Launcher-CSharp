@@ -1,20 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public class EnumVisibleInOptionAttribute : Attribute
+    public sealed class EnumVisibleInOptionAttribute : Attribute
     {
         public EnumVisibleInOptionAttribute(bool visible)
         {
             this.IsVisible = visible;
         }
 
-        public virtual bool IsVisible { get; }
+        public bool IsVisible { get; }
 
         public static bool TryGetIsVisible(Enum obj, out bool isVisible)
         {

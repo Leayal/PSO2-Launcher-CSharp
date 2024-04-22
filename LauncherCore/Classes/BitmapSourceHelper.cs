@@ -1,6 +1,4 @@
-﻿using System;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
+﻿using System.Windows.Media.Imaging;
 using System.Reflection;
 using System.Windows.Interop;
 using System.Windows;

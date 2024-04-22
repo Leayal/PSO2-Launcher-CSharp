@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Threading;
 using System.Windows.Threading;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
-    class TextBoxDelayedTextChange : TextBox
+    sealed class TextBoxDelayedTextChange : TextBox
     {
         private bool _isDelayTextChangeEvent;
         private readonly DispatcherTimer _delayTextChanged;

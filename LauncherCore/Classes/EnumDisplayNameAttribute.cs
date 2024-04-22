@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
-    public class EnumDisplayNameAttribute : Attribute
+    public sealed class EnumDisplayNameAttribute : Attribute
     {
         public EnumDisplayNameAttribute(string displayName)
         {
             this.DisplayName = displayName;
         }
 
-        public virtual string DisplayName { get; }
+        public string DisplayName { get; }
 
         public static bool TryGetDisplayName(Enum obj, [MaybeNullWhen(false)] out string displayName)
         {

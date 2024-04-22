@@ -10,7 +10,7 @@ using System.Collections.Frozen;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class BackgroundSelfUpdateChecker : IDisposable
+    sealed class BackgroundSelfUpdateChecker : IDisposable
     {
         private CancellationTokenSource? cancelSrc_BackgroundSelfUpdateChecker;
         private DateTime lastchecktime;

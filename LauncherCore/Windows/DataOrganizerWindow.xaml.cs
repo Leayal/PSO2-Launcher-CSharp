@@ -395,10 +395,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
         private async Task<PatchListMemory> GetPatchListAllAsync(CancellationToken cancellationToken)
         {
-            using (var patchroot = await this.pso2HttpClient.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false))
-            {
-                return await this.pso2HttpClient.GetPatchListAllAsync(patchroot, cancellationToken).ConfigureAwait(false);
-            }
+            var patchroot = await this.pso2HttpClient.GetPatchRootInfoAsync(cancellationToken).ConfigureAwait(false);
+            return await this.pso2HttpClient.GetPatchListAllAsync(patchroot, cancellationToken).ConfigureAwait(false);
         }
 
         private void ButtonClose_Click(object sender, RoutedEventArgs e)

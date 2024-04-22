@@ -25,7 +25,7 @@ namespace Leayal.PSO2Launcher.Core
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public sealed partial class App : Application
     {
         public new static App Current => ((App)(Application.Current));
         public static readonly BitmapSource DefaultAppIcon = BitmapSourceHelper.FromWin32Icon(BootstrapResources.ExecutableIcon);
@@ -396,49 +396,32 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_ShowAuthor.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal");
-                        }
-                        catch { }
-                    });
+                    OpenUrlWithDefaultBrowser("https://github.com/Leayal");
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_ShowSourceCodeGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
-                        }
-                        catch { }
-                    });
+                    OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_ShowSourceCodeGithub.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
+                    OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
+                }
+                else if (string.Equals(urlstr, StaticResources.Url_Toolbox_PSO2ModsOrganizer.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
                     {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp");
-                        }
-                        catch { }
-                    });
+                        this.TryOpenModsOrganizerWindow();
+                    }
+                    catch (Exception ex)
+                    {
+                        Core.Windows.Prompt_Generic.ShowError(this.MainWindow, ex);
+                    }
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_Toolbox_PSO2DataOrganizer.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
-                        if (this.Dispatcher.CheckAccess())
-                        {
-                            this.TryOpenDataOrganizerWindow();
-                        }
-                        else
-                        {
-                            this.Dispatcher.InvokeAsync(this.TryOpenDataOrganizerWindow);
-                        }
+                        this.TryOpenDataOrganizerWindow();
                     }
                     catch (Exception ex)
                     {
@@ -447,25 +430,11 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_OpenWebView2InstallerDownloadPage.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section");
-                        }
-                        catch { }
-                    });
+                    OpenUrlWithDefaultBrowser("https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section");
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_DownloadWebView2BootstrapInstaller.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://go.microsoft.com/fwlink/p/?LinkId=2124703");
-                        }
-                        catch { }
-                    });
+                    OpenUrlWithDefaultBrowser("https://go.microsoft.com/fwlink/p/?LinkId=2124703");
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_IgnoreSelfUpdate.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
@@ -511,14 +480,7 @@ namespace Leayal.PSO2Launcher.Core
                 }
                 else if (string.Equals(urlstr, StaticResources.Url_ShowLatestGithubRelease.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            WindowsExplorerHelper.OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp/releases/latest");
-                        }
-                        catch { }
-                    });
+                    OpenUrlWithDefaultBrowser("https://github.com/Leayal/PSO2-Launcher-CSharp/releases/latest");
                 }
                 else if (urlstr.StartsWith(StaticResources.Url_ShowLogDialogFromGuid.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 {
@@ -537,11 +499,60 @@ namespace Leayal.PSO2Launcher.Core
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void OpenUrlWithDefaultBrowser(string url)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    WindowsExplorerHelper.OpenUrlWithDefaultBrowser(url);
+                }
+                catch { }
+            });
+        }
+
         private void TryOpenDataOrganizerWindow()
         {
-            if (this.MainWindow is Windows.MainMenuWindow mainmenu)
+            if (this.Dispatcher.CheckAccess())
             {
-                mainmenu.OpenDataOrganizerWindow();
+                if (this.MainWindow is Windows.MainMenuWindow mainmenu)
+                {
+                    if (mainmenu.Dispatcher.CheckAccess())
+                    {
+                        mainmenu.OpenDataOrganizerWindow();
+                    }
+                    else
+                    {
+                        mainmenu.Dispatcher.InvokeAsync(mainmenu.OpenDataOrganizerWindow);
+                    }
+                }
+            }
+            else
+            {
+                this.Dispatcher.InvokeAsync(this.TryOpenDataOrganizerWindow);
+            }
+        }
+
+        private void TryOpenModsOrganizerWindow()
+        {
+            if (this.Dispatcher.CheckAccess())
+            {
+                if (this.MainWindow is Windows.MainMenuWindow mainmenu)
+                {
+                    if (mainmenu.Dispatcher.CheckAccess())
+                    {
+                        mainmenu.OpenModsOrganizerWindow();
+                    }
+                    else
+                    {
+                        mainmenu.Dispatcher.InvokeAsync(mainmenu.OpenModsOrganizerWindow);
+                    }
+                }
+            }
+            else
+            {
+                this.Dispatcher.InvokeAsync(this.TryOpenDataOrganizerWindow);
             }
         }
 

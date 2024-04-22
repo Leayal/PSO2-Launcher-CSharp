@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class PSO2TweakerConfig : SharedInterfaces.ConfigurationFileBase
+    sealed class PSO2TweakerConfig : SharedInterfaces.ConfigurationFileBase
     {
         public readonly string Filename;
 

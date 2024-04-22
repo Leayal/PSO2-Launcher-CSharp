@@ -22,7 +22,7 @@
 		<None Include="LICENSE.txt" Pack="true" PackagePath="" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="SQLitePCLRaw.core" Version="2.1.6" />
-	  <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.1.6" />
+	  <PackageReference Include="SQLitePCLRaw.core" Version="2.1.8" />
+	  <PackageReference Include="SQLitePCLRaw.lib.e_sqlcipher" Version="2.1.8" />
 	</ItemGroup>
 </Project>

@@ -1,23 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using Leayal.PSO2Launcher.Core.Windows;
 using Leayal.PSO2Launcher.RSS;
 using Leayal.Shared.Windows;
 
@@ -26,7 +18,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for RSSFeedPresenter.xaml
     /// </summary>
-    public partial class RSSFeedPresenter : Border
+    public sealed partial class RSSFeedPresenter : Border
     {
         private const string Text_TitleLastRefreshCall = "Last refresh: ",
             Text_TitleLastSuccessfulRefreshCall = "Last successful refresh: ",

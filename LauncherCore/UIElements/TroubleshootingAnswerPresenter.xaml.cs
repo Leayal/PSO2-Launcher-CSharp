@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Leayal.PSO2Launcher.Core.Classes;
@@ -11,7 +9,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for TroubleshootingAnswerPresenter.xaml
     /// </summary>
-    public partial class TroubleshootingAnswerPresenter : ListBox
+    public sealed partial class TroubleshootingAnswerPresenter : ListBox
     {
         public readonly static DependencyProperty AnswersSourceProperty = DependencyProperty.Register("AnswersSource", typeof(PSO2TroubleshootingAnswer), typeof(TroubleshootingAnswerPresenter), new PropertyMetadata(null, (obj, e) =>
         {

@@ -1,22 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2.GameConfig
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    class CategoryAttribute : Attribute
+    sealed class CategoryAttribute : Attribute
     {
         public CategoryAttribute(string categoryName)
         {
             this.Category = categoryName;
         }
 
-        public virtual string Category { get; }
+        public string Category { get; }
 
         public static bool TryGetCategoryName(Type type, object obj, [MaybeNullWhen(false)] out string categoryName)
         {

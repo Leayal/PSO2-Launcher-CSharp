@@ -276,6 +276,10 @@ namespace SQLite
             p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_malloc");
             this.sqlite3_malloc = Marshal.GetDelegateForFunctionPointer<d_sqlite3_int_to_ptr>(p_exportfunc);
 
+            // sqlite3_malloc64
+            p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_malloc64");
+            this.sqlite3_malloc64 = Marshal.GetDelegateForFunctionPointer<d_sqlite3_long_to_ptr>(p_exportfunc);
+
             // sqlite3_realloc
             p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_realloc");
             this.sqlite3_realloc = Marshal.GetDelegateForFunctionPointer<d_sqlite3_realloc>(p_exportfunc);
@@ -735,6 +739,14 @@ namespace SQLite
             // sqlite3_keyword_name
             p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_keyword_name");
             this.sqlite3_keyword_name = Marshal.GetDelegateForFunctionPointer<d_sqlite3_keyword_name>(p_exportfunc);
+
+            // sqlite3_serialize
+            p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_serialize");
+            this.sqlite3_serialize = Marshal.GetDelegateForFunctionPointer<d_sqlite3_serialize>(p_exportfunc);
+
+            // sqlite3_deserialize
+            p_exportfunc = NativeLibrary.GetExport(p_lib, "sqlite3_deserialize");
+            this.sqlite3_deserialize = Marshal.GetDelegateForFunctionPointer<d_sqlite3_deserialize>(p_exportfunc);
         }
 
         protected override bool ReleaseHandle()
@@ -844,6 +856,10 @@ namespace SQLite
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate IntPtr d_sqlite3_int_to_ptr(int n);
         public readonly d_sqlite3_int_to_ptr sqlite3_malloc;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate IntPtr d_sqlite3_long_to_ptr(long n);
+        public readonly d_sqlite3_long_to_ptr sqlite3_malloc64;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate IntPtr d_sqlite3_realloc(IntPtr p, int n);
@@ -1202,6 +1218,14 @@ namespace SQLite
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public unsafe delegate int d_sqlite3_keyword_name(int i, out byte* name, out int length);
         public readonly d_sqlite3_keyword_name sqlite3_keyword_name;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public unsafe delegate IntPtr d_sqlite3_serialize(sqlite3 db, byte* schema, out long size, int flags);
+        public readonly d_sqlite3_serialize sqlite3_serialize;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public unsafe delegate int d_sqlite3_deserialize(sqlite3 db, byte* schema, IntPtr data, long szDb, long szBuf, int flags);
+        public readonly d_sqlite3_deserialize sqlite3_deserialize;
     }
 }
 

@@ -87,16 +87,16 @@ namespace Leayal.PSO2Launcher.Core.Classes
         }
 
 
-        #region "| Default Implementation |
+        #region "| Default Implementation |"
         class SimpleSyncDispatcherQueue : SimpleDispatcherQueue
         {
             private readonly List<DispatcherQueueItem> queue;
-            private readonly Action<DispatcherQueueItem> _unregistered;
+            // private readonly Action<DispatcherQueueItem> _unregistered;
 
             public SimpleSyncDispatcherQueue(in TimeSpan tickInterval, DispatcherPriority dispatcherPriority, Dispatcher dispatcher)
                 : base(in tickInterval, dispatcherPriority, dispatcher)
             {
-                this._unregistered = new Action<DispatcherQueueItem>(this.OnItemUnregistered);
+                // this._unregistered = new Action<DispatcherQueueItem>(this.OnItemUnregistered);
                 this.queue = new List<DispatcherQueueItem>();
             }
 
@@ -133,7 +133,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             }
         }
 
-        class SimpleThreadSafeDispatcherQueue : SimpleDispatcherQueue
+        sealed class SimpleThreadSafeDispatcherQueue : SimpleDispatcherQueue
         {
             private readonly ConcurrentBag<DispatcherQueueItem> queue;
 
@@ -159,7 +159,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
         #endregion
     }
 
-    class DispatcherQueueItem
+    sealed class DispatcherQueueItem
     {
         private readonly Delegate _action;
         private readonly object[] _params;

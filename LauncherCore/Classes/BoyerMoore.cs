@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Leayal.PSO2Launcher.Core.Classes
 {
     /// <remarks>https://gist.github.com/mjs3339/0772431281093f1bca1fce2f2eca527d</remarks>
-    class BoyerMoore
+    sealed class BoyerMoore
     {
         private readonly int[] _jumpTable;
         private readonly byte[] _pattern;

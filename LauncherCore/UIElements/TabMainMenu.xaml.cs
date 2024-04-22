@@ -1,26 +1,17 @@
 ﻿using Leayal.PSO2Launcher.Core.Classes;
 using MahApps.Metro.Controls;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
     /// <summary>
     /// Interaction logic for TabMainMenu.xaml
     /// </summary>
-    public partial class TabMainMenu : MetroTabItem
+    public sealed partial class TabMainMenu : MetroTabItem
     {
         private static readonly Lazy<BitmapSource> ico_alphareactor = new Lazy<BitmapSource>(() => BitmapSourceHelper.FromEmbedResourcePath("Leayal.PSO2Launcher.Core.Resources.ico-item-AlphaReactor.png"));
 
@@ -398,6 +389,14 @@ namespace Leayal.PSO2Launcher.Core.UIElements
             if (sender is MenuItem item)
             {
                 item.Tag = StaticResources.Url_Toolbox_PSO2DataOrganizer;
+            }
+        }
+
+        private void MenuItem_PSO2ModsOrganizer_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item)
+            {
+                item.Tag = StaticResources.Url_Toolbox_PSO2ModsOrganizer;
             }
         }
     }

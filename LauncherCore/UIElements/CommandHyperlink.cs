@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Documents;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
-    class CommandHyperlink : Hyperlink
+    sealed class CommandHyperlink : Hyperlink
     {
         public readonly static DependencyProperty CustomClickHandlerProperty = DependencyProperty.Register("CustomClickHandler", typeof(bool), typeof(CommandHyperlink), new PropertyMetadata(false));
         public bool CustomClickHandler

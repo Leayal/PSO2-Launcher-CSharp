@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Security.Cryptography;
-using Leayal.PSO2Launcher.Toolbox;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core.Classes

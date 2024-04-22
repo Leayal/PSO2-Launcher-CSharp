@@ -21,7 +21,8 @@ namespace Leayal.PSO2Launcher.Core
             
             Url_Toolbox_VendorItemPickupCounter = new Uri("pso2lealauncher://toolbox/vendoritempickupcounter"),
             Url_Toolbox_PSO2DataOrganizer = new Uri("pso2lealauncher://toolbox/pso2dataorganizer"),
-            
+            Url_Toolbox_PSO2ModsOrganizer = new Uri("pso2lealauncher://toolbox/pso2modsorganizer"),
+
             SEGALauncherNewsUrl = new Uri("https://launcher.pso2.jp/ngs/01/"),
             WellbiaFAQWebsite = new Uri("https://wellbia.com/?module=Board&action=SiteBoard&sMode=SELECT_FORM&iBrdNo=3");
 

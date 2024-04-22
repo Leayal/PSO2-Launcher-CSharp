@@ -7,7 +7,7 @@ using Leayal.PSO2Launcher.Core.Interfaces;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    class ObjectShortCacheManager<T> : ICacheManager<T>
+    sealed class ObjectShortCacheManager<T> : ICacheManager<T>
     {
         private readonly ConcurrentDictionary<string, Lazy<ObjectShortCacheAsyncItem>> innerCache;
 

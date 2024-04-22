@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public class PSO2TroubleshootingAnswer : IReadOnlyList<PSO2TroubleshootingAnswer>
+    public sealed class PSO2TroubleshootingAnswer : IReadOnlyList<PSO2TroubleshootingAnswer>
     {
         private readonly IReadOnlyList<PSO2TroubleshootingAnswer> _answers;
 

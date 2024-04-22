@@ -8,7 +8,7 @@ using System.Windows.Data;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public class NumberToStringConverter : IValueConverter
+    public sealed class NumberToStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

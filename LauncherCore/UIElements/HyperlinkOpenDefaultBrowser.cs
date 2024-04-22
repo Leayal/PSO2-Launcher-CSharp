@@ -4,7 +4,7 @@ using System.Windows.Documents;
 
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
-    class HyperlinkOpenDefaultBrowser : Hyperlink
+    sealed class HyperlinkOpenDefaultBrowser : Hyperlink
     {
         public HyperlinkOpenDefaultBrowser() : base() { }
 

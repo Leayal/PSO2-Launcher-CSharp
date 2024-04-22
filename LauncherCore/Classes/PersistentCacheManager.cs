@@ -10,7 +10,7 @@ using SQLite;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
-    public class PersistentCacheManager : IDisposable
+    public sealed class PersistentCacheManager : IDisposable
     {
         protected const string dbName = "__.db";
         public readonly string CacheRootDirectory;
@@ -241,7 +241,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             this.dbLock.Dispose();
             var locks = lockObjs.ToArray();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 using SQLitePCL;
@@ -884,9 +885,7 @@ namespace SQLite
 
         [MonoPInvokeCallback(typeof(NativeDelegates.callback_profile))]
         private static void profile_hook_bridge_impl(IntPtr p, IntPtr s, long elapsed)
-        {
-            profile_hook_info.from_ptr(p).call(utf8z.FromIntPtr(s), elapsed);
-        }
+            => profile_hook_info.from_ptr(p).call(utf8z.FromIntPtr(s), elapsed);
 
         void ISQLite3Provider.sqlite3_profile(sqlite3 db, delegate_profile func, object v)
         {
@@ -917,9 +916,7 @@ namespace SQLite
 
         [MonoPInvokeCallback(typeof(NativeDelegates.callback_progress_handler))]
         private static int progress_handler_hook_bridge_impl(IntPtr p)
-        {
-            return progress_hook_info.from_ptr(p).call();
-        }
+            => progress_hook_info.from_ptr(p).call();
 
         void ISQLite3Provider.sqlite3_progress_handler(sqlite3 db, int instructions, delegate_progress func, object v)
         {
@@ -950,9 +947,7 @@ namespace SQLite
 
         [MonoPInvokeCallback(typeof(NativeDelegates.callback_authorizer))]
         private static int authorizer_hook_bridge_impl(IntPtr p, int action_code, IntPtr param0, IntPtr param1, IntPtr dbName, IntPtr inner_most_trigger_or_view)
-        {
-            return authorizer_hook_info.from_ptr(p).call(action_code, utf8z.FromIntPtr(param0), utf8z.FromIntPtr(param1), utf8z.FromIntPtr(dbName), utf8z.FromIntPtr(inner_most_trigger_or_view));
-        }
+            => authorizer_hook_info.from_ptr(p).call(action_code, utf8z.FromIntPtr(param0), utf8z.FromIntPtr(param1), utf8z.FromIntPtr(dbName), utf8z.FromIntPtr(inner_most_trigger_or_view));
 
         int ISQLite3Provider.sqlite3_set_authorizer(sqlite3 db, delegate_authorizer func, object v)
         {
@@ -982,54 +977,34 @@ namespace SQLite
         }
 
         long ISQLite3Provider.sqlite3_memory_used()
-        {
-            return NativeMethods.sqlite3_memory_used();
-        }
+            => NativeMethods.sqlite3_memory_used();
 
         long ISQLite3Provider.sqlite3_memory_highwater(int resetFlag)
-        {
-            return NativeMethods.sqlite3_memory_highwater(resetFlag);
-        }
+            => NativeMethods.sqlite3_memory_highwater(resetFlag);
 
         long ISQLite3Provider.sqlite3_soft_heap_limit64(long n)
-        {
-            return NativeMethods.sqlite3_soft_heap_limit64(n);
-        }
+            => NativeMethods.sqlite3_soft_heap_limit64(n);
 
         long ISQLite3Provider.sqlite3_hard_heap_limit64(long n)
-        {
-            return NativeMethods.sqlite3_hard_heap_limit64(n);
-        }
+            => NativeMethods.sqlite3_hard_heap_limit64(n);
 
         int ISQLite3Provider.sqlite3_status(int op, out int current, out int highwater, int resetFlag)
-        {
-            return NativeMethods.sqlite3_status(op, out current, out highwater, resetFlag);
-        }
+            => NativeMethods.sqlite3_status(op, out current, out highwater, resetFlag);
 
         unsafe utf8z ISQLite3Provider.sqlite3_sourceid()
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_sourceid());
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_sourceid());
 
         void ISQLite3Provider.sqlite3_result_int64(IntPtr ctx, long val)
-        {
-            NativeMethods.sqlite3_result_int64(ctx, val);
-        }
+            => NativeMethods.sqlite3_result_int64(ctx, val);
 
         void ISQLite3Provider.sqlite3_result_int(IntPtr ctx, int val)
-        {
-            NativeMethods.sqlite3_result_int(ctx, val);
-        }
+            => NativeMethods.sqlite3_result_int(ctx, val);
 
         void ISQLite3Provider.sqlite3_result_double(IntPtr ctx, double val)
-        {
-            NativeMethods.sqlite3_result_double(ctx, val);
-        }
+            => NativeMethods.sqlite3_result_double(ctx, val);
 
         void ISQLite3Provider.sqlite3_result_null(IntPtr stm)
-        {
-            NativeMethods.sqlite3_result_null(stm);
-        }
+            => NativeMethods.sqlite3_result_null(stm);
 
         unsafe void ISQLite3Provider.sqlite3_result_error(IntPtr ctx, ReadOnlySpan<byte> val)
         {
@@ -1072,24 +1047,16 @@ namespace SQLite
         }
 
         void ISQLite3Provider.sqlite3_result_zeroblob(IntPtr ctx, int n)
-        {
-            NativeMethods.sqlite3_result_zeroblob(ctx, n);
-        }
+            => NativeMethods.sqlite3_result_zeroblob(ctx, n);
 
         void ISQLite3Provider.sqlite3_result_error_toobig(IntPtr ctx)
-        {
-            NativeMethods.sqlite3_result_error_toobig(ctx);
-        }
+            => NativeMethods.sqlite3_result_error_toobig(ctx);
 
         void ISQLite3Provider.sqlite3_result_error_nomem(IntPtr ctx)
-        {
-            NativeMethods.sqlite3_result_error_nomem(ctx);
-        }
+            => NativeMethods.sqlite3_result_error_nomem(ctx);
 
         void ISQLite3Provider.sqlite3_result_error_code(IntPtr ctx, int code)
-        {
-            NativeMethods.sqlite3_result_error_code(ctx, code);
-        }
+            => NativeMethods.sqlite3_result_error_code(ctx, code);
 
         unsafe ReadOnlySpan<byte> ISQLite3Provider.sqlite3_value_blob(IntPtr p)
         {
@@ -1104,44 +1071,28 @@ namespace SQLite
         }
 
         int ISQLite3Provider.sqlite3_value_bytes(IntPtr p)
-        {
-            return NativeMethods.sqlite3_value_bytes(p);
-        }
+            => NativeMethods.sqlite3_value_bytes(p);
 
         double ISQLite3Provider.sqlite3_value_double(IntPtr p)
-        {
-            return NativeMethods.sqlite3_value_double(p);
-        }
+            => NativeMethods.sqlite3_value_double(p);
 
         int ISQLite3Provider.sqlite3_value_int(IntPtr p)
-        {
-            return NativeMethods.sqlite3_value_int(p);
-        }
+            => NativeMethods.sqlite3_value_int(p);
 
         long ISQLite3Provider.sqlite3_value_int64(IntPtr p)
-        {
-            return NativeMethods.sqlite3_value_int64(p);
-        }
+            => NativeMethods.sqlite3_value_int64(p);
 
         int ISQLite3Provider.sqlite3_value_type(IntPtr p)
-        {
-            return NativeMethods.sqlite3_value_type(p);
-        }
+            => NativeMethods.sqlite3_value_type(p);
 
         unsafe utf8z ISQLite3Provider.sqlite3_value_text(IntPtr p)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_value_text(p));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_value_text(p));
 
         int ISQLite3Provider.sqlite3_bind_int(sqlite3_stmt stm, int paramIndex, int val)
-        {
-            return NativeMethods.sqlite3_bind_int(stm, paramIndex, val);
-        }
+            => NativeMethods.sqlite3_bind_int(stm, paramIndex, val);
 
         int ISQLite3Provider.sqlite3_bind_int64(sqlite3_stmt stm, int paramIndex, long val)
-        {
-            return NativeMethods.sqlite3_bind_int64(stm, paramIndex, val);
-        }
+            => NativeMethods.sqlite3_bind_int64(stm, paramIndex, val);
 
         unsafe int ISQLite3Provider.sqlite3_bind_text(sqlite3_stmt stm, int paramIndex, ReadOnlySpan<byte> t)
         {
@@ -1168,9 +1119,7 @@ namespace SQLite
         }
 
         int ISQLite3Provider.sqlite3_bind_double(sqlite3_stmt stm, int paramIndex, double val)
-        {
-            return NativeMethods.sqlite3_bind_double(stm, paramIndex, val);
-        }
+            => NativeMethods.sqlite3_bind_double(stm, paramIndex, val);
 
         unsafe int ISQLite3Provider.sqlite3_bind_blob(sqlite3_stmt stm, int paramIndex, ReadOnlySpan<byte> blob)
         {
@@ -1189,24 +1138,16 @@ namespace SQLite
         }
 
         int ISQLite3Provider.sqlite3_bind_zeroblob(sqlite3_stmt stm, int paramIndex, int size)
-        {
-            return NativeMethods.sqlite3_bind_zeroblob(stm, paramIndex, size);
-        }
+            => NativeMethods.sqlite3_bind_zeroblob(stm, paramIndex, size);
 
         int ISQLite3Provider.sqlite3_bind_null(sqlite3_stmt stm, int paramIndex)
-        {
-            return NativeMethods.sqlite3_bind_null(stm, paramIndex);
-        }
+            => NativeMethods.sqlite3_bind_null(stm, paramIndex);
 
         int ISQLite3Provider.sqlite3_bind_parameter_count(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_bind_parameter_count(stm);
-        }
+            => NativeMethods.sqlite3_bind_parameter_count(stm);
 
         unsafe utf8z ISQLite3Provider.sqlite3_bind_parameter_name(sqlite3_stmt stm, int paramIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_bind_parameter_name(stm, paramIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_bind_parameter_name(stm, paramIndex));
 
         unsafe int ISQLite3Provider.sqlite3_bind_parameter_index(sqlite3_stmt stm, utf8z paramName)
         {
@@ -1217,34 +1158,22 @@ namespace SQLite
         }
 
         int ISQLite3Provider.sqlite3_step(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_step(stm);
-        }
+            => NativeMethods.sqlite3_step(stm);
 
         int ISQLite3Provider.sqlite3_stmt_isexplain(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_stmt_isexplain(stm);
-        }
+            => NativeMethods.sqlite3_stmt_isexplain(stm);
 
         int ISQLite3Provider.sqlite3_stmt_busy(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_stmt_busy(stm);
-        }
+            => NativeMethods.sqlite3_stmt_busy(stm);
 
         int ISQLite3Provider.sqlite3_stmt_readonly(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_stmt_readonly(stm);
-        }
+            => NativeMethods.sqlite3_stmt_readonly(stm);
 
         int ISQLite3Provider.sqlite3_column_int(sqlite3_stmt stm, int columnIndex)
-        {
-            return NativeMethods.sqlite3_column_int(stm, columnIndex);
-        }
+            => NativeMethods.sqlite3_column_int(stm, columnIndex);
 
         long ISQLite3Provider.sqlite3_column_int64(sqlite3_stmt stm, int columnIndex)
-        {
-            return NativeMethods.sqlite3_column_int64(stm, columnIndex);
-        }
+            => NativeMethods.sqlite3_column_int64(stm, columnIndex);
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_text(sqlite3_stmt stm, int columnIndex)
         {
@@ -1254,21 +1183,17 @@ namespace SQLite
         }
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_decltype(sqlite3_stmt stm, int columnIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_column_decltype(stm, columnIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_column_decltype(stm, columnIndex));
 
         double ISQLite3Provider.sqlite3_column_double(sqlite3_stmt stm, int columnIndex)
-        {
-            return NativeMethods.sqlite3_column_double(stm, columnIndex);
-        }
+            => NativeMethods.sqlite3_column_double(stm, columnIndex);
 
         unsafe ReadOnlySpan<byte> ISQLite3Provider.sqlite3_column_blob(sqlite3_stmt stm, int columnIndex)
         {
             IntPtr intPtr = NativeMethods.sqlite3_column_blob(stm, columnIndex);
             if (intPtr == IntPtr.Zero)
             {
-                return null;
+                return ReadOnlySpan<byte>.Empty;
             }
 
             int length = NativeMethods.sqlite3_column_bytes(stm, columnIndex);
@@ -1276,69 +1201,43 @@ namespace SQLite
         }
 
         int ISQLite3Provider.sqlite3_column_type(sqlite3_stmt stm, int columnIndex)
-        {
-            return NativeMethods.sqlite3_column_type(stm, columnIndex);
-        }
+            => NativeMethods.sqlite3_column_type(stm, columnIndex);
 
         int ISQLite3Provider.sqlite3_column_bytes(sqlite3_stmt stm, int columnIndex)
-        {
-            return NativeMethods.sqlite3_column_bytes(stm, columnIndex);
-        }
+            => NativeMethods.sqlite3_column_bytes(stm, columnIndex);
 
         int ISQLite3Provider.sqlite3_column_count(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_column_count(stm);
-        }
+            => NativeMethods.sqlite3_column_count(stm);
 
         int ISQLite3Provider.sqlite3_data_count(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_data_count(stm);
-        }
+            => NativeMethods.sqlite3_data_count(stm);
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_name(sqlite3_stmt stm, int columnIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_column_name(stm, columnIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_column_name(stm, columnIndex));
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_origin_name(sqlite3_stmt stm, int columnIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_column_origin_name(stm, columnIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_column_origin_name(stm, columnIndex));
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_table_name(sqlite3_stmt stm, int columnIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_column_table_name(stm, columnIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_column_table_name(stm, columnIndex));
 
         unsafe utf8z ISQLite3Provider.sqlite3_column_database_name(sqlite3_stmt stm, int columnIndex)
-        {
-            return utf8z.FromPtr(NativeMethods.sqlite3_column_database_name(stm, columnIndex));
-        }
+            => utf8z.FromPtr(NativeMethods.sqlite3_column_database_name(stm, columnIndex));
 
         int ISQLite3Provider.sqlite3_reset(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_reset(stm);
-        }
+            => NativeMethods.sqlite3_reset(stm);
 
         int ISQLite3Provider.sqlite3_clear_bindings(sqlite3_stmt stm)
-        {
-            return NativeMethods.sqlite3_clear_bindings(stm);
-        }
+            => NativeMethods.sqlite3_clear_bindings(stm);
 
         int ISQLite3Provider.sqlite3_stmt_status(sqlite3_stmt stm, int op, int resetFlg)
-        {
-            return NativeMethods.sqlite3_stmt_status(stm, op, resetFlg);
-        }
+            => NativeMethods.sqlite3_stmt_status(stm, op, resetFlg);
 
         int ISQLite3Provider.sqlite3_finalize(IntPtr stm)
-        {
-            return NativeMethods.sqlite3_finalize(stm);
-        }
+            => NativeMethods.sqlite3_finalize(stm);
 
         int ISQLite3Provider.sqlite3_wal_autocheckpoint(sqlite3 db, int n)
-        {
-            return NativeMethods.sqlite3_wal_autocheckpoint(db, n);
-        }
+            => NativeMethods.sqlite3_wal_autocheckpoint(db, n);
 
         unsafe int ISQLite3Provider.sqlite3_wal_checkpoint(sqlite3 db, utf8z dbName)
         {
@@ -1356,10 +1255,7 @@ namespace SQLite
             }
         }
 
-        int ISQLite3Provider.sqlite3_keyword_count()
-        {
-            return NativeMethods.sqlite3_keyword_count();
-        }
+        int ISQLite3Provider.sqlite3_keyword_count() => NativeMethods.sqlite3_keyword_count();
 
         unsafe int ISQLite3Provider.sqlite3_keyword_name(int i, out string name)
         {
@@ -1368,6 +1264,26 @@ namespace SQLite
             int result = NativeMethods.sqlite3_keyword_name(i, out name2, out length);
             name = Encoding.UTF8.GetString(name2, length);
             return result;
+        }
+
+        IntPtr ISQLite3Provider.sqlite3_malloc(int n) => NativeMethods.sqlite3_malloc(n);
+
+        IntPtr ISQLite3Provider.sqlite3_malloc64(long n) => NativeMethods.sqlite3_malloc64(n);
+
+        unsafe IntPtr ISQLite3Provider.sqlite3_serialize(sqlite3 db, utf8z schema, out long size, int flags)
+        {
+            fixed (byte* p_schema = schema)
+            {
+                return NativeMethods.sqlite3_serialize(db, p_schema, out size, flags);
+            }
+        }
+
+        unsafe int ISQLite3Provider.sqlite3_deserialize(sqlite3 db, utf8z schema, IntPtr data, long szDb, long szBuf, int flags)
+        {
+            fixed (byte* p_schema = schema)
+            {
+                return NativeMethods.sqlite3_deserialize(db, p_schema, data, szDb, szBuf, flags);
+            }
         }
     }
 }

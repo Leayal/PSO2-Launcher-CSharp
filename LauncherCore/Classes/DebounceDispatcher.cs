@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace Leayal.PSO2Launcher.Core.Classes
@@ -19,7 +15,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
     /// in which no other pending event has fired. Only the last event in the
     /// sequence is fired.
     /// </summary>
-    public class DebounceDispatcher : IDisposable
+    public sealed class DebounceDispatcher : IDisposable
     {
         private readonly Dispatcher _dispatcher;
         private DispatcherTimer? timer;

@@ -10,7 +10,6 @@ using System.IO;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 {
@@ -161,7 +160,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                     // ConcurrentBag<PatchListItem> bag_needtodownload = new ConcurrentBag<PatchListItem>(), bag_success = new ConcurrentBag<PatchListItem>(), bag_failure = new ConcurrentBag<PatchListItem>();
                     // var pendingFiles = new BlockingCollection<DownloadItem>();
                     var pendingQueues = new BlockingCollection<DownloadItem>[concurrentLevelForFileScan];
-                    BlockingCollection<PatchListItem>? fileScanListSync = null;
                     for (int i = 0; i < concurrentLevelForFileScan; i++)
                     {
                         pendingQueues[i] = new BlockingCollection<DownloadItem>();
@@ -215,6 +213,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
 
                         patchlist = await t_patchlist;
 
+                        var fileScanListSync = new FileScanItemSyncArray(patchlist.Values);
                         resultsOfDownloads = new ConcurrentDictionary<PatchListItem, bool?>(taskCount, patchlist.Count);
                         ver = await GetRemoteVersionAsync(patchlist.RootInfo, cancellationToken);
                         if (!string.IsNullOrWhiteSpace(pso2tweaker_dirpath) && Directory.Exists(pso2tweaker_dirpath))
@@ -244,21 +243,10 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                         var tasksToAwait = new Task[concurrentLevelForFileScan + taskCount];
                         var scannerProgressObj = new UglyWrapper_Obj_ScannerProgress(this);
 
-                        if (concurrentLevelForFileScan == 1)
+                        for (int i = 0; i < concurrentLevelForFileScan; i++)
                         {
-                            var scannerObj = new UglyWrapper_Obj_Scanner(this, scannerProgressObj, pendingQueues[0], duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump, dir_pso2bin, dir_classic_data, selection, fScanReboot, fScanClassic, patchlist);
-                            tasksToAwait[0] = Task.Factory.StartNew(scannerObj.Work, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
-                        }
-                        else
-                        {
-                            fileScanListSync = new BlockingCollection<PatchListItem>(new ConcurrentQueue<PatchListItem>(patchlist));
-                            fileScanListSync.CompleteAdding();
-                            for (int i = 0; i < concurrentLevelForFileScan; i++)
-                            {
-                                var pendingFiles = pendingQueues[i];
-                                var scannerObj = new UglyWrapper_Obj_Scanner(this, scannerProgressObj, pendingFiles, duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump, dir_pso2bin, dir_classic_data, selection, fScanReboot, fScanClassic, fileScanListSync);
-                                tasksToAwait[i] = Task.Factory.StartNew(scannerObj.Work, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
-                            }
+                            var scannerObj = new UglyWrapper_Obj_Scanner(this, scannerProgressObj, pendingQueues[i], duhB, resultsOfDownloads, cancellationToken, tweakerhashcacheDump, dir_pso2bin, dir_classic_data, selection, fScanReboot, fScanClassic, fileScanListSync);
+                            tasksToAwait[i] = Task.Factory.StartNew(scannerObj.Work, cancellationToken, TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current ?? TaskScheduler.Default).Unwrap();
                         }
 
                         for (int i = 0; i < taskCount; i++)
@@ -291,7 +279,6 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                                 pendingFiles = null;
                             }
                         }
-                        fileScanListSync?.Dispose();
                         if (duhB != null)
                         {
                             duhB.SetPSO2ClientVersion(ver.ToString());
@@ -365,11 +352,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             private readonly string? dir_classic_data;
             private readonly GameClientSelection selection;
             private readonly FileScanFlags fScanReboot, fScanClassic;
-            private readonly IReadOnlyCollection<PatchListItem> patchlist;
+            private readonly FileScanItemSyncArray patchlist;
             private readonly UglyWrapper_Obj_ScannerProgress scannerProgress;
 
             public UglyWrapper_Obj_Scanner(GameClientUpdater updater, UglyWrapper_Obj_ScannerProgress scannerProgress, BlockingCollection<DownloadItem> collection, IFileCheckHashCache db, ConcurrentDictionary<PatchListItem, bool?> results, CancellationToken token, PSO2TweakerHashCache? tweakerhashcacheDump,
-                string dir_pso2bin, string? dir_classic_data, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, IReadOnlyCollection<PatchListItem> patchlist)
+                string dir_pso2bin, string? dir_classic_data, GameClientSelection selection, FileScanFlags fScanReboot, FileScanFlags fScanClassic, FileScanItemSyncArray scanItems)
             {
                 this.thisRef = updater;
                 this.pendingFiles = collection;
@@ -382,7 +369,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 this.selection = selection;
                 this.fScanReboot = fScanReboot;
                 this.fScanClassic = fScanClassic;
-                this.patchlist = patchlist;
+                this.patchlist = scanItems;
                 this.scannerProgress = scannerProgress;
             }
 

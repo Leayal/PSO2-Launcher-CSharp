@@ -10,7 +10,7 @@ using System.Windows;
 namespace Leayal.PSO2Launcher.Core.UIElements
 {
     public delegate void ButtonScanFixGameDataClickRoutedEventHander(object sender, ButtonScanFixGameDataClickRoutedEventArgs e);
-    public class ButtonScanFixGameDataClickRoutedEventArgs : RoutedEventArgs
+    public sealed class ButtonScanFixGameDataClickRoutedEventArgs : RoutedEventArgs
     {
         public GameClientSelection SelectedMode { get; }
 
@@ -21,7 +21,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     }
 
     public delegate void ChangeDefaultGameStartStyleEventHandler(object sender, ChangeDefaultGameStartStyleEventArgs e);
-    public class ChangeDefaultGameStartStyleEventArgs : RoutedEventArgs
+    public sealed class ChangeDefaultGameStartStyleEventArgs : RoutedEventArgs
     {
         public GameStartStyle SelectedStyle { get; }
 
@@ -32,7 +32,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     }
 
     public delegate void GameStartRequestEventHandler(object sender, GameStartStyleEventArgs e);
-    public class GameStartStyleEventArgs : RoutedEventArgs
+    public sealed class GameStartStyleEventArgs : RoutedEventArgs
     {
         public GameStartStyle SelectedStyle { get; }
 

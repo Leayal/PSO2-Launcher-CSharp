@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Leayal.PSO2Launcher.Core
 {
-    public class GameLauncher : IWPFApp
+    public sealed class GameLauncher : IWPFApp
     {
         // private App _app;
         

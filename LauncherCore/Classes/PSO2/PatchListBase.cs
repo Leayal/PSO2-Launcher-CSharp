@@ -13,14 +13,14 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
         /// <summary>True = NGS/Reboot. False = Classic. Null = Unspecific.</summary>
         public readonly bool? IsReboot;
 
-        protected PatchListBase(PatchRootInfo rootInfo, bool? isReboot)
+        protected PatchListBase(PatchRootInfo? rootInfo, bool? isReboot)
         {
-            if (rootInfo == null)
+            if (!rootInfo.HasValue)
             {
                 throw new ArgumentNullException(nameof(rootInfo));
             }
             this.IsReboot = isReboot;
-            this.RootInfo = rootInfo;
+            this.RootInfo = rootInfo.Value;
         }
 
         public abstract bool CanCount { get; }
@@ -120,11 +120,11 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
                 for (int i = 0; i < patchlists.Length; i++)
                 {
                     var patchlist = patchlists[i];
-                    if (comparand == null)
+                    if (!comparand.HasValue)
                     {
                         comparand = patchlist.RootInfo;
                     }
-                    else if (comparand != patchlist.RootInfo)
+                    else if (!comparand.Value.Equals(patchlist.RootInfo))
                     {
                         throw new InvalidOperationException();
                     }

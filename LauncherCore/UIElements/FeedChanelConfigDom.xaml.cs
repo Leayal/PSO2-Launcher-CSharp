@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using Leayal.PSO2Launcher.Core.Classes.RSS;
 using Leayal.PSO2Launcher.RSS;
@@ -15,7 +11,7 @@ namespace Leayal.PSO2Launcher.Core.UIElements
     /// <summary>
     /// Interaction logic for FeedChanelConfigDom.xaml
     /// </summary>
-    public partial class FeedChanelConfigDom : ListBoxItem
+    public sealed partial class FeedChanelConfigDom : ListBoxItem
     {
         private const string DisplayName_DefaultHandler = "Default",
                             DisplayName_GenericHandler = "Generic";

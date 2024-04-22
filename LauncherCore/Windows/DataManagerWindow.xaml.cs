@@ -9,15 +9,13 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.ComponentModel;
-using Leayal.Shared;
-using System.Runtime.CompilerServices;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
     /// <summary>
     /// Interaction logic for DataManagerWindow.xaml
     /// </summary>
-    public partial class DataManagerWindow : MetroWindowEx
+    public sealed partial class DataManagerWindow : MetroWindowEx
     {
         private readonly ConfigurationFile _config;
 

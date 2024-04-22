@@ -1,11 +1,4 @@
-﻿using Leayal.PSO2Launcher.Core.Interfaces;
-using Leayal.SharedInterfaces;
-using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Leayal.PSO2Launcher.Core.Classes
 {
