@@ -264,14 +264,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
 
                         var val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
 
-                        /*
-                        if (val_AntiCheatProgramSelection == GameStartWithAntiCheatProgram.Unspecified)
+                        if (val_AntiCheatProgramSelection != GameStartWithAntiCheatProgram.Wellbia_XignCode)
                         {
-                            if (Prompt_Generic.Show(this, "You haven't selected which Anti-cheat program to be used yet."
-                                + Environment.NewLine + "Do you want to select now?"
-                                + Environment.NewLine + "If you select 'No', the launcher will abort launching game."
-                                + Environment.NewLine + "You must select before this launcher can start the game. THIS IS IMPORTANT CHANGES.", "Important setting", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
-                                && this.ShowDataManagerWindowDialog(dialog => dialog.ShowFocusAnticheatSelection()))
+                            if (Prompt_Generic.Show(this, "As of 21st August 2024, SEGA has removed nProtect Gameguard anti-cheat program from the game."
+                            + Environment.NewLine + "Only Wellbia's XignCode is available now. Please switch to Wellbia's XignCode."
+                            + Environment.NewLine + "Do you want to select now?"
+                            + Environment.NewLine + "If you select 'No', the launcher will abort launching game.", "Important setting", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes
+                            && this.ShowDataManagerWindowDialog(dialog => dialog.ShowFocusAnticheatSelection()))
                             {
                                 val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
                             }
@@ -280,43 +279,33 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 return;
                             }
                         }
-                        */
-                        if (val_AntiCheatProgramSelection != GameStartWithAntiCheatProgram.Wellbia_XignCode)
-                        {
-                            Prompt_Generic.Show(this, "As of 21st August 2024, SEGA has removed nProtect Gameguard anti-cheat program from the game."
-                                + Environment.NewLine + "Only Wellbia's XignCode is available now. Please switch to Wellbia's XignCode.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
 
                         string filename_exe;
                         string? filename_loader = null;
                         switch (val_AntiCheatProgramSelection)
                         {
                             case GameStartWithAntiCheatProgram.Wellbia_XignCode:
-                                filename_exe = Path.GetFullPath("pso2.exe", dir_pso2bin);
-                                filename_loader = Path.GetFullPath("ucldr_PSO2_JP_loader_x64.exe", dir_pso2bin);
+                                filename_exe = Path.GetFullPath(Path.Join("sub", "pso2.exe"), dir_pso2bin);
+                                filename_loader = Path.GetFullPath(Path.Join("sub", "ucldr_PSO2_JP_loader_x64.exe"), dir_pso2bin);
                                 string checkingFilename;
                                 if (!File.Exists(checkingFilename = filename_exe)
                                     || !File.Exists(checkingFilename = filename_loader))
                                 {
-                                    filename_exe = Path.GetFullPath(Path.Join("sub", "pso2.exe"), dir_pso2bin);
-                                    filename_loader = Path.GetFullPath(Path.Join("sub", "ucldr_PSO2_JP_loader_x64.exe"), dir_pso2bin);
-                                    if (!File.Exists(checkingFilename = filename_exe)
-                                        || !File.Exists(checkingFilename = filename_loader))
-                                    {
-                                        Prompt_Generic.Show(this, $"The file '{Path.GetFileName(checkingFilename.AsSpan())}' for Wellbia's XignCode doesn't exist. Please download game's data files if you haven't done it or check for missing files.{Environment.NewLine}Path: {checkingFilename}", "File doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        return;
-                                    }
+                                    Prompt_Generic.Show(this, $"The file '{Path.GetFileName(checkingFilename.AsSpan())}' for Wellbia's XignCode doesn't exist. Please download game's data files if you haven't done it or check for missing files.{Environment.NewLine}Path: {checkingFilename}", "File doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    return;
                                 }
-
                                 break;
                             default:
+                                Prompt_Generic.Show(this, "The anti-cheat selection is invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                                return;
+                                /*
                                 if (!File.Exists(filename_exe = Path.GetFullPath("pso2.exe", dir_pso2bin)))
                                 {
                                     Prompt_Generic.Show(this, $"The file 'pso2.exe' for nProtect GameGuard doesn't exist. Please download game's data files if you haven't done it, or switch to another anti-cheat program to see if it helps.{Environment.NewLine}Path: {filename_exe}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                                     return;
                                 }
                                 break;
+                                */
                         }
 
                         bool isLaunchWithTweaker = (e.SelectedStyle == GameStartStyle.StartWithPSO2Tweaker);

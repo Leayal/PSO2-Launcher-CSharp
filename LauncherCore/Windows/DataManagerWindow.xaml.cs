@@ -133,7 +133,22 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
             combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
-            SelectionChangedEventHandler? _SelectionChangedEventHandler = null;
+            SelectionChangedEventHandler? _anticheatSelectionChangeWarningOnce = null;
+            _anticheatSelectionChangeWarningOnce = new SelectionChangedEventHandler((sender, ev) =>
+            {
+                if (sender is EnumComboBox cb)
+                {
+                    if (ev.AddedItems != null && ev.AddedItems.Count != 0)
+                    {
+                        cb.SelectionChanged -= _anticheatSelectionChangeWarningOnce;
+                        _anticheatSelectionChangeWarningOnce = null;
+                        Prompt_Generic.Show(ownerWindow, "Each anti-cheat program has their own way of working, allow-list and definitions."
+                            + Environment.NewLine + "Please be sure that you are aware this."
+                            + Environment.NewLine + "Check if there are any incompatible hooks or injections or wrappers, and remove them.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            });
+            SelectionChangedEventHandler ? _SelectionChangedEventHandler = null;
             _SelectionChangedEventHandler = new SelectionChangedEventHandler((sender, ev) =>
             {
                 if (sender is EnumComboBox cb)
@@ -143,7 +158,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         if (ev.AddedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection && dom_AntiCheatProgramSelection.Value != val_AntiCheatProgramSelection)
                         {
                             cb.SelectionChanged -= _SelectionChangedEventHandler;
-                            // cb.SelectionChanged += (s, e) => IsWellbiaXignCodeSelected(ownerWindow, (EnumComboBox)s, e);
                             _SelectionChangedEventHandler = null;
                             dict_AntiCheatProgramSelection.Remove(val_AntiCheatProgramSelection);
                             if (cb.ItemsSource is ICollectionView cvs)
@@ -154,8 +168,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             });
-            if (isStillWithOldValues)
-                combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
             if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
             {
                 combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
@@ -164,6 +176,9 @@ namespace Leayal.PSO2Launcher.Core.Windows
             {
                 combobox_anti_cheat_select.SelectedIndex = 0;
             }
+            if (isStillWithOldValues)
+                combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            combobox_anti_cheat_select.SelectionChanged += _anticheatSelectionChangeWarningOnce;
         }
 
         internal static bool IsWellbiaXignCodeSelected(Window window, EnumComboBox combobox_anti_cheat_select, SelectionChangedEventArgs e)
