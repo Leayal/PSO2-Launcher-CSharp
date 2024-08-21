@@ -7,10 +7,10 @@
         [EnumDisplayName("Unspecified anti-cheat (Please select one)"), EnumVisibleInOption(false)]
         Unspecified = -1,
 
-        [EnumDisplayName("Use nProtect GameGuard (compatibility)")]
+        [EnumDisplayName("Use nProtect GameGuard (Obsoleted)"), EnumVisibleInOption(false)]
         nProtect_GameGuard = 0,
 
-        [EnumDisplayName("Use Wellbia XignCode (new)")]
+        [EnumDisplayName("Use Wellbia XignCode")]
         Wellbia_XignCode
     }
 

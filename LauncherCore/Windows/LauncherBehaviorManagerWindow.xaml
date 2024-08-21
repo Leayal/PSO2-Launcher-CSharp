@@ -92,7 +92,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Allow launcher to disable in-game file integrity validation (which allows client mods)" VerticalAlignment="Center" />
-                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" /> 
+                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="CircleExclamationSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" /> 
                 </Grid>
             </CheckBox>
 
@@ -173,7 +173,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Launch this launcher as Admin by default (Not recommended)" VerticalAlignment="Center" />
-                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationTriangleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
+                    <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="TriangleExclamationSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                 </Grid>
             </CheckBox>
         </Grid>

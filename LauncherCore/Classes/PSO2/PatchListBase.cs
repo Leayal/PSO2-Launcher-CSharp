@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Leayal.PSO2Launcher.Core.Classes.PSO2.DataTypes;
 
@@ -116,6 +117,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             else
             {
                 PatchRootInfo? comparand = null;
+                ImmutableDictionary.CreateBuilder<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
                 var items = new Dictionary<string, PatchListItem>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < patchlists.Length; i++)
                 {

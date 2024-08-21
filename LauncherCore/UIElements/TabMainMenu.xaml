@@ -48,7 +48,7 @@
                             <iconPacks:PackIconFontAwesome Kind="BufferBrands" />
                         </MenuItem.Icon>
                     </MenuItem>
-                    <MenuItem Click="MenuItemToolBox_Click" Loaded="MenuItem_PSO2ModsOrganizer_Loaded">
+                    <MenuItem Click="MenuItemToolBox_Click" Loaded="MenuItem_PSO2ModsOrganizer_Loaded" Visibility="Collapsed">
                         <MenuItem.Header>
                             <TextBlock Text="PSO2 Mods Organizer" VerticalAlignment="Center" />
                         </MenuItem.Header>
@@ -82,7 +82,7 @@
                     </MenuItem>
                     <MenuItem Header="Manage launcher's RSS Feeds" Click="ButtonManageGameLauncherRSSFeeds_Click">
                         <MenuItem.Icon>
-                            <iconPacks:PackIconFontAwesome Kind="RssSquareSolid" />
+                            <iconPacks:PackIconFontAwesome Kind="SquareRssSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Header="Manage launcher's theming" Click="ButtonManageGameLauncherTheming_Click">
@@ -107,7 +107,7 @@
                     </MenuItem>
                     <MenuItem Header="PSO2 Game Client Troubleshooting" Click="MenuItemPSO2Troubleshooting_Click">
                         <MenuItem.Icon>
-                            <iconPacks:PackIconFontAwesome Kind="AmbulanceSolid" />
+                            <iconPacks:PackIconFontAwesome Kind="TruckMedicalSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
                     <MenuItem Header="Deploy New PSO2 Installation" Click="MenuItemInstallPSO2_Click">
@@ -117,7 +117,7 @@
                     </MenuItem>
                     <MenuItem Header="Remove Wellbia XignCode anti-cheat program from your system" Click="MenuItemRemoveWellbiaAC_Click">
                         <MenuItem.Icon>
-                            <iconPacks:PackIconFontAwesome Kind="UnlinkSolid" />
+                            <iconPacks:PackIconFontAwesome Kind="LinkSlashSolid" />
                         </MenuItem.Icon>
                     </MenuItem>
                 </ContextMenu>

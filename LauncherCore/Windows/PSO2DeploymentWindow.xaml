@@ -304,7 +304,7 @@
             <Button Style="{StaticResource MahApps.Styles.Button.Circle}" Width="40" Height="40"
                 mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabOpening,Mode=OneWay,Path=IsSelected}"
                 Click="ButtonBack_Click">
-                <iconPacks:PackIconFontAwesome Kind="AngleDoubleLeftSolid" />
+                <iconPacks:PackIconFontAwesome Kind="AngleLeftSolid" />
             </Button>
             <Button Grid.Column="1" Width="40" Height="40"
                 mah:VisibilityHelper.IsCollapsed="{Binding ElementName=TabDeployProgress,Mode=OneWay,Path=IsSelected}"
@@ -314,7 +314,7 @@
                     <Style TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button.Circle}">
                         <Setter Property="Content">
                             <Setter.Value>
-                                <iconPacks:PackIconFontAwesome Kind="AngleDoubleRightSolid" />
+                                <iconPacks:PackIconFontAwesome Kind="AngleRightSolid" />
                             </Setter.Value>
                         </Setter>
                         <Style.Triggers>

@@ -54,21 +54,7 @@
                         <TextBlock Text="Browse" />
                     </Button>
 
-                    <CheckBox Grid.Row="1" Grid.Column="0" x:Name="checkbox_pso2_classic" Margin="1" Visibility="Collapsed" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="PSO2 Classic Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
-                    <TextBox Grid.Row="1" Grid.Column="2" x:Name="textbox_pso2_classic" Margin="1" Visibility="Collapsed" />
-                    <Button Grid.Row="1" Grid.Column="3" Margin="1" Visibility="Collapsed">
-                        <TextBlock Text="Browse" />
-                    </Button>
-
-                    <CheckBox Grid.Row="2" Grid.Column="0" x:Name="checkbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="PSO2 NGS Data Directory [optional]:" Margin="1" Visibility="Collapsed" />
-                    <TextBox Grid.Row="2" Grid.Column="2" x:Name="textbox_pso2_data_ngs" Margin="1" Visibility="Collapsed" />
-                    <Button Grid.Row="2" Grid.Column="3" Margin="1" Visibility="Collapsed">
-                        <TextBlock Text="Browse" />
-                    </Button>
-
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="PSO2 Client Download Selection:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" ToolTipService.InitialShowDelay="0">
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="PSO2 Client Download Selection:" Margin="1" TextAlignment="Right" VerticalAlignment="Center" ToolTipService.InitialShowDelay="0">
                         <TextBlock.ToolTip>
                             <TextBlock TextAlignment="Left">
                                 <Run Text="Selecting the desired contents to download for the game client." />
@@ -79,7 +65,7 @@
                             </TextBlock>
                         </TextBlock.ToolTip>
                     </TextBlock>
-                    <localui:EnumComboBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Margin="1" ToolTipService.InitialShowDelay="0"
+                    <localui:EnumComboBox Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Margin="1" ToolTipService.InitialShowDelay="0"
                                           ItemsSource="{Binding ElementName=combobox_downloadselection,Path=ItemsSource,Mode=OneWay}"
                                           SelectedItem="{Binding ElementName=combobox_downloadselection,Path=SelectedItem,Mode=TwoWay}">
                         <localui:EnumComboBox.ToolTip>
@@ -232,7 +218,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Allow launcher to disable in-game file integrity validation (which allows client mods)" VerticalAlignment="Center" />
-                            <iconPacks:PackIconFontAwesome Grid.Column="2" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
+                            <iconPacks:PackIconFontAwesome Grid.Column="2" Kind="CircleExclamationSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
                     <CheckBox Grid.Row="1"  Grid.ColumnSpan="2" Margin="1" x:Name="checkbox_allowDlssModding" ToolTipService.InitialShowDelay="0" >
@@ -255,7 +241,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Don't redownload Nvidia DLSS binary files if it's already existed (which allows DLSS version override) " VerticalAlignment="Center" />
-                            <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="ExclamationCircleSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
+                            <iconPacks:PackIconFontAwesome Grid.Column="1" Kind="CircleExclamationSolid" VerticalAlignment="Center" localui:ConvenientMembers.PaddingLeft="3" />
                         </Grid>
                     </CheckBox>
                     <TextBlock Grid.Row="2" Text="Select anti-cheat program" VerticalAlignment="Center" />

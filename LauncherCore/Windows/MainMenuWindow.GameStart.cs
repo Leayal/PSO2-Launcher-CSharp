@@ -263,6 +263,8 @@ namespace Leayal.PSO2Launcher.Core.Windows
                         }
 
                         var val_AntiCheatProgramSelection = this.config_main.AntiCheatProgramSelection;
+
+                        /*
                         if (val_AntiCheatProgramSelection == GameStartWithAntiCheatProgram.Unspecified)
                         {
                             if (Prompt_Generic.Show(this, "You haven't selected which Anti-cheat program to be used yet."
@@ -278,21 +280,35 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 return;
                             }
                         }
+                        */
+                        if (val_AntiCheatProgramSelection != GameStartWithAntiCheatProgram.Wellbia_XignCode)
+                        {
+                            Prompt_Generic.Show(this, "As of 21st August 2024, SEGA has removed nProtect Gameguard anti-cheat program from the game."
+                                + Environment.NewLine + "Only Wellbia's XignCode is available now. Please switch to Wellbia's XignCode.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
 
                         string filename_exe;
                         string? filename_loader = null;
                         switch (val_AntiCheatProgramSelection)
                         {
                             case GameStartWithAntiCheatProgram.Wellbia_XignCode:
-                                filename_exe = Path.GetFullPath(Path.Join("sub", "pso2.exe"), dir_pso2bin);
-                                filename_loader = Path.GetFullPath(Path.Join("sub", "ucldr_PSO2_JP_loader_x64.exe"), dir_pso2bin);
+                                filename_exe = Path.GetFullPath("pso2.exe", dir_pso2bin);
+                                filename_loader = Path.GetFullPath("ucldr_PSO2_JP_loader_x64.exe", dir_pso2bin);
                                 string checkingFilename;
                                 if (!File.Exists(checkingFilename = filename_exe)
                                     || !File.Exists(checkingFilename = filename_loader))
                                 {
-                                    Prompt_Generic.Show(this, $"The file '{Path.GetFileName(checkingFilename.AsSpan())}' for Wellbia's XignCode doesn't exist. Please download game's data files if you haven't done it, or switch to another anti-cheat program to see if it helps.{Environment.NewLine}Path: {checkingFilename}", "File doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error);
-                                    return;
+                                    filename_exe = Path.GetFullPath(Path.Join("sub", "pso2.exe"), dir_pso2bin);
+                                    filename_loader = Path.GetFullPath(Path.Join("sub", "ucldr_PSO2_JP_loader_x64.exe"), dir_pso2bin);
+                                    if (!File.Exists(checkingFilename = filename_exe)
+                                        || !File.Exists(checkingFilename = filename_loader))
+                                    {
+                                        Prompt_Generic.Show(this, $"The file '{Path.GetFileName(checkingFilename.AsSpan())}' for Wellbia's XignCode doesn't exist. Please download game's data files if you haven't done it or check for missing files.{Environment.NewLine}Path: {checkingFilename}", "File doesn't exist", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        return;
+                                    }
                                 }
+
                                 break;
                             default:
                                 if (!File.Exists(filename_exe = Path.GetFullPath("pso2.exe", dir_pso2bin)))
@@ -414,9 +430,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                             }
                         }
 
-                        string? dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                            dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
-                        dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
+                        string? dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
                         dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
 
                         var configFolderPath = Path.GetFullPath("config", RuntimeValues.RootDirectory);
@@ -690,7 +704,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                                     static FileScanFlags AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags flags, bool willReplaceHashTable) => (willReplaceHashTable ? (flags | FileScanFlags.IgnoreHashTableFile) : flags);
 
-                                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, 1, GameClientSelection.Always_Only, AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.Balanced, ___willReplaceHashTable), AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.CacheOnly, ___willReplaceHashTable), false, cancelToken);
+                                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, null, dir_pso2tweaker, 1, GameClientSelection.Always_Only, AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.Balanced, ___willReplaceHashTable), AdjustFileScanFlagsIfHashTableReplacing(FileScanFlags.CacheOnly, ___willReplaceHashTable), false, cancelToken);
                                     if (___willReplaceHashTable)
                                     {
                                         var replaced = await ReplaceInGameIntegrityTableFile(dir_pso2bin);

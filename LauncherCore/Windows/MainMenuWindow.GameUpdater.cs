@@ -116,9 +116,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 }
             }
 
-            string? dir_classic_data = this.config_main.PSO2Enabled_Classic ? this.config_main.PSO2Directory_Classic : null,
-                dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
-            dir_classic_data = string.IsNullOrWhiteSpace(dir_classic_data) ? null : Path.GetFullPath(dir_classic_data, dir_pso2bin);
+            string? dir_pso2tweaker = this.config_main.PSO2Tweaker_CompatEnabled ? this.config_main.PSO2Tweaker_Bin_Path : null;
             dir_pso2tweaker = string.IsNullOrWhiteSpace(dir_pso2tweaker) || !File.Exists(dir_pso2tweaker) ? null : Path.GetDirectoryName(dir_pso2tweaker);
 
             var downloaderProfile = this.config_main.DownloaderProfile;
@@ -278,7 +276,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     {
                         this.CreateNewLineInConsoleLog("GameUpdater", "Ignores all backups file (based on user's setting in Launcher's Behavior)...");
                     }
-                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, dir_classic_data, dir_pso2tweaker, conf_FileScannerConcurrentLevel, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
+                    await this.pso2Updater.ScanAndDownloadFilesAsync(dir_pso2bin, null, dir_pso2tweaker, conf_FileScannerConcurrentLevel, downloadType, downloaderProfile, downloaderProfileClassic, shouldScanForBackups, cancelToken);
                 }
                 else
                 {

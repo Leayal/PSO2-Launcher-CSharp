@@ -34,7 +34,7 @@
                 <iconPacks:PackIconFontAwesome Kind="BroomSolid" Width="10" Height="10" />
             </Button>
             <Button Grid.Column="1" Click="WindowsCommandButtons_MinimizeToTray_Click" IsTabStop="False" Focusable="False" BorderBrush="{x:Null}" ToolTip="Minimize to tray">
-                <iconPacks:PackIconFontAwesome Kind="CompressAltSolid" Width="10" Height="10" />
+                <iconPacks:PackIconFontAwesome Kind="DownLeftAndUpRightToCenterSolid" Width="10" Height="10" />
             </Button>
             <Button Grid.Column="2" IsTabStop="False" Focusable="False" BorderBrush="{x:Null}"
                     Command="{x:Static SystemCommands.MinimizeWindowCommand}"
@@ -52,7 +52,7 @@
                 <iconPacks:PackIconFontAwesome Kind="WindowRestoreRegular" Width="10" Height="10" />
             </Button>
             <Button Grid.Column="4" Focusable="False" BorderBrush="{x:Null}" ToolTip="Close launcher" Command="{x:Static SystemCommands.CloseWindowCommand}">
-                <iconPacks:PackIconFontAwesome Kind="TimesSolid" Width="10" Height="10" />
+                <iconPacks:PackIconFontAwesome Kind="XmarkSolid" Width="10" Height="10" />
             </Button>
         </Grid>
         <mah:MetroAnimatedTabControl Grid.Row="1" Background="Transparent">

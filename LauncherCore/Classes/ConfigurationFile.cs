@@ -31,64 +31,6 @@ namespace Leayal.PSO2Launcher.Core.Classes
             set => this.Set("pso2_bin", value ?? string.Empty);
         }
 
-        /*
-        public string PSO2Directory_Reboot
-        {
-            get
-            {
-                if (this.TryGetRaw("pso2_data_reboot", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                     return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
-                        new string(mem.Span)
-                        : val.GetValue<string>();
-                }
-                return string.Empty;
-            }
-            set => this.Set("pso2_data_reboot", value ?? string.Empty);
-        }
-        */
-
-        public bool PSO2Enabled_Reboot
-        {
-            get
-            {
-                if (this.TryGetRaw("pso2_enabled_reboot", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.True)
-                {
-                    return true;
-                }
-                return false;
-            }
-            set => this.Set("pso2_enabled_reboot", value);
-        }
-
-        public string PSO2Directory_Classic
-        {
-            get
-            {
-                if (this.TryGetRaw("pso2_data_classic", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.String)
-                {
-                    return val.TryGetValue<ReadOnlyMemory<char>>(out var mem) ?
-                       new string(mem.Span)
-                       : val.GetValue<string>();
-                }
-                return string.Empty;
-            }
-            set => this.Set("pso2_data_classic", value ?? string.Empty);
-        }
-
-        public bool PSO2Enabled_Classic
-        {
-            get
-            {
-                if (this.TryGetRaw("pso2_enabled_classic", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.True)
-                {
-                    return true;
-                }
-                return false;
-            }
-            set => this.Set("pso2_enabled_classic", value);
-        }
-
         public PSO2.GameClientSelection DownloadSelection
         {
             get
@@ -379,7 +321,7 @@ namespace Leayal.PSO2Launcher.Core.Classes
                         }
                     }
                 }
-                return GameStartWithAntiCheatProgram.Unspecified;
+                return GameStartWithAntiCheatProgram.Wellbia_XignCode;
             }
             set => this.Set("pso2_anticheatselect", (int)value);
         }

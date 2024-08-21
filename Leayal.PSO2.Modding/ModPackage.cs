@@ -46,7 +46,7 @@ namespace Leayal.PSO2.Modding
 
         public IAsyncEnumerable<string> EnumerateFiles()
         {
-
+            throw new NotImplementedException();
         }
     }
 }

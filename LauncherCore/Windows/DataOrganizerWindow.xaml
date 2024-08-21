@@ -70,7 +70,7 @@
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-                                                    <iconPacks:PackIconFontAwesome Kind="ExclamationTriangleSolid" VerticalAlignment="Center" />
+                                                    <iconPacks:PackIconFontAwesome Kind="TriangleExclamationSolid" VerticalAlignment="Center" />
                                                     <TextBlock Grid.Column="1" Text="I want to put PSO2 Classic's data files to another place and create symlink" />
                                                 </Grid>
                                             </Setter.Value>

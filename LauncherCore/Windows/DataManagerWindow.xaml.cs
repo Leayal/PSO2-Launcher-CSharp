@@ -9,6 +9,7 @@ using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.ComponentModel;
+using System.Linq;
 
 namespace Leayal.PSO2Launcher.Core.Windows
 {
@@ -95,22 +96,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.textbox_pso2_bin.Text = str_pso2bin;
             }
 
-            /*
-            var str_pso2data_reboot = this._config.PSO2Directory_Reboot;
-            if (!string.IsNullOrEmpty(str_pso2data_reboot))
-            {
-                this.textbox_pso2_data_ngs.Text = str_pso2data_reboot;
-            }
-            */
-
-            var str_pso2data_classic = this._config.PSO2Directory_Classic;
-            if (!string.IsNullOrEmpty(str_pso2data_classic))
-            {
-                this.textbox_pso2_data_ngs.Text = str_pso2data_classic;
-            }
-
-            this.checkbox_pso2_data_ngs.IsChecked = this._config.PSO2Enabled_Reboot;
-            this.checkbox_pso2_classic.IsChecked = this._config.PSO2Enabled_Classic;
             this.checkbox_disableingameintegritycheck.IsChecked = this._config.LauncherDisableInGameFileIntegrityCheck;
             this.checkbox_allowDlssModding.IsChecked = this._config.AllowNvidiaDlssModding;
 
@@ -128,25 +113,39 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 this.numberbox_throttledownload.Value = num_throttleFileCheck;
             }
 
-            var val_AntiCheatProgramSelection = this._config.AntiCheatProgramSelection;
-            const GameStartWithAntiCheatProgram defaultValue_AntiCheatProgramSelection = GameStartWithAntiCheatProgram.Unspecified;
-            bool isStillUnspecific = (val_AntiCheatProgramSelection == defaultValue_AntiCheatProgramSelection);
-            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(isStillUnspecific);
-            this.combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
+            SetupAntiCheatSelectionBox(this, this.combobox_anti_cheat_select, this._config);
+        }
+
+        internal static void SetupAntiCheatSelectionBox(MetroWindowEx ownerWindow, EnumComboBox combobox_anti_cheat_select, ConfigurationFile config)
+        {
+            var val_AntiCheatProgramSelection = config.AntiCheatProgramSelection;
+            bool isStillWithOldValues = (EnumVisibleInOptionAttribute.TryGetIsVisible(val_AntiCheatProgramSelection, out var isSelectedAnOldValue) && !isSelectedAnOldValue);
+            var dict_AntiCheatProgramSelection = EnumComboBox.EnumToDictionary<GameStartWithAntiCheatProgram>(isStillWithOldValues);
+            if (isStillWithOldValues)
+            {
+                var keys = dict_AntiCheatProgramSelection.Keys.ToArray();
+                foreach (var key in keys)
+                {
+                    if (val_AntiCheatProgramSelection != key && EnumVisibleInOptionAttribute.TryGetIsVisible(key, out var _tmp) && _tmp == false)
+                    {
+                        dict_AntiCheatProgramSelection.Remove(key);
+                    }
+                }
+            }
+            combobox_anti_cheat_select.ItemsSource = CollectionViewSource.GetDefaultView(dict_AntiCheatProgramSelection.Values);
             SelectionChangedEventHandler? _SelectionChangedEventHandler = null;
             _SelectionChangedEventHandler = new SelectionChangedEventHandler((sender, ev) =>
             {
                 if (sender is EnumComboBox cb)
                 {
-                    if (!IsWellbiaXignCodeConfirmed(this, cb, ev)) return;
                     if (ev.AddedItems != null && ev.AddedItems.Count != 0)
                     {
-                        if (ev.AddedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection && dom_AntiCheatProgramSelection.Value != defaultValue_AntiCheatProgramSelection)
+                        if (ev.AddedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection && dom_AntiCheatProgramSelection.Value != val_AntiCheatProgramSelection)
                         {
                             cb.SelectionChanged -= _SelectionChangedEventHandler;
-                            cb.SelectionChanged += (s, e) => IsWellbiaXignCodeConfirmed(this, (EnumComboBox)s, e);
+                            // cb.SelectionChanged += (s, e) => IsWellbiaXignCodeSelected(ownerWindow, (EnumComboBox)s, e);
                             _SelectionChangedEventHandler = null;
-                            dict_AntiCheatProgramSelection.Remove(defaultValue_AntiCheatProgramSelection);
+                            dict_AntiCheatProgramSelection.Remove(val_AntiCheatProgramSelection);
                             if (cb.ItemsSource is ICollectionView cvs)
                             {
                                 cvs.Refresh();
@@ -155,47 +154,42 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     }
                 }
             });
-            if (isStillUnspecific)
-                this.combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
+            if (isStillWithOldValues)
+                combobox_anti_cheat_select.SelectionChanged += _SelectionChangedEventHandler;
             if (dict_AntiCheatProgramSelection.TryGetValue(val_AntiCheatProgramSelection, out var dom_AntiCheatProgramSelection))
             {
-                this.combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
+                combobox_anti_cheat_select.SelectedItem = dom_AntiCheatProgramSelection;
             }
             else
             {
-                this.combobox_anti_cheat_select.SelectedIndex = 0;
+                combobox_anti_cheat_select.SelectedIndex = 0;
             }
-            if (!isStillUnspecific)
-                this.combobox_anti_cheat_select.SelectionChanged += (s, e) => IsWellbiaXignCodeConfirmed(this, (EnumComboBox)s, e);
         }
 
-        internal static bool IsWellbiaXignCodeConfirmed(Window window, EnumComboBox combobox_anti_cheat_select, SelectionChangedEventArgs e)
+        internal static bool IsWellbiaXignCodeSelected(Window window, EnumComboBox combobox_anti_cheat_select, SelectionChangedEventArgs e)
         {
             if (combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection
-                && dom_AntiCheatProgramSelection.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode
-                && (Prompt_Generic.Show(window, "Are you sure you want to use the new anti-cheat?" + Environment.NewLine + "The new anti-cheat MAY cause issues such as game freeze/hang or performance-related issues.", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes))
+                && dom_AntiCheatProgramSelection.Value != GameStartWithAntiCheatProgram.Wellbia_XignCode)
             {
-                if (e.RemovedItems != null && e.RemovedItems.Count != 0)
+                Prompt_Generic.Show(window, "As of 21st August 2024, SEGA removed nProtect Gameguard. Only Wellbia's XignCode is available to use now."
+                                + Environment.NewLine + "Please switch to XignCode.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (e.RemovedItems != null && e.RemovedItems.Count != 0 && e.RemovedItems[0] is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom1 && dom1.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode)
                 {
-                    combobox_anti_cheat_select.SelectedItem = e.RemovedItems[0];
+                    combobox_anti_cheat_select.SelectedItem = dom1;
+                    return true;
                 }
                 else if (combobox_anti_cheat_select.ItemsSource is ICollectionView view)
-                {
-                    bool found = false;
+                {  
                     foreach (var item in view.SourceCollection)
                     {
-                        if (item is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom && dom.Value == GameStartWithAntiCheatProgram.Unspecified)
+                        if (item is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom2 && dom2.Value == GameStartWithAntiCheatProgram.Wellbia_XignCode)
                         {
-                            combobox_anti_cheat_select.SelectedItem = dom;
-                            found = true;
-                            break;
+                            combobox_anti_cheat_select.SelectedItem = dom2;
+                            return true;
                         }
                     }
-                    if (!found)
-                    {
-                        combobox_anti_cheat_select.SelectedIndex = 0;
-                    }
                 }
+                combobox_anti_cheat_select.SelectedIndex = 0;
                 return false;
             }
             else
@@ -230,10 +224,6 @@ namespace Leayal.PSO2Launcher.Core.Windows
             if (this.combobox_anti_cheat_select.SelectedItem is EnumComboBox.ValueDOM<GameStartWithAntiCheatProgram> dom_AntiCheatProgramSelection)
                 this._config.AntiCheatProgramSelection = dom_AntiCheatProgramSelection.Value;
 
-            // this._config.PSO2Directory_Reboot = this.textbox_pso2_data_ngs.Text;
-            this._config.PSO2Directory_Classic = this.textbox_pso2_classic.Text;
-            this._config.PSO2Enabled_Reboot = (this.checkbox_pso2_data_ngs.IsChecked == true);
-            this._config.PSO2Enabled_Classic = (this.checkbox_pso2_classic.IsChecked == true);
             this._config.FileScannerConcurrentCount = Math.Clamp(Convert.ToInt32(this.numberbox_concurrentlevelFileScan.Value), 1, 16);
             var val_numberbox_throttledownload = this.numberbox_throttledownload.Value;
             if (val_numberbox_throttledownload.HasValue)
