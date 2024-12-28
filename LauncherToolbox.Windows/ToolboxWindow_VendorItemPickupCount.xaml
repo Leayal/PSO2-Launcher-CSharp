@@ -7,7 +7,7 @@
                          xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                          xmlns:leawindow="clr-namespace:Leayal.Shared.Windows;assembly=Leayal.Shared.Windows"
                          mc:Ignorable="d" x:Name="ThisSelf"
-                         TitleCharacterCasing="Normal" TitleBarHeight="25"
+                         TitleCharacterCasing="Normal"
                          Title="Vendor Items Pickup Counter" MinWidth="300" MaxWidth="800" MinHeight="60" MaxHeight="600" AutoHideInTaskbarByOwnerIsVisible="False" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight"
                          Loaded="ThisSelf_Loaded">
     <leawindow:MetroWindowEx.RightWindowCommands>

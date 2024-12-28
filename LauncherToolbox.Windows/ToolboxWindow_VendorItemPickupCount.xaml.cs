@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,7 +23,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
     public partial class ToolboxWindow_VendorItemPickupCount : MetroWindowEx
     {
         private static int Count_LogCategories;
-        private static object lockobj_LogCategories;
+        private static readonly object lockobj_LogCategories;
         private static LogCategories? instance_LogCategories;
         private static bool initialized_LogCategories;
 
@@ -40,7 +41,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
         {
             Interlocked.Increment(ref Count_LogCategories);
 #nullable disable
-            return LazyInitializer.EnsureInitialized(ref instance_LogCategories, ref initialized_LogCategories, ref lockobj_LogCategories, CreateInstance_LogCategories);
+            return LazyInitializer.EnsureInitialized(ref instance_LogCategories, ref initialized_LogCategories, ref Unsafe.AsRef(in lockobj_LogCategories), CreateInstance_LogCategories);
 #nullable restore
         }
 
@@ -558,7 +559,7 @@ namespace Leayal.PSO2Launcher.Toolbox.Windows
             }
         }
 
-        class DelegateSetTime_params
+        sealed class DelegateSetTime_params
         {
             public DateTime arg;
             public readonly ToolboxWindow_VendorItemPickupCount window;
