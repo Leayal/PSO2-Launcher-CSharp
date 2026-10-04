@@ -71,7 +71,10 @@ namespace Leayal.Shared.Windows
                     {
                         throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                     }
-                    hProcess = new SafeProcessHandle(handle.Value, true);
+                    unsafe
+                    {
+                        hProcess = new SafeProcessHandle(new IntPtr(handle.Value), true);
+                    }
                     // hProcess = OpenProcess(QueryLimitedInformation, false, process.Id);
                     if (hProcess.IsInvalid)
                     {
@@ -88,7 +91,10 @@ namespace Leayal.Shared.Windows
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                 }
-                hProcess = new SafeProcessHandle(handle.Value, true);
+                unsafe
+                {
+                    hProcess = new SafeProcessHandle(new IntPtr(handle.Value), true);
+                }
                 if (hProcess.IsInvalid)
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
@@ -125,7 +131,6 @@ namespace Leayal.Shared.Windows
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                     // throw new ApplicationException("Could not get process token. Win32 Error Code: " + Marshal.GetLastWin32Error());
                 }
-
                 MSWin32.Security.TOKEN_ELEVATION_TYPE elevationResult = MSWin32.Security.TOKEN_ELEVATION_TYPE.TokenElevationTypeDefault;
                 const uint elevationResultSize = sizeof(MSWin32.Security.TOKEN_ELEVATION_TYPE);
                 try
@@ -133,8 +138,8 @@ namespace Leayal.Shared.Windows
                     uint returnedSize = 0;
                     bool success;
                     unsafe
-                    {  
-                        success = PInvoke.GetTokenInformation(tokenHandle, MSWin32.Security.TOKEN_INFORMATION_CLASS.TokenElevationType, Unsafe.AsPointer(ref elevationResult), elevationResultSize, out returnedSize);
+                    {
+                        success = PInvoke.GetTokenInformation(tokenHandle, MSWin32.Security.TOKEN_INFORMATION_CLASS.TokenElevationType, new Span<byte>(Unsafe.AsPointer(ref elevationResult), (int)elevationResultSize), out returnedSize);
                     }
                     
                     if (success)

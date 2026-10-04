@@ -1,12 +1,14 @@
 ﻿using MahApps.Metro.Controls;
 using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 
 namespace Leayal.Shared.Windows
 {
@@ -27,6 +29,8 @@ namespace Leayal.Shared.Windows
 
         /// <summary>Identifies the <seealso cref="WindowCommandButtonsHeight"/> dependency property.</summary>
         public static readonly DependencyProperty WindowCommandButtonsHeightProperty = WindowCommandButtonsHeightPropertyKey.DependencyProperty;
+
+        private readonly Lazy<IntPtr> _CriticalHandle;
 
         /// <summary>Identifies the <seealso cref="AutoHideInTaskbarByOwnerIsVisible"/> dependency property.</summary>
         public static readonly DependencyProperty AutoHideInTaskbarByOwnerIsVisibleProperty = DependencyProperty.Register("AutoHideInTaskbarByOwnerIsVisible", typeof(bool), typeof(MetroWindowEx), new PropertyMetadata(false, (obj, e)=>
@@ -59,7 +63,13 @@ namespace Leayal.Shared.Windows
         }
 
         /// <inheritdoc />
-        public IntPtr Handle => this.CriticalHandle;
+        public IntPtr Handle
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => this._CriticalHandle.Value;
+        }
+
+        private IntPtr InitCriticalHandle() => new WindowInteropHelper(this).Handle;
 
         /// <summary>Gets or sets the dialog result when the dialog is opened with <seealso cref="ShowCustomDialog(Window)"/>.</summary>
         /// <remarks>This will not automatically close the window upon setting.</remarks>
@@ -84,6 +94,7 @@ namespace Leayal.Shared.Windows
             this.flag_readied = 0;
             this._autoHideInTaskbarByOwnerIsVisibleAttached = null;
             this._autoassignedIcon = false;
+            this._CriticalHandle = new Lazy<nint>(this.InitCriticalHandle, true);
 
             this.CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, MetroWindowEx_ExecutedRoutedEvent_CloseWindow));
             this.CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand, MetroWindowEx_ExecutedRoutedEvent_MinimizeWindow));

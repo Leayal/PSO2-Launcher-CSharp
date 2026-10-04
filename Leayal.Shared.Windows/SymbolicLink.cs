@@ -137,8 +137,8 @@ namespace Leayal.Shared.Windows
                 dummy_attr = (uint)FileAttributes.Normal;
             }
             
-            char* relativePathBuffer = stackalloc char[maxRelativePathLengthUnicodeChars];
-            if (PInvoke.PathRelativePathTo(new MSWin32.Foundation.PWSTR(relativePathBuffer), pathFrom, dummy_attr, pathTo, dummy_attr))
+            Span<char> relativePathBuffer = stackalloc char[maxRelativePathLengthUnicodeChars];
+            if (PInvoke.PathRelativePathTo(relativePathBuffer, pathFrom, dummy_attr, pathTo, dummy_attr))
             {
                 return new string(relativePathBuffer);
             }

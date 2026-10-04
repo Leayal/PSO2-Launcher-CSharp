@@ -1,4 +1,5 @@
 ﻿using global::Windows.Win32.Graphics.Gdi;
+using System.Runtime.CompilerServices;
 using MSWin32 = global::Windows.Win32;
 using PInvoke = global::Windows.Win32.PInvoke;
 
@@ -14,7 +15,8 @@ namespace Leayal.Shared.Windows
             bool success;
             unsafe
             {
-                success = PInvoke.EnumDisplayMonitors(new HDC(0), lpfnEnum: new MONITORENUMPROC(counter.Callback), dwData: new MSWin32.Foundation.LPARAM(0));
+                MSWin32.Foundation.RECT* rectt = (MSWin32.Foundation.RECT*)Unsafe.AsPointer(ref Unsafe.NullRef<MSWin32.Foundation.RECT>());
+                success = PInvoke.EnumDisplayMonitors(HDC.Null, rectt, lpfnEnum: new MONITORENUMPROC(counter.Callback), dwData: new MSWin32.Foundation.LPARAM(0));
             }
             if (success)
             {

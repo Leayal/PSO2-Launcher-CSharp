@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Windows.Win32.Storage.FileSystem;
 using System.Windows.Markup;
 using System.Diagnostics.CodeAnalysis;
+using MahApps.Metro.Converters;
 
 namespace Leayal.Shared.Windows
 {
@@ -200,7 +201,7 @@ namespace Leayal.Shared.Windows
 
             unsafe
             {
-                if (PInvoke.GetFileTime(filehandle, &t_creationTime, &t_lastAccessTime, &t_lastWriteTime))
+                if (PInvoke.GetFileTime(filehandle, out t_creationTime, out t_lastAccessTime, out t_lastWriteTime))
                 {
                     creationTime = t_creationTime.ToDateTime();
                     lastAccessTime = t_lastAccessTime.ToDateTime();
@@ -246,7 +247,7 @@ namespace Leayal.Shared.Windows
 
             unsafe
             {
-                if (PInvoke.GetFileTime(filehandle, &t_creationTime, &t_lastAccessTime, &t_lastWriteTime))
+                if (PInvoke.GetFileTime(filehandle, out t_creationTime, out t_lastAccessTime, out t_lastWriteTime))
                 {
                     creationTime = t_creationTime.ToDateTimeUTC();
                     lastAccessTime = t_lastAccessTime.ToDateTimeUTC();
@@ -414,10 +415,16 @@ namespace Leayal.Shared.Windows
         }
 
         internal static unsafe bool GetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
-            => PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), (uint)Marshal.SizeOf(pInfo));
+        {
+            Span<byte> aaaaa = new Span<byte>(Unsafe.AsPointer(ref pInfo), Unsafe.SizeOf<MSFileSystem.FILE_BASIC_INFO>());
+            return PInvoke.GetFileInformationByHandleEx(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, aaaaa);
+        }
 
         internal static unsafe bool SetFileBasicInformationByHandle(SafeFileHandle hFile, ref MSFileSystem.FILE_BASIC_INFO pInfo)
-            => PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, Unsafe.AsPointer(ref pInfo), (uint)Marshal.SizeOf(pInfo));
+        {
+            Span<byte> aaaaa = new Span<byte>(Unsafe.AsPointer(ref pInfo), Unsafe.SizeOf<MSFileSystem.FILE_BASIC_INFO>());
+            return PInvoke.SetFileInformationByHandle(hFile, MSFileSystem.FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, aaaaa);
+        }
 
         /// <summary>Gets file information from a file handle.</summary>
         /// <param name="hFile">The file handle to query time information.</param>

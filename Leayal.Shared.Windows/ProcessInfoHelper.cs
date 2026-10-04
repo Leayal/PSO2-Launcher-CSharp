@@ -21,7 +21,10 @@ namespace Leayal.Shared.Windows
             {
                 return InvalidHandle;
             }
-            return new SafeProcessHandle(handle.Value, true);
+            unsafe
+            {
+                return new SafeProcessHandle(new nint(handle.Value), true);
+            }
         }
 
         /// <summary>The hint about type of path to returns when calling the method.</summary>
@@ -120,15 +123,7 @@ namespace Leayal.Shared.Windows
             try
             {
                 uint bufferLength = Convert.ToUInt32(ch.Length - 1);
-                bool isSuccess;
-                unsafe
-                {
-                    fixed (char* c = ch)
-                    {
-                        isSuccess = PInvoke.QueryFullProcessImageName(processHandle, Unsafe.As<QueryProcessNameType, MSWin32.System.Threading.PROCESS_NAME_FORMAT>(ref dwNameType), new MSWin32.Foundation.PWSTR(c), ref bufferLength);
-                    }
-                }
-                if (isSuccess)
+                if (PInvoke.QueryFullProcessImageName(processHandle, Unsafe.As<QueryProcessNameType, MSWin32.System.Threading.PROCESS_NAME_FORMAT>(ref dwNameType), new Span<char>(ch), ref bufferLength))
                 {
                     return new string(ch, 0, Convert.ToInt32(bufferLength));
                 }
@@ -141,14 +136,7 @@ namespace Leayal.Shared.Windows
                         {
                             return null;
                         }
-                        unsafe
-                        {
-                            fixed (char* c = ch)
-                            {
-                                isSuccess = PInvoke.QueryFullProcessImageName(hProcess, Unsafe.As<QueryProcessNameType, MSWin32.System.Threading.PROCESS_NAME_FORMAT>(ref dwNameType), new MSWin32.Foundation.PWSTR(c), ref bufferLength);
-                            }
-                        }
-                        if (isSuccess)
+                        if (PInvoke.QueryFullProcessImageName(hProcess, Unsafe.As<QueryProcessNameType, MSWin32.System.Threading.PROCESS_NAME_FORMAT>(ref dwNameType), new Span<char>(ch), ref bufferLength))
                         {
                             return new string(ch, 0, Convert.ToInt32(bufferLength));
                         }

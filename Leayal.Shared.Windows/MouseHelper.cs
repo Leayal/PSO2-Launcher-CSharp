@@ -35,6 +35,7 @@ namespace Leayal.Shared.Windows
         /// <param name="handled">Flag indicates whether the input was handled by one of the hooks.</param>
         public delegate void RawMouseInputHook(in RawMouseInputData data, ref bool handled);
 
+        /*
         /// <summary>Register RawInput windows messages to be sent to the WPF application's main window.</summary>
         /// <returns>A <seealso cref="RegisteredRawMouseInput"/> if the registration is completed successfully. Otherwise, <see langword="null"/>.</returns>
         /// <remarks>
@@ -55,6 +56,7 @@ namespace Leayal.Shared.Windows
             }
             return null;
         }
+        */
 
         /// <summary>Register RawInput windows messages to be sent to the window which the <paramref name="windowHandle"/> points to.</summary>
         /// <param name="windowHandle">The handle pointing to a window which will receive RawInput windows messages. Can be <seealso cref="IntPtr.Zero"/>, which results in same effect as using <seealso cref="HookRawMouseInput()"/>.</param>
