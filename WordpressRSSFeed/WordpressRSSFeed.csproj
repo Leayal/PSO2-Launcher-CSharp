@@ -5,6 +5,7 @@
     <RootNamespace>Leayal.PSO2Launcher.RSS.Handlers</RootNamespace>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <Authors>Dramiel Leayal</Authors>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

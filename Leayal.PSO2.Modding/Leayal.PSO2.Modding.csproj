@@ -4,6 +4,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

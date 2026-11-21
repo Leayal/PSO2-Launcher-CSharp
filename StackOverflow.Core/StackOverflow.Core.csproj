@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
 </Project>

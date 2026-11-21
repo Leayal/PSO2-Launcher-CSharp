@@ -6,6 +6,7 @@
     <Authors>Dramiel Leayal</Authors>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
 </Project>

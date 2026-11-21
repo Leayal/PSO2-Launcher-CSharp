@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <Configurations>Debug;Release;Debug HTTP Requests</Configurations>
     <Authors>Dramiel Leayal</Authors>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
 </Project>

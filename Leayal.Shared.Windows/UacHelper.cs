@@ -139,7 +139,7 @@ namespace Leayal.Shared.Windows
                     bool success;
                     unsafe
                     {
-                        success = PInvoke.GetTokenInformation(tokenHandle, MSWin32.Security.TOKEN_INFORMATION_CLASS.TokenElevationType, new Span<byte>(Unsafe.AsPointer(ref elevationResult), (int)elevationResultSize), out returnedSize);
+                        success = PInvoke.GetTokenInformation(tokenHandle, MSWin32.Security.TOKEN_INFORMATION_CLASS.TokenElevationType, Unsafe.AsPointer(ref elevationResult), elevationResultSize, out returnedSize);
                     }
                     
                     if (success)

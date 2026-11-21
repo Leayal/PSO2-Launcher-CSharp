@@ -16,6 +16,7 @@ using System.Windows.Data;
 using System.ComponentModel;
 using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 using Microsoft.Win32;
+using System.Runtime.CompilerServices;
 
 #nullable enable
 namespace Leayal.PSO2Launcher.Core.Windows
@@ -138,21 +139,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                 {
                     list.Add(new CustomizationFileListItem()
                     {
-                        RelativeFilename = string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) =>
-                        {
-                            obj.GetSpanFilenameWithoutAffix().CopyTo(c);
-                            var iOfSlash = c.IndexOf(Path.AltDirectorySeparatorChar);
-                            if (iOfSlash != -1)
-                            {
-                                for (int i = iOfSlash; i < c.Length; i++)
-                                {
-                                    if (c[i] == Path.AltDirectorySeparatorChar)
-                                    {
-                                        c[i] = Path.DirectorySeparatorChar;
-                                    }
-                                }
-                            }
-                        }),
+                        RelativeFilename = CreateNormalizedPathStringOfPatchItem(item),
                         FileSize = item.FileSize,
                         ClientType = item.IsRebootData switch
                         {
@@ -206,21 +193,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                     };
                     list.Add(new CustomizationFileListItem()
                     {
-                        RelativeFilename = string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) =>
-                        {
-                            obj.GetSpanFilenameWithoutAffix().CopyTo(c);
-                            var iOfSlash = c.IndexOf(Path.AltDirectorySeparatorChar);
-                            if (iOfSlash != -1)
-                            {
-                                for (int i = iOfSlash; i < c.Length; i++)
-                                {
-                                    if (c[i] == Path.AltDirectorySeparatorChar)
-                                    {
-                                        c[i] = Path.DirectorySeparatorChar;
-                                    }
-                                }
-                            }
-                        }),
+                        RelativeFilename = CreateNormalizedPathStringOfPatchItem(item),
                         FileSize = item.FileSize,
                         ClientType = type,
                         SelectedAction = ((type == DataOrganizeFilteringBox.ClientType.Classic) ? DataAction.Delete : DataAction.DoNothing)
@@ -256,6 +229,13 @@ namespace Leayal.PSO2Launcher.Core.Windows
             this.tabCustomizePreset.IsSelected = true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static string CreateNormalizedPathStringOfPatchItem(PatchListItem item) => string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) =>
+        {
+            obj.GetSpanFilenameWithoutAffix().CopyTo(c);
+            c.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+        });
+
         private async Task<bool> ButtonSelectMoveClassicCreateSymlinkPreset_Proceed(object? obj)
         {
             if (obj is TextBox tb)
@@ -279,21 +259,7 @@ namespace Leayal.PSO2Launcher.Core.Windows
                                 false => DataOrganizeFilteringBox.ClientType.Classic,
                                 _ => DataOrganizeFilteringBox.ClientType.Both
                             };
-                            var relativeFilename = string.Create(item.GetSpanFilenameWithoutAffix().Length, item, (c, obj) =>
-                            {
-                                obj.GetSpanFilenameWithoutAffix().CopyTo(c);
-                                var iOfSlash = c.IndexOf(Path.AltDirectorySeparatorChar);
-                                if (iOfSlash != -1)
-                                {
-                                    for (int i = iOfSlash; i < c.Length; i++)
-                                    {
-                                        if (c[i] == Path.AltDirectorySeparatorChar)
-                                        {
-                                            c[i] = Path.DirectorySeparatorChar;
-                                        }
-                                    }
-                                }
-                            });
+                            var relativeFilename = CreateNormalizedPathStringOfPatchItem(item);
                             list.Add(new CustomizationFileListItem()
                             {
                                 RelativeFilename = relativeFilename,

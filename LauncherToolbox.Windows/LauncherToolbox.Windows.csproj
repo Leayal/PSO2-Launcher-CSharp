@@ -8,6 +8,7 @@
     <RootNamespace>Leayal.PSO2Launcher.Toolbox.Windows</RootNamespace>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Description>Provides UI for PSO2 Tools. This is standalone and does not require PSO2LeaLauncher's core components.</Description>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

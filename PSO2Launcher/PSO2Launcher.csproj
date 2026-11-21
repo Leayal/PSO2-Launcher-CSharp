@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Leayal.PSO2Launcher</RootNamespace>
     <AssemblyName>PSO2LeaLauncher</AssemblyName>
@@ -16,6 +16,7 @@
     <Description>PSO2 Launcher for PSO2: NGS JP</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SelfContained>false</SelfContained>
+	<RollForward>Major</RollForward>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <OutputPath />

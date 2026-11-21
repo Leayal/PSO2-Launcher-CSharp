@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
@@ -54,25 +55,7 @@ namespace Leayal.PSO2Launcher.Core.Classes.PSO2
             }
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (this._items is IDictionary<string, PatchListItem> dict)
-                {
-                    dict.Clear();
-                    if (dict is Dictionary<string, PatchListItem> dict2)
-                    {
-                        dict2.TrimExcess(0);
-                    }
-                }
-            }
-        }
-
-        public bool ContainsKey(string key)
-        {
-            return ((IReadOnlyDictionary<string, PatchListItem>)_items).ContainsKey(key);
-        }
+        public bool ContainsKey(string key) => this._items.ContainsKey(key);
 
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out PatchListItem value)
         {
