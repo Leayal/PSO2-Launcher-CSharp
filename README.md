@@ -6,6 +6,8 @@ The launcher only targets PSO2 Japan. It may not work for other regions without 
 
 This project is just a hobby one.
 
+## The project is discontinued (no longer maintained). Anyone can fork and do whatever you want (as long as it's not for commercial purposes).
+
 # Feature Overviews
 
 - The launcher is designed to be left running for a very long time. Therefore, it is not necessary to close the launcher shortly after using, but it's totally okay to do it, too.
